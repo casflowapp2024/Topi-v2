@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,6 +18,8 @@ type TokenPayload struct {
 	Verified bool
 	Groups   map[string]bool
 	Use      string
+	// TokenVersion is the users.token_version the token was issued with (claim "tv")
+	TokenVersion int
 }
 
 func GetAuthUserID(ctx *gin.Context, key string) (*string, error) {
@@ -81,4 +84,51 @@ type AuthTokens struct {
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int64  `json:"expires_in"`
 	TokenType    string `json:"token_type"`
+}
+
+// RequestMeta carries the client data used for rate limiting and auditing
+type RequestMeta struct {
+	IP        string
+	UserAgent string
+}
+
+// RefreshToken is an opaque, rotating refresh token. Only its hash is stored.
+type RefreshToken struct {
+	ID        int64
+	UserID    string
+	TokenHash string
+	ExpiresAt time.Time
+	RevokedAt *time.Time
+	CreatedAt time.Time
+}
+
+// IsRevoked reports whether the token was already used or revoked
+func (t *RefreshToken) IsRevoked() bool {
+	return t.RevokedAt != nil
+}
+
+// IsExpired reports whether the token is expired at the given time
+func (t *RefreshToken) IsExpired(now time.Time) bool {
+	return !now.Before(t.ExpiresAt)
+}
+
+// Auth events (auth_events.event)
+const (
+	EventSignup              = "signup"
+	EventLoginOK             = "login_ok"
+	EventLoginFail           = "login_fail"
+	EventInitialPasswordSet  = "initial_password_set"
+	EventInitialPasswordFail = "initial_password_fail"
+	EventPasswordChanged     = "password_changed"
+	EventAdminReset          = "admin_reset"
+	EventRefreshReuse        = "refresh_reuse"
+)
+
+// AuthEvent is an audit record of an authentication action
+type AuthEvent struct {
+	UserID    string
+	Email     string
+	Event     string
+	IP        string
+	UserAgent string
 }
