@@ -10,10 +10,9 @@ import (
 	"cash-flow/internal/adapter/config"
 	"cash-flow/internal/adapter/email"
 	"cash-flow/internal/adapter/email/gmail"
+	"cash-flow/internal/adapter/email/jobqueue"
 	"cash-flow/internal/adapter/email/outlook"
-	"cash-flow/internal/adapter/email/saturn"
 	"cash-flow/internal/adapter/handler/http"
-	"cash-flow/internal/adapter/sqs"
 	"cash-flow/internal/adapter/storage/postgres"
 	dbrepository "cash-flow/internal/adapter/storage/postgres/repository"
 	dbtransaction "cash-flow/internal/adapter/storage/postgres/transaction"
@@ -111,9 +110,9 @@ func NewInjector(settings *config.Configuration) *Injector {
 	gmailClient := gmail.NewGmailAPI(settings.Gmail)
 	outlookApiClient := api.NewHttpClient(settings.Social.Http.Timeout)
 	outlookClient := outlook.NewOutlookAPI(outlookApiClient, settings.Outlook)
-	sqsClient := sqs.NewSQSClient(settings.SQS.Region, settings.SQS.QueueURL)
-	saturnClient := saturn.NewSaturnAPI(sqsClient, settings.Saturn)
-	emailResource := email.NewUserEmail(gmailClient, outlookClient, saturnClient)
+	emailJobRepo := dbrepository.NewEmailJobRepository(db)
+	emailQueue := jobqueue.New(emailJobRepo)
+	emailResource := email.NewUserEmail(gmailClient, outlookClient, emailQueue)
 
 	emailRepository := dbrepository.NewEmailRepository(db)
 	emailService := service.NewEmailService(emailRepository, emailResource, accountRepo, accountService, transactionManager)

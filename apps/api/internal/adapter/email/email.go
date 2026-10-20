@@ -2,8 +2,8 @@ package email
 
 import (
 	"cash-flow/internal/adapter/email/gmail"
+	"cash-flow/internal/adapter/email/jobqueue"
 	"cash-flow/internal/adapter/email/outlook"
-	"cash-flow/internal/adapter/email/saturn"
 	"cash-flow/internal/core/domain"
 	"cash-flow/internal/enums"
 	"cash-flow/internal/mappers"
@@ -13,14 +13,14 @@ import (
 type UserEmail struct {
 	gmail   *gmail.API
 	outlook *outlook.API
-	saturn  *saturn.API
+	queue   *jobqueue.Queue
 }
 
-func NewUserEmail(gmail *gmail.API, outlook *outlook.API, saturn *saturn.API) *UserEmail {
+func NewUserEmail(gmail *gmail.API, outlook *outlook.API, queue *jobqueue.Queue) *UserEmail {
 	return &UserEmail{
 		gmail:   gmail,
 		outlook: outlook,
-		saturn:  saturn,
+		queue:   queue,
 	}
 }
 
@@ -74,11 +74,11 @@ func (ue *UserEmail) ReadEmail(accounts []domain.Account) *domain.ReadEmailRespo
 	// Build grouped requests using domain logic
 	requests := domain.Accounts(accounts).BuildReadEmailRequests()
 
-	// Send one request per group
+	// Enqueue one job per group (email_jobs)
 	for _, request := range requests {
-		if shouldRequest := ue.saturn.ShouldReadEmail(request); shouldRequest {
+		if shouldRequest := ue.queue.ShouldReadEmail(request); shouldRequest {
 			resolver.WG.Add(1)
-			go ue.saturn.ReadEmail(request, resolver)
+			go ue.queue.ReadEmail(request, resolver)
 		}
 	}
 

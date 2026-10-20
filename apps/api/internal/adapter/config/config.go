@@ -29,8 +29,6 @@ type (
 		Social  *Social
 		Gmail   *Gmail
 		Outlook *Outlook
-		Saturn  *Saturn
-		SQS     *SQS
 	}
 	// App contains all the environment variables for the application
 	App struct {
@@ -111,15 +109,6 @@ type (
 		RedirectURL string
 		Scopes      string
 		Http        HTTPClient
-	}
-
-	Saturn struct {
-		Http HTTPClient
-	}
-
-	SQS struct {
-		Region   string
-		QueueURL string
 	}
 )
 
@@ -207,16 +196,6 @@ func New() *Configuration {
 					URL:     os.Getenv("OUTLOOK_LOGIN_URL"),
 					Timeout: utils.GetTimeDuration(os.Getenv("OUTLOOK_LOGIN_TIMEOUT")),
 				},
-			},
-			&Saturn{
-				Http: HTTPClient{
-					URL:     os.Getenv("SATURN_URL"),
-					Timeout: utils.GetTimeDuration(os.Getenv("SATURN_TIMEOUT")),
-				},
-			},
-			&SQS{
-				Region:   os.Getenv("REGION"),
-				QueueURL: os.Getenv("SQS_QUEUE_URL"),
 			},
 		}
 	})

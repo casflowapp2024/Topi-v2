@@ -148,7 +148,7 @@ func (e *EmailService) ReadEmail(ctx context.Context, userID string, accountIDs 
 		return nil, err
 	}
 
-	// Send email reading requests to SQS
+	// Enqueue email reading jobs (email_jobs)
 	response := e.email.ReadEmail(accountsDetails)
 
 	return response, nil

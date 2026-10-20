@@ -356,7 +356,7 @@ type ReadEmailRequest struct {
 // ReadEmail godoc
 //
 //	@Summary		Read email for accounts (async)
-//	@Description	Initiates background email reading for the specified accounts using Saturn adapter. Returns immediately after validation without waiting for email processing.
+//	@Description	Initiates background email reading for the specified accounts by enqueueing jobs in email_jobs (processed by the worker). Returns immediately after validation without waiting for email processing.
 //	@Tags			Emails
 //	@Accept			json
 //	@Produce		json
