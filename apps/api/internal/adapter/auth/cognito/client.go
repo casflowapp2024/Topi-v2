@@ -1,10 +1,13 @@
-package port
+package cognito
 
 import cognito "github.com/aws/aws-sdk-go/service/cognitoidentityprovider"
 
-//go:generate mockgen -source=cognito.go -destination=mock/cognito.go -package=mock
+//go:generate mockgen -source=client.go -destination=mock/client.go -package=mock
 
-type AuthCognito interface {
+// API is the subset of the Cognito Identity Provider used by the user repository.
+// It lives inside the adapter so the core does not depend on the AWS SDK.
+// Cognito is replaced by the own auth in phase 2.
+type API interface {
 	SignUp(name, lastName, email, password string) (*string, error)
 	ConfirmSignUp(email, code string) error
 	InitiateAuth(email, password string) (*cognito.AuthenticationResultType, error)

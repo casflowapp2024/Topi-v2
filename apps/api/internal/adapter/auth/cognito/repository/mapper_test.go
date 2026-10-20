@@ -1,8 +1,7 @@
-package mappers
+package repository
 
 import (
 	"cash-flow/internal/core/domain"
-	"cash-flow/internal/utils"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"testing"
@@ -98,7 +97,7 @@ func TestMapAwsError(t *testing.T) {
 		{
 			name:     "InternalError",
 			inputErr: awserr.New("InternalError", "some other error", nil),
-			expected: utils.ParseError(awserr.New("InternalError", "some other error", nil)),
+			expected: ParseError(awserr.New("InternalError", "some other error", nil)),
 		},
 	}
 

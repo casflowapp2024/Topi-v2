@@ -10,6 +10,8 @@ var (
 	ErrDifferentConfirmPassword = errors.New("confirm password is different")
 	// ErrInvalidTokenUse is an error for when the token use is invalid
 	ErrInvalidTokenUse = errors.New("invalid token use")
+	// ErrAuthUnavailable is an error for when the authentication provider is not configured
+	ErrAuthUnavailable = errors.New("authentication service is not available")
 )
 
 // User Extra Errors

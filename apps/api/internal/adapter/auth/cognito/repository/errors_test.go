@@ -1,7 +1,7 @@
-package utils_test
+package repository_test
 
 import (
-	"cash-flow/internal/utils"
+	"cash-flow/internal/adapter/auth/cognito/repository"
 	"errors"
 	"testing"
 
@@ -34,7 +34,7 @@ func TestParseError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := utils.ParseError(tt.input)
+			result := repository.ParseError(tt.input)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

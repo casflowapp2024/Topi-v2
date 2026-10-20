@@ -6,6 +6,7 @@ import (
 	cognitorepo "cash-flow/internal/adapter/auth/cognito/repository"
 	"cash-flow/internal/adapter/auth/jwt"
 	"cash-flow/internal/adapter/auth/social"
+	"cash-flow/internal/adapter/auth/unavailable"
 	"cash-flow/internal/adapter/config"
 	"cash-flow/internal/adapter/email"
 	"cash-flow/internal/adapter/email/gmail"
@@ -16,6 +17,7 @@ import (
 	"cash-flow/internal/adapter/storage/postgres"
 	dbrepository "cash-flow/internal/adapter/storage/postgres/repository"
 	dbtransaction "cash-flow/internal/adapter/storage/postgres/transaction"
+	"cash-flow/internal/core/port"
 	"cash-flow/internal/core/service"
 	"context"
 	"log/slog"
@@ -57,12 +59,6 @@ func NewInjector(settings *config.Configuration) *Injector {
 	// Migrate database
 	db.Migrate()
 
-	// Init token resource
-	token := jwt.New(settings.Token)
-
-	// Init cognito client
-	auth := cognito.New(settings.Auth)
-
 	// Transaction Manager
 	transactionManager := dbtransaction.NewTransactionManager(db)
 
@@ -74,12 +70,10 @@ func NewInjector(settings *config.Configuration) *Injector {
 	categoryService := service.NewCategoryService(categoryRepo)
 	categoryHandler := http.NewCategoryHandler(categoryService)
 
-	// Social Auth
-	socialAuthClient := api.NewHttpClient(settings.Social.Http.Timeout)
-	socialAuthRepo := social.NewSocialAuthRepository(socialAuthClient, settings.Social)
+	// Auth (Cognito is optional until phase 2)
+	userRepo, token, socialAuthRepo := newAuthAdapters(settings)
 
 	// User
-	userRepo := cognitorepo.NewUserRepository(auth)
 	userService := service.NewUserService(userRepo, token, socialAuthRepo)
 	userHandler := http.NewUserHandler(userService)
 
@@ -156,4 +150,21 @@ func NewInjector(settings *config.Configuration) *Injector {
 			DB: db,
 		},
 	}
+}
+
+// newAuthAdapters returns the Cognito adapters when Cognito is configured.
+// Otherwise it returns adapters that fail with domain.ErrAuthUnavailable (HTTP 503),
+// so the API can start without AWS. Cognito is replaced in phase 2.
+func newAuthAdapters(settings *config.Configuration) (port.UserRepository, port.TokenRepository, port.SocialAuthRepository) {
+	if !settings.Auth.Enabled() {
+		slog.Warn("cognito is not configured: auth endpoints will respond 503")
+		return unavailable.UserRepository{}, unavailable.TokenRepository{}, unavailable.SocialAuthRepository{}
+	}
+
+	auth := cognito.New(settings.Auth)
+	socialAuthClient := api.NewHttpClient(settings.Social.Http.Timeout)
+
+	return cognitorepo.NewUserRepository(auth),
+		jwt.New(settings.Token),
+		social.NewSocialAuthRepository(socialAuthClient, settings.Social)
 }

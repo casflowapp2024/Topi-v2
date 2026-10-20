@@ -22,6 +22,7 @@ var errorStatusMap = map[error]int{
 	// User Errors
 	domain.ErrDifferentConfirmPassword: http.StatusBadRequest,
 	domain.ErrInvalidTokenUse:          http.StatusUnauthorized,
+	domain.ErrAuthUnavailable:          http.StatusServiceUnavailable,
 
 	// User Extra Errors
 	domain.ErrInvalidUTCOffset: http.StatusBadRequest,

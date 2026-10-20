@@ -287,7 +287,7 @@ func TestIncomeMetrics(t *testing.T) {
 				Diff:       100,
 				Usage:      nil,
 				Left:       utils.RoundV3(-500, 2), // budget - income (siempre se calcula)
-				Percentage: utils.RoundV3(25, 2), // (500-400)/400*100 = 25%
+				Percentage: utils.RoundV3(25, 2),   // (500-400)/400*100 = 25%
 			},
 		},
 		{
@@ -526,9 +526,9 @@ func TestExpenseMetrics(t *testing.T) {
 			expMetrics: MonthlyMetrics{
 				Value:      -100,
 				Budget:     0,
-				Diff:       50,                    // (expense - pastExpense) * -1 => (-100 - (-50)) * -1 = 50
-				Percentage: utils.RoundV3(100, 2), // (diff / abs(pastExpense)) => (50 / 50) * 100 = 100
-				Usage:      nil,                   // nil because budget is 0
+				Diff:       50,                     // (expense - pastExpense) * -1 => (-100 - (-50)) * -1 = 50
+				Percentage: utils.RoundV3(100, 2),  // (diff / abs(pastExpense)) => (50 / 50) * 100 = 100
+				Usage:      nil,                    // nil because budget is 0
 				Left:       utils.RoundV3(-100, 2), // budget - abs(expense), se calcula aunque budget sea 0
 			},
 		},
@@ -658,8 +658,8 @@ func TestSavingsMetrics(t *testing.T) {
 				Value:      250,
 				Budget:     0,
 				Diff:       250,
-				Percentage: utils.RoundV3(100, 2), // (250 - 0) / 0 * 100 = 100
-				Usage:      nil,                   // No budget when the budget is zero
+				Percentage: utils.RoundV3(100, 2),  // (250 - 0) / 0 * 100 = 100
+				Usage:      nil,                    // No budget when the budget is zero
 				Left:       utils.RoundV3(-250, 2), // budget - savings = 0 - 250
 			},
 		},

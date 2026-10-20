@@ -1,7 +1,5 @@
 package domain
 
-import "github.com/aws/aws-sdk-go/service/cognitoidentityprovider"
-
 // UserGroup is an enum for user's role
 type UserGroup string
 
@@ -14,37 +12,6 @@ type User struct {
 	Password string
 	Group    UserGroup
 	Verified bool
-}
-
-func CreateUsersFromCognito(response *cognitoidentityprovider.ListUsersOutput) []User {
-	users := make([]User, 0, len(response.Users))
-	for _, cognitoUser := range response.Users {
-		user := User{}
-
-		user.MapUserAttributes(cognitoUser)
-		users = append(users, user)
-	}
-
-	return users
-}
-
-func (u *User) MapUserAttributes(cognitoUser *cognitoidentityprovider.UserType) {
-	for _, attribute := range cognitoUser.Attributes {
-		switch *attribute.Name {
-		case "sub":
-			u.ID = *attribute.Value
-		case "name":
-			u.Name = *attribute.Value
-		case "family_name":
-			u.LastName = *attribute.Value
-		case "email":
-			u.Email = *attribute.Value
-		case "email_verified":
-			if *attribute.Value == "true" {
-				u.Verified = true
-			}
-		}
-	}
 }
 
 func IsSameUser(currentUser, newUser *User) bool {
