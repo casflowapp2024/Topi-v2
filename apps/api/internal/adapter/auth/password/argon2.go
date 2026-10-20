@@ -26,6 +26,9 @@ var DefaultParams = Params{Memory: 19 * 1024, Iterations: 2, Parallelism: 1, Sal
 
 var errInvalidHash = errors.New("invalid argon2id hash")
 
+// b64 is standard base64 without padding, as used by the PHC string format
+var b64 = base64.StdEncoding.WithPadding(base64.NoPadding)
+
 // Argon2 hashes passwords in PHC format: $argon2id$v=19$m=...,t=...,p=...$salt$hash
 type Argon2 struct {
 	params Params
@@ -47,8 +50,8 @@ func (a *Argon2) Hash(password string) (string, error) {
 
 	return fmt.Sprintf("$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s",
 		argon2.Version, a.params.Memory, a.params.Iterations, a.params.Parallelism,
-		base64.RawStdEncoding.EncodeToString(salt),
-		base64.RawStdEncoding.EncodeToString(key),
+		b64.EncodeToString(salt),
+		b64.EncodeToString(key),
 	), nil
 }
 
@@ -69,12 +72,12 @@ func (a *Argon2) Compare(encoded, password string) (bool, error) {
 		return false, errInvalidHash
 	}
 
-	salt, err := base64.RawStdEncoding.DecodeString(parts[4])
+	salt, err := b64.DecodeString(parts[4])
 	if err != nil {
 		return false, errInvalidHash
 	}
 
-	key, err := base64.RawStdEncoding.DecodeString(parts[5])
+	key, err := b64.DecodeString(parts[5])
 	if err != nil {
 		return false, errInvalidHash
 	}

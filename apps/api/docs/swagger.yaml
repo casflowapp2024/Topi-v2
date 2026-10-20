@@ -12,20 +12,14 @@ definitions:
       name:
         type: string
     type: object
-  domain.CategoryExpense:
+  http.AccountAnalysisResponse:
     properties:
-      budget:
-        type: number
-      category_id:
+      account_id:
         type: integer
-      emoji:
+      account_name:
         type: string
-      expenses:
-        type: number
-      name:
-        type: string
-      usage:
-        type: number
+      monthly:
+        $ref: '#/definitions/http.MonthlyAccountResponse'
     type: object
   http.AccountsReportRequest:
     type: object
@@ -47,17 +41,52 @@ definitions:
       monthly:
         $ref: '#/definitions/http.MonthlyCategoryResponse'
     type: object
+  http.CategoryMetric:
+    properties:
+      budget:
+        type: number
+      category_id:
+        type: integer
+      emoji:
+        type: string
+      left:
+        type: number
+      name:
+        type: string
+      usage:
+        type: number
+      value:
+        type: number
+    type: object
   http.CategoryReportRequest:
     properties:
       date_filter:
         type: string
       sort_by:
         enum:
-        - expense
+        - amount
         - usage
         type: string
     required:
     - date_filter
+    type: object
+  http.CustomEmailResponse:
+    properties:
+      active:
+        example: true
+        type: boolean
+      email:
+        example: jhondoe@example.com
+        type: string
+      error:
+        example: connection_failed
+        type: string
+      id:
+        example: 1
+        type: integer
+      provider:
+        example: gmail
+        type: string
     type: object
   http.DailyAnalysisResponse:
     properties:
@@ -126,6 +155,43 @@ definitions:
         $ref: '#/definitions/http.MonthlyAnalysisResponse'
       savings_budget:
         type: number
+    type: object
+  http.FlowReportResponse:
+    properties:
+      budget:
+        type: number
+      left:
+        type: number
+      report:
+        items:
+          $ref: '#/definitions/http.CategoryMetric'
+        type: array
+      value:
+        type: number
+    type: object
+  http.MonthlyAccountMetrics:
+    properties:
+      diff:
+        type: number
+      percentage:
+        type: number
+      value:
+        type: number
+    type: object
+  http.MonthlyAccountResponse:
+    properties:
+      balance:
+        items:
+          $ref: '#/definitions/http.MonthlyAccountMetrics'
+        type: array
+      month:
+        items:
+          type: integer
+        type: array
+      year:
+        items:
+          type: integer
+        type: array
     type: object
   http.MonthlyAnalysisMetrics:
     properties:
@@ -197,6 +263,15 @@ definitions:
           type: integer
         type: array
     type: object
+  http.ReadEmailRequest:
+    properties:
+      account_ids:
+        items:
+          type: integer
+        type: array
+    required:
+    - account_ids
+    type: object
   http.RegisterEmailRequest:
     properties:
       email:
@@ -225,6 +300,41 @@ definitions:
       verify:
         type: boolean
     type: object
+  http.accountBasicInfo:
+    properties:
+      id:
+        example: 59
+        type: integer
+      last_four_digits:
+        example: "1809"
+        type: string
+      name:
+        example: Cuenta Ahorros - Bancolombia
+        type: string
+    type: object
+  http.accountResponse:
+    properties:
+      automation:
+        $ref: '#/definitions/http.automationResponse'
+      bank:
+        $ref: '#/definitions/http.customBankResponse'
+      email:
+        $ref: '#/definitions/http.CustomEmailResponse'
+      id:
+        example: 1
+        type: integer
+      initial_balance:
+        example: 1000000
+        type: number
+      last_four_digits:
+        example: "1234"
+        type: string
+      name:
+        example: account name
+        type: string
+      type:
+        $ref: '#/definitions/http.accountTypeResponse'
+    type: object
   http.accountTypeResponse:
     properties:
       id:
@@ -232,6 +342,29 @@ definitions:
         type: integer
       name:
         example: savings
+        type: string
+    type: object
+  http.accountsByBankResponse:
+    properties:
+      accounts:
+        items:
+          $ref: '#/definitions/http.accountBasicInfo'
+        type: array
+      bank:
+        example: Bancolombia
+        type: string
+      email_id:
+        example: 37
+        type: integer
+      sender_emails:
+        items:
+          type: string
+        type: array
+      user_email:
+        example: user@example.com
+        type: string
+      user_provider:
+        example: outlook
         type: string
     type: object
   http.adminCreateTransactionRequest:
@@ -282,11 +415,19 @@ definitions:
         type: string
       refresh_token:
         type: string
+      token_type:
+        example: Bearer
+        type: string
     type: object
   http.authURLResponse:
     properties:
       url:
         type: string
+    type: object
+  http.automationResponse:
+    properties:
+      configured:
+        type: boolean
     type: object
   http.balanceByAccountResponse:
     properties:
@@ -295,50 +436,66 @@ definitions:
           $ref: '#/definitions/domain.BalanceByAccount'
         type: array
     type: object
-  http.categoryExpenseReportResponse:
+  http.categoryReportResponse:
     properties:
-      report:
-        items:
-          $ref: '#/definitions/domain.CategoryExpense'
-        type: array
+      expense:
+        $ref: '#/definitions/http.FlowReportResponse'
+      income:
+        $ref: '#/definitions/http.FlowReportResponse'
     type: object
-  http.confirmForgotPasswordRequest:
+  http.changePasswordRequest:
     properties:
-      code:
-        example: "123456"
-        minLength: 6
-        type: string
       confirm_password:
-        example: "12345678"
+        example: NewPassword123!
         maxLength: 40
         minLength: 8
         type: string
-      email:
-        example: test@example.com
+      current_password:
+        example: Password123!
         type: string
       password:
-        example: "12345678"
+        example: NewPassword123!
         maxLength: 40
         minLength: 8
         type: string
     required:
-    - code
     - confirm_password
-    - email
+    - current_password
     - password
     type: object
-  http.confirmUserAccountRequest:
+  http.createAccountRequest:
     properties:
-      code:
-        example: "123456"
-        minLength: 6
+      bank_id:
+        example: 1
+        type: integer
+      email_id:
+        example: 1
+        type: integer
+      initial_balance:
+        example: 0.01
+        type: number
+      last_four_digits:
+        example: "1234"
         type: string
-      email:
-        example: joe@example.com
+      name:
+        example: Bancolombia Savings
+        type: string
+      type_id:
+        example: 12
+        type: integer
+    required:
+    - bank_id
+    - last_four_digits
+    - name
+    - type_id
+    type: object
+  http.createAccountTypeRequest:
+    properties:
+      name:
+        example: savings
         type: string
     required:
-    - code
-    - email
+    - name
     type: object
   http.createTransactionRequest:
     properties:
@@ -477,27 +634,18 @@ definitions:
       savings_balance:
         $ref: '#/definitions/http.metricResponse'
     type: object
-  http.forgotPasswordRequest:
-    properties:
-      email:
-        example: test@example.com
-        type: string
-    required:
-    - email
-    type: object
   http.loginRequest:
     properties:
-      code:
-        example: "123456"
-        minLength: 6
-        type: string
       email:
         example: test@example.com
         type: string
       password:
-        example: "12345678"
+        example: Password123!
         minLength: 8
         type: string
+    required:
+    - email
+    - password
     type: object
   http.meta:
     properties:
@@ -526,16 +674,24 @@ definitions:
         example: 70
         type: number
     type: object
+  http.refreshTokenRequest:
+    properties:
+      refresh_token:
+        example: bG9uZy1yYW5kb20tdG9rZW4
+        type: string
+    required:
+    - refresh_token
+    type: object
   http.registerRequest:
     properties:
       confirm_password:
-        example: "12345678"
+        example: Password123!
         maxLength: 40
         minLength: 8
         type: string
       email:
         example: test@example.com
-        maxLength: 30
+        maxLength: 255
         type: string
       last_name:
         example: Doe
@@ -546,7 +702,7 @@ definitions:
         maxLength: 30
         type: string
       password:
-        example: "12345678"
+        example: Password123!
         maxLength: 40
         minLength: 8
         type: string
@@ -556,14 +712,6 @@ definitions:
     - last_name
     - name
     - password
-    type: object
-  http.resendConfirmationRequest:
-    properties:
-      email:
-        example: joe@example.com
-        type: string
-    required:
-    - email
     type: object
   http.response:
     description: Standard API response format
@@ -575,6 +723,46 @@ definitions:
       success:
         example: true
         type: boolean
+    type: object
+  http.setInitialPasswordRequest:
+    properties:
+      confirm_password:
+        example: Password123!
+        maxLength: 40
+        minLength: 8
+        type: string
+      email:
+        example: test@example.com
+        type: string
+      password:
+        example: Password123!
+        maxLength: 40
+        minLength: 8
+        type: string
+    required:
+    - confirm_password
+    - email
+    - password
+    type: object
+  http.signupResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      id_token:
+        type: string
+      message:
+        example: User created
+        type: string
+      refresh_token:
+        type: string
+      success:
+        example: true
+        type: boolean
+      token_type:
+        example: Bearer
+        type: string
     type: object
   http.transactionResponse:
     properties:
@@ -606,6 +794,40 @@ definitions:
       should_verify:
         example: false
         type: boolean
+    type: object
+  http.updateAccountRequest:
+    properties:
+      bank_id:
+        example: 1
+        type: integer
+      email_id:
+        example: 1
+        type: integer
+      initial_balance:
+        example: 0.01
+        type: number
+      last_four_digits:
+        example: "1234"
+        type: string
+      name:
+        example: Bancolombia Savings
+        type: string
+      type_id:
+        example: 12
+        type: integer
+    required:
+    - bank_id
+    - last_four_digits
+    - name
+    - type_id
+    type: object
+  http.updateAccountTypeRequest:
+    properties:
+      name:
+        example: savings
+        type: string
+    required:
+    - name
     type: object
   http.updateTransactionRequest:
     properties:
@@ -642,8 +864,13 @@ definitions:
     type: object
   http.updateUserExtraRequest:
     properties:
+      config:
+        type: object
       onboarding_completed:
         example: true
+        type: boolean
+      read_email:
+        example: false
         type: boolean
       utc_offset:
         example: -5
@@ -666,8 +893,13 @@ definitions:
     type: object
   http.userExtraRequest:
     properties:
+      config:
+        type: object
       onboarding_completed:
         example: true
+        type: boolean
+      read_email:
+        example: false
         type: boolean
       utc_offset:
         example: -5
@@ -680,8 +912,20 @@ definitions:
     type: object
   http.userExtraResponse:
     properties:
+      config:
+        type: object
+      email:
+        type: string
+      last_name:
+        type: string
+      name:
+        type: string
       onboarding_completed:
         type: boolean
+      read_email:
+        type: boolean
+      user_id:
+        type: string
       utc_offset:
         type: integer
       whatsapp:
@@ -704,6 +948,15 @@ definitions:
         example: true
         type: boolean
     type: object
+  http.usersAccountsByBankResponse:
+    properties:
+      accounts_by_bank:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/http.accountsByBankResponse'
+          type: array
+        type: object
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -718,6 +971,569 @@ info:
   title: Cash Flow API
   version: "1.0"
 paths:
+  /account-types/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a specific account type by ID
+      parameters:
+      - description: Account Type ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account type details
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.accountTypeResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Get account type
+      tags:
+      - Account Types
+  /account-types/admin/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes an account type by ID (Admin only)
+      parameters:
+      - description: Account Type ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account type deleted
+          schema:
+            $ref: '#/definitions/http.response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Delete account type
+      tags:
+      - Account Types
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing account type (Admin only)
+      parameters:
+      - description: Account Type ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Account type update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.updateAccountTypeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account type updated
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.accountTypeResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Update account type
+      tags:
+      - Account Types
+  /account-types/admin/create:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new account type (Admin only)
+      parameters:
+      - description: Account type creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.createAccountTypeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Account type created
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.accountTypeResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Create account type
+      tags:
+      - Account Types
+  /account-types/list:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of account types
+      parameters:
+      - description: Skip
+        in: query
+        name: skip
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of account types
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/http.accountTypeResponse'
+                  type: array
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Get account types
+      tags:
+      - Account Types
+  /accounts/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes an account by ID
+      parameters:
+      - description: Account ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account deleted
+          schema:
+            $ref: '#/definitions/http.response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Delete account
+      tags:
+      - Accounts
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a specific account by ID
+      parameters:
+      - description: Account ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account details
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.accountResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Get account
+      tags:
+      - Accounts
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing account
+      parameters:
+      - description: Account ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Account update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.updateAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account updated
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.accountResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Update account
+      tags:
+      - Accounts
+  /accounts/{id}/calculate/initial-balance:
+    put:
+      consumes:
+      - application/json
+      description: Recalculates the initial balance for an account
+      parameters:
+      - description: Account ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account updated
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.accountResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Calculate initial balance
+      tags:
+      - Accounts
+  /accounts/admin/list:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all accounts (Admin only)
+      parameters:
+      - description: Skip
+        in: query
+        name: skip
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of accounts
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  additionalProperties:
+                    items:
+                      $ref: '#/definitions/http.customAccountResponse'
+                    type: array
+                  type: object
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Admin get accounts
+      tags:
+      - Admin
+  /accounts/admin/list/by-bank:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all accounts grouped by bank and email (Admin only)
+      parameters:
+      - description: Skip
+        in: query
+        name: skip
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of accounts grouped by bank
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.usersAccountsByBankResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Admin get accounts by bank
+      tags:
+      - Admin
+  /accounts/create:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new account for the authenticated user
+      parameters:
+      - description: Account creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.createAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Account created
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.accountResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Create account
+      tags:
+      - Accounts
+  /accounts/list:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of accounts for the authenticated user
+      parameters:
+      - description: Skip
+        in: query
+        name: skip
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Filter
+        in: query
+        name: filter
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of accounts
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/http.accountResponse'
+                  type: array
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Get accounts
+      tags:
+      - Accounts
+  /analysis/account-analysis:
+    get:
+      consumes:
+      - application/json
+      description: Returns monthly balance, income and expenses analysis for a specific
+        account over the last 12 months starting from the provided month
+      parameters:
+      - description: Account ID to analyze
+        in: query
+        name: account_id
+        required: true
+        type: integer
+      - description: Month in YYYY-MM format
+        in: query
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account analysis
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.AccountAnalysisResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Get account analysis
+      tags:
+      - Analysis
   /analysis/accounts-balance:
     get:
       consumes:
@@ -793,6 +1609,46 @@ paths:
       summary: Get accounts report
       tags:
       - Analysis
+  /analysis/categories-report:
+    post:
+      consumes:
+      - application/json
+      description: Returns expense report by category for the given date, sorted by
+        expense or usage (defaults to expense if not specified)
+      parameters:
+      - description: Date filter and optional sort field
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.CategoryReportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Categories expense report
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.categoryReportResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Get categories expense report
+      tags:
+      - Analysis
   /analysis/category-analysis:
     get:
       consumes:
@@ -801,7 +1657,6 @@ paths:
         last 12 months starting from the provided month
       parameters:
       - description: Category ID to analyze
-        format: int64
         in: query
         name: category_id
         required: true
@@ -836,46 +1691,6 @@ paths:
           schema:
             $ref: '#/definitions/http.errorResponse'
       summary: Get category analysis
-      tags:
-      - Analysis
-  /analysis/expense-report:
-    post:
-      consumes:
-      - application/json
-      description: Returns expense report by category for the given date, sorted by
-        expense or usage (defaults to expense if not specified)
-      parameters:
-      - description: Date filter and optional sort field
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/http.CategoryReportRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Categories expense report
-          schema:
-            allOf:
-            - $ref: '#/definitions/http.response'
-            - properties:
-                data:
-                  $ref: '#/definitions/http.categoryExpenseReportResponse'
-              type: object
-        "400":
-          description: Validation error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-        "401":
-          description: Unauthorized error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-      summary: Get categories expense report
       tags:
       - Analysis
   /analysis/financial-analysis:
@@ -956,6 +1771,22 @@ paths:
       summary: Get financial report
       tags:
       - Analysis
+  /banks/official:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the list of official banks
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get official banks
+      tags:
+      - Banks
   /email/{id}:
     delete:
       consumes:
@@ -1215,6 +2046,47 @@ paths:
       summary: List user emails
       tags:
       - Emails
+  /email/read/:
+    post:
+      consumes:
+      - application/json
+      description: Initiates background email reading for the specified accounts by
+        enqueueing jobs in email_jobs (processed by the worker). Returns immediately
+        after validation without waiting for email processing.
+      parameters:
+      - description: Account IDs
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.ReadEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email reading process started successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Read email for accounts (async)
+      tags:
+      - Emails
   /email/register:
     post:
       consumes:
@@ -1268,48 +2140,6 @@ paths:
       summary: Register a user's email
       tags:
       - Emails
-  /signup:
-    post:
-      consumes:
-      - application/json
-      description: Creates a new user account with the provided information
-      parameters:
-      - description: Register request
-        in: body
-        name: registerRequest
-        required: true
-        schema:
-          $ref: '#/definitions/http.registerRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: User created
-          schema:
-            $ref: '#/definitions/http.response'
-        "400":
-          description: Validation error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-        "401":
-          description: Unauthorized error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-        "404":
-          description: Data not found error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-        "409":
-          description: Data conflict error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-      summary: Register a new user
-      tags:
-      - Users
   /transaction:
     get:
       consumes:
@@ -1317,19 +2147,16 @@ paths:
       description: List transaction with pagination
       parameters:
       - description: UserID
-        format: int64
         in: query
         name: user_id
         required: true
         type: integer
       - description: Skip
-        format: int64
         in: query
         name: Skip
         required: true
         type: integer
       - description: Limit
-        format: int64
         in: query
         name: Limit
         required: true
@@ -1361,13 +2188,11 @@ paths:
       description: Delete a transaction by id and user id
       parameters:
       - description: Transaction ID
-        format: int64
         in: path
         name: id
         required: true
         type: integer
       - description: User ID
-        format: int64
         in: query
         name: user_id
         required: true
@@ -1415,7 +2240,6 @@ paths:
         required: true
         type: integer
       - description: User ID
-        format: int64
         in: query
         name: user_id
         required: true
@@ -1744,16 +2568,58 @@ paths:
       summary: Update user extra information
       tags:
       - UserExtra
-  /users/:
-    get:
+  /user-extra/admin/read-email/{id}/{read}:
+    put:
       consumes:
       - application/json
-      description: Retrieves information about the currently authenticated user
+      description: Admin endpoint to update the read_email field for a specific user
+        extra record
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Read Email Status
+        in: path
+        name: read
+        required: true
+        type: boolean
       produces:
       - application/json
       responses:
         "200":
-          description: User details retrieved successfully
+          description: Read email status updated successfully
+          schema:
+            $ref: '#/definitions/http.response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: Data not found error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Admin update read email status
+      tags:
+      - UserExtra
+  /users/:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User
           schema:
             allOf:
             - $ref: '#/definitions/http.response'
@@ -1765,25 +2631,17 @@ paths:
           description: Unauthorized error
           schema:
             $ref: '#/definitions/http.errorResponse'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
       security:
       - BearerAuth: []
-      summary: Get current user information
+      summary: Get the authenticated user
       tags:
       - Users
     put:
       consumes:
       - application/json
-      description: Update the currently authenticated user's profile information
+      description: Updates name and last name (also in user_extra)
       parameters:
-      - description: User profile information to update
+      - description: Name and last name
         in: body
         name: updateUserRequest
         required: true
@@ -1793,9 +2651,14 @@ paths:
       - application/json
       responses:
         "200":
-          description: User updated successfully
+          description: Updated user
           schema:
-            $ref: '#/definitions/http.userResponse'
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.userResponse'
+              type: object
         "400":
           description: Validation error
           schema:
@@ -1804,127 +2667,32 @@ paths:
           description: Unauthorized error
           schema:
             $ref: '#/definitions/http.errorResponse'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
       security:
       - BearerAuth: []
-      summary: Update user profile
+      summary: Update the authenticated user
       tags:
       - Users
   /users/confirm:
     post:
-      consumes:
-      - application/json
-      description: Confirm a user account using email and verification code
-      parameters:
-      - description: Email and confirmation code
-        in: body
-        name: confirmUserAccountRequest
-        required: true
-        schema:
-          $ref: '#/definitions/http.confirmUserAccountRequest'
+      description: 'Kept for compatibility: accounts no longer need confirmation.
+        Always returns 200.'
       produces:
       - application/json
       responses:
         "200":
-          description: User confirmed
+          description: Account confirmed
           schema:
             $ref: '#/definitions/http.response'
-        "400":
-          description: Validation error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-        "404":
-          description: Data not found error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-      summary: Confirm a user account
-      tags:
-      - Users
-  /users/forgot-password:
-    post:
-      consumes:
-      - application/json
-      description: Send a password reset code to the user's email address
-      parameters:
-      - description: User email
-        in: body
-        name: forgotPasswordRequest
-        required: true
-        schema:
-          $ref: '#/definitions/http.forgotPasswordRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Password reset code sent
-          schema:
-            $ref: '#/definitions/http.response'
-        "400":
-          description: Validation error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-      summary: Request password reset
-      tags:
-      - Users
-  /users/forgot-password/confirm:
-    post:
-      consumes:
-      - application/json
-      description: Validates the reset code and updates the user's password
-      parameters:
-      - description: Email, code and new password information
-        in: body
-        name: confirmForgotPasswordRequest
-        required: true
-        schema:
-          $ref: '#/definitions/http.confirmForgotPasswordRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Password reset successful
-          schema:
-            $ref: '#/definitions/http.response'
-        "400":
-          description: Validation error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-      summary: Reset password with verification code
+      summary: Confirm a user account (deprecated, no-op)
       tags:
       - Users
   /users/login:
     post:
       consumes:
       - application/json
-      description: Logs in a registered user and returns an access token if the credentials
-        are valid
+      description: 'Logs in with email and password. If the account has no password
+        yet (migrated users) it returns 403 "user needs to reset the password": use
+        /users/set-initial-password.'
       parameters:
       - description: Login credentials
         in: body
@@ -1938,13 +2706,26 @@ paths:
         "200":
           description: Successfully logged in
           schema:
-            $ref: '#/definitions/http.authResponse'
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.authResponse'
+              type: object
         "400":
           description: Validation error
           schema:
             $ref: '#/definitions/http.errorResponse'
         "401":
-          description: Unauthorized error
+          description: Incorrect username or password
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "403":
+          description: The user must create a password
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "429":
+          description: Too many requests
           schema:
             $ref: '#/definitions/http.errorResponse'
         "500":
@@ -1954,61 +2735,221 @@ paths:
       summary: Login and get an access token
       tags:
       - Users
-  /users/resend-confirmation:
+  /users/logout:
     post:
       consumes:
       - application/json
-      description: Resend account verification code to the user's email
+      description: Revokes the refresh token. Idempotent.
       parameters:
-      - description: Email address
+      - description: Refresh token
         in: body
-        name: resendConfirmationRequest
+        name: refreshTokenRequest
         required: true
         schema:
-          $ref: '#/definitions/http.resendConfirmationRequest'
+          $ref: '#/definitions/http.refreshTokenRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: Confirmation code resent
+          description: Logged out
           schema:
             $ref: '#/definitions/http.response'
         "400":
           description: Validation error
           schema:
             $ref: '#/definitions/http.errorResponse'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/http.errorResponse'
-      summary: Resend confirmation code
+      summary: Logout
       tags:
       - Users
-  /users/social-auth-url:
-    get:
+  /users/password:
+    put:
       consumes:
       - application/json
-      description: Retrieves a URL for third-party social authentication
+      description: Changes the password using the current one. Every other session
+        is closed; new tokens are returned for the current one.
+      parameters:
+      - description: Current and new password
+        in: body
+        name: changePasswordRequest
+        required: true
+        schema:
+          $ref: '#/definitions/http.changePasswordRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: Authentication URL retrieved successfully
+          description: Password changed
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.authResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Wrong current password or invalid new password
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Change the password
+      tags:
+      - Users
+  /users/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Rotates the refresh token and returns new tokens. Reusing an old
+        refresh token revokes every session of the user.
+      parameters:
+      - description: Refresh token
+        in: body
+        name: refreshTokenRequest
+        required: true
+        schema:
+          $ref: '#/definitions/http.refreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New tokens
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.authResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Invalid, expired or reused refresh token
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Refresh the session
+      tags:
+      - Users
+  /users/resend-confirmation:
+    post:
+      description: 'Kept for compatibility: no emails are sent. Always returns 200.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
           schema:
             $ref: '#/definitions/http.response'
+      summary: Resend confirmation code (deprecated, no-op)
+      tags:
+      - Users
+  /users/set-initial-password:
+    post:
+      consumes:
+      - application/json
+      description: Only works when the account has no password (migrated or reset
+        by the admin) and, if INITIAL_PASSWORD_UNTIL is set, before that date. Returns
+        tokens.
+      parameters:
+      - description: Email and new password
+        in: body
+        name: setInitialPasswordRequest
+        required: true
+        schema:
+          $ref: '#/definitions/http.setInitialPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password created and logged in
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.authResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
         "401":
-          description: Unauthorized error
+          description: Not allowed or password does not meet the requirements
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "429":
+          description: Too many requests
           schema:
             $ref: '#/definitions/http.errorResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/http.errorResponse'
-      summary: Get social authentication URL
+      summary: Create the password of a migrated account
       tags:
       - Users
+  /users/signup:
+    post:
+      consumes:
+      - application/json
+      description: 'Creates a new user (no email verification) and logs it in. Password
+        policy: at least 8 characters, uppercase, lowercase, number and symbol.'
+      parameters:
+      - description: Register request
+        in: body
+        name: registerRequest
+        required: true
+        schema:
+          $ref: '#/definitions/http.registerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created and logged in
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.signupResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Password does not meet the requirements
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "409":
+          description: User already exists
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "429":
+          description: Too many requests
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Register a new user
+      tags:
+      - Users
+securityDefinitions:
+  ApiKeyAuth:
+    description: 'Internal callers (worker, n8n): INTERNAL_API_KEY'
+    in: header
+    name: X-API-Key
+    type: apiKey
+  BearerAuth:
+    description: '"Bearer <access_token>"'
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

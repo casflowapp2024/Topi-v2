@@ -24,6 +24,911 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/account-types/admin/create": {
+            "post": {
+                "description": "Creates a new account type (Admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Account Types"
+                ],
+                "summary": "Create account type",
+                "parameters": [
+                    {
+                        "description": "Account type creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.createAccountTypeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Account type created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.accountTypeResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/account-types/admin/{id}": {
+            "put": {
+                "description": "Updates an existing account type (Admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Account Types"
+                ],
+                "summary": "Update account type",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Account Type ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Account type update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.updateAccountTypeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Account type updated",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.accountTypeResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes an account type by ID (Admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Account Types"
+                ],
+                "summary": "Delete account type",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Account Type ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Account type deleted",
+                        "schema": {
+                            "$ref": "#/definitions/http.response"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/account-types/list": {
+            "get": {
+                "description": "Retrieves a list of account types",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Account Types"
+                ],
+                "summary": "Get account types",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Skip",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of account types",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/http.accountTypeResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/account-types/{id}": {
+            "get": {
+                "description": "Retrieves a specific account type by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Account Types"
+                ],
+                "summary": "Get account type",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Account Type ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Account type details",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.accountTypeResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/admin/list": {
+            "get": {
+                "description": "Retrieves all accounts (Admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Admin get accounts",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Skip",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of accounts",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "array",
+                                                "items": {
+                                                    "$ref": "#/definitions/http.customAccountResponse"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/admin/list/by-bank": {
+            "get": {
+                "description": "Retrieves all accounts grouped by bank and email (Admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Admin get accounts by bank",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Skip",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of accounts grouped by bank",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.usersAccountsByBankResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/create": {
+            "post": {
+                "description": "Creates a new account for the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts"
+                ],
+                "summary": "Create account",
+                "parameters": [
+                    {
+                        "description": "Account creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.createAccountRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Account created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.accountResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/list": {
+            "get": {
+                "description": "Retrieves a list of accounts for the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts"
+                ],
+                "summary": "Get accounts",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Skip",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter",
+                        "name": "filter",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of accounts",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/http.accountResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/{id}": {
+            "get": {
+                "description": "Retrieves a specific account by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts"
+                ],
+                "summary": "Get account",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Account ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Account details",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.accountResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Updates an existing account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts"
+                ],
+                "summary": "Update account",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Account ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Account update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.updateAccountRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Account updated",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.accountResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes an account by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts"
+                ],
+                "summary": "Delete account",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Account ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Account deleted",
+                        "schema": {
+                            "$ref": "#/definitions/http.response"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/{id}/calculate/initial-balance": {
+            "put": {
+                "description": "Recalculates the initial balance for an account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts"
+                ],
+                "summary": "Calculate initial balance",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Account ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Account updated",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.accountResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/analysis/account-analysis": {
+            "get": {
+                "description": "Returns monthly balance, income and expenses analysis for a specific account over the last 12 months starting from the provided month",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analysis"
+                ],
+                "summary": "Get account analysis",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Account ID to analyze",
+                        "name": "account_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Month in YYYY-MM format",
+                        "name": "date",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Account analysis",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.AccountAnalysisResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/analysis/accounts-balance": {
             "get": {
                 "description": "Retrieves the balance grouped by account for the authenticated user",
@@ -143,77 +1048,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/analysis/category-analysis": {
-            "get": {
-                "description": "Returns monthly expense analysis for a specific category over the last 12 months starting from the provided month",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Analysis"
-                ],
-                "summary": "Get category analysis",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "format": "int64",
-                        "description": "Category ID to analyze",
-                        "name": "category_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Month in YYYY-MM format",
-                        "name": "date",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Category analysis",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/http.response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/http.CategoryAnalysisResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Validation error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/analysis/expense-report": {
+        "/analysis/categories-report": {
             "post": {
                 "description": "Returns expense report by category for the given date, sorted by expense or usage (defaults to expense if not specified)",
                 "consumes": [
@@ -249,7 +1084,76 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/http.categoryExpenseReportResponse"
+                                            "$ref": "#/definitions/http.categoryReportResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/analysis/category-analysis": {
+            "get": {
+                "description": "Returns monthly expense analysis for a specific category over the last 12 months starting from the provided month",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analysis"
+                ],
+                "summary": "Get category analysis",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Category ID to analyze",
+                        "name": "category_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Month in YYYY-MM format",
+                        "name": "date",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Category analysis",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.CategoryAnalysisResponse"
                                         }
                                     }
                                 }
@@ -396,6 +1300,30 @@ const docTemplate = `{
                         "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/banks/official": {
+            "get": {
+                "description": "Retrieves the list of official banks",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Banks"
+                ],
+                "summary": "Get official banks",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -580,6 +1508,70 @@ const docTemplate = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/http.emailListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/email/read/": {
+            "post": {
+                "description": "Initiates background email reading for the specified accounts by enqueueing jobs in email_jobs (processed by the worker). Returns immediately after validation without waiting for email processing.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Emails"
+                ],
+                "summary": "Read email for accounts (async)",
+                "parameters": [
+                    {
+                        "description": "Account IDs",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.ReadEmailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email reading process started successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -908,70 +1900,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/signup": {
-            "post": {
-                "description": "Creates a new user account with the provided information",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Register a new user",
-                "parameters": [
-                    {
-                        "description": "Register request",
-                        "name": "registerRequest",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/http.registerRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "User created",
-                        "schema": {
-                            "$ref": "#/definitions/http.response"
-                        }
-                    },
-                    "400": {
-                        "description": "Validation error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Data not found error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Data conflict error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/transaction": {
             "get": {
                 "security": [
@@ -993,7 +1921,6 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "format": "int64",
                         "description": "UserID",
                         "name": "user_id",
                         "in": "query",
@@ -1001,7 +1928,6 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "format": "int64",
                         "description": "Skip",
                         "name": "Skip",
                         "in": "query",
@@ -1009,7 +1935,6 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "format": "int64",
                         "description": "Limit",
                         "name": "Limit",
                         "in": "query",
@@ -1066,7 +1991,6 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "format": "int64",
                         "description": "User ID",
                         "name": "user_id",
                         "in": "query",
@@ -1200,7 +2124,6 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "format": "int64",
                         "description": "Transaction ID",
                         "name": "id",
                         "in": "path",
@@ -1208,7 +2131,6 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "format": "int64",
                         "description": "User ID",
                         "name": "user_id",
                         "in": "query",
@@ -1644,14 +2566,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/": {
-            "get": {
+        "/user-extra/admin/read-email/{id}/{read}": {
+            "put": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieves information about the currently authenticated user",
+                "description": "Admin endpoint to update the read_email field for a specific user extra record",
                 "consumes": [
                     "application/json"
                 ],
@@ -1659,12 +2581,76 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "UserExtra"
                 ],
-                "summary": "Get current user information",
+                "summary": "Admin update read email status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Read Email Status",
+                        "name": "read",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "User details retrieved successfully",
+                        "description": "Read email status updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/http.response"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Data not found error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get the authenticated user",
+                "responses": {
+                    "200": {
+                        "description": "User",
                         "schema": {
                             "allOf": [
                                 {
@@ -1686,18 +2672,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/http.errorResponse"
                         }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
                     }
                 }
             },
@@ -1707,7 +2681,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update the currently authenticated user's profile information",
+                "description": "Updates name and last name (also in user_extra)",
                 "consumes": [
                     "application/json"
                 ],
@@ -1717,10 +2691,10 @@ const docTemplate = `{
                 "tags": [
                     "Users"
                 ],
-                "summary": "Update user profile",
+                "summary": "Update the authenticated user",
                 "parameters": [
                     {
-                        "description": "User profile information to update",
+                        "description": "Name and last name",
                         "name": "updateUserRequest",
                         "in": "body",
                         "required": true,
@@ -1731,9 +2705,21 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "User updated successfully",
+                        "description": "Updated user",
                         "schema": {
-                            "$ref": "#/definitions/http.userResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.userResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1747,173 +2733,25 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/http.errorResponse"
                         }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
                     }
                 }
             }
         },
         "/users/confirm": {
             "post": {
-                "description": "Confirm a user account using email and verification code",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Kept for compatibility: accounts no longer need confirmation. Always returns 200.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Users"
                 ],
-                "summary": "Confirm a user account",
-                "parameters": [
-                    {
-                        "description": "Email and confirmation code",
-                        "name": "confirmUserAccountRequest",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/http.confirmUserAccountRequest"
-                        }
-                    }
-                ],
+                "summary": "Confirm a user account (deprecated, no-op)",
                 "responses": {
                     "200": {
-                        "description": "User confirmed",
+                        "description": "Account confirmed",
                         "schema": {
                             "$ref": "#/definitions/http.response"
-                        }
-                    },
-                    "400": {
-                        "description": "Validation error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Data not found error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/forgot-password": {
-            "post": {
-                "description": "Send a password reset code to the user's email address",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Request password reset",
-                "parameters": [
-                    {
-                        "description": "User email",
-                        "name": "forgotPasswordRequest",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/http.forgotPasswordRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Password reset code sent",
-                        "schema": {
-                            "$ref": "#/definitions/http.response"
-                        }
-                    },
-                    "400": {
-                        "description": "Validation error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/forgot-password/confirm": {
-            "post": {
-                "description": "Validates the reset code and updates the user's password",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Reset password with verification code",
-                "parameters": [
-                    {
-                        "description": "Email, code and new password information",
-                        "name": "confirmForgotPasswordRequest",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/http.confirmForgotPasswordRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Password reset successful",
-                        "schema": {
-                            "$ref": "#/definitions/http.response"
-                        }
-                    },
-                    "400": {
-                        "description": "Validation error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/http.errorResponse"
                         }
                     }
                 }
@@ -1921,7 +2759,7 @@ const docTemplate = `{
         },
         "/users/login": {
             "post": {
-                "description": "Logs in a registered user and returns an access token if the credentials are valid",
+                "description": "Logs in with email and password. If the account has no password yet (migrated users) it returns 403 \"user needs to reset the password\": use /users/set-initial-password.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1947,7 +2785,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully logged in",
                         "schema": {
-                            "$ref": "#/definitions/http.authResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.authResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1957,13 +2807,186 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Unauthorized error",
+                        "description": "Incorrect username or password",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "The user must create a password",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests",
                         "schema": {
                             "$ref": "#/definitions/http.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/logout": {
+            "post": {
+                "description": "Revokes the refresh token. Idempotent.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Logout",
+                "parameters": [
+                    {
+                        "description": "Refresh token",
+                        "name": "refreshTokenRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.refreshTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Logged out",
+                        "schema": {
+                            "$ref": "#/definitions/http.response"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/password": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Changes the password using the current one. Every other session is closed; new tokens are returned for the current one.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Change the password",
+                "parameters": [
+                    {
+                        "description": "Current and new password",
+                        "name": "changePasswordRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.changePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password changed",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.authResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Wrong current password or invalid new password",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/refresh": {
+            "post": {
+                "description": "Rotates the refresh token and returns new tokens. Reusing an old refresh token revokes every session of the user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Refresh the session",
+                "parameters": [
+                    {
+                        "description": "Refresh token",
+                        "name": "refreshTokenRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.refreshTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "New tokens",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.authResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid, expired or reused refresh token",
                         "schema": {
                             "$ref": "#/definitions/http.errorResponse"
                         }
@@ -1973,7 +2996,27 @@ const docTemplate = `{
         },
         "/users/resend-confirmation": {
             "post": {
-                "description": "Resend account verification code to the user's email",
+                "description": "Kept for compatibility: no emails are sent. Always returns 200.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Resend confirmation code (deprecated, no-op)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.response"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/set-initial-password": {
+            "post": {
+                "description": "Only works when the account has no password (migrated or reset by the admin) and, if INITIAL_PASSWORD_UNTIL is set, before that date. Returns tokens.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1983,23 +3026,35 @@ const docTemplate = `{
                 "tags": [
                     "Users"
                 ],
-                "summary": "Resend confirmation code",
+                "summary": "Create the password of a migrated account",
                 "parameters": [
                     {
-                        "description": "Email address",
-                        "name": "resendConfirmationRequest",
+                        "description": "Email and new password",
+                        "name": "setInitialPasswordRequest",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/http.resendConfirmationRequest"
+                            "$ref": "#/definitions/http.setInitialPasswordRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Confirmation code resent",
+                        "description": "Password created and logged in",
                         "schema": {
-                            "$ref": "#/definitions/http.response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.authResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -2008,8 +3063,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/http.errorResponse"
                         }
                     },
-                    "404": {
-                        "description": "User not found",
+                    "401": {
+                        "description": "Not allowed or password does not meet the requirements",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests",
                         "schema": {
                             "$ref": "#/definitions/http.errorResponse"
                         }
@@ -2023,9 +3084,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/social-auth-url": {
-            "get": {
-                "description": "Retrieves a URL for third-party social authentication",
+        "/users/signup": {
+            "post": {
+                "description": "Creates a new user (no email verification) and logs it in. Password policy: at least 8 characters, uppercase, lowercase, number and symbol.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2035,16 +3096,57 @@ const docTemplate = `{
                 "tags": [
                     "Users"
                 ],
-                "summary": "Get social authentication URL",
-                "responses": {
-                    "200": {
-                        "description": "Authentication URL retrieved successfully",
+                "summary": "Register a new user",
+                "parameters": [
+                    {
+                        "description": "Register request",
+                        "name": "registerRequest",
+                        "in": "body",
+                        "required": true,
                         "schema": {
-                            "$ref": "#/definitions/http.response"
+                            "$ref": "#/definitions/http.registerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User created and logged in",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.signupResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized error",
+                        "description": "Password does not meet the requirements",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "User already exists",
+                        "schema": {
+                            "$ref": "#/definitions/http.errorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests",
                         "schema": {
                             "$ref": "#/definitions/http.errorResponse"
                         }
@@ -2080,26 +3182,17 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.CategoryExpense": {
+        "http.AccountAnalysisResponse": {
             "type": "object",
             "properties": {
-                "budget": {
-                    "type": "number"
-                },
-                "category_id": {
+                "account_id": {
                     "type": "integer"
                 },
-                "emoji": {
+                "account_name": {
                     "type": "string"
                 },
-                "expenses": {
-                    "type": "number"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "usage": {
-                    "type": "number"
+                "monthly": {
+                    "$ref": "#/definitions/http.MonthlyAccountResponse"
                 }
             }
         },
@@ -2134,6 +3227,32 @@ const docTemplate = `{
                 }
             }
         },
+        "http.CategoryMetric": {
+            "type": "object",
+            "properties": {
+                "budget": {
+                    "type": "number"
+                },
+                "category_id": {
+                    "type": "integer"
+                },
+                "emoji": {
+                    "type": "string"
+                },
+                "left": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "usage": {
+                    "type": "number"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
         "http.CategoryReportRequest": {
             "type": "object",
             "required": [
@@ -2146,9 +3265,34 @@ const docTemplate = `{
                 "sort_by": {
                     "type": "string",
                     "enum": [
-                        "expense",
+                        "amount",
                         "usage"
                     ]
+                }
+            }
+        },
+        "http.CustomEmailResponse": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "email": {
+                    "type": "string",
+                    "example": "jhondoe@example.com"
+                },
+                "error": {
+                    "type": "string",
+                    "example": "connection_failed"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "provider": {
+                    "type": "string",
+                    "example": "gmail"
                 }
             }
         },
@@ -2250,6 +3394,63 @@ const docTemplate = `{
                 },
                 "savings_budget": {
                     "type": "number"
+                }
+            }
+        },
+        "http.FlowReportResponse": {
+            "type": "object",
+            "properties": {
+                "budget": {
+                    "type": "number"
+                },
+                "left": {
+                    "type": "number"
+                },
+                "report": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.CategoryMetric"
+                    }
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
+        "http.MonthlyAccountMetrics": {
+            "type": "object",
+            "properties": {
+                "diff": {
+                    "type": "number"
+                },
+                "percentage": {
+                    "type": "number"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
+        "http.MonthlyAccountResponse": {
+            "type": "object",
+            "properties": {
+                "balance": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.MonthlyAccountMetrics"
+                    }
+                },
+                "month": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "year": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 }
             }
         },
@@ -2360,6 +3561,20 @@ const docTemplate = `{
                 }
             }
         },
+        "http.ReadEmailRequest": {
+            "type": "object",
+            "required": [
+                "account_ids"
+            ],
+            "properties": {
+                "account_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
         "http.RegisterEmailRequest": {
             "type": "object",
             "required": [
@@ -2402,6 +3617,56 @@ const docTemplate = `{
                 }
             }
         },
+        "http.accountBasicInfo": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 59
+                },
+                "last_four_digits": {
+                    "type": "string",
+                    "example": "1809"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Cuenta Ahorros - Bancolombia"
+                }
+            }
+        },
+        "http.accountResponse": {
+            "type": "object",
+            "properties": {
+                "automation": {
+                    "$ref": "#/definitions/http.automationResponse"
+                },
+                "bank": {
+                    "$ref": "#/definitions/http.customBankResponse"
+                },
+                "email": {
+                    "$ref": "#/definitions/http.CustomEmailResponse"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "initial_balance": {
+                    "type": "number",
+                    "example": 1000000
+                },
+                "last_four_digits": {
+                    "type": "string",
+                    "example": "1234"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "account name"
+                },
+                "type": {
+                    "$ref": "#/definitions/http.accountTypeResponse"
+                }
+            }
+        },
         "http.accountTypeResponse": {
             "type": "object",
             "properties": {
@@ -2412,6 +3677,39 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "savings"
+                }
+            }
+        },
+        "http.accountsByBankResponse": {
+            "type": "object",
+            "properties": {
+                "accounts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.accountBasicInfo"
+                    }
+                },
+                "bank": {
+                    "type": "string",
+                    "example": "Bancolombia"
+                },
+                "email_id": {
+                    "type": "integer",
+                    "example": 37
+                },
+                "sender_emails": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "user_provider": {
+                    "type": "string",
+                    "example": "outlook"
                 }
             }
         },
@@ -2482,6 +3780,10 @@ const docTemplate = `{
                 },
                 "refresh_token": {
                     "type": "string"
+                },
+                "token_type": {
+                    "type": "string",
+                    "example": "Bearer"
                 }
             }
         },
@@ -2490,6 +3792,14 @@ const docTemplate = `{
             "properties": {
                 "url": {
                     "type": "string"
+                }
+            }
+        },
+        "http.automationResponse": {
+            "type": "object",
+            "properties": {
+                "configured": {
+                    "type": "boolean"
                 }
             }
         },
@@ -2504,64 +3814,87 @@ const docTemplate = `{
                 }
             }
         },
-        "http.categoryExpenseReportResponse": {
+        "http.categoryReportResponse": {
             "type": "object",
             "properties": {
-                "report": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/domain.CategoryExpense"
-                    }
+                "expense": {
+                    "$ref": "#/definitions/http.FlowReportResponse"
+                },
+                "income": {
+                    "$ref": "#/definitions/http.FlowReportResponse"
                 }
             }
         },
-        "http.confirmForgotPasswordRequest": {
+        "http.changePasswordRequest": {
             "type": "object",
             "required": [
-                "code",
                 "confirm_password",
-                "email",
+                "current_password",
                 "password"
             ],
             "properties": {
-                "code": {
-                    "type": "string",
-                    "minLength": 6,
-                    "example": "123456"
-                },
                 "confirm_password": {
                     "type": "string",
                     "maxLength": 40,
                     "minLength": 8,
-                    "example": "12345678"
+                    "example": "NewPassword123!"
                 },
-                "email": {
+                "current_password": {
                     "type": "string",
-                    "example": "test@example.com"
+                    "example": "Password123!"
                 },
                 "password": {
                     "type": "string",
                     "maxLength": 40,
                     "minLength": 8,
-                    "example": "12345678"
+                    "example": "NewPassword123!"
                 }
             }
         },
-        "http.confirmUserAccountRequest": {
+        "http.createAccountRequest": {
             "type": "object",
             "required": [
-                "code",
-                "email"
+                "bank_id",
+                "last_four_digits",
+                "name",
+                "type_id"
             ],
             "properties": {
-                "code": {
-                    "type": "string",
-                    "minLength": 6,
-                    "example": "123456"
+                "bank_id": {
+                    "type": "integer",
+                    "example": 1
                 },
-                "email": {
+                "email_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "initial_balance": {
+                    "type": "number",
+                    "example": 0.01
+                },
+                "last_four_digits": {
                     "type": "string",
-                    "example": "joe@example.com"
+                    "example": "1234"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Bancolombia Savings"
+                },
+                "type_id": {
+                    "type": "integer",
+                    "example": 12
+                }
+            }
+        },
+        "http.createAccountTypeRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "example": "savings"
                 }
             }
         },
@@ -2761,26 +4094,13 @@ const docTemplate = `{
                 }
             }
         },
-        "http.forgotPasswordRequest": {
-            "type": "object",
-            "required": [
-                "email"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string",
-                    "example": "test@example.com"
-                }
-            }
-        },
         "http.loginRequest": {
             "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
             "properties": {
-                "code": {
-                    "type": "string",
-                    "minLength": 6,
-                    "example": "123456"
-                },
                 "email": {
                     "type": "string",
                     "example": "test@example.com"
@@ -2788,7 +4108,7 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "minLength": 8,
-                    "example": "12345678"
+                    "example": "Password123!"
                 }
             }
         },
@@ -2831,6 +4151,18 @@ const docTemplate = `{
                 }
             }
         },
+        "http.refreshTokenRequest": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string",
+                    "example": "bG9uZy1yYW5kb20tdG9rZW4"
+                }
+            }
+        },
         "http.registerRequest": {
             "type": "object",
             "required": [
@@ -2845,11 +4177,11 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 40,
                     "minLength": 8,
-                    "example": "12345678"
+                    "example": "Password123!"
                 },
                 "email": {
                     "type": "string",
-                    "maxLength": 30,
+                    "maxLength": 255,
                     "example": "test@example.com"
                 },
                 "last_name": {
@@ -2866,19 +4198,7 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 40,
                     "minLength": 8,
-                    "example": "12345678"
-                }
-            }
-        },
-        "http.resendConfirmationRequest": {
-            "type": "object",
-            "required": [
-                "email"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string",
-                    "example": "joe@example.com"
+                    "example": "Password123!"
                 }
             }
         },
@@ -2894,6 +4214,61 @@ const docTemplate = `{
                 "success": {
                     "type": "boolean",
                     "example": true
+                }
+            }
+        },
+        "http.setInitialPasswordRequest": {
+            "type": "object",
+            "required": [
+                "confirm_password",
+                "email",
+                "password"
+            ],
+            "properties": {
+                "confirm_password": {
+                    "type": "string",
+                    "maxLength": 40,
+                    "minLength": 8,
+                    "example": "Password123!"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "test@example.com"
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 40,
+                    "minLength": 8,
+                    "example": "Password123!"
+                }
+            }
+        },
+        "http.signupResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "id_token": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "User created"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "token_type": {
+                    "type": "string",
+                    "example": "Bearer"
                 }
             }
         },
@@ -2937,6 +4312,53 @@ const docTemplate = `{
                 "should_verify": {
                     "type": "boolean",
                     "example": false
+                }
+            }
+        },
+        "http.updateAccountRequest": {
+            "type": "object",
+            "required": [
+                "bank_id",
+                "last_four_digits",
+                "name",
+                "type_id"
+            ],
+            "properties": {
+                "bank_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "email_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "initial_balance": {
+                    "type": "number",
+                    "example": 0.01
+                },
+                "last_four_digits": {
+                    "type": "string",
+                    "example": "1234"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Bancolombia Savings"
+                },
+                "type_id": {
+                    "type": "integer",
+                    "example": 12
+                }
+            }
+        },
+        "http.updateAccountTypeRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "example": "savings"
                 }
             }
         },
@@ -2987,9 +4409,16 @@ const docTemplate = `{
         "http.updateUserExtraRequest": {
             "type": "object",
             "properties": {
+                "config": {
+                    "type": "object"
+                },
                 "onboarding_completed": {
                     "type": "boolean",
                     "example": true
+                },
+                "read_email": {
+                    "type": "boolean",
+                    "example": false
                 },
                 "utc_offset": {
                     "type": "integer",
@@ -3021,9 +4450,16 @@ const docTemplate = `{
         "http.userExtraRequest": {
             "type": "object",
             "properties": {
+                "config": {
+                    "type": "object"
+                },
                 "onboarding_completed": {
                     "type": "boolean",
                     "example": true
+                },
+                "read_email": {
+                    "type": "boolean",
+                    "example": false
                 },
                 "utc_offset": {
                     "type": "integer",
@@ -3040,8 +4476,26 @@ const docTemplate = `{
         "http.userExtraResponse": {
             "type": "object",
             "properties": {
+                "config": {
+                    "type": "object"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
                 "onboarding_completed": {
                     "type": "boolean"
+                },
+                "read_email": {
+                    "type": "boolean"
+                },
+                "user_id": {
+                    "type": "string"
                 },
                 "utc_offset": {
                     "type": "integer"
@@ -3074,6 +4528,34 @@ const docTemplate = `{
                     "example": true
                 }
             }
+        },
+        "http.usersAccountsByBankResponse": {
+            "type": "object",
+            "properties": {
+                "accounts_by_bank": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/http.accountsByBankResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "description": "Internal callers (worker, n8n): INTERNAL_API_KEY",
+            "type": "apiKey",
+            "name": "X-API-Key",
+            "in": "header"
+        },
+        "BearerAuth": {
+            "description": "\"Bearer \u003caccess_token\u003e\"",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`

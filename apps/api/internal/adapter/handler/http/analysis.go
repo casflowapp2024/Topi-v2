@@ -125,7 +125,7 @@ type CategoryReportRequest struct {
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body	CategoryReportRequest	true	"Date filter and optional sort field"
-//	@Success		200		{object}	response{data=categoryExpenseReportResponse}	"Categories expense report"
+//	@Success		200		{object}	response{data=categoryReportResponse}	"Categories expense report"
 //	@Failure		400		{object}	errorResponse	"Validation error"
 //	@Failure		401		{object}	errorResponse	"Unauthorized error"
 //	@Failure		500		{object}	errorResponse	"Internal server error"
@@ -173,7 +173,7 @@ type FinancialAnalysisRequest struct {
 //	@Accept			json
 //	@Produce		json
 //	@Param			date	query	string	true	"Month in YYYY-MM format"
-//	@Success		200		{object}	response{data=http.FinancialAnalysisResponse}	"Financial analysis"
+//	@Success		200		{object}	response{data=FinancialAnalysisResponse}	"Financial analysis"
 //	@Failure		400		{object}	errorResponse	"Validation error"
 //	@Failure		401		{object}	errorResponse	"Unauthorized error"
 //	@Failure		500		{object}	errorResponse	"Internal server error"

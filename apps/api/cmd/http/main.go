@@ -12,6 +12,16 @@
 
 // @host      localhost:8080
 
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description "Bearer <access_token>"
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name X-API-Key
+// @description Internal callers (worker, n8n): INTERNAL_API_KEY
+
 package main
 
 import (

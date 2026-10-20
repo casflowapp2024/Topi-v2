@@ -47,13 +47,3 @@ func MapEmailApiErrorCode(code string) error {
 		return domain.ErrInternal
 	}
 }
-
-func MapAuthPayloadToUser(payload *domain.TokenPayload) *domain.User {
-	return &domain.User{
-		ID:       payload.UserID,
-		Name:     payload.Name,
-		LastName: payload.LastName,
-		Email:    payload.Email,
-		Verified: payload.Verified,
-	}
-}

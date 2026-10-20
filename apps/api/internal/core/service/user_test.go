@@ -155,7 +155,7 @@ func newAuthTestEnv(t *testing.T, settings AuthSettings) *authTestEnv {
 func strPtr(value string) *string { return &value }
 
 func migratedUser() *domain.User {
-	return &domain.User{ID: "cognito-sub-1", Email: "user@example.com", Role: domain.RoleUser, Migrated: true, Verified: true}
+	return &domain.User{ID: "legacy-sub-1", Email: "user@example.com", Role: domain.RoleUser, Migrated: true, Verified: true}
 }
 
 func userWithPassword(password string) *domain.User {
@@ -269,7 +269,7 @@ func TestUserService_Login(t *testing.T) {
 
 		assert.ErrorIs(t, err, domain.ErrPasswordResetRequiredException)
 		assert.Equal(t, "user needs to reset the password", err.Error())
-		assert.Equal(t, 0, env.refresh.active("cognito-sub-1"))
+		assert.Equal(t, 0, env.refresh.active("legacy-sub-1"))
 	})
 
 	t.Run("rate limited by email", func(t *testing.T) {
@@ -292,17 +292,17 @@ func TestUserService_SetInitialPassword(t *testing.T) {
 	t.Run("creates the password of a migrated account and logs it in", func(t *testing.T) {
 		env := newAuthTestEnv(t, AuthSettings{})
 		env.repo.EXPECT().GetUserByEmail(gomock.Any(), "user@example.com").Return(migratedUser(), nil)
-		env.repo.EXPECT().SetInitialPassword(gomock.Any(), "cognito-sub-1", "hash:"+validPassword).Return(nil)
+		env.repo.EXPECT().SetInitialPassword(gomock.Any(), "legacy-sub-1", "hash:"+validPassword).Return(nil)
 
 		tokens, err := env.svc.SetInitialPassword(ctx, " User@Example.com ", validPassword, meta)
 
 		require.NoError(t, err)
 		assert.Equal(t, "access-token", tokens.AccessToken)
-		assert.Equal(t, 1, env.refresh.active("cognito-sub-1"))
+		assert.Equal(t, 1, env.refresh.active("legacy-sub-1"))
 		require.Len(t, env.events.events, 1)
 		event := env.events.events[0]
 		assert.Equal(t, domain.EventInitialPasswordSet, event.Event)
-		assert.Equal(t, "cognito-sub-1", event.UserID)
+		assert.Equal(t, "legacy-sub-1", event.UserID)
 		assert.Equal(t, "user@example.com", event.Email)
 		assert.Equal(t, "10.0.0.1", event.IP)
 		assert.Equal(t, "test", event.UserAgent)
@@ -317,7 +317,7 @@ func TestUserService_SetInitialPassword(t *testing.T) {
 
 		assert.ErrorIs(t, err, domain.ErrNotAuthorizedException)
 		assert.Equal(t, []string{domain.EventInitialPasswordFail}, env.events.names())
-		assert.Equal(t, 0, env.refresh.active("cognito-sub-1"))
+		assert.Equal(t, 0, env.refresh.active("legacy-sub-1"))
 	})
 
 	t.Run("fails for an unknown email without revealing it", func(t *testing.T) {
@@ -345,7 +345,7 @@ func TestUserService_SetInitialPassword(t *testing.T) {
 		until := time.Date(2026, 12, 31, 23, 59, 59, 0, time.UTC)
 		env := newAuthTestEnv(t, AuthSettings{InitialPasswordUntil: &until})
 		env.repo.EXPECT().GetUserByEmail(gomock.Any(), "user@example.com").Return(migratedUser(), nil)
-		env.repo.EXPECT().SetInitialPassword(gomock.Any(), "cognito-sub-1", gomock.Any()).Return(nil)
+		env.repo.EXPECT().SetInitialPassword(gomock.Any(), "legacy-sub-1", gomock.Any()).Return(nil)
 
 		_, err := env.svc.SetInitialPassword(ctx, "user@example.com", validPassword, meta)
 
@@ -355,13 +355,13 @@ func TestUserService_SetInitialPassword(t *testing.T) {
 	t.Run("loses the race against another request", func(t *testing.T) {
 		env := newAuthTestEnv(t, AuthSettings{})
 		env.repo.EXPECT().GetUserByEmail(gomock.Any(), "user@example.com").Return(migratedUser(), nil)
-		env.repo.EXPECT().SetInitialPassword(gomock.Any(), "cognito-sub-1", gomock.Any()).Return(domain.ErrNotAuthorizedException)
+		env.repo.EXPECT().SetInitialPassword(gomock.Any(), "legacy-sub-1", gomock.Any()).Return(domain.ErrNotAuthorizedException)
 
 		_, err := env.svc.SetInitialPassword(ctx, "user@example.com", validPassword, meta)
 
 		assert.ErrorIs(t, err, domain.ErrNotAuthorizedException)
 		assert.Equal(t, []string{domain.EventInitialPasswordFail}, env.events.names())
-		assert.Equal(t, 0, env.refresh.active("cognito-sub-1"))
+		assert.Equal(t, 0, env.refresh.active("legacy-sub-1"))
 	})
 
 	t.Run("validates the password policy before looking up the account", func(t *testing.T) {
@@ -402,26 +402,26 @@ func TestUserService_Refresh(t *testing.T) {
 	t.Run("rotates the refresh token", func(t *testing.T) {
 		env := newAuthTestEnv(t, AuthSettings{})
 		first := loginForRefresh(t, env)
-		env.repo.EXPECT().GetUserByID(gomock.Any(), "cognito-sub-1").Return(userWithPassword(validPassword), nil)
+		env.repo.EXPECT().GetUserByID(gomock.Any(), "legacy-sub-1").Return(userWithPassword(validPassword), nil)
 
 		second, err := env.svc.Refresh(ctx, first.RefreshToken, meta)
 
 		require.NoError(t, err)
 		assert.NotEqual(t, first.RefreshToken, second.RefreshToken)
-		assert.Equal(t, 1, env.refresh.active("cognito-sub-1"), "the old token is revoked")
+		assert.Equal(t, 1, env.refresh.active("legacy-sub-1"), "the old token is revoked")
 	})
 
 	t.Run("reusing a rotated token revokes every session", func(t *testing.T) {
 		env := newAuthTestEnv(t, AuthSettings{})
 		first := loginForRefresh(t, env)
-		env.repo.EXPECT().GetUserByID(gomock.Any(), "cognito-sub-1").Return(userWithPassword(validPassword), nil)
+		env.repo.EXPECT().GetUserByID(gomock.Any(), "legacy-sub-1").Return(userWithPassword(validPassword), nil)
 		_, err := env.svc.Refresh(ctx, first.RefreshToken, meta)
 		require.NoError(t, err)
 
 		_, err = env.svc.Refresh(ctx, first.RefreshToken, meta)
 
 		assert.ErrorIs(t, err, domain.ErrUnauthorized)
-		assert.Equal(t, 0, env.refresh.active("cognito-sub-1"))
+		assert.Equal(t, 0, env.refresh.active("legacy-sub-1"))
 		assert.Contains(t, env.events.names(), domain.EventRefreshReuse)
 	})
 
@@ -446,7 +446,7 @@ func TestUserService_Refresh(t *testing.T) {
 	t.Run("account reset by the admin", func(t *testing.T) {
 		env := newAuthTestEnv(t, AuthSettings{})
 		first := loginForRefresh(t, env)
-		env.repo.EXPECT().GetUserByID(gomock.Any(), "cognito-sub-1").Return(migratedUser(), nil)
+		env.repo.EXPECT().GetUserByID(gomock.Any(), "legacy-sub-1").Return(migratedUser(), nil)
 
 		_, err := env.svc.Refresh(ctx, first.RefreshToken, meta)
 
@@ -459,7 +459,7 @@ func TestUserService_Logout(t *testing.T) {
 	tokens := loginForRefresh(t, env)
 
 	require.NoError(t, env.svc.Logout(context.Background(), tokens.RefreshToken))
-	assert.Equal(t, 0, env.refresh.active("cognito-sub-1"))
+	assert.Equal(t, 0, env.refresh.active("legacy-sub-1"))
 
 	// idempotent, also for unknown tokens
 	assert.NoError(t, env.svc.Logout(context.Background(), tokens.RefreshToken))
@@ -482,39 +482,39 @@ func TestUserService_ChangePassword(t *testing.T) {
 		// tokens issued after the change must carry the new token_version
 		token := mock.NewMockTokenRepository(ctrl)
 		env.svc.token = token
-		env.refresh.Create(ctx, "cognito-sub-1", "other-session", env.now.Add(time.Hour))
+		env.refresh.Create(ctx, "legacy-sub-1", "other-session", env.now.Add(time.Hour))
 
-		env.repo.EXPECT().GetUserByID(gomock.Any(), "cognito-sub-1").Return(userWithPassword(validPassword), nil)
-		env.repo.EXPECT().UpdatePassword(gomock.Any(), "cognito-sub-1", "hash:NewPassword123!").Return(1, nil)
+		env.repo.EXPECT().GetUserByID(gomock.Any(), "legacy-sub-1").Return(userWithPassword(validPassword), nil)
+		env.repo.EXPECT().UpdatePassword(gomock.Any(), "legacy-sub-1", "hash:NewPassword123!").Return(1, nil)
 		token.EXPECT().GenerateAccessToken(gomock.Any()).DoAndReturn(func(user *domain.User) (string, int64, error) {
 			assert.Equal(t, 1, user.TokenVersion)
 			return "new-access", int64(3600), nil
 		})
 
-		tokens, err := env.svc.ChangePassword(ctx, "cognito-sub-1", validPassword, "NewPassword123!", meta)
+		tokens, err := env.svc.ChangePassword(ctx, "legacy-sub-1", validPassword, "NewPassword123!", meta)
 
 		require.NoError(t, err)
 		assert.Equal(t, "new-access", tokens.AccessToken)
 		stored, _ := env.refresh.GetByHash(ctx, "other-session")
 		assert.True(t, stored.IsRevoked())
-		assert.Equal(t, 1, env.refresh.active("cognito-sub-1"), "only the new session")
+		assert.Equal(t, 1, env.refresh.active("legacy-sub-1"), "only the new session")
 		assert.Equal(t, []string{domain.EventPasswordChanged}, env.events.names())
 	})
 
 	t.Run("wrong current password", func(t *testing.T) {
 		env := newAuthTestEnv(t, AuthSettings{})
-		env.repo.EXPECT().GetUserByID(gomock.Any(), "cognito-sub-1").Return(userWithPassword(validPassword), nil)
+		env.repo.EXPECT().GetUserByID(gomock.Any(), "legacy-sub-1").Return(userWithPassword(validPassword), nil)
 
-		_, err := env.svc.ChangePassword(ctx, "cognito-sub-1", "Wrong123!", "NewPassword123!", meta)
+		_, err := env.svc.ChangePassword(ctx, "legacy-sub-1", "Wrong123!", "NewPassword123!", meta)
 
 		assert.ErrorIs(t, err, domain.ErrNotAuthorizedException)
 	})
 
 	t.Run("new password does not meet the policy", func(t *testing.T) {
 		env := newAuthTestEnv(t, AuthSettings{})
-		env.repo.EXPECT().GetUserByID(gomock.Any(), "cognito-sub-1").Return(userWithPassword(validPassword), nil)
+		env.repo.EXPECT().GetUserByID(gomock.Any(), "legacy-sub-1").Return(userWithPassword(validPassword), nil)
 
-		_, err := env.svc.ChangePassword(ctx, "cognito-sub-1", validPassword, "weak", meta)
+		_, err := env.svc.ChangePassword(ctx, "legacy-sub-1", validPassword, "weak", meta)
 
 		assert.ErrorIs(t, err, domain.ErrInvalidPasswordException)
 	})
@@ -528,8 +528,8 @@ func TestUserService_Authorize(t *testing.T) {
 		admin := userWithPassword(validPassword)
 		admin.Role = domain.RoleAdmin
 		admin.TokenVersion = 2
-		env.token.EXPECT().VerifyToken("jwt").Return(&domain.TokenPayload{UserID: "cognito-sub-1", TokenVersion: 2, Use: "access"}, nil)
-		env.repo.EXPECT().GetUserByID(gomock.Any(), "cognito-sub-1").Return(admin, nil)
+		env.token.EXPECT().VerifyToken("jwt").Return(&domain.TokenPayload{UserID: "legacy-sub-1", TokenVersion: 2, Use: "access"}, nil)
+		env.repo.EXPECT().GetUserByID(gomock.Any(), "legacy-sub-1").Return(admin, nil)
 
 		payload, err := env.svc.Authorize(ctx, "jwt")
 
@@ -542,8 +542,8 @@ func TestUserService_Authorize(t *testing.T) {
 		env := newAuthTestEnv(t, AuthSettings{})
 		user := userWithPassword(validPassword)
 		user.TokenVersion = 3
-		env.token.EXPECT().VerifyToken("jwt").Return(&domain.TokenPayload{UserID: "cognito-sub-1", TokenVersion: 2}, nil)
-		env.repo.EXPECT().GetUserByID(gomock.Any(), "cognito-sub-1").Return(user, nil)
+		env.token.EXPECT().VerifyToken("jwt").Return(&domain.TokenPayload{UserID: "legacy-sub-1", TokenVersion: 2}, nil)
+		env.repo.EXPECT().GetUserByID(gomock.Any(), "legacy-sub-1").Return(user, nil)
 
 		_, err := env.svc.Authorize(ctx, "jwt")
 

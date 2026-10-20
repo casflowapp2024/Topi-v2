@@ -42,6 +42,10 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en infra/.env}
       DB_NAME: ${POSTGRES_DB:-cashflow}
       DB_SSL_MODE: disable
+      JWT_SECRET: ${JWT_SECRET:?define JWT_SECRET en infra/.env (openssl rand -hex 32)}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
+      INITIAL_PASSWORD_UNTIL: ${INITIAL_PASSWORD_UNTIL:-}
+      HTTP_ALLOWED_HEADERS: Origin,Content-Type,Accept,Authorization
     ports:
       - "${API_PORT:-8080}:8080"
     depends_on:

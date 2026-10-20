@@ -22,7 +22,6 @@ var errorStatusMap = map[error]int{
 	// User Errors
 	domain.ErrDifferentConfirmPassword: http.StatusBadRequest,
 	domain.ErrInvalidTokenUse:          http.StatusUnauthorized,
-	domain.ErrAuthUnavailable:          http.StatusServiceUnavailable,
 
 	// User Extra Errors
 	domain.ErrInvalidUTCOffset: http.StatusBadRequest,
@@ -260,7 +259,7 @@ type userExtraResponse struct {
 	WhatsappState       string          `json:"whatsapp_state"`
 	OnboardingCompleted bool            `json:"onboarding_completed"`
 	ReadEmail           bool            `json:"read_email"`
-	Config              json.RawMessage `json:"config,omitempty"`
+	Config              json.RawMessage `json:"config,omitempty" swaggertype:"object"`
 }
 
 // newUserExtraResponse creates a new userExtraResponse from a domain.UserExtra

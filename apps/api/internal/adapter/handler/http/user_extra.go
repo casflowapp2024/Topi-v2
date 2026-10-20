@@ -26,7 +26,7 @@ type userExtraRequest struct {
 	Whatsapp            string          `json:"whatsapp" binding:"omitempty,min=8,max=20" example:"+1234567890"`
 	OnboardingCompleted bool            `json:"onboarding_completed" binding:"omitempty" example:"true"`
 	ReadEmail           bool            `json:"read_email" binding:"omitempty" example:"false"`
-	Config              json.RawMessage `json:"config" binding:"omitempty" example:"{\"theme\":\"dark\"}"`
+	Config              json.RawMessage `json:"config" binding:"omitempty" swaggertype:"object"`
 }
 
 // CreateUserExtra godoc
@@ -125,7 +125,7 @@ type updateUserExtraRequest struct {
 	Whatsapp            string          `json:"whatsapp" binding:"omitempty" example:"+1234567890"`
 	OnboardingCompleted bool            `json:"onboarding_completed" binding:"omitempty" example:"true"`
 	ReadEmail           bool            `json:"read_email" binding:"omitempty" example:"false"`
-	Config              json.RawMessage `json:"config" binding:"omitempty" example:"{\"theme\":\"dark\"}"`
+	Config              json.RawMessage `json:"config" binding:"omitempty" swaggertype:"object"`
 }
 
 // UpdateUserExtra godoc

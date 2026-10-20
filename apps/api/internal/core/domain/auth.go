@@ -73,11 +73,6 @@ func GetAuthTokenUse(ctx *gin.Context, key string) (*string, error) {
 	return nil, errors.New("error getting auth payload")
 }
 
-type SocialAuthResponse struct {
-	AuthTokens
-	Error string `json:"error"`
-}
-
 type AuthTokens struct {
 	IdToken      string `json:"id_token"`
 	AccessToken  string `json:"access_token"`

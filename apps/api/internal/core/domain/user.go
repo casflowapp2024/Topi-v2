@@ -48,7 +48,7 @@ func NormalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
 
-// ValidatePasswordPolicy applies the same policy Cognito had: at least 8 characters,
+// ValidatePasswordPolicy applies the same policy as the previous provider: at least 8 characters,
 // an uppercase letter, a lowercase letter, a number and a symbol.
 func ValidatePasswordPolicy(password string) error {
 	var hasUpper, hasLower, hasNumber, hasSymbol bool

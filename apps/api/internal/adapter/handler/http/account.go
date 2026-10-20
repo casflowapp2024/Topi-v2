@@ -294,7 +294,7 @@ type AdminGetAccountsRequest struct {
 //	@Produce		json
 //	@Param			skip	query		int		false	"Skip"
 //	@Param			limit	query		int		false	"Limit"
-//	@Success		200		{object}	response{data=[]adminAccountsResponse}	"List of accounts"
+//	@Success		200		{object}	response{data=map[string][]customAccountResponse}	"List of accounts"
 //	@Failure		400		{object}	errorResponse	"Validation error"
 //	@Failure		401		{object}	errorResponse	"Unauthorized error"
 //	@Failure		500		{object}	errorResponse	"Internal server error"
@@ -339,7 +339,7 @@ func (ah *AccountHandler) AdminGetAccounts(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			skip	query		int		false	"Skip"
 //	@Param			limit	query		int		false	"Limit"
-//	@Success		200		{object}	response{data=[]bankAccountsResponse}	"List of accounts grouped by bank"
+//	@Success		200		{object}	response{data=usersAccountsByBankResponse}	"List of accounts grouped by bank"
 //	@Failure		400		{object}	errorResponse	"Validation error"
 //	@Failure		401		{object}	errorResponse	"Unauthorized error"
 //	@Failure		500		{object}	errorResponse	"Internal server error"
