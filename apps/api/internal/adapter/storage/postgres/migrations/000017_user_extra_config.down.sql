@@ -1,0 +1,3 @@
+-- Remove config field from USER_EXTRA table
+ALTER TABLE USER_EXTRA
+DROP COLUMN IF EXISTS CONFIG;

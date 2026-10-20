@@ -1,0 +1,33 @@
+# build stage
+FROM golang:1.23-alpine AS build
+
+RUN apk add --no-cache git
+
+# set working directory
+WORKDIR /go/src/app
+
+# copy source code
+COPY . .
+
+# install dependencies
+RUN go mod download
+
+# build binary
+RUN go build -o /go/bin/cashflow ./cmd/http/main.go
+
+# final stage
+FROM alpine:3.18 AS final
+LABEL maintainer="fabioalv"
+
+# set working directory
+WORKDIR /go/src/app
+
+RUN apk --no-cache add ca-certificates
+
+# copy binary
+COPY --from=build /go/bin/cashflow /app
+
+EXPOSE 8080
+LABEL Name=cashflow Version=0.0.1
+
+ENTRYPOINT exec /app

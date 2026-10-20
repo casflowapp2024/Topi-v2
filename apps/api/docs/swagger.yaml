@@ -1,0 +1,2014 @@
+definitions:
+  domain.BalanceByAccount:
+    properties:
+      account_id:
+        type: integer
+      balance:
+        type: number
+      bank:
+        type: string
+      last_four_digits:
+        type: string
+      name:
+        type: string
+    type: object
+  domain.CategoryExpense:
+    properties:
+      budget:
+        type: number
+      category_id:
+        type: integer
+      emoji:
+        type: string
+      expenses:
+        type: number
+      name:
+        type: string
+      usage:
+        type: number
+    type: object
+  http.AccountsReportRequest:
+    type: object
+  http.AccountsReportResponse:
+    properties:
+      balance:
+        $ref: '#/definitions/http.metricARResponse'
+      expenses:
+        $ref: '#/definitions/http.metricARResponse'
+      income:
+        $ref: '#/definitions/http.metricARResponse'
+      savings:
+        $ref: '#/definitions/http.metricARResponse'
+    type: object
+  http.CategoryAnalysisResponse:
+    properties:
+      budget:
+        type: number
+      monthly:
+        $ref: '#/definitions/http.MonthlyCategoryResponse'
+    type: object
+  http.CategoryReportRequest:
+    properties:
+      date_filter:
+        type: string
+      sort_by:
+        enum:
+        - expense
+        - usage
+        type: string
+    required:
+    - date_filter
+    type: object
+  http.DailyAnalysisResponse:
+    properties:
+      date:
+        items:
+          type: string
+        type: array
+      expense:
+        items:
+          type: number
+        type: array
+      income:
+        items:
+          type: number
+        type: array
+      mtd_expense:
+        items:
+          type: number
+        type: array
+      mtd_income:
+        items:
+          type: number
+        type: array
+      mtd_savings:
+        items:
+          type: number
+        type: array
+      running_credits_balance:
+        items:
+          type: number
+        type: array
+      running_savings_balance:
+        items:
+          type: number
+        type: array
+      updated_at:
+        type: string
+    type: object
+  http.EmailResponse:
+    properties:
+      active:
+        example: true
+        type: boolean
+      email:
+        example: jhondoe@example.com
+        type: string
+      error:
+        example: connection_failed
+        type: string
+      id:
+        example: 1
+        type: integer
+      provider:
+        example: gmail
+        type: string
+    type: object
+  http.FinancialAnalysisResponse:
+    properties:
+      daily:
+        $ref: '#/definitions/http.DailyAnalysisResponse'
+      expense_budget:
+        type: number
+      income_budget:
+        type: number
+      monthly:
+        $ref: '#/definitions/http.MonthlyAnalysisResponse'
+      savings_budget:
+        type: number
+    type: object
+  http.MonthlyAnalysisMetrics:
+    properties:
+      diff:
+        type: number
+      left:
+        type: number
+      percentage:
+        type: number
+      usage:
+        type: number
+      value:
+        type: number
+    type: object
+  http.MonthlyAnalysisResponse:
+    properties:
+      expense:
+        items:
+          $ref: '#/definitions/http.MonthlyAnalysisMetrics'
+        type: array
+      income:
+        items:
+          $ref: '#/definitions/http.MonthlyAnalysisMetrics'
+        type: array
+      month:
+        items:
+          type: integer
+        type: array
+      running_credits_balance:
+        items:
+          $ref: '#/definitions/http.MonthlyAnalysisMetrics'
+        type: array
+      running_savings_balance:
+        items:
+          $ref: '#/definitions/http.MonthlyAnalysisMetrics'
+        type: array
+      savings:
+        items:
+          $ref: '#/definitions/http.MonthlyAnalysisMetrics'
+        type: array
+      updated_at:
+        type: string
+      year:
+        items:
+          type: integer
+        type: array
+    type: object
+  http.MonthlyCategoryMetrics:
+    properties:
+      left:
+        type: number
+      usage:
+        type: number
+      value:
+        type: number
+    type: object
+  http.MonthlyCategoryResponse:
+    properties:
+      expense:
+        items:
+          $ref: '#/definitions/http.MonthlyCategoryMetrics'
+        type: array
+      month:
+        items:
+          type: integer
+        type: array
+      year:
+        items:
+          type: integer
+        type: array
+    type: object
+  http.RegisterEmailRequest:
+    properties:
+      email:
+        type: string
+      provider:
+        enum:
+        - gmail
+        - outlook
+        type: string
+    required:
+    - email
+    - provider
+    type: object
+  http.SaveEmailErrorRequest:
+    properties:
+      error:
+        example: authorization_failed
+        type: string
+    required:
+    - error
+    type: object
+  http.UpdateEmailRequest:
+    properties:
+      activate:
+        type: boolean
+      verify:
+        type: boolean
+    type: object
+  http.accountTypeResponse:
+    properties:
+      id:
+        example: 1
+        type: integer
+      name:
+        example: savings
+        type: string
+    type: object
+  http.adminCreateTransactionRequest:
+    properties:
+      transactions:
+        items:
+          $ref: '#/definitions/http.adminTransactionRequest'
+        type: array
+      user_id:
+        example: "1"
+        type: string
+    required:
+    - transactions
+    type: object
+  http.adminTransactionRequest:
+    properties:
+      account_id:
+        example: 2
+        type: integer
+      amount:
+        example: 100000
+        type: number
+      date:
+        example: 2025-05-03 14:00:00 -0500
+        type: string
+      description:
+        example: Mcdonald's hamburger
+        type: string
+      expense:
+        example: false
+        type: boolean
+      should_verify:
+        example: false
+        type: boolean
+    required:
+    - account_id
+    - amount
+    - date
+    - description
+    type: object
+  http.authResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      id_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  http.authURLResponse:
+    properties:
+      url:
+        type: string
+    type: object
+  http.balanceByAccountResponse:
+    properties:
+      balance_by_account:
+        items:
+          $ref: '#/definitions/domain.BalanceByAccount'
+        type: array
+    type: object
+  http.categoryExpenseReportResponse:
+    properties:
+      report:
+        items:
+          $ref: '#/definitions/domain.CategoryExpense'
+        type: array
+    type: object
+  http.confirmForgotPasswordRequest:
+    properties:
+      code:
+        example: "123456"
+        minLength: 6
+        type: string
+      confirm_password:
+        example: "12345678"
+        maxLength: 40
+        minLength: 8
+        type: string
+      email:
+        example: test@example.com
+        type: string
+      password:
+        example: "12345678"
+        maxLength: 40
+        minLength: 8
+        type: string
+    required:
+    - code
+    - confirm_password
+    - email
+    - password
+    type: object
+  http.confirmUserAccountRequest:
+    properties:
+      code:
+        example: "123456"
+        minLength: 6
+        type: string
+      email:
+        example: joe@example.com
+        type: string
+    required:
+    - code
+    - email
+    type: object
+  http.createTransactionRequest:
+    properties:
+      account_id:
+        example: 2
+        type: integer
+      amount:
+        example: 100000
+        type: number
+      category_id:
+        example: 1
+        type: integer
+      date:
+        example: 2025-05-03 14:00:00 -0500
+        type: string
+      description:
+        example: Mcdonald's hamburger
+        type: string
+      expense:
+        example: false
+        type: boolean
+      should_verify:
+        example: false
+        type: boolean
+    required:
+    - account_id
+    - amount
+    - category_id
+    - date
+    - description
+    type: object
+  http.customAccountResponse:
+    properties:
+      bank:
+        $ref: '#/definitions/http.customBankResponse'
+      configured:
+        type: boolean
+      email_id:
+        type: integer
+      id:
+        example: 1
+        type: integer
+      initial_balance:
+        example: 1000000
+        type: number
+      last_four_digits:
+        example: "1234"
+        type: string
+      name:
+        example: account name
+        type: string
+      sender_email:
+        type: string
+      type:
+        $ref: '#/definitions/http.accountTypeResponse'
+      user_email:
+        type: string
+      user_provider:
+        type: string
+    type: object
+  http.customBankResponse:
+    properties:
+      email:
+        example: notification@example.com
+        type: string
+      id:
+        example: 1
+        type: integer
+      is_automated:
+        example: true
+        type: boolean
+      name:
+        example: bancolombia
+        type: string
+    type: object
+  http.customCategoryResponse:
+    properties:
+      budget:
+        example: 1000000
+        type: number
+      editable:
+        example: true
+        type: boolean
+      emoji:
+        example: "\U0001F354"
+        type: string
+      id:
+        example: 1
+        type: integer
+      income:
+        example: false
+        type: boolean
+      name:
+        example: food
+        type: string
+    type: object
+  http.emailListResponse:
+    properties:
+      emails:
+        items:
+          $ref: '#/definitions/http.EmailResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/http.meta'
+    type: object
+  http.emailTokenResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+    type: object
+  http.errorResponse:
+    properties:
+      messages:
+        example:
+        - Error message 1
+        - ' Error message 2'
+        items:
+          type: string
+        type: array
+      success:
+        example: false
+        type: boolean
+    type: object
+  http.financialReportResponse:
+    properties:
+      credits_balance:
+        $ref: '#/definitions/http.metricResponse'
+      expenses:
+        $ref: '#/definitions/http.metricResponse'
+      income:
+        $ref: '#/definitions/http.metricResponse'
+      savings_balance:
+        $ref: '#/definitions/http.metricResponse'
+    type: object
+  http.forgotPasswordRequest:
+    properties:
+      email:
+        example: test@example.com
+        type: string
+    required:
+    - email
+    type: object
+  http.loginRequest:
+    properties:
+      code:
+        example: "123456"
+        minLength: 6
+        type: string
+      email:
+        example: test@example.com
+        type: string
+      password:
+        example: "12345678"
+        minLength: 8
+        type: string
+    type: object
+  http.meta:
+    properties:
+      limit:
+        example: 10
+        type: integer
+      skip:
+        example: 0
+        type: integer
+      total:
+        example: 100
+        type: integer
+    type: object
+  http.metricARResponse:
+    properties:
+      value:
+        example: 1000000
+        type: number
+    type: object
+  http.metricResponse:
+    properties:
+      value:
+        example: 1000000
+        type: number
+      vs_past_month:
+        example: 70
+        type: number
+    type: object
+  http.registerRequest:
+    properties:
+      confirm_password:
+        example: "12345678"
+        maxLength: 40
+        minLength: 8
+        type: string
+      email:
+        example: test@example.com
+        maxLength: 30
+        type: string
+      last_name:
+        example: Doe
+        maxLength: 30
+        type: string
+      name:
+        example: John
+        maxLength: 30
+        type: string
+      password:
+        example: "12345678"
+        maxLength: 40
+        minLength: 8
+        type: string
+    required:
+    - confirm_password
+    - email
+    - last_name
+    - name
+    - password
+    type: object
+  http.resendConfirmationRequest:
+    properties:
+      email:
+        example: joe@example.com
+        type: string
+    required:
+    - email
+    type: object
+  http.response:
+    description: Standard API response format
+    properties:
+      data: {}
+      message:
+        example: success
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  http.transactionResponse:
+    properties:
+      account:
+        $ref: '#/definitions/http.customAccountResponse'
+      amount:
+        example: 100000
+        type: number
+      automated:
+        example: false
+        type: boolean
+      category:
+        $ref: '#/definitions/http.customCategoryResponse'
+      checked:
+        example: false
+        type: boolean
+      date:
+        example: "2021-01-01T00:00:00Z"
+        type: string
+      description:
+        example: transaction for the order
+        type: string
+      expense:
+        example: false
+        type: boolean
+      id:
+        example: 1
+        type: integer
+      should_verify:
+        example: false
+        type: boolean
+    type: object
+  http.updateTransactionRequest:
+    properties:
+      account_id:
+        example: 2
+        type: integer
+      amount:
+        example: 100000
+        type: number
+      category_id:
+        example: 1
+        type: integer
+      checked:
+        example: false
+        type: boolean
+      date:
+        example: "2021-12-20"
+        type: string
+      description:
+        example: Transaction for the order
+        type: string
+      expense:
+        example: false
+        type: boolean
+      should_verify:
+        example: false
+        type: boolean
+    required:
+    - account_id
+    - amount
+    - category_id
+    - date
+    - description
+    type: object
+  http.updateUserExtraRequest:
+    properties:
+      onboarding_completed:
+        example: true
+        type: boolean
+      utc_offset:
+        example: -5
+        type: integer
+      whatsapp:
+        example: "+1234567890"
+        type: string
+    type: object
+  http.updateUserRequest:
+    properties:
+      last_name:
+        example: Doe
+        type: string
+      name:
+        example: John
+        type: string
+    required:
+    - last_name
+    - name
+    type: object
+  http.userExtraRequest:
+    properties:
+      onboarding_completed:
+        example: true
+        type: boolean
+      utc_offset:
+        example: -5
+        type: integer
+      whatsapp:
+        example: "+1234567890"
+        maxLength: 20
+        minLength: 8
+        type: string
+    type: object
+  http.userExtraResponse:
+    properties:
+      onboarding_completed:
+        type: boolean
+      utc_offset:
+        type: integer
+      whatsapp:
+        type: string
+      whatsapp_state:
+        type: string
+    type: object
+  http.userResponse:
+    properties:
+      email:
+        example: test@example.com
+        type: string
+      last_name:
+        example: Doe
+        type: string
+      name:
+        example: John
+        type: string
+      verified:
+        example: true
+        type: boolean
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@yourdomain.com
+    name: API Support
+    url: http://yourdomain.com/support
+  description: API for managing cash flow operations.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://yourdomain.com/terms/
+  title: Cash Flow API
+  version: "1.0"
+paths:
+  /analysis/accounts-balance:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the balance grouped by account for the authenticated
+        user
+      parameters:
+      - description: Optional filter (e.g., 'savings')
+        in: query
+        name: filter
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Balance by account
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.balanceByAccountResponse'
+              type: object
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Get balance by account
+      tags:
+      - Analysis
+  /analysis/accounts-report:
+    post:
+      consumes:
+      - application/json
+      description: Returns a detailed financial report for specified accounts within
+        a date range, filtered by account type
+      parameters:
+      - description: Accounts report request with date range, account type and account
+          IDs
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.AccountsReportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Accounts report
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.AccountsReportResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Get accounts report
+      tags:
+      - Analysis
+  /analysis/category-analysis:
+    get:
+      consumes:
+      - application/json
+      description: Returns monthly expense analysis for a specific category over the
+        last 12 months starting from the provided month
+      parameters:
+      - description: Category ID to analyze
+        format: int64
+        in: query
+        name: category_id
+        required: true
+        type: integer
+      - description: Month in YYYY-MM format
+        in: query
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Category analysis
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.CategoryAnalysisResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Get category analysis
+      tags:
+      - Analysis
+  /analysis/expense-report:
+    post:
+      consumes:
+      - application/json
+      description: Returns expense report by category for the given date, sorted by
+        expense or usage (defaults to expense if not specified)
+      parameters:
+      - description: Date filter and optional sort field
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.CategoryReportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Categories expense report
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.categoryExpenseReportResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Get categories expense report
+      tags:
+      - Analysis
+  /analysis/financial-analysis:
+    get:
+      consumes:
+      - application/json
+      description: Returns monthly and daily financial analysis for the last 12 months
+        starting from the provided month
+      parameters:
+      - description: Month in YYYY-MM format
+        in: query
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Financial analysis
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.FinancialAnalysisResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Get financial analysis
+      tags:
+      - Analysis
+  /analysis/financial-report:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves savings, credits, income and expenses metrics for the
+        given date
+      parameters:
+      - description: Date filter in YYYY-MM-DD format
+        in: query
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Financial report
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.financialReportResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Get financial report
+      tags:
+      - Analysis
+  /email/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an email and update any accounts that use this email
+      parameters:
+      - description: Email ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email deleted successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: Data not found error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Delete an email
+      tags:
+      - Emails
+    patch:
+      consumes:
+      - application/json
+      description: Update email properties such as activation status
+      parameters:
+      - description: Email ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Email update details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.UpdateEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: Data not found error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Update an email
+      tags:
+      - Emails
+  /email/{user_id}/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the authentication token for a specific email
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      - description: Email ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success with email token
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.emailTokenResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: Data not found error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Get email token
+      tags:
+      - Emails
+  /email/admin/error:
+    put:
+      consumes:
+      - application/json
+      description: Save an error message for a specific email (admin endpoint)
+      parameters:
+      - description: Email ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Email error details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.SaveEmailErrorRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email error saved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "403":
+          description: Forbidden error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: Data not found error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Save email error (Admin only)
+      tags:
+      - Emails
+  /email/auth-url:
+    get:
+      consumes:
+      - application/json
+      description: Returns the authentication URL for the specified email provider
+      parameters:
+      - description: Email provider (gmail or outlook)
+        in: query
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success with auth URL
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.authURLResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Get authentication URL for email provider
+      tags:
+      - Emails
+  /email/list:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of emails for the authenticated user
+      parameters:
+      - description: Number of records to skip
+        in: query
+        name: skip
+        type: integer
+      - description: Maximum number of records to return
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success with list of emails
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.emailListResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: List user emails
+      tags:
+      - Emails
+  /email/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new email for the authenticated user
+      parameters:
+      - description: Authorization code
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: Email registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          allOf:
+          - $ref: '#/definitions/http.response'
+          - properties:
+              data:
+                $ref: '#/definitions/http.RegisterEmailRequest'
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email registered successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "409":
+          description: Data conflict error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Register a user's email
+      tags:
+      - Emails
+  /signup:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account with the provided information
+      parameters:
+      - description: Register request
+        in: body
+        name: registerRequest
+        required: true
+        schema:
+          $ref: '#/definitions/http.registerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User created
+          schema:
+            $ref: '#/definitions/http.response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: Data not found error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "409":
+          description: Data conflict error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Register a new user
+      tags:
+      - Users
+  /transaction:
+    get:
+      consumes:
+      - application/json
+      description: List transaction with pagination
+      parameters:
+      - description: UserID
+        format: int64
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      - description: Skip
+        format: int64
+        in: query
+        name: Skip
+        required: true
+        type: integer
+      - description: Limit
+        format: int64
+        in: query
+        name: Limit
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Transactions displayed
+          schema:
+            $ref: '#/definitions/http.meta'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List transaction
+      tags:
+      - Transactions
+  /transaction/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a transaction by id and user id
+      parameters:
+      - description: Transaction ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User ID
+        format: int64
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Transaction deleted
+          schema:
+            $ref: '#/definitions/http.response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "403":
+          description: Forbidden error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: Data not found error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a transaction
+      tags:
+      - Transactions
+    get:
+      consumes:
+      - application/json
+      description: Get a transaction by id and user id
+      parameters:
+      - description: Transaction ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User ID
+        format: int64
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Transaction retrieved
+          schema:
+            $ref: '#/definitions/http.transactionResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: Data not found error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a transaction
+      tags:
+      - Transactions
+    put:
+      consumes:
+      - application/json
+      description: Update a transaction's category, account, description, expense,
+        amount, and date
+      parameters:
+      - description: Transaction ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update transaction request
+        in: body
+        name: updateTransactionRequest
+        required: true
+        schema:
+          $ref: '#/definitions/http.updateTransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Transaction updated
+          schema:
+            $ref: '#/definitions/http.transactionResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "403":
+          description: Forbidden error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: Data not found error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "409":
+          description: Data conflict error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a transaction
+      tags:
+      - Transactions
+  /transactions:
+    post:
+      consumes:
+      - application/json
+      description: create a new transaction with category, account, description, expense,
+        amount, and date
+      parameters:
+      - description: Create transaction request
+        in: body
+        name: createTransactionRequest
+        required: true
+        schema:
+          $ref: '#/definitions/http.createTransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Transaction created
+          schema:
+            $ref: '#/definitions/http.transactionResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "403":
+          description: Forbidden error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: Data not found error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "409":
+          description: Data conflict error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new transaction
+      tags:
+      - Transactions
+  /transactions/admin:
+    post:
+      consumes:
+      - application/json
+      description: Create one or multiple transactions on behalf of a user
+      parameters:
+      - description: Admin create transactions request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.adminCreateTransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Transactions created
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/http.transactionResponse'
+                  type: array
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "403":
+          description: Forbidden error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: Data not found error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "409":
+          description: Data conflict error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Admin create transactions
+      tags:
+      - Transactions
+  /user-extra:
+    delete:
+      consumes:
+      - application/json
+      description: Delete user extra information for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User extra information deleted
+          schema:
+            $ref: '#/definitions/http.response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: Data not found error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete user extra information
+      tags:
+      - UserExtra
+    get:
+      consumes:
+      - application/json
+      description: Get user extra information for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User extra information
+          schema:
+            $ref: '#/definitions/http.userExtraResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: Data not found error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user extra information
+      tags:
+      - UserExtra
+    post:
+      consumes:
+      - application/json
+      description: Create user extra information for the authenticated user
+      parameters:
+      - description: User extra information request
+        in: body
+        name: userExtraRequest
+        required: true
+        schema:
+          $ref: '#/definitions/http.userExtraRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User extra information created
+          schema:
+            $ref: '#/definitions/http.response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "409":
+          description: Data conflict error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create user extra information
+      tags:
+      - UserExtra
+    put:
+      consumes:
+      - application/json
+      description: Update user extra information for the authenticated user
+      parameters:
+      - description: User extra information request
+        in: body
+        name: userExtraRequest
+        required: true
+        schema:
+          $ref: '#/definitions/http.updateUserExtraRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User extra information updated
+          schema:
+            $ref: '#/definitions/http.response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: Data not found error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user extra information
+      tags:
+      - UserExtra
+  /users/:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves information about the currently authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User details retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.response'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.userResponse'
+              type: object
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user information
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update the currently authenticated user's profile information
+      parameters:
+      - description: User profile information to update
+        in: body
+        name: updateUserRequest
+        required: true
+        schema:
+          $ref: '#/definitions/http.updateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User updated successfully
+          schema:
+            $ref: '#/definitions/http.userResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - Users
+  /users/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirm a user account using email and verification code
+      parameters:
+      - description: Email and confirmation code
+        in: body
+        name: confirmUserAccountRequest
+        required: true
+        schema:
+          $ref: '#/definitions/http.confirmUserAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User confirmed
+          schema:
+            $ref: '#/definitions/http.response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: Data not found error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Confirm a user account
+      tags:
+      - Users
+  /users/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Send a password reset code to the user's email address
+      parameters:
+      - description: User email
+        in: body
+        name: forgotPasswordRequest
+        required: true
+        schema:
+          $ref: '#/definitions/http.forgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password reset code sent
+          schema:
+            $ref: '#/definitions/http.response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Request password reset
+      tags:
+      - Users
+  /users/forgot-password/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Validates the reset code and updates the user's password
+      parameters:
+      - description: Email, code and new password information
+        in: body
+        name: confirmForgotPasswordRequest
+        required: true
+        schema:
+          $ref: '#/definitions/http.confirmForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password reset successful
+          schema:
+            $ref: '#/definitions/http.response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Reset password with verification code
+      tags:
+      - Users
+  /users/login:
+    post:
+      consumes:
+      - application/json
+      description: Logs in a registered user and returns an access token if the credentials
+        are valid
+      parameters:
+      - description: Login credentials
+        in: body
+        name: loginRequest
+        required: true
+        schema:
+          $ref: '#/definitions/http.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully logged in
+          schema:
+            $ref: '#/definitions/http.authResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Login and get an access token
+      tags:
+      - Users
+  /users/resend-confirmation:
+    post:
+      consumes:
+      - application/json
+      description: Resend account verification code to the user's email
+      parameters:
+      - description: Email address
+        in: body
+        name: resendConfirmationRequest
+        required: true
+        schema:
+          $ref: '#/definitions/http.resendConfirmationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Confirmation code resent
+          schema:
+            $ref: '#/definitions/http.response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Resend confirmation code
+      tags:
+      - Users
+  /users/social-auth-url:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a URL for third-party social authentication
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Authentication URL retrieved successfully
+          schema:
+            $ref: '#/definitions/http.response'
+        "401":
+          description: Unauthorized error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/http.errorResponse'
+      summary: Get social authentication URL
+      tags:
+      - Users
+swagger: "2.0"

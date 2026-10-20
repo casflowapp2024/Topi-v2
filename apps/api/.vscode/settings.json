@@ -1,0 +1,30 @@
+{
+  "go.gopath": "/Users/fabio.florez/go",
+  "go.goroot": "/usr/local/go",
+  "go.toolsManagement.autoUpdate": true,
+  "go.useLanguageServer": true,
+  "go.alternateTools": {
+    "gopls": "/Users/fabio.florez/go/bin/gopls"
+  },
+  "go.lintTool": "golangci-lint",
+  "go.lintOnSave": "package",
+  "go.formatTool": "goimports",
+  "go.buildOnSave": "package",
+  "go.testOnSave": false,
+  "[go]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+  "gopls": {
+    "ui.semanticTokens": true,
+    "ui.completion.usePlaceholders": true,
+    "analyses": {
+      "unusedparams": true,
+      "shadow": true
+    },
+    "staticcheck": false,
+    "verboseOutput": true
+  }
+}

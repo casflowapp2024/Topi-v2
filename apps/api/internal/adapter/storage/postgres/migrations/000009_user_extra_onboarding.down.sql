@@ -1,0 +1,4 @@
+-- Remove onboarding_completed and onboarding_created_at fields from USER_EXTRA table
+ALTER TABLE USER_EXTRA 
+DROP COLUMN IF EXISTS ONBOARDING_COMPLETED,
+DROP COLUMN IF EXISTS ONBOARDING_CREATED_AT;

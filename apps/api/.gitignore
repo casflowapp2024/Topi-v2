@@ -1,0 +1,13 @@
+/db/data/
+/.env
+/db/
+/.aws-sam/
+/.idea/aws.xml
+/cdk/
+.idea/
+# macOS
+.DS_Store
+*/.DS_Store
+**/.DS_Store
+/.env.prod
+/.env.dev

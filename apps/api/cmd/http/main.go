@@ -1,0 +1,57 @@
+// @title           Cash Flow API
+// @version         1.0
+// @description     API for managing cash flow operations.
+// @termsOfService  http://yourdomain.com/terms/
+
+// @contact.name   API Support
+// @contact.url    http://yourdomain.com/support
+// @contact.email  support@yourdomain.com
+
+// @license.name  MIT
+// @license.url   https://opensource.org/licenses/MIT
+
+// @host      localhost:8080
+
+package main
+
+import (
+	_ "cash-flow/docs"
+	"cash-flow/internal/adapter/config"
+	"cash-flow/internal/adapter/handler/http"
+	"cash-flow/internal/adapter/logger"
+	"cash-flow/internal/adapter/server"
+)
+
+func main() {
+	settings := config.New()
+	injector := server.NewInjector(settings)
+
+	// Defer closing the resources
+	defer injector.Resources.DB.Close()
+
+	// Set logger
+	logger.Set(settings.App)
+
+	// Start the HTTP server
+	router, listenAddr := http.NewRouter(settings.HTTP)
+
+	// Register the routes
+	routes := http.Routes{
+		HealthHandler:         injector.Handlers.Health,
+		UserHandler:           injector.Handlers.User,
+		UserExtraHandler:      injector.Handlers.UserExtra,
+		CategoryHandler:       injector.Handlers.Category,
+		BankHandler:           injector.Handlers.Bank,
+		AccountTypeHandler:    injector.Handlers.AccountType,
+		AccountHandler:        injector.Handlers.Account,
+		TransactionHandler:    injector.Handlers.Transaction,
+		AnalysisHandler:       injector.Handlers.Analysis,
+		EmailHandler:          injector.Handlers.Email,
+		InitDevHandler:        injector.Handlers.Initialization,
+		InitializationHandler: injector.Handlers.CategoryInitialization,
+		Router:                router.Router,
+	}
+
+	routes.Init(settings.App.Env)
+	router.Serve(listenAddr)
+}

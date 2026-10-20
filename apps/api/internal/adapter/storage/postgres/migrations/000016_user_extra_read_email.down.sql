@@ -1,0 +1,3 @@
+-- Remove read_email field from USER_EXTRA table
+ALTER TABLE USER_EXTRA
+DROP COLUMN IF EXISTS READ_EMAIL;

@@ -1,0 +1,164 @@
+import { use, useEffect, useState } from 'react'
+import moment from 'moment'
+//redux
+import { connect } from 'react-redux'
+
+//components
+import { formatCurrency, parseDatetoDatetimeBrow, formatCurrency2, getPerc0, getColorByValue, getPercPlus } from '../../helpers';
+
+//icons
+import { BarChart, Bar, Rectangle, XAxis, Label, ReferenceLine, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+
+function AccChartHistory({
+    //props
+
+    //reduxstates
+    history_month,
+    current_Year,
+    current_Month
+}) {
+    const [dataToPlot, setDataToPlot] = useState(null)
+    useEffect(() => {
+
+        let formattedActual = [{
+            date: new Date(current_Year, current_Month - 1, 1),
+            value: 0,
+            dif: 0,
+            show: 0,
+            left: 0,
+            per_show: getPercPlus(0),
+            color_per: getColorByValue(0)
+        }];
+
+        if (history_month && history_month.month && history_month.balance.length > 0) {
+            formattedActual = history_month.month.map((m, i) => ({
+                date: new Date(current_Year, m - 1, 1), // ✅ Safari-safe
+                value: history_month.balance[i].value,
+                dif: history_month.balance[i].diff,
+                per_show: getPercPlus(history_month.balance[i].percentage, true),
+                color_per: getColorByValue(history_month.balance[i].diff),
+                //left: getPerc0(expense_serie[i].usage)
+            }))
+        }
+        setDataToPlot(formattedActual);
+        //console.log("formattedActual", formattedActual);
+    }, [history_month]);
+
+    /* useEffect(() => {
+       console.log("dataToPlot changed", dataToPlot);
+    }, [dataToPlot]); */
+
+    const [activeIndex, setActiveIndex] = useState(null);
+    //#e11d48
+    return (
+        <div className={`h-[156px] md:h-[300px] w-[327px] md:w-[368px]  xl:w-[514px]`}>
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                    width={400}
+                    height={300}
+                    data={dataToPlot}
+                    margin={{
+                        top: 10,
+                        right: 2,
+                        left: 2,
+                        bottom: 2,
+                    }}
+                    onMouseMove={state => {
+                        if (state && state.activeTooltipIndex !== undefined && state.activeTooltipIndex !== null) {
+                            setActiveIndex(state.activeTooltipIndex);
+                        }
+                    }}
+                    onMouseLeave={() => setActiveIndex(null)}
+
+                >
+                    <XAxis
+                        dataKey="date"
+                        tickFormatter={(date) => {
+                            return moment(date).locale("es").format('MMM'); // monthly format        
+                        }}
+                        axisLine={false}
+                        tickLine={false}
+                        interval="preserveStartEnd"
+                        domain={['auto', 'auto']}
+                        tick={{ fontSize: 12 }}
+                    />
+                    <YAxis hide padding={{ top: 10, bottom: 10 }} />
+                    <Tooltip
+                        cursor={false}
+                        content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                                return (
+                                    <div className="flex flex-col text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 shadow-lg">
+                                        <div className='flex flex-col'>
+                                            <span className='text-[#5266EB]'>Balance: {formatCurrency(payload[0].payload.value)}</span>
+                                            <div className='text-gray-300'>
+                                                <span>Dif:</span>
+                                                <span className={`text-[${payload[0].payload.color_per}]`}>{formatCurrency(payload[0].payload.dif)}</span> (
+                                                <span className={`text-[${payload[0].payload.color_per}]`}>{payload[0].payload.per_show}</span>)
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                );
+                            }
+                            return null;
+                        }}
+
+
+                    />
+                    <Bar
+                        dataKey="value"
+                        fill="#5266EB"
+                        barSize={24} // Adjust width here
+                        radius={[6, 6, 0, 0]} // Rounded top corners
+                        //onMouseOver={(_, index) => setActiveIndex(index)}
+                        //onMouseOut={() => setActiveIndex(null)}
+                        shape={(props) => (
+                            <Rectangle
+                                {...props}
+                                stroke={props.index === activeIndex ? "#5266EB" : ""} // Border color
+                                strokeWidth={2}  // Border width
+                                fill={props.value >= 0 ? "#5266EB" : "#e11d48"}
+                                radius={[6, 6, 0, 0]}
+                            />
+
+                        )}
+
+                        label={({ x, y, width, value, index }) => {
+                            // Only show label for the last bar
+                            if (index === dataToPlot.length - 1 && value !== 0) {
+                                return (
+                                    <text
+                                        x={x + width / 3}
+                                        y={value >= 0 ? y - 8 : y + 16}
+                                        textAnchor="middle"
+                                        fill="#5266EB"
+                                        fontWeight="bold"
+                                        fontSize={12}
+                                    >
+                                        {formatCurrency2(value)}
+                                    </text>
+                                );
+                            }
+                            return null;
+                        }}
+                    />
+
+
+                </BarChart>
+            </ResponsiveContainer>
+        </div>
+    );
+}
+
+const mapStateToProps = state => ({
+    history_month: state.Reports.history_accounts_by_month.monthly,
+    current_Year: state.Reports.current_Year,
+    current_Month: state.Reports.current_Month,
+})
+
+export default connect(mapStateToProps, {
+
+
+})(AccChartHistory)

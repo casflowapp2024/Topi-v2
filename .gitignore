@@ -1,0 +1,40 @@
+# Secretos: solo se versionan los .env.example
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Datos
+*.dump
+*.sql.gz
+infra/data/
+
+# Go
+apps/api/bin/
+apps/api/tmp/
+*.exe
+*.test
+*.out
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node
+node_modules/
+apps/web/build/
+coverage/
+
+# AWS legacy (no deben volver)
+cdk.out/
+.aws-sam/
+cashflow.zip
+bootstrap
+
+# Editor / SO
+.idea/
+.DS_Store
+Thumbs.db
