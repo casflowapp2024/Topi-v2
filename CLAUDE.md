@@ -35,7 +35,7 @@ plan/         plan de migración
 - Arquitectura hexagonal: el core (`domain`, `port`, `service`) no importa adaptadores ni SDKs
   externos. Lo de infraestructura va en `internal/adapter/...` y se cablea en `adapter/server/injector.go`.
 - Un adaptador nuevo implementa un puerto existente; si la interfaz solo la usa un adaptador,
-  defínela en el paquete consumidor (ej. `jobqueue.Store`, `cognito.API`).
+  defínela en el paquete consumidor (ej. `jobqueue.Store`).
 - Tests con testify + gomock; tests de handlers con `httptest` y el payload de auth puesto en el
   contexto (`enums.AuthorizationPayloadKey`).
 - Errores de dominio en `core/domain/error.go`; el status HTTP se mapea en `handler/http/response.go`.
