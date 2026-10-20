@@ -24,7 +24,7 @@ COMPOSE=(docker compose -f "$(win_path "$INFRA_DIR/docker-compose.yml")")
 
 # psql_db [args...]: psql contra la base de la app; el SQL va por stdin
 psql_db() {
-  "${COMPOSE[@]}" exec -T postgres psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" "$@"
+  "${COMPOSE[@]}" exec -T postgres psql -q -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" "$@"
 }
 
 require_email() {

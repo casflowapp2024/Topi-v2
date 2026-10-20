@@ -22,13 +22,13 @@ SELECT created_at, email, ip, left(user_agent, 40) AS user_agent
 FROM auth_events WHERE event = 'initial_password_set'
 ORDER BY created_at DESC LIMIT 20;
 
-\echo '== Intentos fallidos de crear contraseña (posibles reclamos) en los últimos :days días'
+\echo '== Intentos fallidos de crear contraseña (posibles reclamos), últimos' :days 'días'
 SELECT email, count(*) AS intentos, max(created_at) AS ultimo
 FROM auth_events
 WHERE event = 'initial_password_fail' AND created_at > now() - make_interval(days => :days)
 GROUP BY email ORDER BY intentos DESC LIMIT 20;
 
-\echo '== Eventos por tipo en los últimos :days días'
+\echo '== Eventos por tipo, últimos' :days 'días'
 SELECT event, count(*) FROM auth_events
 WHERE created_at > now() - make_interval(days => :days)
 GROUP BY event ORDER BY count(*) DESC;

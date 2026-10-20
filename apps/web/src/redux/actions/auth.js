@@ -63,7 +63,7 @@ export const signup = (name, last_name, email, password, confirm_password) => as
             type: SIGNUP_FAIL
         });
 
-        return err.response.data.messages
+        return err.response?.data?.messages || ['network error']
     }
 };
 
@@ -316,7 +316,7 @@ export const login = (email, password) => async dispatch => {
         dispatch({
             type: REMOVE_AUTH_LOADING
         });
-        return err.response.data.messages
+        return err.response?.data?.messages || ['network error']
     }
 }
 
