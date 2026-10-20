@@ -100,7 +100,7 @@ func (ts *TransactionService) AdminCreateTransactions(
 	ctx context.Context,
 	userID string,
 	transactions domain.Transactions,
-) ([]domain.Transaction, error) {
+) (*domain.AdminCreateResult, error) {
 	isVerified, err := ts.userSvc.AdminIsUserValid(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -137,10 +137,10 @@ func (ts *TransactionService) AdminCreateTransactions(
 
 	transactions.UpdateCategories(cpr.PredictionsMap, cpr.DefaultCategoryID)
 
-	createdTransactions, err := ts.repo.AdminCreateTransactions(ctx, transactions)
+	result, err := ts.repo.AdminCreateTransactions(ctx, transactions)
 	if err != nil {
 		return nil, err
 	}
 
-	return createdTransactions, nil
+	return result, nil
 }

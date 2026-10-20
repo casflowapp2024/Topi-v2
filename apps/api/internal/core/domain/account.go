@@ -3,6 +3,7 @@ package domain
 import (
 	"cash-flow/internal/enums"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 )
@@ -203,7 +204,8 @@ func (a Accounts) BuildReadEmailRequests() []ReadEmailBodyRequest {
 			continue
 		}
 
-		firstAccount := a[0]
+		// each request carries the connection, sender and accounts of its own group
+		firstAccount := accounts[0]
 
 		request := ReadEmailBodyRequest{
 			UserID:      firstAccount.UserID,
@@ -211,12 +213,20 @@ func (a Accounts) BuildReadEmailRequests() []ReadEmailBodyRequest {
 			EmailID:     *firstAccount.Email.ID,
 			Provider:    firstAccount.Email.Provider,
 			SenderEmail: *firstAccount.Bank.Email,
-			Accounts:    a.buildAccountsMap(),
+			Accounts:    Accounts(accounts).buildAccountsMap(),
 			Onboarding:  true,
 		}
 
 		requests = append(requests, request)
 	}
+
+	// deterministic order (map iteration is random)
+	sort.Slice(requests, func(i, j int) bool {
+		if requests[i].EmailID != requests[j].EmailID {
+			return requests[i].EmailID < requests[j].EmailID
+		}
+		return requests[i].SenderEmail < requests[j].SenderEmail
+	})
 
 	return requests
 }

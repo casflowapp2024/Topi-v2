@@ -12,7 +12,8 @@ type TransactionRepository interface {
 	// CreateTransaction inserts a new payment into the database
 	CreateTransaction(ctx context.Context, transaction *domain.Transaction) (*domain.Transaction, error)
 	// AdminCreateTransactions inserts a new transaction into the database
-	AdminCreateTransactions(ctx context.Context, transactions []domain.Transaction) ([]domain.Transaction, error)
+	// Transactions with SourceMessageID are idempotent and deduplicated against legacy ones
+	AdminCreateTransactions(ctx context.Context, transactions []domain.Transaction) (*domain.AdminCreateResult, error)
 	// GetTransactionByID selects a payment by id
 	GetTransactionByID(ctx context.Context, userID string, id uint64) (*domain.Transaction, error)
 	// ListTransactions selects a list of payments with pagination
@@ -30,7 +31,7 @@ type TransactionService interface {
 	// CreateTransaction creates a new transaction
 	CreateTransaction(ctx context.Context, transaction *domain.Transaction) error
 	// AdminCreateTransactions creates a new transaction by admin
-	AdminCreateTransactions(ctx context.Context, userID string, transactions domain.Transactions) ([]domain.Transaction, error)
+	AdminCreateTransactions(ctx context.Context, userID string, transactions domain.Transactions) (*domain.AdminCreateResult, error)
 	// GetTransaction returns a payment by id
 	GetTransaction(ctx context.Context, userID string, id uint64) (*domain.Transaction, error)
 	// ListTransactions returns a list of payments with pagination

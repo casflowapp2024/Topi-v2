@@ -18,11 +18,12 @@ type fakeStore struct {
 	mu       sync.Mutex
 	payloads [][]byte
 	priority []int16
+	keys     []string
 	nextID   int64
 	err      error
 }
 
-func (f *fakeStore) Enqueue(_ context.Context, payload []byte, priority int16) (int64, error) {
+func (f *fakeStore) Enqueue(_ context.Context, payload []byte, priority int16, dedupeKey string) (int64, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.err != nil {
@@ -30,6 +31,7 @@ func (f *fakeStore) Enqueue(_ context.Context, payload []byte, priority int16) (
 	}
 	f.payloads = append(f.payloads, payload)
 	f.priority = append(f.priority, priority)
+	f.keys = append(f.keys, dedupeKey)
 	f.nextID++
 	return f.nextID, nil
 }
@@ -61,6 +63,7 @@ func TestQueue_ReadEmail(t *testing.T) {
 
 		assert.Len(t, store.payloads, 1)
 		assert.Equal(t, enums.EmailJobPriorityHigh, store.priority[0])
+		assert.Equal(t, "7:alertas@banco.com", store.keys[0], "dedupe key = <email_id>:<sender_email>")
 
 		// payload is exactly the JSON that used to go to SQS
 		expected, err := json.Marshal(request)

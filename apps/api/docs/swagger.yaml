@@ -34,6 +34,38 @@ definitions:
       savings:
         $ref: '#/definitions/http.metricARResponse'
     type: object
+  http.AdminSkippedTransaction:
+    properties:
+      reason:
+        enum:
+        - duplicate_message
+        - legacy_duplicate
+        example: duplicate_message
+        type: string
+      source_message_id:
+        example: 18c2f0a1b2c3d4e5
+        type: string
+    type: object
+  http.AdminTransaction:
+    properties:
+      id:
+        example: 1
+        type: integer
+      source_message_id:
+        example: 18c2f0a1b2c3d4e5
+        type: string
+    type: object
+  http.AdminTransactions:
+    properties:
+      skipped:
+        items:
+          $ref: '#/definitions/http.AdminSkippedTransaction'
+        type: array
+      transactions:
+        items:
+          $ref: '#/definitions/http.AdminTransaction'
+        type: array
+    type: object
   http.CategoryAnalysisResponse:
     properties:
       budget:
@@ -399,6 +431,12 @@ definitions:
       should_verify:
         example: false
         type: boolean
+      source_message_id:
+        description: SourceMessageID is the provider message id of the email (worker).
+          Makes the insert idempotent.
+        example: 18c2f0a1b2c3d4e5
+        maxLength: 512
+        type: string
     required:
     - account_id
     - amount
@@ -2374,7 +2412,10 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create one or multiple transactions on behalf of a user
+      description: 'Create one or multiple transactions on behalf of a user. Transactions
+        with source_message_id are idempotent: an already stored message, or a legacy
+        automated transaction with the same account, amount, expense and date ±2 min,
+        is returned in "skipped" instead of being inserted.'
       parameters:
       - description: Admin create transactions request
         in: body
@@ -2386,15 +2427,13 @@ paths:
       - application/json
       responses:
         "201":
-          description: Transactions created
+          description: Transactions created and skipped
           schema:
             allOf:
             - $ref: '#/definitions/http.response'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/http.transactionResponse'
-                  type: array
+                  $ref: '#/definitions/http.AdminTransactions'
               type: object
         "400":
           description: Validation error

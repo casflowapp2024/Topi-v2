@@ -982,25 +982,42 @@ func newCategoryAnalysisResponse(analysis *domain.CategoryAnalysis) CategoryAnal
 }
 
 type AdminTransaction struct {
-	ID uint64 `json:"id" example:"1"`
+	ID              uint64  `json:"id" example:"1"`
+	SourceMessageID *string `json:"source_message_id,omitempty" example:"18c2f0a1b2c3d4e5"`
+}
+
+// AdminSkippedTransaction is a transaction that was not inserted (idempotency or legacy dedupe)
+type AdminSkippedTransaction struct {
+	SourceMessageID *string `json:"source_message_id,omitempty" example:"18c2f0a1b2c3d4e5"`
+	Reason          string  `json:"reason" example:"duplicate_message" enums:"duplicate_message,legacy_duplicate"`
 }
 
 type AdminTransactions struct {
-	Transactions []AdminTransaction `json:"transactions"`
+	Transactions []AdminTransaction        `json:"transactions"`
+	Skipped      []AdminSkippedTransaction `json:"skipped"`
 }
 
-func newAdminTransactionResponse(transactions []domain.Transaction) AdminTransactions {
-	var adminTransactions []AdminTransaction
+func newAdminTransactionResponse(result *domain.AdminCreateResult) AdminTransactions {
+	rsp := AdminTransactions{
+		Transactions: []AdminTransaction{},
+		Skipped:      []AdminSkippedTransaction{},
+	}
 
-	for _, transaction := range transactions {
-		adminTransactions = append(adminTransactions, AdminTransaction{
-			ID: transaction.ID,
+	for _, transaction := range result.Created {
+		rsp.Transactions = append(rsp.Transactions, AdminTransaction{
+			ID:              transaction.ID,
+			SourceMessageID: transaction.SourceMessageID,
 		})
 	}
 
-	return AdminTransactions{
-		Transactions: adminTransactions,
+	for _, skipped := range result.Skipped {
+		rsp.Skipped = append(rsp.Skipped, AdminSkippedTransaction{
+			SourceMessageID: skipped.SourceMessageID,
+			Reason:          skipped.Reason,
+		})
 	}
+
+	return rsp
 }
 
 // =============================================================================

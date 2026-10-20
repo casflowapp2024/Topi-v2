@@ -36,10 +36,10 @@ func (m *MockTransactionRepository) EXPECT() *MockTransactionRepositoryMockRecor
 }
 
 // AdminCreateTransactions mocks base method.
-func (m *MockTransactionRepository) AdminCreateTransactions(ctx context.Context, transactions []domain.Transaction) ([]domain.Transaction, error) {
+func (m *MockTransactionRepository) AdminCreateTransactions(ctx context.Context, transactions []domain.Transaction) (*domain.AdminCreateResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdminCreateTransactions", ctx, transactions)
-	ret0, _ := ret[0].([]domain.Transaction)
+	ret0, _ := ret[0].(*domain.AdminCreateResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -159,10 +159,10 @@ func (m *MockTransactionService) EXPECT() *MockTransactionServiceMockRecorder {
 }
 
 // AdminCreateTransactions mocks base method.
-func (m *MockTransactionService) AdminCreateTransactions(ctx context.Context, userID string, transactions domain.Transactions) ([]domain.Transaction, error) {
+func (m *MockTransactionService) AdminCreateTransactions(ctx context.Context, userID string, transactions domain.Transactions) (*domain.AdminCreateResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdminCreateTransactions", ctx, userID, transactions)
-	ret0, _ := ret[0].([]domain.Transaction)
+	ret0, _ := ret[0].(*domain.AdminCreateResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

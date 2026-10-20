@@ -7,10 +7,20 @@ import (
 	"cash-flow/internal/mappers"
 	"cash-flow/internal/utils"
 	"context"
+	"errors"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/jackc/pgx/v5"
 )
+
+// transactionColumns are the columns scanned by scanTransaction-like code, in this order.
+// Explicit (not "*") so adding columns to the table does not break the scans.
+const transactionColumns = "id, user_id, category_id, account_id, description, expense, amount, date, " +
+	"automated, should_verify, checked, created_at, updated_at, raw_description"
+
+const transactionColumnsT = "t.id, t.user_id, t.category_id, t.account_id, t.description, t.expense, t.amount, t.date, " +
+	"t.automated, t.should_verify, t.checked, t.created_at, t.updated_at, t.raw_description"
 
 // TransactionRepository implements port.TransactionRepository interface
 // and provides access to the postgres database
@@ -48,7 +58,7 @@ func (tr *TransactionRepository) CreateTransaction(
 		transaction.Amount,
 		transaction.Date,
 	).
-		Suffix("RETURNING *")
+		Suffix("RETURNING " + transactionColumns)
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -164,7 +174,7 @@ func (tr *TransactionRepository) ListTransactions(
 	}
 
 	query := tr.db.QueryBuilder.Select(
-		"t.*",
+		transactionColumnsT,
 		"c.name",
 		"c.emoji",
 		"a.name",
@@ -257,7 +267,7 @@ func (tr *TransactionRepository) UpdateTransaction(ctx context.Context, transact
 		Set("updated_at", time.Now()).
 		Where(sq.Eq{"id": transaction.ID}).
 		Where(sq.Eq{"user_id": transaction.UserID}).
-		Suffix("RETURNING *")
+		Suffix("RETURNING " + transactionColumns)
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -307,86 +317,154 @@ func (tr *TransactionRepository) DeleteTransaction(ctx context.Context, id uint6
 	return nil
 }
 
-// AdminCreateTransactions creates a new transaction record in the database
+// AdminCreateTransactions inserts transactions created on behalf of a user (email worker).
+// Transactions with SourceMessageID are idempotent:
+//   - ON CONFLICT (user_id, source_message_id) DO NOTHING: reprocessing an email never duplicates;
+//   - legacy dedupe: skipped if the previous reader already stored an automated transaction
+//     (source_message_id IS NULL) with the same account, amount, expense and date ±2 min.
+//
+// Everything runs in one database transaction.
 func (tr *TransactionRepository) AdminCreateTransactions(
 	ctx context.Context,
 	transactions []domain.Transaction,
-) ([]domain.Transaction, error) {
-	query := tr.db.QueryBuilder.Insert(enums.TransactionsTableName).
-		Columns("user_id",
-			"category_id",
-			"account_id",
-			"description",
-			"raw_description",
-			"expense",
-			"amount",
-			"date",
-			"automated",
-			"should_verify",
-			"checked",
-		)
+) (*domain.AdminCreateResult, error) {
+	tx, err := tr.db.Begin(ctx)
+	if err != nil {
+		return nil, domain.ErrBeginTrx
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	result := &domain.AdminCreateResult{
+		Created: []domain.Transaction{},
+		Skipped: []domain.SkippedTransaction{},
+	}
 
 	for _, transaction := range transactions {
-		query = query.Values(
-			transaction.UserID,
-			transaction.Category.ID,
-			transaction.Account.ID,
-			transaction.Description,
-			transaction.Description,
-			transaction.Expense,
-			transaction.Amount,
-			transaction.Date,
-			transaction.Automated,
-			transaction.ShouldVerify,
-			transaction.Checked,
-		)
-	}
-
-	query = query.Suffix("RETURNING *")
-
-	sql, args, err := query.ToSql()
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := tr.db.Query(ctx, sql, args...)
-	if err != nil {
-		return nil, mappers.MapPostgresErrorCode(err)
-	}
-	defer rows.Close()
-
-	var createdTransactions []domain.Transaction
-	for rows.Next() {
-		var transaction domain.Transaction
-		err = rows.Scan(
-			&transaction.ID,
-			&transaction.UserID,
-			&transaction.Category.ID,
-			&transaction.Account.ID,
-			&transaction.Description,
-			&transaction.Expense,
-			&transaction.Amount,
-			&transaction.Date,
-			&transaction.Automated,
-			&transaction.ShouldVerify,
-			&transaction.Checked,
-			&transaction.CreatedAt,
-			&transaction.UpdatedAt,
-			&transaction.RawDescription,
-		)
-		if err != nil {
-			return nil, err
+		if transaction.SourceMessageID != nil {
+			legacy, lErr := tr.hasLegacyDuplicate(ctx, tx, transaction)
+			if lErr != nil {
+				return nil, lErr
+			}
+			if legacy {
+				result.Skipped = append(result.Skipped, domain.SkippedTransaction{
+					SourceMessageID: transaction.SourceMessageID,
+					Reason:          domain.SkipLegacyDuplicate,
+				})
+				continue
+			}
 		}
 
-		createdTransactions = append(createdTransactions, transaction)
+		query := tr.db.QueryBuilder.Insert(enums.TransactionsTableName).
+			Columns(
+				"user_id",
+				"category_id",
+				"account_id",
+				"description",
+				"raw_description",
+				"expense",
+				"amount",
+				"date",
+				"automated",
+				"should_verify",
+				"checked",
+				"source_message_id",
+			).
+			Values(
+				transaction.UserID,
+				transaction.Category.ID,
+				transaction.Account.ID,
+				transaction.Description,
+				transaction.Description,
+				transaction.Expense,
+				transaction.Amount,
+				transaction.Date,
+				transaction.Automated,
+				transaction.ShouldVerify,
+				transaction.Checked,
+				transaction.SourceMessageID,
+			).
+			Suffix("ON CONFLICT (user_id, source_message_id) WHERE source_message_id IS NOT NULL DO NOTHING " +
+				"RETURNING " + transactionColumns + ", source_message_id")
+
+		sql, args, qErr := query.ToSql()
+		if qErr != nil {
+			return nil, qErr
+		}
+
+		var created domain.Transaction
+		err = tx.QueryRow(ctx, sql, args...).Scan(
+			&created.ID,
+			&created.UserID,
+			&created.Category.ID,
+			&created.Account.ID,
+			&created.Description,
+			&created.Expense,
+			&created.Amount,
+			&created.Date,
+			&created.Automated,
+			&created.ShouldVerify,
+			&created.Checked,
+			&created.CreatedAt,
+			&created.UpdatedAt,
+			&created.RawDescription,
+			&created.SourceMessageID,
+		)
+		if errors.Is(err, pgx.ErrNoRows) {
+			result.Skipped = append(result.Skipped, domain.SkippedTransaction{
+				SourceMessageID: transaction.SourceMessageID,
+				Reason:          domain.SkipDuplicateMessage,
+			})
+			continue
+		}
+		if err != nil {
+			return nil, mappers.MapPostgresErrorCode(err)
+		}
+
+		result.Created = append(result.Created, created)
 	}
 
-	// Check for any error that occurred during iteration
-	if err = rows.Err(); err != nil {
-		return nil, err
+	if err = tx.Commit(ctx); err != nil {
+		return nil, mappers.MapPostgresErrorCode(err)
 	}
 
-	return createdTransactions, nil
+	return result, nil
+}
+
+// hasLegacyDuplicate reports whether the legacy reader already stored this transaction
+func (tr *TransactionRepository) hasLegacyDuplicate(
+	ctx context.Context,
+	tx pgx.Tx,
+	transaction domain.Transaction,
+) (bool, error) {
+	sql, args, err := tr.db.QueryBuilder.Select("1").
+		From(enums.TransactionsTableName).
+		Where(sq.Eq{
+			"user_id":    transaction.UserID,
+			"account_id": transaction.Account.ID,
+			"expense":    transaction.Expense,
+			"automated":  true,
+		}).
+		Where("amount = ?", transaction.Amount).
+		Where("source_message_id IS NULL").
+		Where("date BETWEEN ? AND ?",
+			transaction.Date.Add(-domain.LegacyDedupeWindow),
+			transaction.Date.Add(domain.LegacyDedupeWindow)).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return false, err
+	}
+
+	var found int
+	err = tx.QueryRow(ctx, sql, args...).Scan(&found)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, mappers.MapPostgresErrorCode(err)
+	}
+
+	return true, nil
 }
 
 // PredictTransactionCategory receives a list of raw descriptions and returns a map

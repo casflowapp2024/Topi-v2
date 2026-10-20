@@ -2259,7 +2259,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create one or multiple transactions on behalf of a user",
+                "description": "Create one or multiple transactions on behalf of a user. Transactions with source_message_id are idempotent: an already stored message, or a legacy automated transaction with the same account, amount, expense and date ±2 min, is returned in \"skipped\" instead of being inserted.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2283,7 +2283,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "Transactions created",
+                        "description": "Transactions created and skipped",
                         "schema": {
                             "allOf": [
                                 {
@@ -2293,10 +2293,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/http.transactionResponse"
-                                            }
+                                            "$ref": "#/definitions/http.AdminTransactions"
                                         }
                                     }
                                 }
@@ -3216,6 +3213,53 @@ const docTemplate = `{
                 }
             }
         },
+        "http.AdminSkippedTransaction": {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string",
+                    "enum": [
+                        "duplicate_message",
+                        "legacy_duplicate"
+                    ],
+                    "example": "duplicate_message"
+                },
+                "source_message_id": {
+                    "type": "string",
+                    "example": "18c2f0a1b2c3d4e5"
+                }
+            }
+        },
+        "http.AdminTransaction": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "source_message_id": {
+                    "type": "string",
+                    "example": "18c2f0a1b2c3d4e5"
+                }
+            }
+        },
+        "http.AdminTransactions": {
+            "type": "object",
+            "properties": {
+                "skipped": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.AdminSkippedTransaction"
+                    }
+                },
+                "transactions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.AdminTransaction"
+                    }
+                }
+            }
+        },
         "http.CategoryAnalysisResponse": {
             "type": "object",
             "properties": {
@@ -3763,6 +3807,12 @@ const docTemplate = `{
                 "should_verify": {
                     "type": "boolean",
                     "example": false
+                },
+                "source_message_id": {
+                    "description": "SourceMessageID is the provider message id of the email (worker). Makes the insert idempotent.",
+                    "type": "string",
+                    "maxLength": 512,
+                    "example": "18c2f0a1b2c3d4e5"
                 }
             }
         },

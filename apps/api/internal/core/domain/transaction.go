@@ -28,8 +28,33 @@ type Transaction struct {
 	Total          uint64
 	News           uint64
 	ReadEmail      bool
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	// SourceMessageID is the provider message id of the email the transaction was read from
+	// (worker). Unique per user: reprocessing an email never duplicates the transaction.
+	SourceMessageID *string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+}
+
+// LegacyDedupeWindow is the time window used to detect transactions already created by the
+// previous (AWS) reader, which did not store the source message id.
+const LegacyDedupeWindow = 2 * time.Minute
+
+// Reasons why an admin-created transaction was skipped
+const (
+	SkipDuplicateMessage = "duplicate_message" // same (user_id, source_message_id) already stored
+	SkipLegacyDuplicate  = "legacy_duplicate"  // same account, amount, expense and date ±2 min from the legacy reader
+)
+
+// SkippedTransaction is a transaction that was not inserted and why
+type SkippedTransaction struct {
+	SourceMessageID *string
+	Reason          string
+}
+
+// AdminCreateResult is the result of creating transactions on behalf of a user (worker)
+type AdminCreateResult struct {
+	Created []Transaction
+	Skipped []SkippedTransaction
 }
 
 func IsSameTransaction(current, new *Transaction) bool {

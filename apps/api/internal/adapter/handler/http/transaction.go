@@ -357,17 +357,19 @@ type adminTransactionRequest struct {
 	Amount       float64 `json:"amount" binding:"required" example:"100000"`
 	Date         string  `json:"date" binding:"required" example:"2025-05-03 14:00:00 -0500"`
 	ShouldVerify bool    `json:"should_verify" binding:"omitempty" example:"false"`
+	// SourceMessageID is the provider message id of the email (worker). Makes the insert idempotent.
+	SourceMessageID *string `json:"source_message_id" binding:"omitempty,max=512" example:"18c2f0a1b2c3d4e5"`
 }
 
 // AdminCreateTransactions godoc
 //
 //	@Summary		Admin create transactions
-//	@Description	Create one or multiple transactions on behalf of a user
+//	@Description	Create one or multiple transactions on behalf of a user. Transactions with source_message_id are idempotent: an already stored message, or a legacy automated transaction with the same account, amount, expense and date ±2 min, is returned in "skipped" instead of being inserted.
 //	@Tags			Transactions
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body	adminCreateTransactionRequest	true	"Admin create transactions request"
-//	@Success		201		{object}	response{data=[]transactionResponse}	"Transactions created"
+//	@Success		201		{object}	response{data=AdminTransactions}	"Transactions created and skipped"
 //	@Failure		400		{object}	errorResponse	"Validation error"
 //	@Failure		401		{object}	errorResponse	"Unauthorized error"
 //	@Failure		403		{object}	errorResponse	"Forbidden error"
@@ -403,16 +405,18 @@ func (ph *TransactionHandler) AdminCreateTransactions(ctx *gin.Context) {
 			Checked:      false,
 			Account:      domain.Account{ID: t.AccountID},
 			Automated:    true,
+
+			SourceMessageID: t.SourceMessageID,
 		}
 	}
 
-	createdTransactions, err := ph.svc.AdminCreateTransactions(ctx, req.UserID, transactions)
+	result, err := ph.svc.AdminCreateTransactions(ctx, req.UserID, transactions)
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
 
-	rsp := newAdminTransactionResponse(createdTransactions)
+	rsp := newAdminTransactionResponse(result)
 
 	handleCreatedSuccess(ctx, rsp)
 }

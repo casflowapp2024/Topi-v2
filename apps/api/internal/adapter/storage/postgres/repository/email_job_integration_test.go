@@ -23,7 +23,7 @@ func TestEmailJobRepository_Enqueue(t *testing.T) {
 	repo := repository.NewEmailJobRepository(db)
 	payload := []byte(`{"user_id":"it-test","user_mail":"user@example.com","email_id":1,"user_provider":"gmail","sender_email":"alertas@banco.com","accounts":{"1234":"10"},"onboarding":true}`)
 
-	id, err := repo.Enqueue(ctx, payload, enums.EmailJobPriorityHigh)
+	id, err := repo.Enqueue(ctx, payload, enums.EmailJobPriorityHigh, "")
 	require.NoError(t, err)
 	t.Cleanup(func() { _, _ = db.Exec(ctx, "DELETE FROM email_jobs WHERE id = $1", id) })
 

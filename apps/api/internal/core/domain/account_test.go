@@ -228,3 +228,30 @@ func TestAccount_GetConfiguredState(t *testing.T) {
 		})
 	}
 }
+
+func TestAccounts_BuildReadEmailRequests_GroupsBySender(t *testing.T) {
+	gmailID, outlookID := uint64(7), uint64(9)
+	bancolombia := "a@bancolombia.com.co,b@bancolombia.com.co"
+	nubank := "nu@nu.com.co"
+
+	accounts := Accounts{
+		{ID: 1, UserID: "u1", LastFourDigits: "1111", Bank: Bank{Email: &bancolombia}, Email: Email{ID: &gmailID, Email: "u1@gmail.com", Provider: "gmail"}},
+		{ID: 2, UserID: "u1", LastFourDigits: "2222", Bank: Bank{Email: &bancolombia}, Email: Email{ID: &gmailID, Email: "u1@gmail.com", Provider: "gmail"}},
+		{ID: 3, UserID: "u1", LastFourDigits: "3333", Bank: Bank{Email: &nubank}, Email: Email{ID: &outlookID, Email: "u1@outlook.com", Provider: "outlook"}},
+	}
+
+	requests := accounts.BuildReadEmailRequests()
+
+	if assert.Len(t, requests, 2) {
+		assert.Equal(t, ReadEmailBodyRequest{
+			UserID: "u1", Email: "u1@gmail.com", EmailID: 7, Provider: "gmail", SenderEmail: bancolombia,
+			Accounts: map[string]string{"1111": "1", "2222": "2"}, Onboarding: true,
+		}, requests[0])
+		// before the fix the second group reused the first account's connection and all accounts
+		assert.Equal(t, ReadEmailBodyRequest{
+			UserID: "u1", Email: "u1@outlook.com", EmailID: 9, Provider: "outlook", SenderEmail: nubank,
+			Accounts: map[string]string{"3333": "3"}, Onboarding: true,
+		}, requests[1])
+		assert.Equal(t, "9:nu@nu.com.co", requests[1].DedupeKey())
+	}
+}

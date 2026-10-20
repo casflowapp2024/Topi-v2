@@ -623,7 +623,7 @@ func TestTransactionService_AdminCreateTransactions(t *testing.T) {
 			mockUserSvc *mock.MockUserService,
 			mockCategorySvc *mock.MockCategoryService,
 		)
-		expectedResult []domain.Transaction
+		expectedResult *domain.AdminCreateResult
 		expectedError  error
 		wantErr        bool
 	}{
@@ -661,9 +661,9 @@ func TestTransactionService_AdminCreateTransactions(t *testing.T) {
 					})
 
 				// Admin create transactions
-				mockRepo.EXPECT().AdminCreateTransactions(gomock.Any(), gomock.Any()).Return(createdTransactions, nil)
+				mockRepo.EXPECT().AdminCreateTransactions(gomock.Any(), gomock.Any()).Return(&domain.AdminCreateResult{Created: createdTransactions}, nil)
 			},
-			expectedResult: createdTransactions,
+			expectedResult: &domain.AdminCreateResult{Created: createdTransactions},
 			expectedError:  nil,
 			wantErr:        false,
 		},
@@ -831,9 +831,9 @@ func TestTransactionService_AdminCreateTransactions(t *testing.T) {
 					})
 
 				mockRepo.EXPECT().AdminCreateTransactions(gomock.Any(), gomock.Any()).
-					Return([]domain.Transaction{}, nil)
+					Return(&domain.AdminCreateResult{}, nil)
 			},
-			expectedResult: []domain.Transaction{},
+			expectedResult: &domain.AdminCreateResult{},
 			expectedError:  nil,
 			wantErr:        false,
 		},
@@ -888,9 +888,9 @@ func TestTransactionService_AdminCreateTransactions(t *testing.T) {
 					})
 
 				mockRepo.EXPECT().AdminCreateTransactions(gomock.Any(), gomock.Any()).
-					Return([]domain.Transaction{}, nil)
+					Return(&domain.AdminCreateResult{}, nil)
 			},
-			expectedResult: []domain.Transaction{},
+			expectedResult: &domain.AdminCreateResult{},
 			expectedError:  nil,
 			wantErr:        false,
 		},
@@ -945,9 +945,9 @@ func TestTransactionService_AdminCreateTransactions(t *testing.T) {
 					})
 
 				mockRepo.EXPECT().AdminCreateTransactions(gomock.Any(), gomock.Any()).
-					Return([]domain.Transaction{}, nil)
+					Return(&domain.AdminCreateResult{}, nil)
 			},
-			expectedResult: []domain.Transaction{},
+			expectedResult: &domain.AdminCreateResult{},
 			expectedError:  nil,
 			wantErr:        false,
 		},

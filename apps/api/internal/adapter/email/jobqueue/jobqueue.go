@@ -19,7 +19,7 @@ const enqueueTimeout = 5 * time.Second
 
 // Store persists jobs in the queue (implemented by repository.EmailJobRepository)
 type Store interface {
-	Enqueue(ctx context.Context, payload []byte, priority int16) (int64, error)
+	Enqueue(ctx context.Context, payload []byte, priority int16, dedupeKey string) (int64, error)
 }
 
 type Queue struct {
@@ -93,7 +93,7 @@ func (q *Queue) enqueue(request domain.ReadEmailBodyRequest) (*string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), enqueueTimeout)
 	defer cancel()
 
-	id, err := q.store.Enqueue(ctx, payload, enums.EmailJobPriorityHigh)
+	id, err := q.store.Enqueue(ctx, payload, enums.EmailJobPriorityHigh, request.DedupeKey())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to insert email job")
 	}

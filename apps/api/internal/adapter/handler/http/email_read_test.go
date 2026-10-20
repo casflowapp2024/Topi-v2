@@ -29,7 +29,7 @@ type jobStore struct {
 	priority []int16
 }
 
-func (s *jobStore) Enqueue(_ context.Context, payload []byte, priority int16) (int64, error) {
+func (s *jobStore) Enqueue(_ context.Context, payload []byte, priority int16, dedupeKey string) (int64, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

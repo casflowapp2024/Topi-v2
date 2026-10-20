@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -55,6 +56,12 @@ type ReadEmailBodyRequest struct {
 	SenderEmail string            `json:"sender_email"`
 	Accounts    map[string]string `json:"accounts"` // account_number: account_id
 	Onboarding  bool              `json:"onboarding"`
+}
+
+// DedupeKey identifies the (connection, sender) pair in email_jobs: at most one pending or
+// running job per key. The worker builds the same key ("<email_id>:<sender_email>").
+func (r *ReadEmailBodyRequest) DedupeKey() string {
+	return fmt.Sprintf("%d:%s", r.EmailID, r.SenderEmail)
 }
 
 func (r *ReadEmailBodyRequest) GetAccounts() []string {
