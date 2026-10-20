@@ -1,11 +1,9 @@
 package config
 
 import (
-	"cash-flow/internal/core/domain"
 	"cash-flow/internal/utils"
-	"encoding/json"
 	"errors"
-	"log"
+	"io/fs"
 	"log/slog"
 	"os"
 	"strconv"
@@ -13,9 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/secretsmanager"
 	"github.com/joho/godotenv"
 )
 
@@ -128,17 +123,12 @@ type (
 	}
 )
 
-// New creates a new container instance
+// New creates a new container instance.
+// Configuration is read from environment variables only. If a .env file exists
+// (or the file pointed by ENV_FILE) it is loaded first without overriding
+// variables already present in the environment.
 func New() *Configuration {
-	appEnv := os.Getenv("APP_ENV")
-
-	if appEnv == "" {
-		err := godotenv.Load(".env.prod")
-		if err != nil {
-			slog.Error(domain.ErrLoadingEnv.Error(), "error", err)
-			panic(domain.ErrLoadingEnv)
-		}
-	}
+	loadEnvFile()
 
 	once.Do(func() {
 		c = Configuration{
@@ -234,59 +224,20 @@ func New() *Configuration {
 	return &c
 }
 
-func (c *Configuration) SetSecrets() error {
-	var secretNames = c.getEnvironmentList("SECRETS")
-	var region = os.Getenv("REGION")
+// loadEnvFile loads ENV_FILE (default ".env") when it exists
+func loadEnvFile() {
+	path := getEnvOrDefault("ENV_FILE", ".env")
 
-	for _, secretName := range secretNames {
-		variables := c.GetSecrets(secretName, region)
-		err := c.SetEnvVariablesSecrets(variables)
-		if err != nil {
-			return err
-		}
+	err := godotenv.Load(path)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		slog.Warn("could not load env file", "path", path, "error", err)
 	}
-	return nil
 }
 
-func (c *Configuration) GetSecrets(secretName, region string) map[string]interface{} {
-	var secrets = map[string]interface{}{}
-
-	sess := session.Must(session.NewSession())
-	svc := secretsmanager.New(sess, aws.NewConfig().WithRegion(region))
-
-	result, err := svc.GetSecretValue(&secretsmanager.GetSecretValueInput{SecretId: &secretName})
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	if err = json.Unmarshal([]byte(*result.SecretString), &secrets); err != nil {
-		log.Fatal(err.Error())
-	}
-
-	return secrets
-}
-
-func (c *Configuration) SetEnvVariablesSecrets(secrets map[string]interface{}) error {
-	for secret, secretValue := range secrets {
-		var value string
-
-		switch secretValue.(type) {
-		case string:
-			value = secretValue.(string)
-		case int:
-			value = strconv.Itoa(secretValue.(int))
-		case bool:
-			value = strconv.FormatBool(secretValue.(bool))
-		default:
-			return errors.New("invalid secret value type")
-		}
-
-		err := os.Setenv(secret, value)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+// Enabled reports whether the Cognito settings are complete.
+// Cognito is optional until it is replaced by the own auth (phase 2).
+func (a *Auth) Enabled() bool {
+	return a.Region != "" && a.UserPoolID != "" && a.ClientID != ""
 }
 
 func (c *Configuration) getEnvironmentList(key string) []string {
