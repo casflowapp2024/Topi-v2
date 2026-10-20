@@ -22,7 +22,7 @@
    OJO: el **OAuth de Gmail/Outlook para leer correos se mantiene**: es otra cosa, vive en Google Cloud/Azure, no en AWS.
 4. **Cola = Postgres** (`email_jobs` con `FOR UPDATE SKIP LOCKED`). Sin Redis en v1 (en prod no estaba configurado).
 5. **Cron** dentro del worker: lectura horaria + `REFRESH MATERIALIZED VIEW CONCURRENTLY` (reemplaza pg_cron).
-6. Correo transaccional (códigos de verificación y reset) vía **API HTTPS** (Resend o Brevo). Hetzner bloquea por defecto la salida SMTP por 25/465.
+6. **Sin servicio de correo** (decisión 19-oct): registro sin verificación; los migrados crean su contraseña desde el login; “olvidé mi contraseña” lo resuelve el admin con un script.
 7. Se mantienen dominio `www.topi.cash` y los **mismos OAuth clients** de Google/Microsoft (se rotan solo los secrets) → los refresh tokens guardados en `emails` siguen siendo válidos.
 
 ## Arquitectura destino (Coolify)
@@ -38,19 +38,18 @@ n8n           → chatbot (self-hosted)     ─┘
 |---|---|---|
 | 0 | Rotar secretos | Nuevos client secrets Google/Azure, nueva API key Gemini; los viejos revocados |
 | 1 | Monorepo + entorno local + API sin AWS | `docker compose up` levanta Postgres restaurado + API; `go build/test` OK; cero imports `aws-*` salvo cognito (se va en F2) |
-| 2 | Auth propia (contraseña) | signup/confirm/login/forgot funcionan contra tabla `users`; usuarios migrados entran con “crear contraseña” |
+| 2 | Auth propia (contraseña, sin correo) | signup/login contra `users`; migrados crean su contraseña desde el login |
 | 3 | Worker de correos | Lee desde el corte del 17-oct, sin duplicados; botón “leer ahora” encola job |
 | 4 | Frontend + n8n | Front sin Google login, apunta a API nueva; chatbot operando |
 | 5 | Deploy Coolify | Servicios arriba con dominios, TLS y backups |
-| 6 | Corte | DNS → Hetzner; correo masivo “crea tu contraseña”; monitoreo 1 semana |
+| 6 | Corte | DNS → Hetzner; aviso a usuarios (el front muestra el mensaje de migración); monitoreo 1 semana |
 
 ## ¿Se pueden migrar las cuentas (incluidas las de Google)? → Sí
 - No se pueden recuperar contraseñas (Cognito no las exporta y ya no existe). **Todos** los usuarios, los de Google y los de contraseña, pasan por el mismo flujo:
   1. Se crea `users` a partir de `user_extra` (`id = user_id`, `email = lower(email)`, `password_hash = NULL`, `verified = true`).
-  2. Al intentar login sin contraseña definida → la API responde `PASSWORD_NOT_SET` y el front lleva a “Crear contraseña” (código al correo, mismo flujo de forgot-password).
-  3. En el corte se envía un email a los 56 usuarios con el enlace.
+  2. Al intentar login sin contraseña, la API responde `user needs to reset the password` y el front muestra el aviso de migración y el formulario para crearla (sin código; riesgo aceptado, ver 02-fase-2-auth.md).
 - Los datos quedan intactos porque el `user_id` no cambia.
-- El rol admin vivía en grupos de Cognito (perdido) → se asigna a mano en `users.role`.
+- El rol admin vivía en grupos de Cognito (perdido) → `make-admin.sh cashflowapp2024@gmail.com`.
 
 ## Reanudar la lectura de correos (sin DynamoDB)
 - Última corrida observada: `max(created_at)` de transacciones automáticas = **2026-10-17 09:00 UTC**.
