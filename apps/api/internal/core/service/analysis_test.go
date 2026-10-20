@@ -253,6 +253,7 @@ func TestAnalysisService_GetCategoriesExpenseReport(t *testing.T) {
 					Report: []domain.CategoryMetric{},
 				},
 				Expenses: domain.FlowReport{
+					Value:  -1150, // -1000 + -150
 					Budget: -1300, // -300 + -1000
 					Left:   0,     // Calculated but both Left are nil
 					Report: []domain.CategoryMetric{

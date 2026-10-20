@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	v5 "github.com/jackc/pgx/v5"
+	pgx "github.com/jackc/pgx/v5"
 )
 
 // MockTransactionManager is a mock of TransactionManager interface.
@@ -36,10 +36,10 @@ func (m *MockTransactionManager) EXPECT() *MockTransactionManagerMockRecorder {
 }
 
 // BeginTrx mocks base method.
-func (m *MockTransactionManager) BeginTrx(ctx context.Context) (v5.Tx, error) {
+func (m *MockTransactionManager) BeginTrx(ctx context.Context) (pgx.Tx, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BeginTrx", ctx)
-	ret0, _ := ret[0].(v5.Tx)
+	ret0, _ := ret[0].(pgx.Tx)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -51,7 +51,7 @@ func (mr *MockTransactionManagerMockRecorder) BeginTrx(ctx interface{}) *gomock.
 }
 
 // WithTransaction mocks base method.
-func (m *MockTransactionManager) WithTransaction(ctx context.Context, fn func(context.Context, v5.Tx) error) error {
+func (m *MockTransactionManager) WithTransaction(ctx context.Context, fn func(context.Context, pgx.Tx) error) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WithTransaction", ctx, fn)
 	ret0, _ := ret[0].(error)

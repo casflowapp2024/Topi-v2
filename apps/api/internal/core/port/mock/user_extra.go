@@ -63,6 +63,21 @@ func (mr *MockUserExtraRepositoryMockRecorder) Delete(ctx, ID interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUserExtraRepository)(nil).Delete), ctx, ID)
 }
 
+// GetAll mocks base method.
+func (m *MockUserExtraRepository) GetAll(ctx context.Context) ([]*domain.UserExtra, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAll", ctx)
+	ret0, _ := ret[0].([]*domain.UserExtra)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAll indicates an expected call of GetAll.
+func (mr *MockUserExtraRepositoryMockRecorder) GetAll(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockUserExtraRepository)(nil).GetAll), ctx)
+}
+
 // GetByID mocks base method.
 func (m *MockUserExtraRepository) GetByID(ctx context.Context, ID uint64) (*domain.UserExtra, error) {
 	m.ctrl.T.Helper()
@@ -105,6 +120,20 @@ func (m *MockUserExtraRepository) Update(ctx context.Context, userExtra *domain.
 func (mr *MockUserExtraRepositoryMockRecorder) Update(ctx, userExtra interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUserExtraRepository)(nil).Update), ctx, userExtra)
+}
+
+// UpdateReadEmailByUserID mocks base method.
+func (m *MockUserExtraRepository) UpdateReadEmailByUserID(ctx context.Context, userID string, readEmail bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateReadEmailByUserID", ctx, userID, readEmail)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateReadEmailByUserID indicates an expected call of UpdateReadEmailByUserID.
+func (mr *MockUserExtraRepositoryMockRecorder) UpdateReadEmailByUserID(ctx, userID, readEmail interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateReadEmailByUserID", reflect.TypeOf((*MockUserExtraRepository)(nil).UpdateReadEmailByUserID), ctx, userID, readEmail)
 }
 
 // MockUserExtraService is a mock of UserExtraService interface.
@@ -185,4 +214,18 @@ func (m *MockUserExtraService) Update(ctx context.Context, userExtra *domain.Use
 func (mr *MockUserExtraServiceMockRecorder) Update(ctx, userExtra interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUserExtraService)(nil).Update), ctx, userExtra)
+}
+
+// UpdateReadEmail mocks base method.
+func (m *MockUserExtraService) UpdateReadEmail(ctx context.Context, userID string, readEmail bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateReadEmail", ctx, userID, readEmail)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateReadEmail indicates an expected call of UpdateReadEmail.
+func (mr *MockUserExtraServiceMockRecorder) UpdateReadEmail(ctx, userID, readEmail interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateReadEmail", reflect.TypeOf((*MockUserExtraService)(nil).UpdateReadEmail), ctx, userID, readEmail)
 }

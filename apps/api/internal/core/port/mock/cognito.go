@@ -138,6 +138,21 @@ func (mr *MockAuthCognitoMockRecorder) InitiateAuth(email, password interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitiateAuth", reflect.TypeOf((*MockAuthCognito)(nil).InitiateAuth), email, password)
 }
 
+// ListUsers mocks base method.
+func (m *MockAuthCognito) ListUsers(limit int64, paginationToken *string) (*cognitoidentityprovider.ListUsersOutput, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListUsers", limit, paginationToken)
+	ret0, _ := ret[0].(*cognitoidentityprovider.ListUsersOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListUsers indicates an expected call of ListUsers.
+func (mr *MockAuthCognitoMockRecorder) ListUsers(limit, paginationToken interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUsers", reflect.TypeOf((*MockAuthCognito)(nil).ListUsers), limit, paginationToken)
+}
+
 // ResendConfirmationCode mocks base method.
 func (m *MockAuthCognito) ResendConfirmationCode(email string) (*cognitoidentityprovider.ResendConfirmationCodeOutput, error) {
 	m.ctrl.T.Helper()

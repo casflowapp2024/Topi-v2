@@ -10,7 +10,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	v5 "github.com/jackc/pgx/v5"
+	pgx "github.com/jackc/pgx/v5"
 )
 
 // MockAccountRepository is a mock of AccountRepository interface.
@@ -34,6 +34,21 @@ func NewMockAccountRepository(ctrl *gomock.Controller) *MockAccountRepository {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockAccountRepository) EXPECT() *MockAccountRepositoryMockRecorder {
 	return m.recorder
+}
+
+// AdminGetAccountsByBank mocks base method.
+func (m *MockAccountRepository) AdminGetAccountsByBank(ctx context.Context, filters domain.AccountFilters) ([]domain.BankAccountGroup, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdminGetAccountsByBank", ctx, filters)
+	ret0, _ := ret[0].([]domain.BankAccountGroup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AdminGetAccountsByBank indicates an expected call of AdminGetAccountsByBank.
+func (mr *MockAccountRepositoryMockRecorder) AdminGetAccountsByBank(ctx, filters interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdminGetAccountsByBank", reflect.TypeOf((*MockAccountRepository)(nil).AdminGetAccountsByBank), ctx, filters)
 }
 
 // AdminGetAccountsList mocks base method.
@@ -80,7 +95,7 @@ func (mr *MockAccountRepositoryMockRecorder) DeleteAccount(ctx, userID, id inter
 }
 
 // DisconnectEmail mocks base method.
-func (m *MockAccountRepository) DisconnectEmail(ctx context.Context, tx v5.Tx, userID string, emailID uint64) error {
+func (m *MockAccountRepository) DisconnectEmail(ctx context.Context, tx pgx.Tx, userID string, emailID uint64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DisconnectEmail", ctx, tx, userID, emailID)
 	ret0, _ := ret[0].(error)
@@ -175,6 +190,36 @@ func (mr *MockAccountServiceMockRecorder) AdminGetAccounts(ctx, filters interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdminGetAccounts", reflect.TypeOf((*MockAccountService)(nil).AdminGetAccounts), ctx, filters)
 }
 
+// AdminGetAccountsByBank mocks base method.
+func (m *MockAccountService) AdminGetAccountsByBank(ctx context.Context, filters domain.AccountFilters) ([]domain.BankAccountGroup, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdminGetAccountsByBank", ctx, filters)
+	ret0, _ := ret[0].([]domain.BankAccountGroup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AdminGetAccountsByBank indicates an expected call of AdminGetAccountsByBank.
+func (mr *MockAccountServiceMockRecorder) AdminGetAccountsByBank(ctx, filters interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdminGetAccountsByBank", reflect.TypeOf((*MockAccountService)(nil).AdminGetAccountsByBank), ctx, filters)
+}
+
+// CalculateInitialBalance mocks base method.
+func (m *MockAccountService) CalculateInitialBalance(ctx context.Context, userID string, accountID uint64) (*domain.Account, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CalculateInitialBalance", ctx, userID, accountID)
+	ret0, _ := ret[0].(*domain.Account)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CalculateInitialBalance indicates an expected call of CalculateInitialBalance.
+func (mr *MockAccountServiceMockRecorder) CalculateInitialBalance(ctx, userID, accountID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CalculateInitialBalance", reflect.TypeOf((*MockAccountService)(nil).CalculateInitialBalance), ctx, userID, accountID)
+}
+
 // CreateAccount mocks base method.
 func (m *MockAccountService) CreateAccount(ctx context.Context, account *domain.Account) error {
 	m.ctrl.T.Helper()
@@ -245,19 +290,4 @@ func (m *MockAccountService) UpdateAccount(ctx context.Context, account *domain.
 func (mr *MockAccountServiceMockRecorder) UpdateAccount(ctx, account interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAccount", reflect.TypeOf((*MockAccountService)(nil).UpdateAccount), ctx, account)
-}
-
-// CalculateInitialBalance mocks base method.
-func (m *MockAccountService) CalculateInitialBalance(ctx context.Context, userID string, accountID uint64) (*domain.Account, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CalculateInitialBalance", ctx, userID, accountID)
-	ret0, _ := ret[0].(*domain.Account)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CalculateInitialBalance indicates an expected call of CalculateInitialBalance.
-func (mr *MockAccountServiceMockRecorder) CalculateInitialBalance(ctx, userID, accountID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CalculateInitialBalance", reflect.TypeOf((*MockAccountService)(nil).CalculateInitialBalance), ctx, userID, accountID)
 }

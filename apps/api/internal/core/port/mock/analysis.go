@@ -124,7 +124,7 @@ func (mr *MockAnalysisRepositoryMockRecorder) GetDailyAnalysis(ctx, fr interface
 }
 
 // GetFinancialAccountSummary mocks base method.
-func (m *MockAnalysisRepository) GetFinancialAccountSummary(ctx context.Context, userID string, start time.Time, end time.Time, accountTypes domain.AccountTypes, accounts []int64) (domain.FinancialSummary, error) {
+func (m *MockAnalysisRepository) GetFinancialAccountSummary(ctx context.Context, userID string, start, end time.Time, accountTypes domain.AccountTypes, accounts []int64) (domain.FinancialSummary, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetFinancialAccountSummary", ctx, userID, start, end, accountTypes, accounts)
 	ret0, _ := ret[0].(domain.FinancialSummary)
@@ -232,7 +232,7 @@ func (mr *MockAnalysisServiceMockRecorder) GetAccountsReport(ctx, report interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountsReport", reflect.TypeOf((*MockAnalysisService)(nil).GetAccountsReport), ctx, report)
 }
 
-// GetCategoriesExpenseReport mocks base method.
+// GetCategoriesReport mocks base method.
 func (m *MockAnalysisService) GetCategoriesReport(ctx context.Context, userID string, filter time.Time, sortBy *string) (domain.CategoriesReport, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCategoriesReport", ctx, userID, filter, sortBy)

@@ -272,11 +272,12 @@ func (mr *MockEmailServiceMockRecorder) ListUserEmails(ctx, userID, skip, limit 
 }
 
 // ReadEmail mocks base method.
-func (m *MockEmailService) ReadEmail(ctx context.Context, userID string, accountIDs []uint64) error {
+func (m *MockEmailService) ReadEmail(ctx context.Context, userID string, accountIDs []uint64) (*domain.ReadEmailResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReadEmail", ctx, userID, accountIDs)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*domain.ReadEmailResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // ReadEmail indicates an expected call of ReadEmail.

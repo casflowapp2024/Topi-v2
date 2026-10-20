@@ -286,7 +286,7 @@ func TestIncomeMetrics(t *testing.T) {
 				Budget:     0,
 				Diff:       100,
 				Usage:      nil,
-				Left:       nil,
+				Left:       utils.RoundV3(-500, 2), // budget - income (siempre se calcula)
 				Percentage: utils.RoundV3(25, 2), // (500-400)/400*100 = 25%
 			},
 		},
@@ -529,7 +529,7 @@ func TestExpenseMetrics(t *testing.T) {
 				Diff:       50,                    // (expense - pastExpense) * -1 => (-100 - (-50)) * -1 = 50
 				Percentage: utils.RoundV3(100, 2), // (diff / abs(pastExpense)) => (50 / 50) * 100 = 100
 				Usage:      nil,                   // nil because budget is 0
-				Left:       nil,                   // nil because budget is 0
+				Left:       utils.RoundV3(-100, 2), // budget - abs(expense), se calcula aunque budget sea 0
 			},
 		},
 	}
@@ -618,7 +618,7 @@ func TestSavingsMetrics(t *testing.T) {
 				Diff:       0, // 0 - 0
 				Percentage: nil,
 				Usage:      nil,
-				Left:       nil,
+				Left:       utils.RoundV3(0, 2), // budget - savings
 			},
 		},
 		{
@@ -646,7 +646,7 @@ func TestSavingsMetrics(t *testing.T) {
 				Diff:       -50,                    // -100 - (-50)
 				Percentage: utils.RoundV3(-100, 2), // (-100 - (-50)) / (-50) * 100 = -100 (sign flipped)
 				Usage:      nil,                    // No budget when the budget is zero
-				Left:       nil,                    // No budget when the budget is zero
+				Left:       utils.RoundV3(100, 2),  // budget - savings = 0 - (-100)
 			},
 		},
 		{
@@ -660,7 +660,7 @@ func TestSavingsMetrics(t *testing.T) {
 				Diff:       250,
 				Percentage: utils.RoundV3(100, 2), // (250 - 0) / 0 * 100 = 100
 				Usage:      nil,                   // No budget when the budget is zero
-				Left:       nil,                   // No budget when the budget is zero
+				Left:       utils.RoundV3(-250, 2), // budget - savings = 0 - 250
 			},
 		},
 		{
