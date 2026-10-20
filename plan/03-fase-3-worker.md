@@ -11,3 +11,13 @@
 - Primera corrida: dedupe contra existentes (`account_id, amount, expense, date ±2min`).
 - Gemini Flash-Lite se mantiene (`prompt_v3`). Habla con la API vía `INTERNAL_API_KEY` (sin login admin) en la red interna.
 - Refresh de tokens Google/Microsoft: si cambian, se persisten; errores → `/email/admin/error/:id` (igual que hoy).
+
+## Autenticación del worker con la API (definido en la Fase 2)
+- El worker **no** inicia sesión con un usuario admin (ya no existe Cognito ni `ADMIN_EMAIL/ADMIN_PASSWORD`).
+  Llama a la API con el header **`X-API-Key: <INTERNAL_API_KEY>`** (misma variable en la API y en el worker).
+- Con esa key la API trata la petición como `UserID = "service"` con rol admin, así que entra a las rutas
+  `admin/*` que usa hoy: `GET /accounts/admin/list`, `GET /accounts/admin/list/by-bank`,
+  `POST /transactions/admin/create`, `PUT /user-extra/admin/read-email`, `GET /email/:user_id/:id`,
+  `PUT /email/admin/error/:id`.
+- Una key inválida responde 401; si `INTERNAL_API_KEY` está vacía en la API, la key queda deshabilitada.
+- Sin prefijo `/prod`: base URL de la API en la red interna de Coolify (p. ej. `http://api:8080`).
