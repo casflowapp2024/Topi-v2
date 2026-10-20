@@ -37,10 +37,12 @@
 7. `README.md` raíz con quickstart.
 
 ## Criterios de aceptación
-- [ ] `cd apps/api && go build ./... && go test ./...` pasan.
-- [ ] `grep -r "aws-lambda" apps/api` vacío; `grep -rl "aws-sdk-go" apps/api` solo en el adaptador Cognito y su config.
-- [ ] `docker compose -f infra/docker-compose.yml up` → API sana en `http://localhost:8080/` y Swagger en `/docs/index.html`.
-- [ ] Tras restore: `select count(*) from transactions` = 8748; `user_extra` = 62; `schema_migrations.version` = 18.
-- [ ] `POST /email/read` (con auth simulada o test unitario) inserta fila en `email_jobs`.
-- [ ] Ningún secreto real en el repo; `.env.example` completos.
-- [ ] Primer commit hecho en `topi/` (repos viejos intactos).
+- [x] `cd apps/api && go build ./... && go test ./...` pasan.
+- [x] `grep -r "aws-lambda" apps/api` vacío; `grep -rl "aws-sdk-go" apps/api` solo en el adaptador Cognito y su config.
+  _(F1: `internal/adapter/auth/cognito/**` + `go.mod/go.sum`.)_
+- [x] `docker compose -f infra/docker-compose.yml up` → API sana en `http://localhost:8080/` y Swagger en `/docs/index.html`.
+- [x] Tras restore: `select count(*) from transactions` = 8748; `user_extra` = 62; `schema_migrations.version` = 18.
+- [x] `POST /email/read` (con auth simulada o test unitario) inserta fila en `email_jobs`.
+  _(F1: `TestEmailHandler_ReadEmail_EnqueuesJob` + integración `-tags integration` contra Postgres.)_
+- [x] Ningún secreto real en el repo; `.env.example` completos.
+- [x] Primer commit hecho en `topi/` (repos viejos intactos).
