@@ -40,8 +40,11 @@ class Database:
 
     # ------------------------------------------------------------------ email_jobs
 
-    def claim_job(self, worker_id: str) -> Job | None:
-        """Toma el siguiente job pendiente (FOR UPDATE SKIP LOCKED: varios workers no chocan)."""
+    def claim_job(self, worker_id: str, only_email_ids: Iterable[int] = ()) -> Job | None:
+        """Toma el siguiente job pendiente (FOR UPDATE SKIP LOCKED: varios workers no chocan).
+        Con `only_email_ids` (WORKER_ONLY_EMAIL_IDS) solo toma jobs de esas conexiones y no toca
+        los demás."""
+        email_ids = [int(i) for i in only_email_ids]
         with self.pool.connection() as conn:
             row = conn.execute(
                 """
@@ -51,13 +54,15 @@ class Database:
                 WHERE id = (
                     SELECT id FROM email_jobs
                     WHERE status = 'pending' AND run_after <= now()
+                      AND (cardinality(%(email_ids)s::bigint[]) = 0
+                           OR (payload->>'email_id')::bigint = ANY(%(email_ids)s::bigint[]))
                     ORDER BY priority DESC, run_after, id
                     FOR UPDATE SKIP LOCKED
                     LIMIT 1
                 )
                 RETURNING id, payload, priority, attempts, dedupe_key
                 """,
-                {"worker": worker_id},
+                {"worker": worker_id, "email_ids": email_ids},
             ).fetchone()
         if not row:
             return None
