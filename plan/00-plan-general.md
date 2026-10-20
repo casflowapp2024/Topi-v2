@@ -59,7 +59,7 @@ n8n           → chatbot (self-hosted)     ─┘
 
 ## Retos / lo que no se puede
 - Contraseñas no recuperables → reset obligatorio para todos (ver arriba).
-- Logs, métricas y correos crudos de S3: perdidos. Desde ahora se guardan en `raw_emails`.
+- Logs, métricas y correos crudos de S3: perdidos. No se volverán a guardar: solo metadatos en `processed_emails` (decisión 19-oct).
 - `gmail.readonly` es un scope restringido de Google: para pasar de ~100 usuarios se exige verificación + auditoría CASA anual. A futuro, evaluar el modelo de “reenvío de correos” a `@in.topi.cash`.
 - `pg_cron` no está en el Postgres de Coolify → se reemplaza con el cron del worker.
 - Prefijo `/prod` de API Gateway: la API nueva no lo usa; se ajustan front, worker y n8n.
