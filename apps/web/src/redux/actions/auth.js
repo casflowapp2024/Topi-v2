@@ -1,15 +1,9 @@
-import { m } from 'framer-motion';
 import {
     SET_USER_FOUND,
     REVOMVE_USER_FOUND,
-    SIGNUP_SUCCESS,
     SIGNUP_FAIL,
     LOGIN_SUCCESS,
     LOGIN_FAIL,
-    LOGIN_GMAIL_SUCCESS,
-    LOGIN_GMAIL_FAIL,
-    ACTIVATION_SUCCESS,
-    ACTIVATION_FAIL,
     SET_AUTH_LOADING,
     REMOVE_AUTH_LOADING,
     USER_LOADED_SUCCESS,
@@ -20,12 +14,6 @@ import {
     AUTHENTICATED_FAIL,
     REFRESH_SUCCESS,
     REFRESH_FAIL,
-    REQUEST_CODE_RESET_PASSWORD_SUCCESS,
-    REQUEST_CODE_RESET_PASSWORD_FAIL,
-    RESET_PASSWORD_SUCCESS,
-    RESET_PASSWORD_FAIL,
-    RESET_PASSWORD_CONFIRM_SUCCESS,
-    RESET_PASSWORD_CONFIRM_FAIL,
     LOGOUT
 } from './types'
 
@@ -55,8 +43,9 @@ export const signup = (name, last_name, email, password, confirm_password) => as
     try {
         const res = await axios.post(`${process.env.REACT_APP_API_URL}/users/signup`, body, config);
         if (res.status === 201) {
+            // la API ya no verifica el correo: el signup devuelve los tokens (login automático)
             dispatch({
-                type: SIGNUP_SUCCESS,
+                type: LOGIN_SUCCESS,
                 payload: res.data
             });
 
@@ -331,241 +320,65 @@ export const login = (email, password) => async dispatch => {
     }
 }
 
-export const login_with_code = (code) => async dispatch => {
-    dispatch({
-        type: SET_AUTH_LOADING
-    });
-
+// Usuarios sin contraseña (migrados o reseteados por el admin): crean la contraseña desde el login
+export const set_initial_password = (email, password, confirm_password) => async dispatch => {
     const config = {
         headers: {
             'Content-Type': 'application/json'
         }
     };
-    //console.log("making login code:", code)
-    const body = JSON.stringify({
-        code,
-    });
+
+    const body = JSON.stringify({ email, password, confirm_password });
 
     try {
-        const res = await axios.post(`${process.env.REACT_APP_API_URL}/users/login`, body, config);
-        //console.log(res.status)
-        //console.log(res)
+        const res = await axios.post(`${process.env.REACT_APP_API_URL}/users/set-initial-password`, body, config);
         if (res.status === 200) {
-            console.log(res.data)
             dispatch({
-                type: LOGIN_GMAIL_SUCCESS,
+                type: LOGIN_SUCCESS,
                 payload: res.data
             });
-            //dispatch(load_user());
-            dispatch({
-                type: REMOVE_AUTH_LOADING
-            });
             return true
-            //dispatch(setAlert('Inicio de sesión con éxito', 'green'));
-        } else {
-            dispatch({
-                type: LOGIN_GMAIL_FAIL
-            });
-            dispatch({
-                type: REMOVE_AUTH_LOADING
-            });
-            //dispatch(setAlert('Error al iniciar sesion.', 'red'));
-            return false
         }
-    }
-    catch (err) {
-        dispatch({
-            type: LOGIN_FAIL
-        });
-        dispatch({
-            type: REMOVE_AUTH_LOADING
-        });
-        //dispatch(setAlert('Error al iniciar sesion.', 'red'));
-        return false
+        return res.data.messages
+    } catch (err) {
+        return err.response?.data?.messages || ['network error']
     }
 }
 
-export const register_url_google_login = () => async dispatch => {
-
+// Cambiar contraseña (Ajustes > Perfil). La API cierra las demás sesiones y devuelve tokens nuevos.
+export const change_password = (current_password, password, confirm_password) => async dispatch => {
     const config = {
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Accept': 'application/json'
+            'Content-Type': 'application/json'
         }
     };
-    try {
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/users/social-auth-url`, config);
-        console.log(res.data)
-        if (res.status === 200) {
-            console.log("url", res.data.data.url)
-            return res.data.data.url
-        } else {
-            return false;
-        }
 
+    const body = JSON.stringify({ current_password, password, confirm_password });
+
+    try {
+        const res = await axios.put(`${process.env.REACT_APP_API_URL}/users/password`, body, config);
+        if (res.status === 200) {
+            dispatch({
+                type: LOGIN_SUCCESS,
+                payload: res.data
+            });
+            return true
+        }
+        return res.data.messages
     } catch (err) {
-        return false;
-    }
-}
-
-export const activate = (code, email) => async dispatch => {
-    dispatch({
-        type: SET_AUTH_LOADING
-    });
-
-    const config = {
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    };
-
-    const body = JSON.stringify({
-        code, email
-    });
-
-    try {
-        const res = await axios.post(`${process.env.REACT_APP_API_URL}/users/confirm`, body, config);
-        console.log(res.status)
-        console.log(res)
-        if ((res.status === 204) || (res.status === 200)) {
-            dispatch({
-                type: ACTIVATION_SUCCESS
-            });
-            return true
-            //dispatch(setAlert('Cuenta activada correctamente', 'green'));
-        } else {
-            dispatch({
-                type: ACTIVATION_FAIL
-            });
-            dispatch({
-                type: REMOVE_AUTH_LOADING
-            });
-            return false
-            //dispatch(setAlert('Error activando cuenta', 'red'));
-        }
-    }
-    catch (err) {
-        dispatch({
-            type: ACTIVATION_FAIL
-        });
-        dispatch({
-            type: REMOVE_AUTH_LOADING
-        });
-        return false
-        //dispatch(setAlert('Error al conectar con el servidor, intenta mas tarde.', 'red'));
-    }
-};
-
-export const resend_activate_code = (email) => async dispatch => {
-    dispatch({
-        type: SET_AUTH_LOADING
-    });
-
-    const config = {
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    };
-
-    const body = JSON.stringify({
-        email
-    });
-
-    try {
-        const res = await axios.post(`${process.env.REACT_APP_API_URL}/users/resend-confirmation`, body, config);
-        console.log(res.status)
-        console.log(res)
-        if ((res.status === 204) || (res.status === 200)) {
-
-            return true
-            //dispatch(setAlert('Cuenta activada correctamente', 'green'));
-        } else {
-
-            return false
-            //dispatch(setAlert('Error activando cuenta', 'red'));
-        }
-    }
-    catch (err) {
-
-        return false
-        //dispatch(setAlert('Error al conectar con el servidor, intenta mas tarde.', 'red'));
-    }
-};
-
-export const request_code_reset_password = (email) => async dispatch => {
-    dispatch({
-        type: SET_AUTH_LOADING
-    });
-
-    const config = {
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    };
-
-    const body = JSON.stringify({ email });
-
-    console.log("asking for code")
-
-    try {
-        const res = await axios.post(`${process.env.REACT_APP_API_URL}/users/forgot-password`, body, config);
-        console.log(res.status)
-        console.log(res.data)
-
-        if (res.status === 200) {
-
-            return true
-
-        } else {
-
-            return false
-        }
-    }
-    catch (err) {
-
-        console.log("asking fail")
-        return false
-    }
-}
-
-export const reset_password = (email, password, confirm_password, code) => async dispatch => {
-    dispatch({
-        type: SET_AUTH_LOADING
-    });
-
-    const config = {
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    };
-
-    const body = JSON.stringify({
-        email,
-        password,
-        confirm_password,
-        code
-    });
-
-    try {
-        const res = await axios.put(`${process.env.REACT_APP_API_URL}/users/forgot-password/confirm`, body, config);
-
-        if (res.status === 200) {
-
-            return true
-
-        } else {
-
-            return false
-        }
-    }
-    catch (err) {
-
-        return false
-
+        return err.response?.data?.messages || ['network error']
     }
 }
 
 export const logout = () => dispatch => {
+    // revoca el refresh token en la API (best effort, no bloquea el logout local)
+    const refresh_token = localStorage.getItem('refresh_token');
+    if (refresh_token) {
+        axios.post(`${process.env.REACT_APP_API_URL}/users/logout`, { refresh_token })
+            .catch(() => { });
+    }
+
     dispatch({
         type: LOGOUT,
 

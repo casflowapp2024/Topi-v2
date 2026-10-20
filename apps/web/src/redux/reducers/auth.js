@@ -7,8 +7,6 @@ import {
     SIGNUP_FAIL,
     LOGIN_SUCCESS,
     LOGIN_FAIL,
-    LOGIN_GMAIL_SUCCESS,
-    LOGIN_GMAIL_FAIL,
     ACTIVATION_SUCCESS,
     ACTIVATION_FAIL,
     USER_LOADED_SUCCESS,
@@ -89,6 +87,7 @@ export default function Auth(state = initialState, action) {
             }
         case AUTHENTICATED_FAIL:
             localStorage.removeItem('token');
+            localStorage.removeItem('refresh_token');
             return {
                 ...state,
                 isAuthenticated: false,
@@ -97,6 +96,9 @@ export default function Auth(state = initialState, action) {
             }
         case LOGIN_SUCCESS:
             localStorage.setItem('token', payload.data.access_token);
+            if (payload.data.refresh_token) {
+                localStorage.setItem('refresh_token', payload.data.refresh_token);
+            }
             return {
                 ...state,
                 isAuthenticated: true,
@@ -104,15 +106,6 @@ export default function Auth(state = initialState, action) {
                 login_type: 'normal',
             }
         
-        case LOGIN_GMAIL_SUCCESS:
-            localStorage.setItem('token', payload.data.id_token);
-            return {
-                ...state,
-                isAuthenticated: true,
-                token: localStorage.getItem('token'),
-                login_type: 'gmail',
-            }
-
         case ACTIVATION_SUCCESS:
         case ACTIVATION_FAIL:
         case RESET_PASSWORD_SUCCESS:
@@ -133,10 +126,10 @@ export default function Auth(state = initialState, action) {
         case SIGNUP_SUCCESS:
         case SIGNUP_FAIL:
         case LOGIN_FAIL:
-        case LOGIN_GMAIL_FAIL:
         case REFRESH_FAIL:
         case LOGOUT:
             localStorage.removeItem('token')
+            localStorage.removeItem('refresh_token')
             return {
                 ...state,
                 token :null,

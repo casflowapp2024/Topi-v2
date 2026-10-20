@@ -9,6 +9,7 @@ import { UserIcon, ChevronDownIcon, BanknotesIcon, LanguageIcon, GlobeAmericasIc
 import { timezones_list } from '../info_arrays';
 import { useRef } from 'react';
 import Alert from "../alert";
+import ChangePasswordCard from "./ChangePasswordCard";
 
 const CustomSelect = ({ name, value, options, onChange, Icon, menuUp = false }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -270,6 +271,8 @@ const ProfileSetts = ({
                             </button>
                         </div>
                     )}
+
+                    <ChangePasswordCard />
                 </div>
             </div>
         </>

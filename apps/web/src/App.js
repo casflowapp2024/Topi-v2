@@ -13,13 +13,10 @@ import Error404 from './containers/Error404'
 import Transactions from './containers/Transactions';
 import AccountSettings from './containers/AccountSettings';
 import Accounts from './containers/Accounts';
-import LogInView from './containers/LogInView';
 import Landing from './containers/Landing';
 import SignUpView from './containers/SignUpView';
 import PlanCategories from './containers/PlanCategories';
 import ForgotPassword from './containers/ForgotPassword';
-import VerifyEmailCode from './containers/VerifyEmailCode';
-import GAuthCallback from './containers/GAuthCallBack';
 import GmailConnectAuthCallBack from './containers/GmailConnectAuthCallBack';
 import GlinkOauthPopupSuccess from './containers/GlinkOauthPopupSuccess';
 import TermsOfService from './containers/TermsOfService';
@@ -54,7 +51,8 @@ const AnalyticsWrapper = () => {
         <Route exact path='/' element={<Landing />} />
         <Route exact path='/login/' element={<LogInViewInside />} />
         <Route exact path='/forgot_password/' element={<ForgotPassword />} />
-        <Route exact path='/verify_email/' element={<VerifyEmailCode />} />
+        {/* ya no hay verificación por código ni login con Google: links viejos -> login */}
+        <Route exact path='/verify_email/' element={<Navigate to="/login/" replace />} />
         <Route path="/dashboard/*" element={<Dashboard />}>
           <Route index element={<AAGenDashboard />} />
           <Route path="budgets" element={<AABudgetDashboard />} />
@@ -70,7 +68,7 @@ const AnalyticsWrapper = () => {
         </Route>
         <Route exact path='/accounts/' element={<Accounts />} />
         <Route exact path='/plan/' element={<PlanCategories />} />
-        <Route exact path='/g-auth-call-back/' element={<GAuthCallback />} />
+        <Route exact path='/g-auth-call-back/' element={<Navigate to="/login/" replace />} />
         <Route exact path='/gmail-auth-connect/' element={<GmailConnectAuthCallBack />} />
         <Route exact path="/glink-oauth-popup-success/" element={<GlinkOauthPopupSuccess />} />
         <Route exact path="/terms-of-service/" element={<TermsOfService />} />

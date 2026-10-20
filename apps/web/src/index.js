@@ -2,6 +2,11 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './styles/index.css';
 import App from './App';
+import store from './store';
+import { setupAuthInterceptor } from './lib/authInterceptor';
+
+// renueva la sesión con el refresh token ante un 401
+setupAuthInterceptor(store);
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 

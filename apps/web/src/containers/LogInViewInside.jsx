@@ -1,12 +1,13 @@
 import { connect } from 'react-redux';
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 //redux actions
-import { login, load_user, login_with_code, register_url_google_login } from '../redux/actions/auth';
+import { login, load_user } from '../redux/actions/auth';
 import { useNavigate } from "react-router-dom";
 import { setAlert } from '../redux/actions/alert';
 
 //components
 import Alert from '../components/alert'
+import MigrationPasswordForm from '../components/auth/MigrationPasswordForm';
 //uxui
 import { ThreeDots } from 'react-loader-spinner';
 
@@ -14,10 +15,11 @@ const LogInViewInside = ({
     login,
     isAuthenticated,
     load_user,
-    login_with_code,
-    register_url_google_login,
     setAlert
 }) => {
+
+    // la cuenta existe pero no tiene contraseña (migración): se muestra el formulario para crearla
+    const [needsPassword, setNeedsPassword] = useState(false);
 
 
     const [authCompleted, setAuthCompleted] = useState(false);
@@ -49,6 +51,10 @@ const LogInViewInside = ({
             setLoadingLogin(false)
             if (loginResponse[0] === "user is not authorized, incorrect username or password") {
                 setAlert('El email o la constaseña son incorrectos!', false, 'text-red-600', 'bg-gray-200', 3500)
+            } else if (loginResponse[0] === "user needs to reset the password") {
+                setNeedsPassword(true)
+            } else if (loginResponse[0] === "limit exceeded, too many requests") {
+                setAlert('Demasiados intentos, espera un minuto e inténtalo de nuevo', false, 'text-red-600', 'bg-gray-200', 3500)
             } else {
                 setAlert('Algo salió mal la cuenta no se puede iniciar sesión en este momento', false, 'text-red-600', 'bg-gray-200', 3500)
             }
@@ -69,27 +75,6 @@ const LogInViewInside = ({
     }, [isAuthenticated]);
 
 
-    ///////////////////////////google sign in///////////////////////////7
-
-    const [clickGoogleLogin, setClickGoogleLogin] = useState(false);
-
-    /* useEffect(() => {
-        askForUrl()
-    }, []); */
-
-    const askForUrl = async () => {
-        setClickGoogleLogin(true)
-        const urlResponse = await register_url_google_login()
-        //console.log("urlResponse", urlResponse)
-        //setLoginUrl(urlResponse)
-        window.location.href = urlResponse
-    }
-
-    /* const handleGoogleLogin = (loginUrl) => {
-        
-        window.location.href = loginUrl
-    }; */
-
     return (
         <div className='relative bg-gray-100 h-screen w-screen overflow-hidden font-Inter'>
             <div
@@ -103,7 +88,10 @@ const LogInViewInside = ({
 
                 <div className='w-full max-w-sm bg-white border border-gray-200 rounded-lg shadow  dark:bg-gray-800 dark:border-gray-700 overflow-hidden'>
                     <div class="p-4 sm:p-6 md:p-8">
-
+                        {needsPassword ?
+                            <MigrationPasswordForm email={email} onCancel={() => setNeedsPassword(false)} />
+                            :
+                            <>
                         <form class="space-y-6" action="#">
                             <h5 class="text-xl font-medium text-gray-900 dark:text-white">Inicia Sesión</h5>
                             <div>
@@ -156,59 +144,16 @@ const LogInViewInside = ({
                         {loadingLogin ?
                             <></> :
                             <>
-                                <div className="mt-6">
-
-                                    <div className="flex justify-center">
-                                        <button className="gsi-material-button"
-                                            onClick={() => askForUrl()}>
-                                            <div className="gsi-material-button-state"></div>
-                                            <div className="gsi-material-button-content-wrapper">
-                                                <div className="gsi-material-button-icon">
-                                                    <svg
-                                                        version="1.1"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        viewBox="0 0 48 48"
-                                                        style={{ display: 'block' }}
-                                                    >
-                                                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
-                                                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
-                                                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
-                                                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
-                                                        <path fill="none" d="M0 0h48v48H0z"></path>
-                                                    </svg>
-                                                </div>
-                                                {clickGoogleLogin ?
-                                                    <div
-                                                        class="w-full  ">
-                                                        <div className='flex justify-center items-center'>
-                                                            <ThreeDots
-                                                                height="40"
-                                                                width="40"
-                                                                color="#1d4ed8"
-                                                                ariaLabel="loading"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    :
-                                                    <span className="gsi-material-button-contents">Continua con Google</span>
-                                                }
-                                                <span style={{ display: 'none' }}>Continua con Google</span>
-                                            </div>
-                                        </button>
-                                    </div>
-
-                                </div>
-                                <div className='mt-2 flex flex-col gap-4'>
+                                <div className='mt-6 flex flex-col gap-4'>
 
                                     <div class="text-sm font-medium text-gray-500 dark:text-gray-300">
                                         Aún no estás registrado? <a href="/create_account/" class="text-blue-700 hover:underline dark:text-blue-500">Crear cuenta</a>
                                     </div>
-                                    <div class="text-xs font-medium text-gray-500 dark:text-gray-300">
-                                        Estás registrado pero no has verificado tu cuenta? <a href="/verify_email/" class="text-blue-700 hover:underline dark:text-blue-500">Verifica tu correo</a>
-                                    </div>
                                 </div>
                             </>
 
+                        }
+                            </>
                         }
                     </div>
                     <div>
@@ -228,7 +173,7 @@ const mapStateToProps = state => ({
 })
 
 export default connect(mapStateToProps, {
-    login, load_user, login_with_code, register_url_google_login, setAlert
+    login, load_user, setAlert
 
 })(LogInViewInside)
 
