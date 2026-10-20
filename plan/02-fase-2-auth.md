@@ -101,11 +101,12 @@ Borrar `adapter/auth/cognito`, `adapter/auth/social`, `port/cognito.go`, `port/s
 enums de Cognito/OAuth social, `MicahParks/keyfunc` y `aws-sdk-go`. `grep -ri "cognito\|aws" apps/api --include=*.go` debe quedar vacío.
 
 ## Criterios de aceptación
-- [ ] `go build ./... && go test ./...` OK. Tests nuevos: signup, login (ok / mala / hash NULL), set-initial-password (ok / ya tenía contraseña / ventana vencida), refresh con rotación y reuso, token_version, API key, rate limit.
-- [ ] Tras restore + migrate: `users` = 56, versión 19.
-- [ ] Flujo migrado con un usuario real del dump con transacciones: login → `user needs to reset the password` → set-initial-password → `GET /transactions/list` devuelve sus transacciones viejas. Un segundo set-initial-password falla.
-- [ ] `reset-password.sh` deja la cuenta otra vez en estado “crear contraseña” y las sesiones viejas dan 401.
-- [ ] Usuario nuevo: signup → entra directo → crea cuenta y categoría.
-- [ ] `make-admin.sh cashflowapp2024@gmail.com` → ese usuario accede a `admin/*`; un usuario normal recibe 403; `X-API-Key` funciona.
-- [ ] Sin AWS/Cognito en `go.mod`.
-- [ ] Front: build OK, sin Google login ni verificación por código, aviso de migración y creación de contraseña funcionando contra la API local.
+- [x] `go build ./... && go test ./...` OK. Tests nuevos: signup, login (ok / mala / hash NULL), set-initial-password (ok / ya tenía contraseña / ventana vencida), refresh con rotación y reuso, token_version, API key, rate limit.
+- [x] Tras restore + migrate: `users` = 56, versión 19.
+- [x] Flujo migrado con un usuario real del dump con transacciones: login → `user needs to reset the password` → set-initial-password → `GET /transactions/list` devuelve sus transacciones viejas. Un segundo set-initial-password falla.
+- [x] `reset-password.sh` deja la cuenta otra vez en estado “crear contraseña” y las sesiones viejas dan 401.
+- [x] Usuario nuevo: signup → entra directo → crea cuenta y categoría.
+- [x] `make-admin.sh cashflowapp2024@gmail.com` → ese usuario accede a `admin/*`; un usuario normal recibe 403; `X-API-Key` funciona.
+  _(Verificado 20-oct-2026 en local: restore → versión 19, users = 56; flujo E2E con un usuario migrado de 2.180 transacciones; front probado en el navegador.)_
+- [x] Sin AWS/Cognito en `go.mod`.
+- [x] Front: build OK, sin Google login ni verificación por código, aviso de migración y creación de contraseña funcionando contra la API local.
