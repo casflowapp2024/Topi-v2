@@ -1,0 +1,13 @@
+[project]
+name = "topi-worker"
+version = "0.1.0"
+description = "Worker de correos de Topi: lee notificaciones bancarias y crea transacciones"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+    "db: necesita Postgres migrado (TEST_DATABASE_URL); se omite si no está definido",
+    "live: llama servicios externos reales (Gemini); se omite salvo con --live",
+]
