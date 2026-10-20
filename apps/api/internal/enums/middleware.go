@@ -7,4 +7,6 @@ const (
 	AuthorizationType = "bearer"
 	// AuthorizationPayloadKey is the key for auth payload in the context
 	AuthorizationPayloadKey = "authorization_payload"
+	// APIKeyHeader authenticates internal callers (worker, n8n) with INTERNAL_API_KEY
+	APIKeyHeader = "X-API-Key"
 )

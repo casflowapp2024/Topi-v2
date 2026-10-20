@@ -39,9 +39,16 @@ func NewRouter(config *config.HTTP) (*Router, string) {
 	allowedOrigins := config.AllowedOrigins
 	originsList := strings.Split(allowedOrigins, ",")
 	ginConfig.AllowOrigins = originsList
-	ginConfig.AllowHeaders = config.AllowedHeaders
+	ginConfig.AllowHeaders = allowedHeaders(config.AllowedHeaders)
 
 	router := gin.New()
+
+	// Only these proxies may set X-Forwarded-For; with none, ClientIP() is the remote
+	// address, so the rate limit cannot be bypassed with a forged header.
+	if err := router.SetTrustedProxies(config.TrustedProxies); err != nil {
+		slog.Error(domain.ErrInvalidConfig.Error(), "error", err)
+		panic(domain.ErrInvalidConfig)
+	}
 
 	router.Use(
 		RequestIDMiddleware(), // Add request ID generation
@@ -63,6 +70,22 @@ func (r *Router) Serve(listenAddr string) {
 		slog.Error(domain.ErrRunningServer.Error(), "error", err)
 		panic(domain.ErrRunningServer)
 	}
+}
+
+// allowedHeaders returns the CORS allowed headers, defaulting to the ones the front uses
+func allowedHeaders(configured []string) []string {
+	headers := make([]string, 0, len(configured))
+	for _, header := range configured {
+		if header = strings.TrimSpace(header); header != "" {
+			headers = append(headers, header)
+		}
+	}
+
+	if len(headers) == 0 {
+		return []string{"Origin", "Content-Type", "Accept", "Authorization"}
+	}
+
+	return headers
 }
 
 // registerValidators registers custom validators

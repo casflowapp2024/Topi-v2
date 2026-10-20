@@ -45,6 +45,9 @@ func (r *Routes) UserRoutes() {
 
 	user.POST("/signup", r.UserHandler.Register)
 	user.POST("/login", r.UserHandler.Login)
+	user.POST("/set-initial-password", r.UserHandler.SetInitialPassword)
+	user.POST("/refresh", r.UserHandler.Refresh)
+	user.POST("/logout", r.UserHandler.Logout)
 	// no-op 200 kept for compatibility (there is no email verification)
 	user.POST("/confirm", r.UserHandler.ConfirmUser)
 	user.POST("/resend-confirmation", r.UserHandler.ResendConfirmationCode)
@@ -53,6 +56,7 @@ func (r *Routes) UserRoutes() {
 	{
 		authUser.GET("/", r.UserHandler.GetUser)
 		authUser.PUT("/", r.UserHandler.UpdateUser)
+		authUser.PUT("/password", r.UserHandler.ChangePassword)
 	}
 }
 

@@ -31,9 +31,26 @@ func RequestIDMiddleware() gin.HandlerFunc {
 	}
 }
 
-// AuthMiddleware is a middleware to check if the user is authenticated
+// AuthMiddleware is a middleware to check if the user is authenticated.
+// Internal callers (worker, n8n) can use the X-API-Key header instead of a bearer token:
+// they get an admin payload with UserID "service".
 func AuthMiddleware(auth port.UserService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		if apiKey := ctx.GetHeader(enums.APIKeyHeader); apiKey != "" {
+			payload, err := auth.AuthorizeAPIKey(apiKey)
+			if err != nil {
+				handleAbort(ctx, err)
+				return
+			}
+
+			ctx.Set(enums.AuthorizationPayloadKey, payload)
+
+			defer logRequestMetricWithPayload(ctx, payload, nil)
+
+			ctx.Next()
+			return
+		}
+
 		authorizationHeader := ctx.GetHeader(enums.AuthorizationHeaderKey)
 
 		isEmpty := len(authorizationHeader) == 0
