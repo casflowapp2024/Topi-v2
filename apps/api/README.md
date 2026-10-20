@@ -8,9 +8,7 @@
   - [Redis Invalidation Policies File](#redis-invalidation-policies-file)
   - [Validate Policies](#validate-policies)
 - [Creating Migration Files in Go](#creating-migration-files-in-go)
-- [CDK Lambda deployment](#cdk-lambda-deployment)
-- [Create Pg Cron](#create-pg-cron)
-- [Update Pg Cron](#update-pg-cron)
+- [Pg Cron (legacy)](#pg-cron-legacy)
 - [Swagger Documentation](#swagger-documentation)
 - [Important Git Commands](#important-git-commands)
 - [Troubleshooting](#troubleshooting)
@@ -18,62 +16,21 @@
 
 # Running Locally
 
-To run the application locally, follow these steps:
+El entorno local (Postgres 16 restaurado desde el dump + API) se levanta desde la raíz del
+monorepo; ver `../../README.md` e `infra/`.
 
-1. **Set the `.env` file**:
-   Ensure you have as `.env` file in the root directory of your project with the following content:
+Para correr la API fuera de Docker:
 
-   ```dotenv
-   APP_NAME="cash-flow"
-   APP_ENV="development"
-
-   HTTP_URL="127.0.0.1"
-   HTTP_PORT="8080"
-   HTTP_ALLOWED_ORIGINS="http://127.0.0.1:3000,http://127.0.0.1:5173"
-
-   DB_CONNECTION="postgres"
-   DB_HOST="127.0.0.1"
-   DB_PORT="5432"
-   DB_NAME="cashflow"
-   DB_USER="postgres"
-   DB_PASSWORD="postgres"
-   DB_MAX_OPEN_CONNS="25"
-   DB_MAX_IDLE_CONNS="5"
-   DB_CONN_MAX_LIFETIME="5m"
-
-   REDIS_ADDR="localhost:6379"
-   REDIS_PASSWORD="redis"
-
-   TOKEN_DURATION="15m"
-     ```
-
-2. **Run DockerCompose**:
-   Use Docker Compose to set up the necessary services (e.g., database, cache, api):
+1. Copia `.env.example` a `.env` y ajusta los valores (no se commitea).
+2. Con Postgres arriba (`docker compose -f ../../infra/docker-compose.yml up -d postgres`):
 
    ```sh
-   docker compose -f docker-compose-local.yml build
-    ```
-
-   ```sh
-   docker compose -f docker-compose-local.yml up
-    ```
-
-3. **Run the Application**:
-   Start the application using the Go command:
-
-   ```sh
-   go run main.go
+   go run ./cmd/http
    ```
 
-4. **Run the Application with Compose**:
-
-   If you run the application with compose, don't forget to change the `DB_HOST` and `REDIS_ADDR` in the `.env` file to
-   `postgres` and `redis:6379` respectively.:
-
-   ```
-   DB_HOST="postgres"
-   REDIS_ADDR="redis:6379"
-   ```
+La API aplica las migraciones al arrancar (`migrate up`). Cognito es opcional: si faltan
+`REGION`, `COGNITO_USER_POOL_ID` o `COGNITO_CLIENT_ID`, arranca igual y los endpoints que
+dependen de auth responden 503 (se reemplaza en la Fase 2).
 
 ### Running Inside Containers
 To run the application inside containers, execute the next command:
@@ -86,7 +43,8 @@ To run the application inside containers, execute the next command:
 To create mocks for the application, run the following command:
 
 ```sh
-  go generate ./internal/common/port/cache.go
+  go install github.com/golang/mock/mockgen@v1.6.0
+  go generate ./internal/core/port/... ./internal/adapter/auth/cognito/...
 ```
 
 # Redis  Invalidation Policies for Golang
@@ -149,17 +107,12 @@ To create migration files in Go, you can use a migration tool like golang-migrat
     }
    ```
 
-## CDK Lambda deployment
-For lambda deployment follow the next steps
-```sh
-  GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o cmd/lambda/bootstrap cmd/lambda/main.go
-```
+## Pg Cron (legacy)
 
-```sh
-  zip cmd/lambda/cashflow.zip -j cmd/lambda/bootstrap
-```
+> `pg_cron` era de RDS. En el entorno nuevo no existe: el restore lo excluye y los
+> `REFRESH MATERIALIZED VIEW` los hará el cron del worker (Fase 3). Se deja como referencia.
 
-## Create Pg Cron
+### Create Pg Cron
 To create a pg cron job,first you need to create the extension in your database, running the following command:
 
 ```sql
@@ -179,7 +132,7 @@ SELECT cron.schedule('historic_cumulative_balance', '*/5 * * * *', 'REFRESH MATE
 
 
 
-## Update Pg Cron
+### Update Pg Cron
 
 To update the pg cron, you can use the following command:
 
@@ -318,26 +271,9 @@ The PostgreSQL database has reached its maximum connection limit. All available 
 - Use separate databases for development, staging, and production environments
 
 
-Commands you can use next
-=========================
-```
-[*] Create pipeline: cd cashflow && sam pipeline init --bootstrap
-[*] Validate SAM template: cd cashflow && sam validate
-[*] Test Function in the Cloud: cd cashflow && sam sync --stack-name {stack-name} --watch
-```
-
 ## Resources
 
 - [Redis Invalidation Policies](https://dev.to/truongpx396/golang-restful-api-with-gin-gorm-redis-cache-2gia)
 - [LRU Cache in Golang](https://github.com/sysulq/golang-cache/blob/lru/example/main.go)
 - [CashFlow architecture](https://app.eraser.io/workspace/sfJOCLmQKDqePFLZgbe5?origin=share)
-- [SAM deployment](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-getting-started-hello-world.html)
 
-
-DB_CONNECTION=postgres
-DB_HOST="127.0.0.1"
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=cashflow
-DB_SSL_MODE=disable
