@@ -1,0 +1,52 @@
+# Entorno local: Postgres 16 (restaurado desde el dump) + API.
+# Variables: infra/.env (copia de infra/.env.example). Ver README raíz.
+name: topi
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-topi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en infra/.env}
+      POSTGRES_DB: ${POSTGRES_DB:-cashflow}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # dump de producción (solo lectura) para infra/scripts/restore.sh
+      - ${DUMP_FILE:-../../cashflowprod.dump}:/dump/cashflowprod.dump:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: ../apps/api
+    env_file:
+      # opcional: Gmail/Outlook/Cognito para la API (copia de apps/api/.env.example)
+      - path: ../apps/api/.env
+        required: false
+    environment:
+      APP_NAME: topi-api
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      HTTP_URL: 0.0.0.0
+      HTTP_PORT: "8080"
+      HTTP_ALLOWED_ORIGINS: ${HTTP_ALLOWED_ORIGINS:-http://localhost:3000}
+      DB_CONNECTION: postgres
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: ${POSTGRES_USER:-topi}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en infra/.env}
+      DB_NAME: ${POSTGRES_DB:-cashflow}
+      DB_SSL_MODE: disable
+    ports:
+      - "${API_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

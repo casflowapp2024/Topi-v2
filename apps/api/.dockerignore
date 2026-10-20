@@ -1,0 +1,8 @@
+.env
+.env.*
+!.env.example
+.vscode
+.idea
+*.md
+bin/
+tmp/
