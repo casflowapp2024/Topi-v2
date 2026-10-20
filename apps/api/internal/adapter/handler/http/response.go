@@ -90,7 +90,7 @@ var errorStatusMap = map[error]int{
 	domain.ErrInvalidConfig:            http.StatusInternalServerError,
 	domain.ErrBeginTrx:                 http.StatusInternalServerError,
 
-	// AWS Cognito Errors
+	// Auth Errors (strings are part of the contract with the front)
 	domain.ErrUsernameExistsException:        http.StatusConflict,
 	domain.ErrLimitExceededException:         http.StatusTooManyRequests,
 	domain.ErrInvalidPasswordException:       http.StatusUnauthorized,
@@ -286,6 +286,7 @@ type authResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int64  `json:"expires_in"`
+	TokenType    string `json:"token_type" example:"Bearer"`
 }
 
 // newAuthResponse is a helper function to create a response body for handling authentication data
@@ -299,12 +300,25 @@ func newAuthResponse(tokens *domain.AuthTokens) authResponse {
 		AccessToken:  tokens.AccessToken,
 		RefreshToken: tokens.RefreshToken,
 		ExpiresIn:    tokens.ExpiresIn,
+		TokenType:    tokens.TokenType,
 	}
 }
 
-// newCreatedResponse is a helper function to create a response body for user creation
-func newCreatedResponse() response {
-	return newResponse(true, "User created", nil)
+// signupResponse keeps the previous signup body ({"success", "message": "User created"})
+// and adds the tokens (automatic login)
+type signupResponse struct {
+	Success bool   `json:"success" example:"true"`
+	Message string `json:"message" example:"User created"`
+	authResponse
+}
+
+// newSignupResponse is a helper function to create a response body for user creation
+func newSignupResponse(tokens *domain.AuthTokens) signupResponse {
+	return signupResponse{
+		Success:      true,
+		Message:      "User created",
+		authResponse: newAuthResponse(tokens),
+	}
 }
 
 // userResponse represents a user response body

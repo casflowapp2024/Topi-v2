@@ -20,10 +20,20 @@ import (
 	"cash-flow/internal/adapter/handler/http"
 	"cash-flow/internal/adapter/logger"
 	"cash-flow/internal/adapter/server"
+	"cash-flow/internal/core/domain"
+	"log/slog"
+	"os"
 )
 
 func main() {
 	settings := config.New()
+
+	// Fail fast on missing or invalid auth settings (e.g. JWT_SECRET)
+	if err := settings.Validate(); err != nil {
+		slog.Error(domain.ErrInvalidConfig.Error(), "error", err)
+		os.Exit(1)
+	}
+
 	injector := server.NewInjector(settings)
 
 	// Defer closing the resources

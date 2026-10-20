@@ -44,13 +44,10 @@ func (r *Routes) UserRoutes() {
 	user := r.Router.Group("/users")
 
 	user.POST("/signup", r.UserHandler.Register)
-	user.POST("/confirm", r.UserHandler.ConfirmUser)
-	user.GET("/social-auth-url", r.UserHandler.GetSocialAuthURL)
-	user.GET("/social-auth-url/:platform", r.UserHandler.GetSocialAuthURL)
 	user.POST("/login", r.UserHandler.Login)
+	// no-op 200 kept for compatibility (there is no email verification)
+	user.POST("/confirm", r.UserHandler.ConfirmUser)
 	user.POST("/resend-confirmation", r.UserHandler.ResendConfirmationCode)
-	user.POST("/forgot-password", r.UserHandler.ForgotPassword)
-	user.PUT("/forgot-password/confirm", r.UserHandler.ConfirmForgotPassword)
 
 	authUser := user.Group("/").Use(AuthMiddleware(r.UserHandler.svc))
 	{

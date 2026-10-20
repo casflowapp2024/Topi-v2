@@ -34,6 +34,22 @@ func (m *MockTokenRepository) EXPECT() *MockTokenRepositoryMockRecorder {
 	return m.recorder
 }
 
+// GenerateAccessToken mocks base method.
+func (m *MockTokenRepository) GenerateAccessToken(user *domain.User) (string, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GenerateAccessToken", user)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GenerateAccessToken indicates an expected call of GenerateAccessToken.
+func (mr *MockTokenRepositoryMockRecorder) GenerateAccessToken(user interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateAccessToken", reflect.TypeOf((*MockTokenRepository)(nil).GenerateAccessToken), user)
+}
+
 // VerifyToken mocks base method.
 func (m *MockTokenRepository) VerifyToken(token string) (*domain.TokenPayload, error) {
 	m.ctrl.T.Helper()

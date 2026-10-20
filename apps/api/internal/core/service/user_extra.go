@@ -90,12 +90,13 @@ func (us *UserExtraService) UpdateReadEmail(ctx context.Context, userID string, 
 }
 
 func (us *UserExtraService) getUserInfo(ctx context.Context) (domain.User, error) {
-	token, err := domain.GetAuthToken(ctx, enums.AuthorizationHeaderKey)
-	if err != nil {
-		return domain.User{}, err
+	// the auth payload is stored in the gin context by AuthMiddleware
+	payload, ok := ctx.Value(enums.AuthorizationPayloadKey).(*domain.TokenPayload)
+	if !ok || payload == nil {
+		return domain.User{}, domain.ErrEmptyUserInfo
 	}
 
-	user, err := us.userRepo.GetUserByToken(ctx, token)
+	user, err := us.userRepo.GetUserByID(ctx, payload.UserID)
 	if err != nil {
 		return domain.User{}, err
 	}

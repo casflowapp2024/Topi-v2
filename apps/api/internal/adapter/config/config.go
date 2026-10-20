@@ -3,6 +3,7 @@ package config
 import (
 	"cash-flow/internal/utils"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -21,12 +22,10 @@ var c Configuration
 type (
 	Configuration struct {
 		App     *App
-		Token   *Token
 		Redis   *Redis
 		DB      *DB
 		HTTP    *HTTP
 		Auth    *Auth
-		Social  *Social
 		Gmail   *Gmail
 		Outlook *Outlook
 	}
@@ -35,12 +34,6 @@ type (
 		Name     string
 		Env      string
 		LogLevel string
-	}
-	// Token contains all the environment variables for the token service
-	Token struct {
-		Region     string
-		UserPoolID string
-		ClientID   string
 	}
 	// Redis contains all the environment variables for the cache service
 	Redis struct {
@@ -68,20 +61,22 @@ type (
 		Port           string
 		AllowedOrigins string
 		AllowedHeaders []string
+		// TrustedProxies are the proxies allowed to set X-Forwarded-For (empty = none,
+		// the client IP is the remote address). Matters for rate limiting.
+		TrustedProxies []string
 	}
-	// Auth contains all the environment variables for the authentication service
+	// Auth contains the environment variables of the own auth (email + password)
 	Auth struct {
-		Region       string
-		UserPoolID   string
-		ClientID     string
-		ClientSecret string
-	}
-	// Social contains all the environment variables for the social authentication service
-	Social struct {
-		Auth              Auth
-		Http              HTTPClient
-		CallBackURL       string
-		CallBackMobileURL string
+		JWTSecret       string
+		JWTIssuer       string
+		AccessTokenTTL  time.Duration
+		RefreshTokenTTL time.Duration
+		// InitialPasswordUntil closes set-initial-password after this instant (nil = always open)
+		InitialPasswordUntil *time.Time
+		// InternalAPIKey authenticates the worker/n8n with X-API-Key (empty = disabled)
+		InternalAPIKey     string
+		RateLimitPerMinute int
+		initialPasswordErr error
 	}
 	// HTTPClient contains the Http client and the url
 	HTTPClient struct {
@@ -126,11 +121,6 @@ func New() *Configuration {
 				Env:      os.Getenv("APP_ENV"),
 				LogLevel: os.Getenv("LOG_LEVEL"),
 			},
-			&Token{
-				Region:     os.Getenv("REGION"),
-				UserPoolID: os.Getenv("COGNITO_USER_POOL_ID"),
-				ClientID:   os.Getenv("COGNITO_CLIENT_ID"),
-			},
 			&Redis{
 				Addr:     os.Getenv("REDIS_ADDR"),
 				Password: os.Getenv("REDIS_PASSWORD"),
@@ -154,27 +144,9 @@ func New() *Configuration {
 				Port:           os.Getenv("HTTP_PORT"),
 				AllowedOrigins: os.Getenv("HTTP_ALLOWED_ORIGINS"),
 				AllowedHeaders: c.getEnvironmentList("HTTP_ALLOWED_HEADERS"),
+				TrustedProxies: getEnvList("TRUSTED_PROXIES"),
 			},
-			&Auth{
-				Region:       os.Getenv("REGION"),
-				ClientID:     os.Getenv("COGNITO_CLIENT_ID"),
-				ClientSecret: os.Getenv("COGNITO_CLIENT_SECRET"),
-				UserPoolID:   os.Getenv("COGNITO_USER_POOL_ID"),
-			},
-			&Social{
-				Auth: Auth{
-					Region:       os.Getenv("REGION"),
-					ClientID:     os.Getenv("COGNITO_CLIENT_ID"),
-					ClientSecret: os.Getenv("COGNITO_CLIENT_SECRET"),
-					UserPoolID:   os.Getenv("COGNITO_USER_POOL_ID"),
-				},
-				Http: HTTPClient{
-					URL:     os.Getenv("SOCIAL_AUTH_URL"),
-					Timeout: utils.GetTimeDuration(os.Getenv("SOCIAL_AUTH_TIMEOUT")),
-				},
-				CallBackURL:       os.Getenv("SOCIAL_AUTH_CALLBACK_URL"),
-				CallBackMobileURL: os.Getenv("SOCIAL_AUTH_CALLBACK_MOBILE_URL"),
-			},
+			newAuth(),
 			&Gmail{
 				Web: Web{
 					ClientID:          os.Getenv("GMAIL_CLIENT_ID"),
@@ -213,10 +185,67 @@ func loadEnvFile() {
 	}
 }
 
-// Enabled reports whether the Cognito settings are complete.
-// Cognito is optional until it is replaced by the own auth (phase 2).
-func (a *Auth) Enabled() bool {
-	return a.Region != "" && a.UserPoolID != "" && a.ClientID != ""
+// minJWTSecretLength is the minimum JWT_SECRET size in bytes (HS256)
+const minJWTSecretLength = 32
+
+func newAuth() *Auth {
+	auth := &Auth{
+		JWTSecret:          os.Getenv("JWT_SECRET"),
+		JWTIssuer:          getEnvOrDefault("JWT_ISSUER", "topi-api"),
+		AccessTokenTTL:     getEnvAsDuration("ACCESS_TOKEN_TTL", time.Hour),
+		RefreshTokenTTL:    getEnvAsDuration("REFRESH_TOKEN_TTL", 720*time.Hour),
+		InternalAPIKey:     os.Getenv("INTERNAL_API_KEY"),
+		RateLimitPerMinute: int(getEnvAsInt32("RATE_LIMIT_PER_MIN", 10)),
+	}
+
+	auth.InitialPasswordUntil, auth.initialPasswordErr = parseDeadline(os.Getenv("INITIAL_PASSWORD_UNTIL"))
+
+	return auth
+}
+
+// Validate checks the settings that must be correct before starting the API
+func (c *Configuration) Validate() error {
+	if len(c.Auth.JWTSecret) < minJWTSecretLength {
+		return fmt.Errorf("JWT_SECRET is required and must have at least %d bytes", minJWTSecretLength)
+	}
+
+	if c.Auth.initialPasswordErr != nil {
+		return fmt.Errorf("INITIAL_PASSWORD_UNTIL: %w", c.Auth.initialPasswordErr)
+	}
+
+	return nil
+}
+
+// parseDeadline accepts RFC3339 ("2026-12-31T23:59:59-05:00") or a date ("2026-12-31",
+// valid until the end of that day in UTC). Empty = no deadline.
+func parseDeadline(value string) (*time.Time, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil, nil
+	}
+
+	if deadline, err := time.Parse(time.RFC3339, value); err == nil {
+		return &deadline, nil
+	}
+
+	date, err := time.Parse(time.DateOnly, value)
+	if err != nil {
+		return nil, errors.New("use RFC3339 or YYYY-MM-DD")
+	}
+
+	deadline := date.Add(24*time.Hour - time.Nanosecond)
+	return &deadline, nil
+}
+
+// getEnvList splits a comma separated variable, ignoring empty items
+func getEnvList(key string) []string {
+	var values []string
+	for _, item := range strings.Split(os.Getenv(key), ",") {
+		if item = strings.TrimSpace(item); item != "" {
+			values = append(values, item)
+		}
+	}
+	return values
 }
 
 func (c *Configuration) getEnvironmentList(key string) []string {

@@ -5,24 +5,25 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNew(t *testing.T) {
 	testCases := []struct {
-		name           string
-		envVars        map[string]string
-		cognitoEnabled bool
+		name        string
+		envVars     map[string]string
+		validConfig bool
 	}{
 		{
 			name: "should load configuration from environment variables",
 			envVars: map[string]string{
 				"APP_NAME":             "TestApp",
 				"APP_ENV":              "development",
-				"REGION":               "us-east-1",
-				"COGNITO_USER_POOL_ID": "123456789",
-				"COGNITO_CLIENT_ID":    "123456789",
+				"JWT_SECRET":           "0123456789abcdef0123456789abcdef",
+				"ACCESS_TOKEN_TTL":     "30m",
+				"INTERNAL_API_KEY":     "internal-key",
 				"REDIS_ADDR":           "localhost:6379",
 				"REDIS_PASSWORD":       "password",
 				"DB_CONNECTION":        "postgres",
@@ -35,15 +36,15 @@ func TestNew(t *testing.T) {
 				"HTTP_PORT":            "8080",
 				"HTTP_ALLOWED_ORIGINS": "*",
 			},
-			cognitoEnabled: true,
+			validConfig: true,
 		},
 		{
-			name: "should start without env file and without cognito settings",
+			name: "should load without env file and fail validation without JWT_SECRET",
 			envVars: map[string]string{
 				"APP_NAME": "TestApp",
 				"ENV_FILE": filepath.Join(os.TempDir(), "does-not-exist.env"),
 			},
-			cognitoEnabled: false,
+			validConfig: false,
 		},
 	}
 
@@ -63,10 +64,6 @@ func TestNew(t *testing.T) {
 			assert.Equal(t, tc.envVars["APP_NAME"], config.App.Name)
 			assert.Equal(t, tc.envVars["APP_ENV"], config.App.Env)
 
-			assert.Equal(t, tc.envVars["REGION"], config.Token.Region)
-			assert.Equal(t, tc.envVars["COGNITO_USER_POOL_ID"], config.Token.UserPoolID)
-			assert.Equal(t, tc.envVars["COGNITO_CLIENT_ID"], config.Token.ClientID)
-
 			assert.Equal(t, tc.envVars["REDIS_ADDR"], config.Redis.Addr)
 			assert.Equal(t, tc.envVars["REDIS_PASSWORD"], config.Redis.Password)
 
@@ -81,11 +78,13 @@ func TestNew(t *testing.T) {
 			assert.Equal(t, tc.envVars["HTTP_PORT"], config.HTTP.Port)
 			assert.Equal(t, tc.envVars["HTTP_ALLOWED_ORIGINS"], config.HTTP.AllowedOrigins)
 
-			assert.Equal(t, tc.envVars["REGION"], config.Auth.Region)
-			assert.Equal(t, tc.envVars["COGNITO_CLIENT_ID"], config.Auth.ClientID)
-			assert.Equal(t, tc.envVars["COGNITO_CLIENT_SECRET"], config.Auth.ClientSecret)
-			assert.Equal(t, tc.envVars["COGNITO_USER_POOL_ID"], config.Auth.UserPoolID)
-			assert.Equal(t, tc.cognitoEnabled, config.Auth.Enabled())
+			assert.Equal(t, tc.envVars["JWT_SECRET"], config.Auth.JWTSecret)
+			assert.Equal(t, tc.envVars["INTERNAL_API_KEY"], config.Auth.InternalAPIKey)
+			assert.Equal(t, "topi-api", config.Auth.JWTIssuer)
+			assert.Equal(t, 720*time.Hour, config.Auth.RefreshTokenTTL)
+			assert.Equal(t, 10, config.Auth.RateLimitPerMinute)
+			assert.Nil(t, config.Auth.InitialPasswordUntil)
+			assert.Equal(t, tc.validConfig, config.Validate() == nil)
 		})
 	}
 }
@@ -112,8 +111,8 @@ func TestNew_LoadsEnvFile(t *testing.T) {
 func clearEnv(t *testing.T) {
 	t.Helper()
 	keys := []string{
-		"APP_NAME", "APP_ENV", "REGION", "COGNITO_USER_POOL_ID", "COGNITO_CLIENT_ID",
-		"COGNITO_CLIENT_SECRET", "REDIS_ADDR", "REDIS_PASSWORD", "DB_CONNECTION", "DB_HOST",
+		"APP_NAME", "APP_ENV", "JWT_SECRET", "JWT_ISSUER", "ACCESS_TOKEN_TTL", "REFRESH_TOKEN_TTL",
+		"INITIAL_PASSWORD_UNTIL", "INTERNAL_API_KEY", "RATE_LIMIT_PER_MIN", "TRUSTED_PROXIES", "REDIS_ADDR", "REDIS_PASSWORD", "DB_CONNECTION", "DB_HOST",
 		"DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME", "HTTP_URL", "HTTP_PORT",
 		"HTTP_ALLOWED_ORIGINS", "ENV_FILE",
 	}
@@ -121,4 +120,46 @@ func clearEnv(t *testing.T) {
 		t.Setenv(key, "")
 		_ = os.Unsetenv(key)
 	}
+}
+
+func TestNew_InitialPasswordUntil(t *testing.T) {
+	testCases := []struct {
+		name     string
+		value    string
+		expected string
+		valid    bool
+	}{
+		{name: "date is valid until the end of the day (UTC)", value: "2026-12-31", expected: "2026-12-31T23:59:59.999999999Z", valid: true},
+		{name: "RFC3339", value: "2026-12-31T23:00:00-05:00", expected: "2026-12-31T23:00:00-05:00", valid: true},
+		{name: "invalid value fails validation", value: "31/12/2026", valid: false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			clearEnv(t)
+			t.Setenv("JWT_SECRET", "0123456789abcdef0123456789abcdef")
+			t.Setenv("INITIAL_PASSWORD_UNTIL", tc.value)
+			t.Setenv("ENV_FILE", filepath.Join(t.TempDir(), "none.env"))
+
+			once = sync.Once{}
+			config := New()
+
+			if !tc.valid {
+				assert.Error(t, config.Validate())
+				return
+			}
+
+			assert.NoError(t, config.Validate())
+			assert.Equal(t, tc.expected, config.Auth.InitialPasswordUntil.Format(time.RFC3339Nano))
+		})
+	}
+}
+
+func TestValidate_ShortJWTSecret(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("JWT_SECRET", "too-short")
+	t.Setenv("ENV_FILE", filepath.Join(t.TempDir(), "none.env"))
+
+	once = sync.Once{}
+	assert.ErrorContains(t, New().Validate(), "JWT_SECRET")
 }

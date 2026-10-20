@@ -104,8 +104,6 @@ func registerValidators() {
 			panic(domain.ErrRegisteringValidator)
 		}
 
-		v.RegisterStructValidation(validateLoginStruct, loginRequest{})
-
 		v.RegisterStructValidation(validateFinancialAnalysisRequest, FinancialAnalysisRequest{})
 
 		if err := v.RegisterValidation(enums.EmailsTag, validateEmails); err != nil {
@@ -171,40 +169,6 @@ func validateAccountType(fl validator.FieldLevel) bool {
 	}
 
 	return false
-}
-
-func validateLoginStruct(sl validator.StructLevel) {
-	req := sl.Current().Interface().(loginRequest)
-
-	if req.Code == "" && req.Password == "" {
-		sl.ReportError(
-			req.Password,
-			"password",
-			"password",
-			enums.RequiredWith,
-			"password can't be empty",
-		)
-	}
-
-	if req.Code == "" && req.Email == "" {
-		sl.ReportError(
-			req.Password,
-			"email",
-			"password",
-			enums.RequiredWith,
-			"email can't be empty",
-		)
-	}
-
-	if req.Code != "" && (req.Password != "" || req.Email != "") {
-		sl.ReportError(
-			req.Code,
-			"code",
-			"code",
-			enums.CantUseCodeForLogin,
-			"can't use code, email and password at the same time",
-		)
-	}
 }
 
 func validateFinancialAnalysisRequest(sl validator.StructLevel) {

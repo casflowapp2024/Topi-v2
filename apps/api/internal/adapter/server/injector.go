@@ -2,24 +2,22 @@ package server
 
 import (
 	"cash-flow/internal/adapter/api"
-	"cash-flow/internal/adapter/auth/cognito"
-	cognitorepo "cash-flow/internal/adapter/auth/cognito/repository"
 	"cash-flow/internal/adapter/auth/jwt"
-	"cash-flow/internal/adapter/auth/social"
-	"cash-flow/internal/adapter/auth/unavailable"
+	"cash-flow/internal/adapter/auth/password"
 	"cash-flow/internal/adapter/config"
 	"cash-flow/internal/adapter/email"
 	"cash-flow/internal/adapter/email/gmail"
 	"cash-flow/internal/adapter/email/jobqueue"
 	"cash-flow/internal/adapter/email/outlook"
 	"cash-flow/internal/adapter/handler/http"
+	"cash-flow/internal/adapter/ratelimit"
 	"cash-flow/internal/adapter/storage/postgres"
 	dbrepository "cash-flow/internal/adapter/storage/postgres/repository"
 	dbtransaction "cash-flow/internal/adapter/storage/postgres/transaction"
-	"cash-flow/internal/core/port"
 	"cash-flow/internal/core/service"
 	"context"
 	"log/slog"
+	"time"
 )
 
 type Injector struct {
@@ -69,11 +67,21 @@ func NewInjector(settings *config.Configuration) *Injector {
 	categoryService := service.NewCategoryService(categoryRepo)
 	categoryHandler := http.NewCategoryHandler(categoryService)
 
-	// Auth (Cognito is optional until phase 2)
-	userRepo, token, socialAuthRepo := newAuthAdapters(settings)
-
-	// User
-	userService := service.NewUserService(userRepo, token, socialAuthRepo)
+	// User (own auth: email + password)
+	userRepo := dbrepository.NewUserRepository(db)
+	userService := service.NewUserService(
+		userRepo,
+		jwt.New(settings.Auth),
+		dbrepository.NewRefreshTokenRepository(db),
+		dbrepository.NewAuthEventRepository(db),
+		password.New(password.DefaultParams),
+		ratelimit.NewMemory(settings.Auth.RateLimitPerMinute, time.Minute),
+		service.AuthSettings{
+			RefreshTokenTTL:      settings.Auth.RefreshTokenTTL,
+			InitialPasswordUntil: settings.Auth.InitialPasswordUntil,
+			InternalAPIKey:       settings.Auth.InternalAPIKey,
+		},
+	)
 	userHandler := http.NewUserHandler(userService)
 
 	// UserExtra
@@ -108,7 +116,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 
 	// Email
 	gmailClient := gmail.NewGmailAPI(settings.Gmail)
-	outlookApiClient := api.NewHttpClient(settings.Social.Http.Timeout)
+	outlookApiClient := api.NewHttpClient(settings.Outlook.Http.Timeout)
 	outlookClient := outlook.NewOutlookAPI(outlookApiClient, settings.Outlook)
 	emailJobRepo := dbrepository.NewEmailJobRepository(db)
 	emailQueue := jobqueue.New(emailJobRepo)
@@ -149,21 +157,4 @@ func NewInjector(settings *config.Configuration) *Injector {
 			DB: db,
 		},
 	}
-}
-
-// newAuthAdapters returns the Cognito adapters when Cognito is configured.
-// Otherwise it returns adapters that fail with domain.ErrAuthUnavailable (HTTP 503),
-// so the API can start without AWS. Cognito is replaced in phase 2.
-func newAuthAdapters(settings *config.Configuration) (port.UserRepository, port.TokenRepository, port.SocialAuthRepository) {
-	if !settings.Auth.Enabled() {
-		slog.Warn("cognito is not configured: auth endpoints will respond 503")
-		return unavailable.UserRepository{}, unavailable.TokenRepository{}, unavailable.SocialAuthRepository{}
-	}
-
-	auth := cognito.New(settings.Auth)
-	socialAuthClient := api.NewHttpClient(settings.Social.Http.Timeout)
-
-	return cognitorepo.NewUserRepository(auth),
-		jwt.New(settings.Token),
-		social.NewSocialAuthRepository(socialAuthClient, settings.Social)
 }

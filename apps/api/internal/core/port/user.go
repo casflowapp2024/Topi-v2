@@ -9,31 +9,30 @@ import (
 
 //go:generate mockgen -source=user.go -destination=mock/user.go -package=mock
 
-// UserRepository is an interface for interacting with user-related data
+// UserRepository is an interface for interacting with the users table
 type UserRepository interface {
-	SignUp(ctx context.Context, authUser *domain.User) (*string, error)
-	ConfirmAccount(ctx context.Context, email, code string) error
-	SignIn(ctx context.Context, email, password string) (*domain.AuthTokens, error)
-	GetUserByToken(ctx context.Context, token string) (*domain.User, error)
-	AdminGetUserByID(ctx context.Context, userID string) (*domain.User, error)
-	UpdateUser(ctx context.Context, user domain.User, token string) error
-	ResendConfirmationCode(ctx context.Context, email string) error
-	ForgotPassword(ctx context.Context, email string) error
-	ConfirmForgotPassword(ctx context.Context, email, code, newPassword string) error
-	ListUsers(ctx context.Context, limit int64, paginationToken *string) ([]domain.User, *string, error)
+	CreateUser(ctx context.Context, user *domain.User) error
+	GetUserByID(ctx context.Context, id string) (*domain.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
+	// SetInitialPassword must only succeed when the user has no password (atomic check)
+	SetInitialPassword(ctx context.Context, id string, passwordHash string) error
+	// UpdatePassword replaces the password, increments token_version and returns the new version
+	UpdatePassword(ctx context.Context, id string, passwordHash string) (int, error)
+	// UpdateProfile updates name and last name (also in user_extra)
+	UpdateProfile(ctx context.Context, id, name, lastName string) error
 }
 
 // UserService is an interface for interacting with user-related business logic
 type UserService interface {
-	Register(ctx context.Context, authUser *domain.User) error
-	ConfirmUser(ctx context.Context, email, code string) error
-	GetSocialAuthURL(ctx context.Context, platform string) (*string, error)
-	Login(ctx context.Context, email, password, code string) (*domain.AuthTokens, error)
+	Register(ctx context.Context, user *domain.User, meta domain.RequestMeta) (*domain.AuthTokens, error)
+	Login(ctx context.Context, email, password string, meta domain.RequestMeta) (*domain.AuthTokens, error)
+	SetInitialPassword(ctx context.Context, email, password string, meta domain.RequestMeta) (*domain.AuthTokens, error)
+	Refresh(ctx context.Context, refreshToken string, meta domain.RequestMeta) (*domain.AuthTokens, error)
+	Logout(ctx context.Context, refreshToken string) error
+	ChangePassword(ctx context.Context, userID, currentPassword, newPassword string, meta domain.RequestMeta) (*domain.AuthTokens, error)
 	Authorize(ctx context.Context, token string) (*domain.TokenPayload, error)
+	AuthorizeAPIKey(apiKey string) (*domain.TokenPayload, error)
 	GetUser(ctx *gin.Context) (*domain.User, error)
 	AdminIsUserValid(ctx context.Context, userID string) (bool, error)
 	UpdateUser(ctx *gin.Context, user domain.User) (*domain.User, error)
-	ResendConfirmationCode(ctx context.Context, email string) error
-	ForgotPassword(ctx context.Context, email string) error
-	ConfirmForgotPassword(ctx context.Context, email, code, newPassword string) error
 }
