@@ -2,6 +2,7 @@ package domain
 
 import (
 	"cash-flow/internal/enums"
+	"sort"
 	"time"
 )
 
@@ -42,6 +43,8 @@ func NewOfficialBanks(officialBanksMap map[string]string) OfficialBanks {
 	for name := range officialBanksMap {
 		banks = append(banks, name)
 	}
+	// orden estable: el front preselecciona el primero de la lista
+	sort.Strings(banks)
 
 	return OfficialBanks{
 		Banks: banks,
