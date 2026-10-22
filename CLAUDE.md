@@ -54,6 +54,9 @@ plan/         plan de migración
   (compara textos exactos); la respuesta de login mantiene la forma de `domain.AuthTokens`.
 - Auth de servicios internos: `X-API-Key` (`INTERNAL_API_KEY`), comparada en tiempo constante.
 - No confundir el login con Google (eliminado) con el OAuth de Gmail/Outlook para leer correos (se mantiene).
+- Web: Redux + thunk (`redux/actions`), Tailwind según `apps/web/brand_guidelines.md`. Formatos con los
+  helpers de `src/components/helpers.js` (`formatCurrency`, `capitalizeWords`, `parseDatetimetoDateStrFormat`).
+  Modales con `Dialog` de `@headlessui/react`; cada vista con versión PC (`lg:flex`) y móvil (`lg:hidden`).
 
 ## Reglas
 
