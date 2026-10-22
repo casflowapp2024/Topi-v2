@@ -1,4 +1,4 @@
-# Entorno local: Postgres 16 (restaurado desde el dump) + API.
+# Entorno local: Postgres 16 (restaurado desde el dump) + API + worker + web.
 # Variables: infra/.env (copia de infra/.env.example). Ver README raíz.
 name: topi
 
@@ -45,6 +45,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?define JWT_SECRET en infra/.env (openssl rand -hex 32)}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       INITIAL_PASSWORD_UNTIL: ${INITIAL_PASSWORD_UNTIL:-}
+      ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-1h}
       HTTP_ALLOWED_HEADERS: Origin,Content-Type,Accept,Authorization
     ports:
       - "${API_PORT:-8080}:8080"
@@ -74,6 +75,20 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    # Front (nginx). REACT_APP_* se hornean en el build: cambiarlas exige `docker compose build web`.
+    build:
+      context: ../apps/web
+      args:
+        REACT_APP_API_URL: ${WEB_API_URL:-http://localhost:8080}
+        REACT_APP_GA_TRACKING_ID: ""
+    ports:
+      - "${WEB_PORT:-3000}:8080"
+    depends_on:
       api:
         condition: service_healthy
     restart: unless-stopped
