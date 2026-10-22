@@ -92,9 +92,12 @@ test.describe('usuario migrado', () => {
     const detail = page.getByRole('dialog');
     await detail.getByRole('button', { name: 'Editar' }).click();
     await detail.locator('#description').fill(edited);
+    // la alerta de éxito es transitoria: se verifica la respuesta de la API y la lista
+    const updated = page.waitForResponse(r => /\/transactions\/\d+$/.test(r.url()) && r.request().method() === 'PUT');
     await detail.getByRole('button', { name: 'Actualizar' }).click();
-    await expect(detail.getByText('Transaccion actualizada')).toBeVisible();
+    expect((await updated).status()).toBe(200);
     await detail.getByRole('button', { name: 'Cerrar modal' }).first().click();
+    await expect(page.locator('li.cursor-pointer', { hasText: edited }).first()).toBeVisible();
 
     // borrar
     await page.locator('li.cursor-pointer', { hasText: edited }).first().click();
