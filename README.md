@@ -7,7 +7,7 @@ con un LLM y las muestra en un dashboard. Monorepo de la migración de AWS a Het
 ```
 apps/api      API Go (Gin, Postgres, arquitectura hexagonal)
 apps/worker   Lector de correos en Python (ex-Saturn; se refactoriza en la Fase 3)
-apps/web      Front React (CRA)
+apps/web      Front React (CRA) + nginx; e2e/ con Playwright
 infra/        docker-compose local, scripts de restore
 plan/         plan de migración por fases
 ```
@@ -83,7 +83,7 @@ infra/scripts/auth-report.sh [dias]       # migrados con/sin contraseña, últim
 `email_sync_state.last_run`, extrae transacciones con Gemini y las crea vía API (idempotente por mensaje).
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d --build              # postgres + api + worker
+docker compose -f infra/docker-compose.yml up -d --build worker       # postgres + api + worker
 docker compose -f infra/docker-compose.yml exec worker python -m worker enqueue-now
 docker compose -f infra/docker-compose.yml exec worker python -m worker refresh-views --all
 docker compose -f infra/docker-compose.yml logs -f worker             # logs JSON
@@ -92,6 +92,28 @@ docker compose -f infra/docker-compose.yml logs -f worker             # logs JSO
 En local el worker arranca con `WORKER_DRY_RUN=true` y `WORKER_ONLY_EMAIL_IDS=0` (no lee ningún correo).
 Para probar con la conexión del equipo: credenciales en `apps/worker/.env` y en `infra/.env`
 `WORKER_ONLY_EMAIL_IDS=<emails.id>` (primero con dry run). Ver `plan/03-fase-3-worker.md`.
+
+## Front (Fase 4)
+
+`apps/web` (CRA) se sirve con nginx (`apps/web/Dockerfile`, `nginx.conf`) en el puerto 8080 del contenedor.
+
+```bash
+docker compose -f infra/docker-compose.yml up -d --build              # postgres + api + worker + web
+# http://localhost:3000  (la API debe tener HTTP_ALLOWED_ORIGINS con http://localhost:3000)
+```
+
+- `REACT_APP_*` se hornean en el build: se pasan como build args. En el compose la URL de la API es
+  `WEB_API_URL` (por defecto `http://localhost:8080`); si la cambias, `docker compose build web`.
+- Producción: `--build-arg REACT_APP_API_URL=https://api.topi.cash` (y `REACT_APP_GA_TRACKING_ID`, opcional).
+  La API con `HTTP_ALLOWED_ORIGINS=https://www.topi.cash,https://topi.cash`.
+- Service worker (`public/service-worker.js`): network-first para navegaciones, `/static` cache-first, la API
+  nunca pasa por la caché. Cada build lleva su propia caché (`topi-v2-<BUILD_ID>`) y borra las demás; si
+  encuentra la del SW viejo (`topi-pwa-cache-v1`) recarga las ventanas abiertas para sacarlas de esa versión.
+- Reconexión de Gmail/Outlook: el callback es la ruta `/gmail-auth-connect` del front. En producción
+  `GMAIL_REDIRECT_URIS` y `OUTLOOK_REDIRECT_URL` siguen apuntando a `https://www.topi.cash/gmail-auth-connect`.
+  Para probarla en local hay que agregar `http://localhost:3000/gmail-auth-connect` como redirect URI
+  en Google Cloud y en Azure, y ponerla en `apps/api/.env`.
+- E2E con Playwright: `apps/web/e2e/README.md`.
 
 ## Otras notas de la migración
 
