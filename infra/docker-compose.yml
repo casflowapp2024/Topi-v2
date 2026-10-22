@@ -52,5 +52,31 @@ services:
       postgres:
         condition: service_healthy
 
+  worker:
+    # Lector de correos (Fase 3). Por defecto en local NO procesa correos reales:
+    # WORKER_DRY_RUN=true y WORKER_ONLY_EMAIL_IDS=0 (ninguna conexión). Para probar con la conexión
+    # del equipo, defínelos en infra/.env (ver README).
+    build:
+      context: ../apps/worker
+      target: final
+    env_file:
+      # opcional: GEMINI_API_KEY y OAuth de Gmail/Outlook (copia de apps/worker/.env.example)
+      - path: ../apps/worker/.env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-topi}:${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en infra/.env}@postgres:5432/${POSTGRES_DB:-cashflow}
+      API_BASE_URL: http://api:8080
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?define INTERNAL_API_KEY en infra/.env}
+      WORKER_DRY_RUN: ${WORKER_DRY_RUN:-true}
+      WORKER_ONLY_EMAIL_IDS: ${WORKER_ONLY_EMAIL_IDS:-0}
+      SCHEDULER_ENABLED: ${SCHEDULER_ENABLED:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   pgdata:
