@@ -1900,6 +1900,32 @@ const docTemplate = `{
                 }
             }
         },
+        "/health": {
+            "get": {
+                "description": "Database and worker heartbeat. 200 while the database answers (also when the worker is stale); 503 if it does not.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Health for monitoring",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Health"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Health"
+                        }
+                    }
+                }
+            }
+        },
         "/transaction": {
             "get": {
                 "security": [
@@ -3175,6 +3201,23 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.Health": {
+            "type": "object",
+            "properties": {
+                "db": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "worker": {
+                    "type": "string"
+                },
+                "worker_last_seen": {
                     "type": "string"
                 }
             }

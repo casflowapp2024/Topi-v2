@@ -60,7 +60,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 	transactionManager := dbtransaction.NewTransactionManager(db)
 
 	// Health
-	healthHandler := http.NewHealthHandler()
+	healthHandler := http.NewHealthHandler(service.NewHealthService(dbrepository.NewHealthRepository(db)))
 
 	// Category
 	categoryRepo := dbrepository.NewCategoryRepository(db)

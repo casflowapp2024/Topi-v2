@@ -28,6 +28,7 @@ func (r *Routes) HealthRoutes() {
 	health := r.Router.Group("/")
 	{
 		health.GET("/", r.HealthHandler.CheckHealth)
+		health.GET("/health", r.HealthHandler.Health)
 	}
 }
 

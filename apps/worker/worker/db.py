@@ -1,5 +1,5 @@
 """Acceso directo a Postgres (psycopg 3) solo para lo que es del worker:
-email_jobs, email_sync_state, processed_emails, refresh de vistas y limpieza.
+email_jobs, email_sync_state, processed_emails, worker_heartbeat, refresh de vistas y limpieza.
 Las migraciones viven en la API (golang-migrate): el worker no migra."""
 
 from __future__ import annotations
@@ -213,6 +213,21 @@ class Database:
                 """,
                 (status, transaction_ids, error, email_id, message_id),
             )
+
+    # ------------------------------------------------------------------ heartbeat
+
+    def heartbeat(self, worker_id: str, version: str | None) -> None:
+        """Marca este proceso como vivo (GET /health de la API lo lee). Cada reinicio es un worker_id
+        nuevo (host:pid): las filas de procesos que ya no laten se borran a los 7 días."""
+        with self.pool.connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO worker_heartbeat (worker_id, last_seen, version) VALUES (%s, now(), %s)
+                ON CONFLICT (worker_id) DO UPDATE SET last_seen = now(), version = EXCLUDED.version
+                """,
+                (worker_id, version),
+            )
+            conn.execute("DELETE FROM worker_heartbeat WHERE last_seen < now() - interval '7 days'")
 
     # ------------------------------------------------------------------ limpieza
 

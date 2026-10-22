@@ -5,6 +5,7 @@ from __future__ import annotations
 import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
+from importlib import metadata
 
 from worker import log
 from worker.config import Settings
@@ -14,6 +15,15 @@ from worker.jobs import JobProcessor
 logger = log.get(__name__)
 
 ORPHAN_CHECK_SECONDS = 60
+# el loop vuelve cada 0,5 s cuando hay trabajo: el heartbeat se escribe como mucho cada 30 s
+HEARTBEAT_SECONDS = 30
+
+
+def _version() -> str | None:
+    try:
+        return metadata.version("topi-worker")
+    except metadata.PackageNotFoundError:
+        return None
 
 
 class JobLoop:
@@ -23,6 +33,15 @@ class JobLoop:
         self.processor = processor
         self.stop_event = threading.Event()
         self._last_orphan_check = 0.0
+        self._last_heartbeat: float | None = None
+        self._version = _version()
+
+    def _heartbeat(self) -> None:
+        now = time.monotonic()
+        if self._last_heartbeat is not None and now - self._last_heartbeat < HEARTBEAT_SECONDS:
+            return
+        self.db.heartbeat(self.settings.worker_id, self._version)
+        self._last_heartbeat = now
 
     def _requeue_orphans(self) -> None:
         if time.monotonic() - self._last_orphan_check < ORPHAN_CHECK_SECONDS:
@@ -54,6 +73,7 @@ class JobLoop:
         with ThreadPoolExecutor(max_workers=self.settings.concurrency, thread_name_prefix="job") as pool:
             while not self.stop_event.is_set():
                 try:
+                    self._heartbeat()
                     self._requeue_orphans()
                     running = {f for f in running if not f.done()}
                     claimed = False

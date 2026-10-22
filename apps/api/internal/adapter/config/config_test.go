@@ -1,6 +1,7 @@
 package config
 
 import (
+	"cash-flow/internal/enums"
 	"os"
 	"path/filepath"
 	"sync"
@@ -162,4 +163,14 @@ func TestValidate_ShortJWTSecret(t *testing.T) {
 
 	once = sync.Once{}
 	assert.ErrorContains(t, New().Validate(), "JWT_SECRET")
+}
+
+func TestAppEnv_ProductionAlias(t *testing.T) {
+	for value, want := range map[string]string{
+		"production": enums.Production, "Production": enums.Production, " production ": enums.Production,
+		"prod": enums.Production, "development": "development", "": "",
+	} {
+		t.Setenv("APP_ENV", value)
+		assert.Equal(t, want, appEnv(), "APP_ENV=%q", value)
+	}
 }

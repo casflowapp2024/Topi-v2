@@ -1,5 +1,6 @@
 """SQL de la cola y del estado contra el Postgres local migrado (marcados `db`)."""
 
+import uuid
 from datetime import datetime, timezone
 
 import pytest
@@ -120,3 +121,18 @@ def test_processed_emails_only_done_are_skipped(db, cleanup, test_email_id):
     assert len(rows) == 4
     statuses = {r["status"] for r in rows}
     assert "transaction" in statuses
+
+
+def test_heartbeat_upsert(db):
+    worker_id = f"test-heartbeat-{uuid.uuid4().hex[:8]}"
+    try:
+        db.heartbeat(worker_id, "0.1.0")
+        db.heartbeat(worker_id, "0.2.0")
+        with db.pool.connection() as conn:
+            rows = conn.execute(
+                "SELECT version, last_seen > now() - interval '1 minute' AS recent FROM worker_heartbeat WHERE worker_id = %s",
+                (worker_id,)).fetchall()
+        assert rows == [{"version": "0.2.0", "recent": True}]
+    finally:
+        with db.pool.connection() as conn:
+            conn.execute("DELETE FROM worker_heartbeat WHERE worker_id = %s", (worker_id,))

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"cash-flow/internal/enums"
 	"cash-flow/internal/utils"
 	"errors"
 	"fmt"
@@ -118,7 +119,7 @@ func New() *Configuration {
 		c = Configuration{
 			&App{
 				Name:     os.Getenv("APP_NAME"),
-				Env:      os.Getenv("APP_ENV"),
+				Env:      appEnv(),
 				LogLevel: os.Getenv("LOG_LEVEL"),
 			},
 			&Redis{
@@ -139,7 +140,7 @@ func New() *Configuration {
 				ConnMaxLifetime: getEnvAsDuration("DB_CONN_MAX_LIFETIME", 5*time.Minute),
 			},
 			&HTTP{
-				Env:            os.Getenv("APP_ENV"),
+				Env:            appEnv(),
 				URL:            os.Getenv("HTTP_URL"),
 				Port:           os.Getenv("HTTP_PORT"),
 				AllowedOrigins: os.Getenv("HTTP_ALLOWED_ORIGINS"),
@@ -235,6 +236,16 @@ func parseDeadline(value string) (*time.Time, error) {
 
 	deadline := date.Add(24*time.Hour - time.Nanosecond)
 	return &deadline, nil
+}
+
+// appEnv reads APP_ENV; "production" is accepted as an alias of enums.Production ("prod"),
+// so Swagger and the other production switches work with either value.
+func appEnv() string {
+	env := strings.TrimSpace(os.Getenv("APP_ENV"))
+	if strings.EqualFold(env, "production") {
+		return enums.Production
+	}
+	return env
 }
 
 // getEnvList splits a comma separated variable, ignoring empty items

@@ -7,7 +7,7 @@
 # - Restaura con --no-owner --no-acl.
 # - Idempotente: dropea y recrea la base de datos en cada corrida.
 # - Corre pg_restore DENTRO del contenedor: solo necesita Docker (Linux, macOS, Git Bash o WSL).
-# Después levanta la API, que aplica las migraciones pendientes (queda en versión 18).
+# Después levanta la API, que aplica las migraciones pendientes (queda en la versión 21).
 set -euo pipefail
 
 # Git Bash (MSYS) convierte rutas tipo /dump/... en argumentos: desactivarlo.
