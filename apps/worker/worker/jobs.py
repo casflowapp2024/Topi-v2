@@ -100,7 +100,7 @@ class JobProcessor:
 
         self.db.complete_job(job.id)
         logger.info("job done", extra={**context, "listed": result.listed, "skipped_seen": result.skipped_seen,
-                                       "extracted": result.extracted, "created": len(result.created),
+                                       "extracted": result.extracted, "created_count": len(result.created),
                                        "skipped_api": len(result.skipped_api),
                                        "would_create": len(result.would_create), "dry_run": self.settings.dry_run})
         return "done"

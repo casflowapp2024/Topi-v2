@@ -4,6 +4,15 @@ import uuid
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _logs_at_debug(caplog):
+    """Construye todos los registros de log: un `extra` con una clave reservada de LogRecord
+    (p. ej. 'created') falla aquí y no en producción."""
+    import logging
+
+    caplog.set_level(logging.DEBUG)
+
+
 def pytest_addoption(parser):
     parser.addoption("--live", action="store_true", default=False, help="corre tests que llaman a Gemini real")
 
