@@ -149,14 +149,49 @@ SYNC_OVERLAP_MINUTES=60, PROCESSED_EMAIL_RETENTION_DAYS=365, WORKER_EXTRACTOR=ge
 - Para probar en local la reconexión de correos hay que agregar `http://localhost:3000/gmail-auth-connect` como redirect URI en Google Cloud y Azure.
 
 ## Criterios de aceptación
-- [ ] `pytest` en `apps/worker` con tests de: separación de remitentes (Gmail y Outlook), paginación, `last_run` y solape, omitir mensajes ya vistos sin llamar a Gemini,
+- [x] `pytest` en `apps/worker` con tests de: separación de remitentes (Gmail y Outlook), paginación, `last_run` y solape, omitir mensajes ya vistos sin llamar a Gemini,
       clasificación de errores (credencial vs transitorio), reintentos/backoff, dedupe de encolado, recuperación de jobs huérfanos. Gmail, Outlook, Gemini y la API mockeados.
-- [ ] `go test ./...` OK, con tests nuevos para `source_message_id` (idempotencia) y el dedupe del empalme legado.
-- [ ] Restore + migrate: versión 20; `email_sync_state` sembrada para las conexiones activas con cuentas, todas con `2026-10-17 09:00 UTC`.
-- [ ] `grep -rniE "boto3|dynamodb|sqs|s3|glue|openai" apps/worker` vacío.
-- [ ] `docker compose up` levanta postgres + api + worker; el scheduler encola la corrida horaria (se puede forzar con un comando `python -m worker enqueue-now`).
-- [ ] "Leer ahora" desde la API → el job se procesa en menos de 10 s.
+- [x] `go test ./...` OK, con tests nuevos para `source_message_id` (idempotencia) y el dedupe del empalme legado.
+- [x] Restore + migrate: versión 20; `email_sync_state` sembrada para las conexiones activas con cuentas, todas con `2026-10-17 09:00 UTC`.
+- [x] `grep -rniE "boto3|dynamodb|sqs|s3|glue|openai" apps/worker` vacío.
+- [x] `docker compose up` levanta postgres + api + worker; el scheduler encola la corrida horaria (se puede forzar con un comando `python -m worker enqueue-now`).
+- [x] "Leer ahora" desde la API → el job se procesa en menos de 10 s.
 - [ ] Prueba real **solo con una conexión propia del equipo** (`WORKER_ONLY_EMAIL_IDS`): primero `WORKER_DRY_RUN=true` (muestra transacciones detectadas desde el 17-oct),
       después real: crea las transacciones; una segunda corrida inmediata no crea nada nuevo ni llama a Gemini para los mismos mensajes.
-- [ ] Las 6 vistas materializadas se refrescan sin error y sin solaparse.
-- [ ] Un error simulado de Gemini (503) no marca la conexión con error; un token revocado sí la marca con `token_expired_or_revoked`.
+- [x] Las 6 vistas materializadas se refrescan sin error y sin solaparse.
+- [x] Un error simulado de Gemini (503) no marca la conexión con error; un token revocado sí la marca con `token_expired_or_revoked`.
+  _(Verificado 21-oct-2026 en local: tests `test_gemini_503_retries_only_the_failed_message_and_keeps_last_run` y
+  `test_revoked_token_marks_the_connection`; restore → versión 20 y `email_sync_state` = 28 pares por remitente,
+  todos 2026-10-17 09:00 UTC; "leer ahora" procesado en 5,8 s; las 6 vistas con CONCURRENTLY.
+  La prueba real queda pendiente: ver "Prueba real con la conexión del equipo".)_
+
+## Prueba real con la conexión del equipo (pendiente, se hace en conjunto)
+Solo con una conexión del equipo: nunca con correos de usuarios. `<ID>` = `emails.id` de esa conexión.
+
+```bash
+# 0. credenciales reales SOLO en archivos ignorados por git
+cp apps/worker/.env.example apps/worker/.env   # GEMINI_API_KEY (proyecto con facturación), GMAIL_*/OUTLOOK_*
+source infra/scripts/lib.sh
+psql_db -At <<< "SELECT id, provider, email FROM emails WHERE active AND error IS NULL ORDER BY id;"   # elegir <ID>
+
+# 1. dry run: lee y extrae desde el 17-oct, no crea nada ni mueve last_run
+#    en infra/.env: WORKER_ONLY_EMAIL_IDS=<ID> y WORKER_DRY_RUN=true
+docker compose -f infra/docker-compose.yml up -d --build worker
+docker compose -f infra/docker-compose.yml exec worker python -m worker enqueue-now
+docker compose -f infra/docker-compose.yml logs -f worker | grep -E '"dry run|job done|job failed|job retry'
+
+# 2. real: crea las transacciones (idempotentes por source_message_id)
+#    en infra/.env: WORKER_DRY_RUN=false
+docker compose -f infra/docker-compose.yml up -d worker
+docker compose -f infra/docker-compose.yml exec worker python -m worker enqueue-now
+psql_db -At -v id=<ID> <<< "SELECT status, count(*) FROM processed_emails WHERE email_id = :'id' GROUP BY 1;"
+psql_db -At <<< "SELECT count(*) FROM transactions WHERE source_message_id IS NOT NULL;"
+
+# 3. segunda corrida sobre los mismos correos: 0 transacciones nuevas y 0 llamadas a Gemini
+psql_db -At -v id=<ID> <<< "UPDATE email_sync_state SET last_run = '2026-10-17 09:00:00+00' WHERE email_id = :'id';"
+docker compose -f infra/docker-compose.yml exec worker python -m worker enqueue-now
+docker compose -f infra/docker-compose.yml logs worker | grep '"job done"' | tail -1   # skipped_seen = listed, extracted = 0, created = 0
+
+# 4. volver a lo seguro: en infra/.env WORKER_DRY_RUN=true y WORKER_ONLY_EMAIL_IDS=0
+docker compose -f infra/docker-compose.yml up -d worker
+```
