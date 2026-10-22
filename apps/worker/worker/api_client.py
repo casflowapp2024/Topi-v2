@@ -58,19 +58,19 @@ class TopiApi:
         user_accounts: dict[str, list[dict[str, Any]]] = {}
         skip, total = 0, None
 
+        # skip/limit/total cuentan cuentas de la DB; la API divide cada cuenta en una fila por
+        # remitente DESPUÉS de paginar, así que se avanza por el tamaño de página, no por las filas.
         while total is None or skip < total:
             body = self._request("GET", "/accounts/admin/list", params={"skip": skip, "limit": ACCOUNTS_PAGE_SIZE})
             data = body.get("data") or {}
             page = data.get("user_accounts") or {}
-            count = 0
             for user_id, accounts in page.items():
                 user_accounts.setdefault(user_id, []).extend(accounts)
-                count += len(accounts)
 
             total = int((data.get("meta") or {}).get("total") or 0)
-            if count == 0:
+            if not page:
                 break
-            skip += count
+            skip += ACCOUNTS_PAGE_SIZE
 
         return {"data": {"user_accounts": user_accounts}}
 

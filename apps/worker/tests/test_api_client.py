@@ -35,7 +35,9 @@ def test_sends_api_key_and_no_prod_prefix():
 
 def test_list_accounts_paginates_with_skip():
     # hallazgo 7: /accounts/admin/list devuelve máx. 100 por página
-    page1 = {"data": {"user_accounts": {"u1": [{"id": i} for i in range(100)]}, "meta": {"total": 130}}}
+    # total = cuentas en la DB; cada página puede traer más filas porque la API divide por remitente
+    page1 = {"data": {"user_accounts": {"u1": [{"id": i} for i in range(100)] + [{"id": 0, "split": True}]},
+                      "meta": {"total": 130}}}
     page2 = {"data": {"user_accounts": {"u1": [{"id": 100}], "u2": [{"id": i} for i in range(101, 130)]},
                       "meta": {"total": 130}}}
     api, session = make_api(fake_response(200, page1), fake_response(200, page2))
@@ -43,7 +45,7 @@ def test_list_accounts_paginates_with_skip():
     result = api.list_accounts()
 
     accounts = result["data"]["user_accounts"]
-    assert len(accounts["u1"]) == 101 and len(accounts["u2"]) == 29
+    assert len(accounts["u1"]) == 102 and len(accounts["u2"]) == 29
     skips = [call.kwargs["params"]["skip"] for call in session.request.call_args_list]
     assert skips == [0, 100]
 
