@@ -8,7 +8,7 @@ BASE = {"DATABASE_URL": "postgresql://x", "API_BASE_URL": "http://api:8080/", "I
 def test_defaults():
     s = Settings.from_env(BASE)
     assert s.api_base_url == "http://api:8080"
-    assert s.gemini_model == "gemini-2.5-flash-lite"
+    assert s.gemini_model == "gemini-3.5-flash-lite"
     assert s.poll_seconds == 5 and s.concurrency == 2
     assert s.sync_overlap_minutes == 60
     assert s.processed_email_retention_days == 365

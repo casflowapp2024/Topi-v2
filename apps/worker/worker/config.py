@@ -43,7 +43,7 @@ class Settings:
     internal_api_key: str
 
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash-lite"
+    gemini_model: str = "gemini-3.5-flash-lite"
 
     gmail_client_id: str = ""
     gmail_client_secret: str = ""
@@ -80,7 +80,7 @@ class Settings:
             api_base_url=env["API_BASE_URL"].rstrip("/"),
             internal_api_key=env["INTERNAL_API_KEY"],
             gemini_api_key=env.get("GEMINI_API_KEY", ""),
-            gemini_model=env.get("GEMINI_MODEL") or "gemini-2.5-flash-lite",
+            gemini_model=env.get("GEMINI_MODEL") or "gemini-3.5-flash-lite",
             gmail_client_id=env.get("GMAIL_CLIENT_ID", ""),
             gmail_client_secret=env.get("GMAIL_CLIENT_SECRET", ""),
             gmail_token_uri=env.get("GMAIL_TOKEN_URI") or "https://oauth2.googleapis.com/token",

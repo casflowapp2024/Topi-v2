@@ -28,10 +28,10 @@ def test_transaction_with_markdown_fence_and_spanish_amount():
     assert tx.account_number == "1234" and tx.description == "Compra Exito"
     assert tx.date == EMAIL.received_at, "la fecha es la del correo"
     kwargs = client.models.generate_content.call_args.kwargs
-    assert kwargs["model"] == "gemini-2.5-flash-lite"
+    assert kwargs["model"] == "gemini-3.5-flash-lite"
     assert kwargs["contents"] == EMAIL.body
     assert kwargs["config"].system_instruction == PROMPT_V3
-    assert extractor.name == "gemini-2.5-flash-lite"
+    assert extractor.name == "gemini-3.5-flash-lite"
 
 
 def test_not_a_transaction():

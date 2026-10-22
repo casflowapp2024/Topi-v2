@@ -132,7 +132,7 @@ monthly_accounts_analysis`. Cada 2 días: `category_predictions`. Verificar que 
 (si no, refresh normal y registrarlo en el log).
 
 ## Configuración (`apps/worker/.env.example`)
-`DATABASE_URL, API_BASE_URL, INTERNAL_API_KEY, GEMINI_API_KEY, GEMINI_MODEL=gemini-2.5-flash-lite, GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET,
+`DATABASE_URL, API_BASE_URL, INTERNAL_API_KEY, GEMINI_API_KEY, GEMINI_MODEL=gemini-3.5-flash-lite, GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET,
 GMAIL_TOKEN_URI, OUTLOOK_CLIENT_ID, OUTLOOK_CLIENT_SECRET, OUTLOOK_TOKEN_URI, WORKER_POLL_SECONDS=5, WORKER_CONCURRENCY=2,
 SYNC_OVERLAP_MINUTES=60, PROCESSED_EMAIL_RETENTION_DAYS=365, WORKER_EXTRACTOR=gemini, SCHEDULER_ENABLED=true, WORKER_DRY_RUN=false, WORKER_ONLY_EMAIL_IDS=`
 - `WORKER_DRY_RUN=true`: lee y parsea, pero no crea transacciones ni mueve `last_run`. Registra lo que haría.
@@ -143,6 +143,9 @@ SYNC_OVERLAP_MINUTES=60, PROCESSED_EMAIL_RETENTION_DAYS=365, WORKER_EXTRACTOR=ge
 - Logs estructurados en JSON a stdout (Coolify los muestra). Sin CloudWatch.
 
 ## Notas operativas
+- **Modelo (decisión 21-oct-2026):** `gemini-2.5-flash-lite` responde 404 para keys/proyectos nuevos
+  ("no longer available to new users"). Se usa `gemini-3.5-flash-lite` con el mismo `prompt_v3` (solo cambia
+  `GEMINI_MODEL`); validado con el dry run de la conexión del equipo antes de crear transacciones.
 - La API key de Gemini debe ser de un proyecto **con facturación activa**: en el plan gratis, Google puede usar el contenido
   (correos bancarios) para mejorar sus productos. Con este volumen cuesta centavos al mes.
 - Los refresh tokens de Gmail/Outlook en `emails` siguen válidos mientras se use el **mismo client_id**. Rotar el client secret no los invalida.
@@ -156,8 +159,11 @@ SYNC_OVERLAP_MINUTES=60, PROCESSED_EMAIL_RETENTION_DAYS=365, WORKER_EXTRACTOR=ge
 - [x] `grep -rniE "boto3|dynamodb|sqs|s3|glue|openai" apps/worker` vacío.
 - [x] `docker compose up` levanta postgres + api + worker; el scheduler encola la corrida horaria (se puede forzar con un comando `python -m worker enqueue-now`).
 - [x] "Leer ahora" desde la API → el job se procesa en menos de 10 s.
-- [ ] Prueba real **solo con una conexión propia del equipo** (`WORKER_ONLY_EMAIL_IDS`): primero `WORKER_DRY_RUN=true` (muestra transacciones detectadas desde el 17-oct),
+- [x] Prueba real **solo con una conexión propia del equipo** (`WORKER_ONLY_EMAIL_IDS`): primero `WORKER_DRY_RUN=true` (muestra transacciones detectadas desde el 17-oct),
       después real: crea las transacciones; una segunda corrida inmediata no crea nada nuevo ni llama a Gemini para los mismos mensajes.
+  _(Hecha 21-oct-2026 con la conexión 38 (Gmail, BBVA + Lulo): dry run → 36 correos, 19 transacciones detectadas,
+  nada escrito; real → 19 creadas con source_message_id (0 should_verify, categorizadas por la API) y 17 sin
+  transacción; segunda corrida desde el 17-oct → 36 listados, 36 omitidos, 0 llamadas a Gemini, 0 duplicados.)_
 - [x] Las 6 vistas materializadas se refrescan sin error y sin solaparse.
 - [x] Un error simulado de Gemini (503) no marca la conexión con error; un token revocado sí la marca con `token_expired_or_revoked`.
   _(Verificado 21-oct-2026 en local: tests `test_gemini_503_retries_only_the_failed_message_and_keeps_last_run` y

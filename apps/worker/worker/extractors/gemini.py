@@ -1,6 +1,6 @@
 """GeminiExtractor: la lógica de lib/gemini.py + prompt_v3 sin cambios de comportamiento.
 
-- mismo modelo (GEMINI_MODEL, default gemini-2.5-flash-lite) y mismo system prompt;
+- mismo modelo (GEMINI_MODEL, default gemini-3.5-flash-lite) y mismo system prompt;
 - misma limpieza de la respuesta (quita ```json) y mismo parse_amount;
 - la fecha de la transacción es la fecha del correo;
 - se considera transacción si no viene `transaction_detected` y el monto existe y no es 0.
@@ -22,7 +22,7 @@ logger = log.get(__name__)
 
 
 class GeminiExtractor:
-    def __init__(self, api_key: str, model: str = "gemini-2.5-flash-lite", prompt: str = PROMPT_V3, client: Any = None):
+    def __init__(self, api_key: str, model: str = "gemini-3.5-flash-lite", prompt: str = PROMPT_V3, client: Any = None):
         self.model = model
         self.prompt = prompt
         self.name = model
