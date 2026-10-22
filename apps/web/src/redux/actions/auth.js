@@ -69,6 +69,14 @@ export const signup = (name, last_name, email, password, confirm_password) => as
 
 export const load_user = () => async dispatch => {
 
+    // sin sesión no hay a quién cargar: evita un GET /users/ con "Bearer null" (401) en la landing
+    if (!localStorage.getItem('token')) {
+        dispatch({
+            type: USER_LOADED_FAIL
+        });
+        return false
+    }
+
     const config = {
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
