@@ -1,0 +1,3 @@
+# Falsos positivos revisados (gitleaks). Una línea por fingerprint, con el motivo arriba.
+# Clave HS256 de relleno solo para los tests unitarios de jwt ("0123456789abcdef" x2), revisada el 22-oct.
+53d978efe169b947bc0558ba720ee17950adf478:apps/api/internal/adapter/auth/jwt/jwt_test.go:generic-api-key:14

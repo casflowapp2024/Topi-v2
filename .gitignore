@@ -5,8 +5,9 @@
 *.pem
 *.key
 
-# Datos
+# Datos (dumps y backups de Coolify)
 *.dump
+*.dmp
 *.sql.gz
 infra/data/
 
@@ -27,6 +28,10 @@ venv/
 node_modules/
 apps/web/build/
 coverage/
+# E2E: credenciales de usuarios de prueba y reportes
+apps/web/e2e/.auth/
+apps/web/e2e/test-results/
+apps/web/e2e/playwright-report/
 
 # AWS legacy (no deben volver)
 cdk.out/
