@@ -98,6 +98,7 @@ def test_reprocessing_never_duplicates_even_if_processed_emails_was_lost():
     processor, db, api, _, _ = make(MESSAGES)
     processor.handle(job(job_id=1))
     db.processed.clear()  # p. ej. limpieza por retención o crash entre la API y el UPDATE
+    db.set_last_run(7, SENDER, LAST_RUN)  # y la ventana vuelve a incluir los mismos correos
 
     processor.handle(job(job_id=2))
 
@@ -150,8 +151,16 @@ def test_permanent_errors_fail_without_marking():
     processor, db, api, _, _ = make([])
     assert processor.handle(job(accounts={})) == "failed"
     assert processor.handle(job(job_id=2, sender_email=" , ")) == "failed"
-    assert processor.handle(job(job_id=3, user_provider="yahoo")) == "failed"
     assert api.errors == []
+
+
+def test_unknown_provider_fails_without_marking():
+    from worker.jobs import default_provider_factory
+
+    processor, db, api, _, _ = make([])
+    processor.provider_factory = default_provider_factory
+    assert processor.handle(job(user_provider="yahoo")) == "failed"
+    assert "yahoo" in db.jobs[1]["error"] and api.errors == []
 
 
 def test_dry_run_reads_and_extracts_but_writes_nothing():
