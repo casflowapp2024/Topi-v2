@@ -15,6 +15,9 @@ import { get_user_accounts, create_f_account } from "../../redux/actions/cashflo
 import { create_personal_bank, get_banks } from "../../redux/actions/cashflow";
 import { setAlert } from "../../redux/actions/alert";
 
+// primer banco propio del usuario; si no tiene, el primero de los oficiales
+const defaultBankId = (banks) => (banks.find(bank => !bank.isDefault) || banks[0]).id;
+
 const AccountCreate = ({
     openCreateBox,
     setOpenCreateBox,
@@ -43,13 +46,15 @@ const AccountCreate = ({
         gmailPersonalEmail: '',
     });
 
+    // Banco por defecto: se elige al abrir el diálogo (no al montar la página, cuando la lista puede
+    // tener solo los bancos oficiales) y se prefieren los bancos propios del usuario.
     useEffect(() => {
-        if (banks && banks.length > 0 && !createAccountData.bankId) {
-            setCreateAccountData(prev => ({
-                ...prev,
-                bankId: banks[0].id
-            }));
-        }
+        if (!openCreateBox || !banks || banks.length === 0) return;
+        setCreateAccountData(prev => {
+            const current = banks.find(bank => bank.id === parseInt(prev.bankId));
+            if (prev.bankId !== '' && current) return prev;
+            return { ...prev, bankId: defaultBankId(banks) };
+        });
     }, [banks, openCreateBox]);
 
     useEffect(() => {
@@ -181,7 +186,7 @@ const AccountCreate = ({
                 name: '',
                 last_four_digits: '',
                 accountType: 1,
-                bankId: banks[0].id || '', // Default to the first bank if available
+                bankId: '', // se elige al volver a abrir el diálogo (defaultBankId)
                 initia_balance_amount: '$0',
                 automated: true,
                 gmailPersonalEmail: '',
