@@ -62,11 +62,11 @@ def build_scheduler(settings: Settings, api: TopiApi, db: Database) -> Backgroun
         job_defaults={"coalesce": True, "max_instances": 1, "misfire_grace_time": 300},
     )
     scheduler.add_job(_safe("enqueue_hourly", enqueue_hourly, settings, api, db),
-                      CronTrigger(minute=0, timezone=tz), id="enqueue_hourly")
+                      CronTrigger(minute=0, timezone=tz), id="enqueue_hourly", name="enqueue_hourly")
     scheduler.add_job(_safe("refresh_views", refresh_views, db, FREQUENT_VIEWS),
-                      IntervalTrigger(minutes=5, timezone=tz), id="refresh_views")
+                      IntervalTrigger(minutes=5, timezone=tz), id="refresh_views", name="refresh_views")
     scheduler.add_job(_safe("refresh_predictions", refresh_views, db, PREDICTION_VIEWS),
-                      CronTrigger(day="*/2", hour=0, minute=0, timezone=tz), id="refresh_predictions")
+                      CronTrigger(day="*/2", hour=0, minute=0, timezone=tz), id="refresh_predictions", name="refresh_predictions")
     scheduler.add_job(_safe("cleanup", cleanup, settings, db),
-                      CronTrigger(hour=3, minute=0, timezone=tz), id="cleanup")
+                      CronTrigger(hour=3, minute=0, timezone=tz), id="cleanup", name="cleanup")
     return scheduler
