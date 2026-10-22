@@ -10,7 +10,7 @@ CREATE UNIQUE INDEX email_jobs_active_dedupe ON email_jobs (dedupe_key)
 -- Reemplaza DynamoDB saturn-last-run
 CREATE TABLE email_sync_state (
   email_id BIGINT NOT NULL,
-  sender_email TEXT NOT NULL,                  -- el valor de banks.email tal cual (puede tener comas)
+  sender_email TEXT NOT NULL,                  -- un remitente individual (la API divide banks.email por coma)
   last_run TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (email_id, sender_email)
@@ -36,11 +36,14 @@ ALTER TABLE transactions ADD COLUMN source_message_id VARCHAR(512);
 CREATE UNIQUE INDEX transactions_source_message
   ON transactions (user_id, source_message_id) WHERE source_message_id IS NOT NULL;
 
--- Semilla: reanudar desde la última corrida conocida (no-op en DB vacía)
+-- Semilla: reanudar desde la última corrida conocida (no-op en DB vacía).
+-- Por remitente individual: AdminGetAccountsList divide banks.email por coma (SplitByBankEmails),
+-- así que cada job lleva un solo sender_email (igual que el DynamoDB de AWS).
 INSERT INTO email_sync_state (email_id, sender_email, last_run)
-SELECT DISTINCT e.id, b.email, TIMESTAMPTZ '2026-10-17 09:00:00+00'
+SELECT DISTINCT e.id, trim(sender), TIMESTAMPTZ '2026-10-17 09:00:00+00'
 FROM emails e
 JOIN accounts a ON a.email_id = e.id AND a.user_id = e.user_id
 JOIN banks b ON b.id = a.bank_id AND b.user_id = a.user_id
-WHERE e.active AND e.error IS NULL AND coalesce(b.email,'') <> ''
+CROSS JOIN LATERAL regexp_split_to_table(b.email, ',') AS sender
+WHERE e.active AND e.error IS NULL AND coalesce(b.email,'') <> '' AND trim(sender) <> ''
 ON CONFLICT DO NOTHING;
