@@ -29,11 +29,14 @@ def test_openai_key_is_not_required():
     s = Settings.from_env({**BASE, "GEMINI_API_KEY": "g", "GMAIL_CLIENT_ID": "a", "GMAIL_CLIENT_SECRET": "b",
                            "OUTLOOK_CLIENT_ID": "c", "OUTLOOK_CLIENT_SECRET": "d"})
     s.require_for_processing()
+    assert s.missing_for_processing() == []
 
 
-def test_require_for_processing_lists_missing():
-    with pytest.raises(ConfigError, match="GEMINI_API_KEY"):
-        Settings.from_env(BASE).require_for_processing()
+def test_missing_credentials_are_listed_but_do_not_block_startup():
+    s = Settings.from_env(BASE)
+    s.require_for_processing()
+    assert s.missing_for_processing() == ["GEMINI_API_KEY", "GMAIL_CLIENT_ID/GMAIL_CLIENT_SECRET",
+                                          "OUTLOOK_CLIENT_ID/OUTLOOK_CLIENT_SECRET"]
 
 
 def test_dry_run_and_only_email_ids():

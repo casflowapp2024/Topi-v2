@@ -26,14 +26,19 @@ class Job:
 
 
 class Database:
-    def __init__(self, dsn: str, max_size: int = 4, pool: ConnectionPool | None = None):
-        self.pool = pool or ConnectionPool(
-            dsn,
-            min_size=1,
-            max_size=max_size,
-            kwargs={"row_factory": dict_row, "autocommit": True},
-            open=True,
-        )
+    def __init__(self, dsn: str, max_size: int = 4, pool: ConnectionPool | None = None, connect_timeout: float = 15.0):
+        if pool is None:
+            pool = ConnectionPool(
+                dsn,
+                min_size=1,
+                max_size=max_size,
+                kwargs={"row_factory": dict_row, "autocommit": True},
+                timeout=30.0,
+                open=True,
+            )
+            # falla rápido si la DB no responde al arrancar (el contenedor se reinicia)
+            pool.wait(timeout=connect_timeout)
+        self.pool = pool
 
     def close(self) -> None:
         self.pool.close()

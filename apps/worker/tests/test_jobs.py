@@ -202,3 +202,17 @@ def test_api_skipped_duplicates_still_mark_message_done():
 
     assert db.processed[(7, "m1")]["status"] == "transaction"
     assert db.processed[(7, "m1")]["transaction_ids"] == []
+
+
+def test_missing_oauth_or_gemini_config_fails_without_marking():
+    from worker.extractors.gemini import GeminiExtractor
+    from worker.jobs import default_provider_factory
+
+    processor, db, api, _, _ = make([])
+    processor.provider_factory = default_provider_factory  # sin GMAIL_CLIENT_ID en settings
+    assert processor.handle(job()) == "failed"
+    assert "GMAIL_CLIENT_ID" in db.jobs[1]["error"] and api.errors == []
+
+    processor, db, api, _, _ = make([email("m1", "TX:1111:1")], extractor=GeminiExtractor(api_key=""))
+    assert processor.handle(job(attempts=3)) == "failed"
+    assert api.errors == []

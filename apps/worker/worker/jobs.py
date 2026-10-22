@@ -34,6 +34,10 @@ ProviderFactory = Callable[[str, dict, Settings], MailProvider]
 
 
 def default_provider_factory(provider: str, tokens: dict, settings: Settings) -> MailProvider:
+    if provider == "gmail" and not (settings.gmail_client_id and settings.gmail_client_secret):
+        raise PermanentJobError("GMAIL_CLIENT_ID/GMAIL_CLIENT_SECRET no están configurados")
+    if provider == "outlook" and not (settings.outlook_client_id and settings.outlook_client_secret):
+        raise PermanentJobError("OUTLOOK_CLIENT_ID/OUTLOOK_CLIENT_SECRET no están configurados")
     if provider == "gmail":
         from worker.providers.gmail import GmailProvider
 

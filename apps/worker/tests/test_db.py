@@ -41,36 +41,30 @@ def test_claim_priority_retry_and_finish(db, cleanup, test_email_id):
     keys, _ = cleanup
     low, high = f"{test_email_id}:low@x", f"{test_email_id}:high@x"
     keys += [low, high]
-    db.enqueue_jobs([({"k": "low"}, low)], priority=0)
-    db.enqueue_jobs([({"k": "high"}, high)], priority=1)
+    db.enqueue_jobs([({"email_id": test_email_id, "k": "low"}, low)], priority=0)
+    db.enqueue_jobs([({"email_id": test_email_id, "k": "high"}, high)], priority=1)
 
-    # pueden existir jobs reales pendientes en la DB local: buscar los nuestros
-    claimed = []
-    while (job := db.claim_job("test-worker")) is not None:
-        claimed.append(job)
-        if job.dedupe_key in (low, high) and len([j for j in claimed if j.dedupe_key in (low, high)]) == 2:
-            break
-    ours = [j for j in claimed if j.dedupe_key in (low, high)]
-    others = [j for j in claimed if j.dedupe_key not in (low, high)]
-    for job in others:  # devolver lo que no es nuestro
-        db.retry_job(job.id, "test", 0)
+    # el filtro por conexión (WORKER_ONLY_EMAIL_IDS) aísla el test de jobs reales de la DB local
+    first = db.claim_job("test-worker", [test_email_id])
+    second = db.claim_job("test-worker", [test_email_id])
+    assert db.claim_job("test-worker", [test_email_id]) is None
 
-    assert [j.dedupe_key for j in ours] == [high, low], "prioridad 1 (leer ahora) primero"
-    first = ours[0]
-    assert first.attempts == 1 and first.payload == {"k": "high"}
+    assert [first.dedupe_key, second.dedupe_key] == [high, low], "prioridad 1 (leer ahora) primero"
+    assert first.attempts == 1 and first.payload["k"] == "high"
 
     db.retry_job(first.id, "gemini 503", 60)
     row = _status(db, first.id)
     assert row["status"] == "pending" and row["later"] and row["last_error"] == "gemini 503"
+    assert db.claim_job("test-worker", [test_email_id]) is None, "no se toma antes de run_after"
 
-    db.complete_job(ours[1].id)
-    assert _status(db, ours[1].id)["status"] == "done"
+    db.complete_job(second.id)
+    assert _status(db, second.id)["status"] == "done"
 
     db.fail_job(first.id, "token")
     assert _status(db, first.id)["status"] == "failed"
 
     # con el job terminado se puede volver a encolar el mismo par
-    assert db.enqueue_jobs([({}, low)]) == 1
+    assert db.enqueue_jobs([({"email_id": test_email_id}, low)]) == 1
 
 
 def test_requeue_orphans(db, cleanup, test_email_id):

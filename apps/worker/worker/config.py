@@ -98,8 +98,10 @@ class Settings:
             only_email_ids=_int_set(env.get("WORKER_ONLY_EMAIL_IDS")),
         )
 
-    def require_for_processing(self) -> None:
-        """Lo que hace falta para procesar jobs (leer correos y extraer transacciones)."""
+    def missing_for_processing(self) -> list[str]:
+        """Credenciales que faltan para procesar jobs. El worker arranca igual (p. ej. en local sin
+        secretos); los jobs que las necesiten fallan como error de configuración, sin marcar
+        ninguna conexión."""
         missing = []
         if self.extractor == "gemini" and not self.gemini_api_key:
             missing.append("GEMINI_API_KEY")
@@ -107,10 +109,12 @@ class Settings:
             missing.append("GMAIL_CLIENT_ID/GMAIL_CLIENT_SECRET")
         if not (self.outlook_client_id and self.outlook_client_secret):
             missing.append("OUTLOOK_CLIENT_ID/OUTLOOK_CLIENT_SECRET")
+        return missing
+
+    def require_for_processing(self) -> None:
+        """Valida lo que no puede faltar para arrancar el procesamiento."""
         if self.extractor != "gemini":
             raise ConfigError(f"WORKER_EXTRACTOR desconocido: {self.extractor!r} (disponible: gemini)")
-        if missing:
-            raise ConfigError(f"Faltan variables para procesar correos: {', '.join(missing)}")
 
     def allows_email(self, email_id: int) -> bool:
         """WORKER_ONLY_EMAIL_IDS restringe el worker a esas conexiones (pruebas con correos del equipo)."""

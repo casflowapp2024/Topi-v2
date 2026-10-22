@@ -12,6 +12,7 @@ import json
 from typing import Any
 
 from worker import log
+from worker.errors import PermanentJobError
 from worker.extractors.base import AccountRef, ExtractedTransaction
 from worker.extractors.prompt_v3 import prompt as PROMPT_V3
 from worker.mapping import parse_amount
@@ -25,11 +26,18 @@ class GeminiExtractor:
         self.model = model
         self.prompt = prompt
         self.name = model
-        if client is None:
+        self.api_key = api_key
+        self._client = client
+
+    @property
+    def client(self) -> Any:
+        if self._client is None:
+            if not self.api_key:
+                raise PermanentJobError("GEMINI_API_KEY no está configurada")
             from google import genai
 
-            client = genai.Client(api_key=api_key)
-        self.client = client
+            self._client = genai.Client(api_key=self.api_key)
+        return self._client
 
     def generate_response(self, email_data: str) -> Any:
         from google.genai import types
