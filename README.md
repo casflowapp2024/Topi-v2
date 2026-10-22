@@ -115,6 +115,13 @@ docker compose -f infra/docker-compose.yml up -d --build              # postgres
   en Google Cloud y en Azure, y ponerla en `apps/api/.env`.
 - E2E con Playwright: `apps/web/e2e/README.md`.
 
+## Producción (Fase 5)
+
+Hetzner + Coolify: pasos en `infra/coolify/RUNBOOK.md`; variables en `infra/coolify/*.env.template`.
+Scripts para el servidor en `infra/scripts/prod/` (`restore-prod.sh`, `make-admin.sh`, `reset-password.sh`,
+`auth-report.sh`, `backup-check.sh`) y `infra/scripts/smoke-prod.sh` (solo lectura) desde cualquier máquina.
+`GET /health` de la API: estado de la base y del heartbeat del worker (para el monitoreo).
+
 ## Otras notas de la migración
 
 - Sin Lambda, CDK, SQS ni Secrets Manager. La API corre solo como servidor HTTP (`cmd/http`).

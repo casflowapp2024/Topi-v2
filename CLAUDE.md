@@ -18,7 +18,8 @@ apps/worker   Python 3.12, worker de correos (paquete `worker/`): scheduler + jo
   extractors/  TransactionExtractor; GeminiExtractor + prompt_v3 (no cambiar prompt ni modelo sin evaluar)
   jobs.py      flujo de un job (idempotente); db.py (psycopg 3); api_client.py (X-API-Key); errors.py
 apps/web      React CRA
-infra/        docker-compose.yml, scripts/ (restore.{sh,ps1}, make-admin, reset-password, auth-report)
+infra/        docker-compose.yml, scripts/ (restore.{sh,ps1}, make-admin, reset-password, auth-report, sql/,
+              prod/ para el servidor, smoke-prod.sh), coolify/ (plantillas de variables + RUNBOOK.md)
 plan/         plan de migración
 ```
 
@@ -72,5 +73,7 @@ plan/         plan de migración
   del equipo (`WORKER_ONLY_EMAIL_IDS`) y primero con `WORKER_DRY_RUN=true`. No se guarda el cuerpo de los correos.
 - No toques los repos viejos (`../cashflow-backend`, `../cashflow-saturn`, `../cash-flow-front`)
   ni el dump.
-- `go test ./...` debe quedar verde en cada commit.
+- `go test ./...` debe quedar verde en cada commit. El CI (`.github/workflows/ci.yml`) arranca Postgres con
+  `apps/api/testdata/schema_v17.sql`: las migraciones 1–17 usan pg_cron y no corren en una base vacía.
+- Producción (Coolify): `infra/coolify/RUNBOOK.md`. Los scripts de `infra/scripts/prod/` exigen `--container` o `DATABASE_URL`.
 - Archivos con LF (`.gitattributes`); `*.ps1` con CRLF.
