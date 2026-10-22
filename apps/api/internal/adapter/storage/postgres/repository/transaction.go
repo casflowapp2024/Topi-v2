@@ -98,7 +98,7 @@ func (tr *TransactionRepository) GetTransactionByID(
 	var transaction domain.Transaction
 
 	query := tr.db.QueryBuilder.Select(
-		"t.*, c.name, c.emoji, a.name, a.last_four_digits, b.id, b.name, at.id, at.name").
+		transactionColumnsT + ", c.name, c.emoji, a.name, a.last_four_digits, b.id, b.name, at.id, at.name").
 		From(enums.TransactionsTableName + " t").
 		LeftJoin(enums.CategoryTableName + " c ON c.id = t.category_id").
 		LeftJoin(enums.AccountTableName + " a ON a.id = t.account_id").
