@@ -179,8 +179,12 @@ test.describe('usuario migrado', () => {
   });
 
   test('6. ajustes: cambiar contraseña → logout → login con la nueva', async ({ page }) => {
+    const [[name]] = query(`SELECT name FROM users WHERE id = :'uid';`, { uid: user.id });
     await login(page, user.email, password);
-    await page.goto('/settings/profile');
+    // como un usuario: botón con su nombre en la barra superior → modal de ajustes (perfil).
+    // "Cerrar sesión" solo existe en el pie de ese modal, no en la ruta /settings/profile.
+    await page.getByRole('button', { name: name || 'Usuario', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Cambiar contraseña' })).toBeVisible();
     await page.getByPlaceholder('Contraseña actual').fill(password);
     await page.getByPlaceholder('Nueva contraseña', { exact: true }).fill(CHANGED_PASSWORD);
     await page.getByPlaceholder('Confirma la nueva contraseña').fill(CHANGED_PASSWORD);
