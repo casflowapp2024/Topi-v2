@@ -10,6 +10,23 @@ npx playwright install chromium
 
 Proyectos: `desktop` (Desktop Chrome) y `mobile` (Pixel 7).
 
+## Flujos de la app (`tests/flows.spec.js`, `signup.spec.js`, `token-refresh.spec.js`)
+
+```bash
+apps/web/e2e/scripts/run-local.sh            # todo: restore → compose up → flujos → flujo 7 → restore
+```
+
+- Usuarios: `global-setup.js` elige 2 migrados reales del dump (uno por proyecto) con historial y una
+  cuenta ligada a un correo activo, y si ya tenían contraseña los devuelve a "crear contraseña"
+  (`infra/scripts/reset-password.sh`). Se guardan en `.auth/` (fuera de git).
+- `support/fixtures.js` (`guard`): cada test falla si hubo errores de consola, excepciones o respuestas
+  4xx/5xx de la app o la API. Excepciones declaradas: el 403 del login de un migrado (flujo 1), el 404
+  de `GET /user-extra` de un usuario recién registrado (flujo 8) y los 401 del token vencido (flujo 7).
+- "Leer ahora" (flujo 5): Conexiones no tiene ese botón (solo el onboarding), así que se llama a
+  `POST /email/read` con la sesión del navegador y se verifica el job en `email_jobs`. El worker local
+  corre en dry run y sin conexiones: no se lee ningún correo.
+- El flujo 7 necesita la API con `ACCESS_TOKEN_TTL` corto; lo hace `run-local.sh` (`E2E_TTL_SECONDS`, 20 por defecto).
+
 ## Service worker: actualización desde la PWA vieja (`tests/sw-upgrade.spec.js`)
 
 Sirve dos builds en el mismo origen (`support/static-server.js` aplica las mismas reglas que
