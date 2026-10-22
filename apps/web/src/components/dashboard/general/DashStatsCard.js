@@ -5,7 +5,7 @@ import { connect } from 'react-redux';
 import { get_financial_report } from '../../../redux/actions/reports';
 import { get_savings_account } from '../../../redux/actions/reports';
 //components
-import DropDownAccount from '../../zobs/DropDownAccounts';
+import DropDownAccount from './DropDownAccounts';
 import { formatCurrency, getPerc2 } from '../../helpers';
 import FormatMoneyShowDecs from '../../FormatMoneyShowDecs';
 import {

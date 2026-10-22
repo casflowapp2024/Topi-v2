@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { formatCurrency } from '../helpers';
+import { formatCurrency } from '../../helpers';
 
 const SummaryCategories = () => {
     const userCategories = useSelector(state => state.CashFlow.user_categories);

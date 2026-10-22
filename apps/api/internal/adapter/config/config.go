@@ -73,7 +73,7 @@ type (
 		RefreshTokenTTL time.Duration
 		// InitialPasswordUntil closes set-initial-password after this instant (nil = always open)
 		InitialPasswordUntil *time.Time
-		// InternalAPIKey authenticates the worker/n8n with X-API-Key (empty = disabled)
+		// InternalAPIKey authenticates the worker with X-API-Key (empty = disabled)
 		InternalAPIKey     string
 		RateLimitPerMinute int
 		initialPasswordErr error

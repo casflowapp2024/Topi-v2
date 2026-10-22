@@ -8,7 +8,7 @@ con un LLM y las muestra en un dashboard. Monorepo de la migración de AWS a Het
 apps/api      API Go (Gin, Postgres, arquitectura hexagonal)
 apps/worker   Lector de correos en Python (ex-Saturn; se refactoriza en la Fase 3)
 apps/web      Front React (CRA)
-infra/        docker-compose local, scripts de restore, workflows de n8n
+infra/        docker-compose local, scripts de restore
 plan/         plan de migración por fases
 ```
 
@@ -67,7 +67,7 @@ DB_HOST=localhost DB_PORT=5432 DB_USER=topi DB_PASSWORD=... DB_NAME=cashflow \
 - Usuarios migrados (`users.migrated`, sin contraseña): al entrar, la API responde
   `user needs to reset the password` y el front les pide crear una (`POST /users/set-initial-password`).
   Funciona una sola vez por cuenta, respeta `INITIAL_PASSWORD_UNTIL` y queda en `auth_events`.
-- Worker y n8n: header `X-API-Key: $INTERNAL_API_KEY` para las rutas `admin/*`.
+- Worker: header `X-API-Key: $INTERNAL_API_KEY` para las rutas `admin/*`.
 
 Scripts de administración (corren `psql` dentro del contenedor):
 

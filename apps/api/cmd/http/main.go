@@ -20,7 +20,7 @@
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
 // @name X-API-Key
-// @description Internal callers (worker, n8n): INTERNAL_API_KEY
+// @description Internal callers (worker): INTERNAL_API_KEY
 
 package main
 

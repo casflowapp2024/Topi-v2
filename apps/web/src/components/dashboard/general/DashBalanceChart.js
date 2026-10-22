@@ -6,7 +6,7 @@ import { get_user_dash_balances } from '../../../redux/actions/cashflow';
 import { get_balance_history } from '../../../redux/actions/reports';
 //components
 import { formatCurrency } from '../../helpers';
-import DropDownPeriod from '../../zobs/DropDownPeriod';
+import DropDownPeriod from './DropDownPeriod';
 //icons
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 

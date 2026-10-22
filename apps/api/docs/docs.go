@@ -4596,7 +4596,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "ApiKeyAuth": {
-            "description": "Internal callers (worker, n8n): INTERNAL_API_KEY",
+            "description": "Internal callers (worker): INTERNAL_API_KEY",
             "type": "apiKey",
             "name": "X-API-Key",
             "in": "header"

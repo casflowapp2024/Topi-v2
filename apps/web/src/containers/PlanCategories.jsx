@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 //components
 import CreateCategory from "../components/expensePlan/CreateCategory";
 import EditCategory from "../components/expensePlan/EditCategory";
-import SummaryCategories from "../components/zobs/SummaryCategories";
+import SummaryCategories from "../components/dashboard/budgetCategories/SummaryCategories";
 import { formatCurrency, capitalizeWords, findElmentById } from "../components/helpers";
 
 //third components

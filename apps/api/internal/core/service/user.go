@@ -27,7 +27,7 @@ type AuthSettings struct {
 	RefreshTokenTTL time.Duration
 	// InitialPasswordUntil closes set-initial-password after this instant (nil = always open)
 	InitialPasswordUntil *time.Time
-	// InternalAPIKey authenticates internal callers (worker, n8n) with X-API-Key. Empty = disabled
+	// InternalAPIKey authenticates internal callers (worker) with X-API-Key. Empty = disabled
 	InternalAPIKey string
 }
 

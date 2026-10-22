@@ -2982,7 +2982,7 @@ paths:
       - Users
 securityDefinitions:
   ApiKeyAuth:
-    description: 'Internal callers (worker, n8n): INTERNAL_API_KEY'
+    description: 'Internal callers (worker): INTERNAL_API_KEY'
     in: header
     name: X-API-Key
     type: apiKey

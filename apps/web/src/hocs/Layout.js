@@ -12,7 +12,6 @@ import { open_settings_modal, close_settings_modal } from '../redux/actions/ui';
 //Components
 import Onboarding2 from './Onboarding2';
 import NextStepsPopover from '../components/onboarding2/NextStepsPopover';
-import Chatbot from '../components/chatbot/Chatbot';
 import InstallPwaModal from '../components/ui/InstallPwaModal';
 import Warnings from '../components/navigation/Warnings';
 import AccountSettings from '../containers/AccountSettings';
@@ -22,7 +21,6 @@ import {
   BanknotesIcon,
   CreditCardIcon,
   ArrowsRightLeftIcon,
-  ChatBubbleLeftEllipsisIcon,
   UserIcon
 } from '@heroicons/react/20/solid';
 //UX
@@ -249,13 +247,6 @@ const Layout = ({
                       <ArrowsRightLeftIcon className="w-5 h-5 shrink-0" />
                       {activeTab === 'transactions' && <span className="ml-1 text-sm font-semibold whitespace-nowrap">Transac.</span>}
                     </Link>
-                    {/* Chatbot trigger explicitly for mobile navbar */}
-                    <button
-                      onClick={() => window.dispatchEvent(new CustomEvent('toggle-chatbot'))}
-                      className="flex flex-row items-center justify-center rounded-full transition-all duration-300 bg-transparent text-white/80 p-2 w-12 flex-shrink-0 focus:outline-none"
-                    >
-                      <ChatBubbleLeftEllipsisIcon className="w-5 h-5 shrink-0" />
-                    </button>
                   </div>
                 </div>
 
@@ -277,7 +268,6 @@ const Layout = ({
             />
           )}
 
-          <Chatbot />
           <InstallPwaModal />
         </div>
       )}

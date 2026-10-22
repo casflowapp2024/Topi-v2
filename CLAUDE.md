@@ -18,7 +18,7 @@ apps/worker   Python 3.12, worker de correos (paquete `worker/`): scheduler + jo
   extractors/  TransactionExtractor; GeminiExtractor + prompt_v3 (no cambiar prompt ni modelo sin evaluar)
   jobs.py      flujo de un job (idempotente); db.py (psycopg 3); api_client.py (X-API-Key); errors.py
 apps/web      React CRA
-infra/        docker-compose.yml, scripts/ (restore.{sh,ps1}, make-admin, reset-password, auth-report), n8n/
+infra/        docker-compose.yml, scripts/ (restore.{sh,ps1}, make-admin, reset-password, auth-report)
 plan/         plan de migración
 ```
 
