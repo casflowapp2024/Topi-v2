@@ -10,16 +10,20 @@ setupAuthInterceptor(store);
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
-// Register Service Worker for PWA setup
+// Service worker (PWA). Al activarse una versión nueva toma el control (skipWaiting + claim) y se
+// recarga la página una sola vez para que use los bundles nuevos.
 if ('serviceWorker' in navigator) {
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloaded) return;
+    reloaded = true;
+    window.location.reload();
+  });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(registration => {
-        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-      })
-      .catch(err => {
-        console.log('ServiceWorker registration failed: ', err);
-      });
+    navigator.serviceWorker.register('/service-worker.js').catch(err => {
+      console.warn('ServiceWorker registration failed: ', err);
+    });
   });
 }
 

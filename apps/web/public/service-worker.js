@@ -1,90 +1,78 @@
 // service-worker.js
-// A simple service worker to satisfy PWA installability requirements
+// - Navegaciones: network-first (la caché solo es respaldo offline).
+// - /static/* (nombres con hash): cache-first.
+// - Todo lo demás (API, otros orígenes, métodos != GET) va directo a la red.
+// scripts/stamp-sw.js reemplaza __BUILD_ID__ en cada build: así el archivo cambia en cada deploy
+// y el navegador instala la versión nueva.
 
-const CACHE_NAME = `topi-pwa-cache-v1`;
+const BUILD_ID = '__BUILD_ID__';
+const CACHE_NAME = `topi-v2-${BUILD_ID}`;
+const SHELL_URL = '/index.html';
+// Caché del SW de la versión anterior (cache-first de index.html). Si existe, hay que sacar a
+// las ventanas abiertas de esa versión: su JS no escucha controllerchange.
+const LEGACY_CACHES = ['topi-pwa-cache-v1'];
 
-// List of core assets representing the "app shell"
-const urlsToCache = [
-    '/',
-    '/index.html',
-    '/manifest.json',
-    '/favicon.ico',
-    '/logo192.png',
-    '/logo512.png'
-];
-
-// Install event - caching the app shell
 self.addEventListener('install', event => {
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => {
-                console.log('Opened cache');
-                return cache.addAll(urlsToCache);
-            })
-    );
-    // Optional: Force the waiting service worker to become the active service worker
-    self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.add(new Request(SHELL_URL, { cache: 'reload' })))
+      .catch(() => undefined)
+      .then(() => self.skipWaiting())
+  );
 });
 
-// Activate event - cleaning up old caches
 self.addEventListener('activate', event => {
-    const cacheWhitelist = [CACHE_NAME];
-    event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames.map(cacheName => {
-                    if (cacheWhitelist.indexOf(cacheName) === -1) {
-                        console.log('Deleting old cache:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
-    );
-    // Optional: Ensure the service worker takes control of all clients immediately
-    self.clients.claim();
+  event.waitUntil((async () => {
+    const names = await caches.keys();
+    const hadLegacy = names.some(name => LEGACY_CACHES.includes(name));
+    await Promise.all(names.filter(name => name !== CACHE_NAME).map(name => caches.delete(name)));
+    await self.clients.claim();
+    if (hadLegacy) {
+      const windows = await self.clients.matchAll({ type: 'window' });
+      // Sin await: la navegación la atiende este mismo SW, que no recibe fetch hasta terminar de
+      // activarse. Esperarla aquí dentro de waitUntil deja la activación (y la página) bloqueada.
+      windows.forEach(client => client.navigate(client.url).catch(() => undefined));
+    }
+  })());
 });
 
-// Fetch event - network falling back to cache strategy
 self.addEventListener('fetch', event => {
-    event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                // Cache hit - return response
-                if (response) {
-                    return response;
-                }
+  const { request } = event;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
 
-                // IMPORTANT: Clone the request. A request is a stream and
-                // can only be consumed once. Since we are consuming this
-                // once by cache and once by the browser for fetch, we need
-                // to clone the response.
-                const fetchRequest = event.request.clone();
-
-                return fetch(fetchRequest).then(
-                    response => {
-                        // Check if we received a valid response
-                        if (!response || response.status !== 200 || response.type !== 'basic') {
-                            return response;
-                        }
-
-                        // IMPORTANT: Clone the response. A response is a stream
-                        // and because we want the browser to consume the response
-                        // as well as the cache consuming the response, we need
-                        // to clone it so we have two streams.
-                        const responseToCache = response.clone();
-
-                        caches.open(CACHE_NAME)
-                            .then(cache => {
-                                // Only cache GET requests (don't cache POST, PUT, DELETE, etc.)
-                                if (event.request.method === 'GET') {
-                                    cache.put(event.request, responseToCache);
-                                }
-                            });
-
-                        return response;
-                    }
-                );
-            })
-    );
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+  if (url.pathname.startsWith('/static/')) {
+    event.respondWith(cacheFirst(request));
+  }
 });
+
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request);
+    if (response.ok && response.type === 'basic') {
+      const cache = await caches.open(CACHE_NAME);
+      await cache.put(SHELL_URL, response.clone());
+    }
+    return response;
+  } catch (err) {
+    const cached = await caches.match(SHELL_URL, { cacheName: CACHE_NAME });
+    if (cached) return cached;
+    throw err;
+  }
+}
+
+async function cacheFirst(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+  const response = await fetch(request);
+  if (response.ok && response.type === 'basic') {
+    await cache.put(request, response.clone());
+  }
+  return response;
+}
