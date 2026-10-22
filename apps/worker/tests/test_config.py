@@ -24,8 +24,8 @@ def test_required_variables():
         Settings.from_env({"DATABASE_URL": "x", "API_BASE_URL": "y"})
 
 
-def test_openai_key_is_not_required():
-    # hallazgo 6: OPENAI_API_KEY era obligatoria y no se usaba
+def test_unused_llm_key_is_not_required():
+    # hallazgo 6: la key del otro proveedor de LLM era obligatoria y no se usaba
     s = Settings.from_env({**BASE, "GEMINI_API_KEY": "g", "GMAIL_CLIENT_ID": "a", "GMAIL_CLIENT_SECRET": "b",
                            "OUTLOOK_CLIENT_ID": "c", "OUTLOOK_CLIENT_SECRET": "d"})
     s.require_for_processing()

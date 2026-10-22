@@ -17,7 +17,7 @@ API_DATE_FORMAT = "%Y-%m-%d %H:%M:%S %z"  # el que acepta la API (enums.DateTime
 
 def transform_automations_msgs(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Agrupa las cuentas de `/accounts/admin/list` por (correo del usuario, remitente) y arma el
-    payload de cada job (el mismo que antes iba a SQS). Lógica original de general_utils."""
+    payload de cada job (el mismo contrato que usaba la cola de AWS). Lógica original de general_utils."""
     result = []
     user_accounts = data.get("data", {}).get("user_accounts", {})
 

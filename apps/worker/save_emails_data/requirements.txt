@@ -1,4 +1,0 @@
-requests==2.32.3
-
-# google api
-google-genai==1.19.0

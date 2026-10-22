@@ -1,4 +1,4 @@
-"""Job loop: toma jobs de email_jobs cada WORKER_POLL_SECONDS (reemplaza SQS)."""
+"""Job loop: toma jobs de email_jobs cada WORKER_POLL_SECONDS (reemplaza la cola de AWS)."""
 
 from __future__ import annotations
 

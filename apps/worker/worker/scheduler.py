@@ -1,4 +1,4 @@
-"""Tareas programadas (APScheduler, hora Bogotá). Reemplaza EventBridge + send_execution_sqs y pg_cron.
+"""Tareas programadas (APScheduler, hora Bogotá). Reemplaza el programador de AWS (EventBridge + Lambda) y pg_cron.
 
 - cada hora en punto: encolar una lectura por (conexión, remitente)
 - cada 5 min: refresh de las vistas de análisis

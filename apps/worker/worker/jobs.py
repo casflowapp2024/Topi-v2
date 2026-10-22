@@ -1,4 +1,4 @@
-"""Flujo de un job de lectura (reemplaza extract_emails_new + SQS). Ver plan/03, "Flujo de un job".
+"""Flujo de un job de lectura (reemplaza la Lambda extract_emails_new y la cola de AWS). Ver plan/03, "Flujo de un job".
 
 Idempotencia (lo más importante de la fase):
 1. processed_emails: un mensaje ya extraído con éxito se omite **sin llamar a Gemini**;

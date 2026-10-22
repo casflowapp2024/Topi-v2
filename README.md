@@ -77,9 +77,24 @@ infra/scripts/reset-password.sh <email>   # "olvidé mi contraseña": vuelve a "
 infra/scripts/auth-report.sh [dias]       # migrados con/sin contraseña, últimos eventos
 ```
 
+## Worker de correos (Fase 3)
+
+`apps/worker`: proceso de larga duración (scheduler + job loop sobre `email_jobs`). Lee Gmail/Outlook desde
+`email_sync_state.last_run`, extrae transacciones con Gemini y las crea vía API (idempotente por mensaje).
+
+```bash
+docker compose -f infra/docker-compose.yml up -d --build              # postgres + api + worker
+docker compose -f infra/docker-compose.yml exec worker python -m worker enqueue-now
+docker compose -f infra/docker-compose.yml exec worker python -m worker refresh-views --all
+docker compose -f infra/docker-compose.yml logs -f worker             # logs JSON
+```
+
+En local el worker arranca con `WORKER_DRY_RUN=true` y `WORKER_ONLY_EMAIL_IDS=0` (no lee ningún correo).
+Para probar con la conexión del equipo: credenciales en `apps/worker/.env` y en `infra/.env`
+`WORKER_ONLY_EMAIL_IDS=<emails.id>` (primero con dry run). Ver `plan/03-fase-3-worker.md`.
+
 ## Otras notas de la migración
 
 - Sin Lambda, CDK, SQS ni Secrets Manager. La API corre solo como servidor HTTP (`cmd/http`).
-- `POST /email/read` encola jobs en la tabla `email_jobs` (migración 18), que consumirá el worker (Fase 3).
-- `pg_cron` no existe fuera de RDS: el restore lo excluye; los refresh de vistas materializadas
-  los hará el worker (Fase 3).
+- `POST /email/read` ("leer ahora") encola en `email_jobs` con prioridad 1; no duplica si ya hay uno pendiente.
+- `pg_cron` no existe fuera de RDS: el restore lo excluye y los refresh de vistas los hace el worker.
