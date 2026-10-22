@@ -28,6 +28,7 @@ import AAAcountsDashboard from './components/dashboard/productsAccounts/AAAcount
 import AABudgetDashboard from './components/dashboard/budgetCategories/AABudgetDashboard';
 import AAGenDashboard from './components/dashboard/general/AAGenDashboard';
 import Membership from './components/settings/Membership';
+import ConnectEmail from './components/conexions/ConnectEmail';
 //fondo blanco #FFFFFF
 //sombras blanco isabelino #e9e8ee
 //compplemento azul #5266EB
@@ -58,6 +59,7 @@ const AnalyticsWrapper = () => {
           <Route path="budgets" element={<AABudgetDashboard />} />
           <Route path="accounts" element={<AAAcountsDashboard />} />
           <Route path="transactions" element={<Transactions />} />
+          <Route path="connect-email" element={<ConnectEmail />} />
         </Route>
         <Route exact path='/create_account/' element={<SignUpView />} />
         <Route path='/settings/' element={<AccountSettings />}>

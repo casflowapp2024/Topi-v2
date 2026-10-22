@@ -14,6 +14,7 @@ import Onboarding2 from './Onboarding2';
 import NextStepsPopover from '../components/onboarding2/NextStepsPopover';
 import InstallPwaModal from '../components/ui/InstallPwaModal';
 import Warnings from '../components/navigation/Warnings';
+import { connectEmailAction, wasPromptedThisSession, markPromptedThisSession } from '../components/conexions/emailConnection';
 import AccountSettings from '../containers/AccountSettings';
 import { ReactComponent as Cflogo } from '../assets/logos/T1.svg';
 import {
@@ -48,6 +49,7 @@ const Layout = ({
   default_limit,
   user_extra_data,
   first_steps,
+  automated_emails,
   // New props for shell
   user,
   logout,
@@ -70,6 +72,7 @@ const Layout = ({
   const location = useLocation();
   const [userDataRequested, setUserDataRequested] = useState(false);
   const [openNextSteps, setOpenNextSteps] = useState(false);
+  const [forceEmailStep, setForceEmailStep] = useState(false);
 
   const pathSegments = location.pathname.split('/').filter(Boolean);
   const activeTab = pathSegments.length > 1 ? pathSegments[1] : 'general';
@@ -151,6 +154,22 @@ const Layout = ({
     }
   }, [userDataRequested])
 
+  // Al iniciar sesión: sin ninguna conexión de correo utilizable, llevar a conectar una.
+  // Con una conexión activa no se hace nada (el worker lee cada hora).
+  useEffect(() => {
+    if (!user || !user_extra_data || !first_steps.retrieved_email) return;
+    const userKey = user.email;
+    if (wasPromptedThisSession(userKey)) return;
+    markPromptedThisSession(userKey);
+
+    const action = connectEmailAction(automated_emails, user_extra_data.onboarding_completed);
+    if (action === 'onboarding') {
+      setForceEmailStep(true);
+    } else if (action === 'connect' && location.pathname !== '/dashboard/connect-email') {
+      navigate('/dashboard/connect-email');
+    }
+  }, [user, user_extra_data, first_steps.retrieved_email, automated_emails, location.pathname, navigate])
+
   console.log("Layout Render - is_settings_open:", is_settings_open);
 
   return (
@@ -217,7 +236,7 @@ const Layout = ({
                 <Warnings />
 
                 {user_extra_data.onboarding_completed === false && (
-                  <Onboarding2 NextStepsPopoverOnboarding={NextStepsPopoverOnboarding} />
+                  <Onboarding2 NextStepsPopoverOnboarding={NextStepsPopoverOnboarding} forceEmailStep={forceEmailStep} />
                 )}
 
                 <NextStepsPopover open={openNextSteps} setOpen={setOpenNextSteps} />
@@ -282,6 +301,7 @@ const mapStateToProps = state => ({
   default_limit: state.CashFlow.user_transactions.default_limit,
   categories: state.CashFlow.user_categories,
   first_steps: state.CashFlow.first_steps,
+  automated_emails: state.Conexions.automated_emails.emails,
   is_settings_open: state.UI.is_settings_open,
   active_settings_tab: state.UI.active_settings_tab
 })

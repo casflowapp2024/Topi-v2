@@ -18,6 +18,9 @@ const LinkTransEmailForm = ({
     onCloseForm,
     onSelectValue,
     contextWindow = "settings",
+    onLinked = null, // se llama con el correo registrado (p. ej. para "leer ahora")
+    initialEmail = "",
+    initialProvider = null,
     //actions
     link_emails_ask_url,
     register_email_conexion,
@@ -27,8 +30,8 @@ const LinkTransEmailForm = ({
     automated_emails
 }) => {
 
-    const [emailAutomated, setEmailAutomated] = useState("")
-    const [provider, setProvider] = useState(providers_atomated_email[0].value)
+    const [emailAutomated, setEmailAutomated] = useState(initialEmail)
+    const [provider, setProvider] = useState(initialProvider || providers_atomated_email[0].value)
     const [loadingLink, setLoadingLink] = useState(false)
     const [codeReceived, setCodeReceived] = useState("")
     const [linkSucess, setLikSucces] = useState(false)
@@ -145,6 +148,9 @@ const LinkTransEmailForm = ({
             }
             setLoadingLink(false)
             setLikSucces(true)
+            if (onLinked) {
+                onLinked(emailAutomated)
+            }
 
         } else {
 
@@ -156,11 +162,11 @@ const LinkTransEmailForm = ({
 
     useEffect(() => {
         if (!closedForm) {
-            setEmailAutomated("")
+            setEmailAutomated(initialEmail)
             setCodeReceived("")
             setLikSucces(false)
         }
-    }, [closedForm]);
+    }, [closedForm, initialEmail]);
 
 
     return (
@@ -211,7 +217,7 @@ const LinkTransEmailForm = ({
                                 <select
                                     id="provider"
                                     name="provider"
-                                    value={provider.value}
+                                    value={provider}
                                     onChange={e => onChangeForm(e)}
                                     required
                                     class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">

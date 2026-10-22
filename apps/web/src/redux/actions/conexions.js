@@ -126,6 +126,7 @@ export const delete_automated_email = (email) => async dispatch => {
 }
 
 
+// acc_id: un id o una lista de ids de cuentas
 export const read_email_transactions_trigger = (acc_id) => async dispatch => {
     const config = {
         headers: {
@@ -135,7 +136,7 @@ export const read_email_transactions_trigger = (acc_id) => async dispatch => {
     };
 
     const body = {
-        "account_ids": [acc_id]
+        "account_ids": Array.isArray(acc_id) ? acc_id : [acc_id]
     }
 
     try {

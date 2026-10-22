@@ -45,3 +45,17 @@ OLD_BUILD_DIR="$OLD/apps/web/build" npx playwright test tests/sw-upgrade.spec.js
 ```
 
 Sin `OLD_BUILD_DIR` estos tests se saltan.
+
+## Conectar correo al iniciar sesión (`tests/connect-email.spec.js`)
+
+Sirve `apps/web/build` con `support/static-server.js` y simula la API con `page.route` (no necesita el
+compose ni usuarios reales). El OAuth de Google/Microsoft se reemplaza por la página de retorno del
+popup (`/glink-oauth-popup-success?code=fake-code`), que le pasa el code a la app como en producción.
+Cubre: sin conexión → `/dashboard/connect-email` → register → cuenta ligada → `POST /email/read`;
+"Hacerlo más tarde"; reconectar una conexión en error; con conexión activa no redirige; onboarding
+pendiente → abre en "Conecta tu email".
+
+```bash
+(cd .. && REACT_APP_API_URL=http://localhost:8080 npm run build)
+E2E_SKIP_USERS=1 npx playwright test tests/connect-email.spec.js
+```

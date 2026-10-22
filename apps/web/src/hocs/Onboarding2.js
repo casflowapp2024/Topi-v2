@@ -13,6 +13,7 @@ import { Transition, Dialog, DialogTitle, TransitionChild, DialogPanel } from '@
 
 const Onboarding2 = ({
     NextStepsPopoverOnboarding,
+    forceEmailStep = false, // al iniciar sesión sin correo conectado: abrir en "Conecta tu email"
     //redux state
     user,
     first_steps,
@@ -44,6 +45,13 @@ const Onboarding2 = ({
             setCollapsed(true)
         }
     }, [])
+
+    useEffect(() => {
+        if (forceEmailStep) {
+            setCurrentStep(2)
+            setCollapsed(true)
+        }
+    }, [forceEmailStep])
 
     const handleOpenClose = () => {
         setCollapsed(!collapsed)
