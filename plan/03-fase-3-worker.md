@@ -119,7 +119,7 @@ ON CONFLICT DO NOTHING;
 - Se elige con `WORKER_EXTRACTOR` (default `gemini`). Si `confidence` viene y es menor que un umbral → `should_verify = true`.
 - Tests de contrato del extractor con fixtures **anonimizados** (montos, nombres y últimos 4 dígitos cambiados) de los 9 bancos: servirán
   para evaluar Jev u otro extractor en el futuro con el mismo set.
-- Fuera de alcance: integrar Jev. Ver `plan/04-evaluacion-jev.md`.
+- Fuera de alcance: integrar Jev. Ver `plan/90-evaluacion-jev.md`.
 
 ## Encolado horario
 - Paginar `GET /accounts/admin/list`, agrupar con `transform_automations_msgs` (por `email_id` + `sender_email`) e insertar en `email_jobs`

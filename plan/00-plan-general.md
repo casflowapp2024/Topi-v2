@@ -30,7 +30,7 @@
 www.topi.cash → web (estático, nginx, headers COOP/COEP)
 api.topi.cash → api (Go, Dockerfile)      ─┐
 worker        → Python (cron + cola)       ├─ Postgres 16 (backup diario a Hetzner Object Storage/B2)
-n8n           → chatbot (self-hosted)     ─┘
+                                         ─┘
 ```
 
 ## Fases
@@ -40,9 +40,9 @@ n8n           → chatbot (self-hosted)     ─┘
 | 1 | Monorepo + entorno local + API sin AWS | `docker compose up` levanta Postgres restaurado + API; `go build/test` OK; cero imports `aws-*` salvo cognito (se va en F2) |
 | 2 | Auth propia (contraseña, sin correo) | signup/login contra `users`; migrados crean su contraseña desde el login |
 | 3 | Worker de correos | Lee desde el corte del 17-oct, sin duplicados; botón “leer ahora” encola job |
-| 4 | Frontend + n8n | Front sin Google login, apunta a API nueva; chatbot operando |
-| 5 | Deploy Coolify | Servicios arriba con dominios, TLS y backups |
-| 6 | Corte | DNS → Hetzner; aviso a usuarios (el front muestra el mensaje de migración); monitoreo 1 semana |
+| 4 | Frontend a producción | Imagen nginx, service worker seguro, E2E con Playwright. Sin n8n ni chatbot (decisión 21-oct) |
+| 5 | Deploy Coolify | DB restaurada, API/web en dominios finales con TLS, backups probados, monitoreo; worker solo con la conexión del equipo |
+| 6 | Apertura | Worker para todas las conexiones (backfill desde el 17-oct), `INITIAL_PASSWORD_UNTIL`, aviso a usuarios, monitoreo 1 semana, archivar repos viejos |
 
 ## ¿Se pueden migrar las cuentas (incluidas las de Google)? → Sí
 - No se pueden recuperar contraseñas (Cognito no las exporta y ya no existe). **Todos** los usuarios, los de Google y los de contraseña, pasan por el mismo flujo:
