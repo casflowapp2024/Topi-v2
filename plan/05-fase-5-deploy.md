@@ -69,7 +69,7 @@ Decisiones y diferencias con lo escrito arriba:
 
 ## Parte B: pasos manuales (el equipo, siguiendo el runbook)
 ### B0. Prerrequisitos
-- [ ] Repo privado en GitHub (p. ej. `casflowapp2024/topi`), push de `main`. Coolify conectado vía **GitHub App** solo a ese repo.
+- [x] Repo privado en GitHub (`casflowapp2024/Topi-v2`), push de `main`. Coolify conectado vía **GitHub App** solo a ese repo.
 - [ ] **Secretos rotados**: client secret de Google (Gmail) y de Azure (Outlook), API key de Gemini **de un proyecto con facturación activa**.
       Los valores viejos están en el historial de los repos viejos. Rotar un client secret **no** invalida los refresh tokens guardados.
 - [ ] Generar: `POSTGRES_PASSWORD`, `JWT_SECRET`, `INTERNAL_API_KEY` (`openssl rand -hex 32` cada uno).
@@ -122,7 +122,7 @@ Decisiones y diferencias con lo escrito arriba:
 - **No** reutilizar en producción los secretos de desarrollo (`infra/.env`).
 
 ## Criterios de aceptación
-- [ ] Repo en GitHub sin secretos en el historial (gitleaks limpio); CI en verde.
+- [x] Repo en GitHub sin secretos en el historial (gitleaks limpio); CI en verde. (23-oct: `casflowapp2024/Topi-v2`, `ci #1` verde sobre `8d0447a`)
 - [ ] Los 4 recursos arriba en Coolify; deploy automático al hacer push a `main`, solo del servicio que cambió.
 - [ ] Restore verificado en producción (8748 / 62 / 23) y migraciones en la versión 21.
 - [ ] `smoke-prod.sh` pasa completo.
