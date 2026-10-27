@@ -225,6 +225,96 @@ OK: <id> cashflowapp2024@gmail.com role=admin
 6. **Verificar** (cuando haya DNS): `https://www.topi.cash` carga el login; `https://topi.cash` redirige a
    `https://www.topi.cash/`. El smoke de B4 lo comprueba todo.
 
+> B3 compila React **en el servidor**. Con 4 GB eso es frágil: el modo recomendado es
+> **"Front desde GHCR"** (abajo), donde GitHub Actions compila y Coolify solo descarga la imagen.
+
+---
+
+## Front desde GHCR (`topi-web` como Docker Image)
+
+El workflow `.github/workflows/web-image.yml` compila `apps/web` en cada push a `main` que toque
+`apps/web/**` (o a mano: Actions → **web-image** → **Run workflow**) y publica
+`ghcr.io/casflowapp2024/topi-web` con dos tags: `latest` y `sha-<commit corto>`. Conserva las últimas
+10 versiones. Las `REACT_APP_*` quedan **horneadas en la imagen**: cambiarlas = cambiar la variable
+en GitHub y volver a correr el workflow (en Coolify no se configuran).
+
+### G1. Variables del repo (GitHub)
+Repo → **Settings** → **Secrets and variables** → **Actions** → pestaña **Variables** → *New repository variable*:
+
+| Variable | Valor |
+|---|---|
+| `WEB_API_URL` | `https://api.topi.cash` (sin barra final). **Obligatoria**: si falta, el workflow falla. |
+| `WEB_GA_TRACKING_ID` | `G-XXXXXXX`, o no crearla (vacía = sin Google Analytics). |
+
+Son *variables*, no secrets: terminan en el JavaScript público.
+
+Primer build: Actions → **web-image** → **Run workflow** (rama `main`). Al terminar, el paquete
+aparece en el perfil de la org → **Packages** → `topi-web`, vinculado al repo (privado, como el repo).
+Si no aparece vinculado: paquete → **Package settings** → *Connect repository* → `Topi-v2`, y en
+*Manage Actions access* dale al repo rol **Write** (lo necesita el job de limpieza).
+
+### G2. PAT de solo lectura y `docker login` en el servidor
+1. En GitHub, con una cuenta con acceso al repo: **Settings** (de la cuenta) → **Developer settings** →
+   **Personal access tokens** → **Tokens (classic)** → *Generate new token (classic)*.
+   Nombre `coolify-ghcr-pull`, scope **solo `read:packages`**, expiración 1 año (anótala para rotarlo).
+   Los fine-grained tokens no sirven para GHCR.
+2. En el servidor, como `root` (Coolify ejecuta Docker como root, verificar en tu versión):
+   ```bash
+   SERVER$ read -rs GHCR_PAT && echo "$GHCR_PAT" | docker login ghcr.io -u <usuario-github> --password-stdin; unset GHCR_PAT
+   Login Succeeded
+   SERVER$ docker pull ghcr.io/casflowapp2024/topi-web:latest        # comprobar
+   ```
+   `read -rs` evita que el token quede en el historial. La credencial queda en `/root/.docker/config.json`.
+3. Rotar: generar el PAT nuevo, repetir el `docker login` y borrar el viejo en GitHub.
+
+### G3. Crear el recurso en Coolify
+1. **+ New** → **Docker Image** (verificar en tu versión; a veces está como *Docker Image* dentro de
+   *Applications*). Imagen: `ghcr.io/casflowapp2024/topi-web`, tag `latest`. Nombre: `topi-web-ghcr`.
+2. **Ports Exposes:** `8080`. **Sin variables de entorno.** Límite de memoria 64 MB (como B7.3).
+3. Healthcheck: la imagen trae el suyo (`/healthz`). Si Coolify pide uno HTTP: ruta `/healthz`, puerto `8080`.
+4. Antes de mover los dominios, pruébalo con el dominio que genera Coolify (`*.sslip.io`, en **Domains**)
+   o sin dominio: **Deploy** → el contenedor queda *healthy* y `GET /healthz` responde `ok`.
+   (El login no funcionará en ese dominio por CORS: es esperado.)
+
+### G4. Migrar los dominios desde el `topi-web` viejo
+Dos recursos con el mismo dominio confunden al proxy, así que va en este orden (corte de segundos a
+un par de minutos):
+1. `topi-web` (viejo) → **Domains**: anota exactamente lo que tiene (`https://www.topi.cash,https://topi.cash`
+   y la opción de redirección a www) → bórralos → **Save** → **Stop**.
+2. `topi-web-ghcr` → **Domains**: pega los mismos dominios y la misma redirección a www → **Save** → **Deploy**.
+3. Verificar:
+   ```bash
+   LOCAL$ curl -sI https://www.topi.cash | head -1          # 200
+   LOCAL$ curl -sI https://topi.cash | grep -i location     # https://www.topi.cash/
+   LOCAL$ infra/scripts/smoke-prod.sh                       # 0 fallas
+   ```
+   Si el certificado tarda, **Redeploy** de `topi-web-ghcr` (B4.3).
+4. Vuelta atrás: quitar los dominios de `topi-web-ghcr`, devolverlos al viejo y **Deploy** del viejo.
+5. Con unos días estable: borrar el `topi-web` viejo (así deja de compilar en el servidor con cada push).
+
+### G5. Deploy de una versión nueva
+Hasta que Coolify tenga HTTPS, el deploy es manual: cuando el workflow termine en verde,
+`topi-web-ghcr` → **Redeploy** (descarga `latest` de nuevo; verificar en tu versión que haga
+`pull`; si no, activa la opción de *pull latest image* del recurso). Después:
+`LOCAL$ infra/scripts/smoke-prod.sh`.
+
+Más adelante, el job `deploy` del workflow (hoy con `if: false`) llama a la API de Coolify. Para activarlo:
+1. Coolify → **Keys & Tokens** → **API tokens** → token con permiso de *deploy*.
+2. GitHub → **Secrets** → `COOLIFY_URL` (`https://<coolify>`, sin barra final), `COOLIFY_WEB_UUID`
+   (el UUID de `topi-web-ghcr`, aparece en su URL en Coolify) y `COOLIFY_TOKEN`.
+3. Quitar `if: false` del job `deploy` y hacer push.
+
+### G6. Rollback a un commit anterior
+1. Elige el tag: paquete `topi-web` en GitHub → versiones, o `git log --oneline -- apps/web`
+   (`sha-` + los 7 primeros caracteres del commit). Solo existen las **últimas 10** versiones.
+2. `topi-web-ghcr` → tag de la imagen: `latest` → `sha-<commit>` → **Save** → **Redeploy**.
+3. Smoke. Cada build tiene su `BUILD_ID`, así que el service worker de los navegadores también vuelve
+   a la versión anterior.
+4. Para volver a la normalidad: tag `latest` → **Redeploy**. Ojo: el siguiente push a `apps/web`
+   vuelve a mover `latest`, pero el recurso sigue fijado al `sha-` hasta que lo cambies.
+5. Si la versión ya no está en GHCR: Actions → **web-image** → **Run workflow** no deja elegir un commit;
+   haz `git revert` de los commits malos y push (genera una imagen nueva).
+
 ---
 
 ## B4. DNS y TLS
@@ -341,7 +431,7 @@ OK: <id> cashflowapp2024@gmail.com role=admin
 | Consulta SQL manual | `SERVER$ docker exec -it <pg> psql -U topi -d cashflow` (nunca abrir 5432) |
 
 **Rollback de un deploy:** en el recurso → **Deployments** → elegir el anterior y volver a desplegarlo
-(verificar en tu versión), o `git revert` + push. Las migraciones no se revierten solas: si un deploy
+(verificar en tu versión), o `git revert` + push. El front desde GHCR: tag `sha-<commit>` (ver G6). Las migraciones no se revierten solas: si un deploy
 incluyó una migración, avisar antes de hacer rollback.
 
 **Restaurar la base desde un backup:** detener `topi-api` y `topi-worker`, bajar el backup del bucket
