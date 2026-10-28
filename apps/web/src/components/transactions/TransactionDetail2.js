@@ -10,6 +10,7 @@ import { setAlert } from '../../redux/actions/alert';
 import { findElmentNameById, formatDate, formatMoney, formatedCurrToNumber, findElmentById, parseDatetimetoDateStrFormat, formatToDateFilters } from '../helpers';
 import TransSumm from './TransSumm';
 import FxRateEditor from './FxRateEditor';
+import TransferLinkSection from './TransferLinkSection';
 import FormEditCreateTrans from './FormEditCreateTrans';
 import Alert from '../alert';
 import Alert2 from '../alert2';
@@ -67,64 +68,35 @@ function TransactionDetail({
     const [loadingDelete, setLoadingDelete] = useState(false)
     const [deleteSuccess, setDeleteSuccess] = useState(false)
 
-    const handleDeleteTransaction = async (transactionId) => {
-        setLoadingDelete(true)
-        const deleteResponse = await delete_transaction(transactionId);
-        if (deleteResponse === true) {
+    // Recarga las vistas que dependen de la transacción según dónde se abrió el detalle
+    const refreshViews = () => {
+        if (contextWindow === "dashAccounts" && account_activated) {
+            let accounts_type
+            if (account_activated.type.id === 1 || account_activated.type.id === 2) {
+                accounts_type = "savings"
+            } else if (account_activated.type.id === 3) {
+                accounts_type = "investments"
+            } else if (account_activated.type.id === 4) {
+                accounts_type = "credits"
+            }
 
-            if (contextWindow === "dashAccounts" && account_activated) {
-                let accounts_type
-                if (account_activated.type.id === 1 || account_activated.type.id === 2) {
-                    accounts_type = "savings"
-                } else if (account_activated.type.id === 3) {
-                    accounts_type = "investments"
-                } else if (account_activated.type.id === 4) {
-                    accounts_type = "credits"
-                }
+            if (accounts_type) {
+                const year_from_end_date = endDate_account_dash.substring(0, 4);
+                const month_from_end_date = endDate_account_dash.substring(5, 7);
 
-                if (accounts_type) {
-                    const year_from_end_date = endDate_account_dash.substring(0, 4);
-                    const month_from_end_date = endDate_account_dash.substring(5, 7);
+                const date_filter = `${year_from_end_date}-${month_from_end_date.toString().padStart(2, '0')}`
 
-                    const date_filter = `${year_from_end_date}-${month_from_end_date.toString().padStart(2, '0')}`
-
-                    get_history_accounts_by_month(date_filter, account_activated.id);
-                    get_accounts_status_by_period(iniDate_account_dash, endDate_account_dash, accounts_type, [account_activated.id]);
-
-                    const buildTransactionParams = ({
-                        selectedAccounts,
-                        iniDate,
-                        endDate,
-                    }) => {
-
-                        const params = [];
-                        if (selectedAccounts && selectedAccounts.length > 0) params.push(`accounts=${selectedAccounts}`);
-                        if (iniDate) params.push(`init_date=${iniDate}`);
-                        if (endDate) params.push(`end_date=${endDate}`);
-
-                        return params.join("&");
-                    };
-
-                    const filterParams = buildTransactionParams(
-                        {
-                            selectedAccounts: account_activated ? [account_activated.id] : null,
-                            iniDate: formatToDateFilters((iniDate_account_dash)),
-                            endDate: formatToDateFilters((endDate_account_dash))
-                        }
-                    )
-
-                    get_user_transactions(0, 100, filterParams, "accountsAnalysis")
-                }
-            } else if (contextWindow === "dashCategories" && category_activated) {
+                get_history_accounts_by_month(date_filter, account_activated.id);
+                get_accounts_status_by_period(iniDate_account_dash, endDate_account_dash, accounts_type, [account_activated.id]);
 
                 const buildTransactionParams = ({
-                    selectedCategories,
+                    selectedAccounts,
                     iniDate,
                     endDate,
                 }) => {
 
                     const params = [];
-                    if (selectedCategories && selectedCategories.length > 0) params.push(`categories=${selectedCategories}`);
+                    if (selectedAccounts && selectedAccounts.length > 0) params.push(`accounts=${selectedAccounts}`);
                     if (iniDate) params.push(`init_date=${iniDate}`);
                     if (endDate) params.push(`end_date=${endDate}`);
 
@@ -133,24 +105,58 @@ function TransactionDetail({
 
                 const filterParams = buildTransactionParams(
                     {
-                        selectedCategories: category_activated ? [category_activated.category_id] : null,
-                        iniDate: parseDatetimetoDateStrFormat(new Date(current_Year, current_Month - 1, 1), "YYYY-MM-DD HH:mm:ss Z"),
-                        endDate: parseDatetimetoDateStrFormat(new Date(current_Year, current_Month, 0), "YYYY-MM-DD HH:mm:ss Z")
+                        selectedAccounts: account_activated ? [account_activated.id] : null,
+                        iniDate: formatToDateFilters((iniDate_account_dash)),
+                        endDate: formatToDateFilters((endDate_account_dash))
                     }
                 )
-                const date_filter = `${current_Year}-${current_Month.toString().padStart(2, '0')}`
 
-                get_history_dash(date_filter);
-                get_history_category_by_month(category_activated?.category_id, date_filter);
-                const transResponse = get_user_transactions(0, 100, filterParams, "budgetCategory")
-                let dateString = `${current_Year}-${current_Month.toString().padStart(2, '0')}-01`
-                const getReportResponse = get_expenses_report(dateString)
-
-            } else if (contextWindow === "dash") {
-                get_user_transactions(0, default_limit, null, "dash")
-            } else {
-                get_user_transactions((currentFrontendPage - 1) * default_limit, default_limit, trans_filters_activated.params)
+                get_user_transactions(0, 100, filterParams, "accountsAnalysis")
             }
+        } else if (contextWindow === "dashCategories" && category_activated) {
+
+            const buildTransactionParams = ({
+                selectedCategories,
+                iniDate,
+                endDate,
+            }) => {
+
+                const params = [];
+                if (selectedCategories && selectedCategories.length > 0) params.push(`categories=${selectedCategories}`);
+                if (iniDate) params.push(`init_date=${iniDate}`);
+                if (endDate) params.push(`end_date=${endDate}`);
+
+                return params.join("&");
+            };
+
+            const filterParams = buildTransactionParams(
+                {
+                    selectedCategories: category_activated ? [category_activated.category_id] : null,
+                    iniDate: parseDatetimetoDateStrFormat(new Date(current_Year, current_Month - 1, 1), "YYYY-MM-DD HH:mm:ss Z"),
+                    endDate: parseDatetimetoDateStrFormat(new Date(current_Year, current_Month, 0), "YYYY-MM-DD HH:mm:ss Z")
+                }
+            )
+            const date_filter = `${current_Year}-${current_Month.toString().padStart(2, '0')}`
+
+            get_history_dash(date_filter);
+            get_history_category_by_month(category_activated?.category_id, date_filter);
+            const transResponse = get_user_transactions(0, 100, filterParams, "budgetCategory")
+            let dateString = `${current_Year}-${current_Month.toString().padStart(2, '0')}-01`
+            const getReportResponse = get_expenses_report(dateString)
+
+        } else if (contextWindow === "dash") {
+            get_user_transactions(0, default_limit, null, "dash")
+        } else {
+            get_user_transactions((currentFrontendPage - 1) * default_limit, default_limit, trans_filters_activated.params)
+        }
+    }
+
+    const handleDeleteTransaction = async (transactionId) => {
+        setLoadingDelete(true)
+        const deleteResponse = await delete_transaction(transactionId);
+        if (deleteResponse === true) {
+
+            refreshViews()
             setAlert("Transaccion eliminada exitosamente", true, "", "", false)
             setLoadingDelete(false)
             setDeleteSuccess(true);
@@ -274,85 +280,7 @@ function TransactionDetail({
             }, contextWindow);
             //}
 
-            if (contextWindow === "dashAccounts" && account_activated) {
-                let accounts_type
-                if (account_activated.type.id === 1 || account_activated.type.id === 2) {
-                    accounts_type = "savings"
-                } else if (account_activated.type.id === 3) {
-                    accounts_type = "investments"
-                } else if (account_activated.type.id === 4) {
-                    accounts_type = "credits"
-                }
-
-                if (accounts_type) {
-                    const year_from_end_date = endDate_account_dash.substring(0, 4);
-                    const month_from_end_date = endDate_account_dash.substring(5, 7);
-
-                    const date_filter = `${year_from_end_date}-${month_from_end_date.toString().padStart(2, '0')}`
-
-                    get_history_accounts_by_month(date_filter, account_activated.id);
-                    get_accounts_status_by_period(iniDate_account_dash, endDate_account_dash, accounts_type, [account_activated.id]);
-
-                    const buildTransactionParams = ({
-                        selectedAccounts,
-                        iniDate,
-                        endDate,
-                    }) => {
-
-                        const params = [];
-                        if (selectedAccounts && selectedAccounts.length > 0) params.push(`accounts=${selectedAccounts}`);
-                        if (iniDate) params.push(`init_date=${iniDate}`);
-                        if (endDate) params.push(`end_date=${endDate}`);
-
-                        return params.join("&");
-                    };
-
-                    const filterParams = buildTransactionParams(
-                        {
-                            selectedAccounts: account_activated ? [account_activated.id] : null,
-                            iniDate: formatToDateFilters((iniDate_account_dash)),
-                            endDate: formatToDateFilters((endDate_account_dash))
-                        }
-                    )
-
-                    get_user_transactions(0, 100, filterParams, "accountsAnalysis")
-                }
-            } else if (contextWindow === "dashCategories" && category_activated) {
-
-                const buildTransactionParams = ({
-                    selectedCategories,
-                    iniDate,
-                    endDate,
-                }) => {
-
-                    const params = [];
-                    if (selectedCategories && selectedCategories.length > 0) params.push(`categories=${selectedCategories}`);
-                    if (iniDate) params.push(`init_date=${iniDate}`);
-                    if (endDate) params.push(`end_date=${endDate}`);
-
-                    return params.join("&");
-                };
-
-                const filterParams = buildTransactionParams(
-                    {
-                        selectedCategories: category_activated ? [category_activated.category_id] : null,
-                        iniDate: parseDatetimetoDateStrFormat(new Date(current_Year, current_Month - 1, 1), "YYYY-MM-DD HH:mm:ss Z"),
-                        endDate: parseDatetimetoDateStrFormat(new Date(current_Year, current_Month, 0), "YYYY-MM-DD HH:mm:ss Z")
-                    }
-                )
-                const date_filter = `${current_Year}-${current_Month.toString().padStart(2, '0')}`
-
-                get_history_dash(date_filter);
-                get_history_category_by_month(category_activated?.category_id, date_filter);
-                const transResponse = get_user_transactions(0, 100, filterParams, "budgetCategory")
-                let dateString = `${current_Year}-${current_Month.toString().padStart(2, '0')}-01`
-                const getReportResponse = get_expenses_report(dateString)
-
-            } else if (contextWindow === "dash") {
-                get_user_transactions(0, default_limit, null, "dash")
-            } else {
-                get_user_transactions((currentFrontendPage - 1) * default_limit, default_limit, trans_filters_activated.params)
-            }
+            refreshViews()
             setTimeout(() => {
                 setLoadingUpdate(false)
                 setOpenEditTrans(false)
@@ -455,6 +383,7 @@ function TransactionDetail({
                                                     {/* resumen */}
                                                     <TransSumm detailInfo={detailInfo} />
                                                     <FxRateEditor detailInfo={detailInfo} setDetailInfo={setDetailInfo} contextWindow={contextWindow} />
+                                                    <TransferLinkSection detailInfo={detailInfo} setDetailInfo={setDetailInfo} onChanged={refreshViews} />
                                                     {/* botones */}
                                                     <div className="flex flex-row justify-between items-center mt-6">
                                                         <div class="flex items-center space-x-3 sm:space-x-4">

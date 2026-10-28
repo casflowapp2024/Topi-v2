@@ -17,6 +17,8 @@ import { formatMoney, formatDate, capitalizeWords, parseDatetimetoDateStrFormat,
 import FilterTransactions from "../components/transactions/FilterTransactions";
 import CreateTransaction from "../components/transactions/CreateTransaction";
 import TransferModal from "../components/transactions/TransferModal";
+import TransferCandidatesModal from "../components/transactions/TransferCandidatesModal";
+import { fetch_transfer_candidates } from "../redux/actions/transfers";
 import FormatMoneyShowDecs from "../components/FormatMoneyShowDecs";
 //icons
 import {
@@ -90,7 +92,16 @@ const Transactions = ({
         document.body.style.overflow = 'unset'; */
         setDetailInfo(null)
         setOpenTransDetail(false);
+        loadTransferCandidates()
     }
+
+    //POSIBLES TRANSFERENCIAS (parejas salida/entrada entre cuentas propias sin ligar)
+    const [transferCandidates, setTransferCandidates] = useState(null)
+    const [openCandidates, setOpenCandidates] = useState(false)
+    const loadTransferCandidates = () => {
+        fetch_transfer_candidates().then(list => { if (list) setTransferCandidates(list) })
+    }
+    useEffect(() => { loadTransferCandidates() }, [])
 
     //CREATE TRANSACTION POPUP
     const [openCreatePopUp, SetOpenCreatePopUp] = useState(false)
@@ -330,7 +341,19 @@ const Transactions = ({
                                         <ArrowsRightLeftIcon className="w-4 h-4 md:mr-2" aria-hidden="true" />
                                         <span className="md:inline hidden text-base"> Transferir </span>
                                     </button>
-                                    <TransferModal open={openTransfer} onClose={() => setOpenTransfer(false)} />
+                                    <TransferModal open={openTransfer} onClose={() => { setOpenTransfer(false); loadTransferCandidates() }} />
+                                    {transferCandidates && transferCandidates.length > 0 &&
+                                        <button className="py-2 rounded-2xl px-3 flex flex-row items-center gap-1 border border-topi-500 text-topi-600 dark:text-indigo-300 hover:bg-topi-50 dark:hover:bg-gray-700 transition-colors duration-300"
+                                            onClick={() => { setOpenCandidates(true); loadTransferCandidates() }}
+                                            aria-label={`${transferCandidates.length} posibles transferencias por revisar`}
+                                            title="Posibles transferencias por revisar"
+                                        >
+                                            <span className="md:inline hidden text-base"> Posibles </span>
+                                            <span className="min-w-[20px] h-5 px-1 rounded-full bg-topi-500 text-white text-xs flex items-center justify-center">{transferCandidates.length}</span>
+                                        </button>
+                                    }
+                                    <TransferCandidatesModal open={openCandidates} onClose={() => setOpenCandidates(false)}
+                                        candidates={transferCandidates} setCandidates={setTransferCandidates} />
                                     {openFilterPopUp ?
                                         <div className="h-full">
                                             <button className={`${oneFilterActivated ? "border-[#5266EB]" : "border-[#e9e8ee] dark:border-gray-700"} h-full py-2 px-4 flex flex-row items-center border rounded-2xl hover:bg-slate-200 dark:hover:bg-gray-700 dark:text-gray-100 transition-colors duration-300`}
@@ -466,6 +489,7 @@ const Transactions = ({
                                                             {/* <div className="w-[3px] md:w-[4px] lg:w-[9px] xl:w-[12px]"></div> */}
                                                             <div className='min-w-[9%] md:min-w-[40px] flex items-center justify-start'>
                                                                 <span className="w-[28px] md:w-[35px] flex justify-start text-center">
+                                                                    {transaction.transfer_group_id && <span title="Transferencia entre tus cuentas" className="inline-flex items-center mr-1 text-topi-500"><ArrowsRightLeftIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Transferencia</span></span>}
                                                                     {transaction.should_verify === true ?
                                                                         <span title="Por revisar" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Por revisar</span></span> :
                                                                         <>
@@ -553,7 +577,8 @@ const Transactions = ({
                                                                 {/* <div className="w-[3px] md:w-[4px] lg:w-[9px] xl:w-[12px]"></div> */}
                                                                 <div className='min-w-[9%] md:min-w-[40px] flex items-center justify-start'>
                                                                     <span className="w-[28px] md:w-[35px] flex justify-start text-center">
-                                                                        {tx.should_verify === true ?
+                                                                        {tx.transfer_group_id && <span title="Transferencia entre tus cuentas" className="inline-flex items-center mr-1 text-topi-500"><ArrowsRightLeftIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Transferencia</span></span>}
+                                                                    {tx.should_verify === true ?
                                                                             <span title="Por revisar" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Por revisar</span></span> :
                                                                             <>
                                                                                 {tx.checked === false ?

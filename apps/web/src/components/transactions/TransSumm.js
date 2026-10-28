@@ -59,10 +59,12 @@ const TransSumm = ({
 
                     <span>Producto: {detailInfo.account && detailInfo.account.name} - {detailInfo.account && detailInfo.account.last_four_digits}</span>
 
-                    {detailInfo.expense === false ?
-                        <span> Tipo: Ingreso</span>
-                        :
-                        <span> Tipo: Gasto</span>
+                    {detailInfo.transfer_group_id ?
+                        <span> Tipo: Transferencia ({detailInfo.expense === false ? 'entrada' : 'salida'})</span>
+                        : detailInfo.expense === false ?
+                            <span> Tipo: Ingreso</span>
+                            :
+                            <span> Tipo: Gasto</span>
                     }
                     {create ?
                         <></>
