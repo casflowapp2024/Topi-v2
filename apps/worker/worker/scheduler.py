@@ -49,7 +49,13 @@ def cleanup(settings: Settings, db: Database) -> dict[str, int]:
 
 
 def sync_fx(settings: Settings, db: Database) -> dict:
-    summary = fx.sync_recent(db, fx.default_http(), fx.today_in(settings.timezone), settings.fx_lookback_days)
+    """Tasas recientes y, si falta, el histórico (base nueva o transacciones viejas importadas);
+    después completa las transacciones que habían quedado sin tasa."""
+    http, today = fx.default_http(), fx.today_in(settings.timezone)
+    history = fx.ensure_history(db, http, today)
+    summary = fx.sync_recent(db, http, today, settings.fx_lookback_days)
+    for source, result in history.items():
+        summary[f"{source}_history"] = result
     filled = db.fill_pending_fx()
     logger.info("transacciones sin tasa completadas", extra={"filled": filled})
     return {**summary, "pending_fx_filled": filled}
@@ -93,4 +99,6 @@ def build_scheduler(settings: Settings, api: TopiApi, db: Database) -> Backgroun
     if settings.fx_sync_enabled:
         scheduler.add_job(_safe("fx_sync", sync_fx, settings, db),
                           CronTrigger(hour=19, minute=0, timezone=tz), id="fx_sync", name="fx_sync")
+        # también al arrancar: una base sin tasas no espera hasta las 19:00 para poder convertir
+        scheduler.add_job(_safe("fx_sync_startup", sync_fx, settings, db), id="fx_sync_startup", name="fx_sync_startup")
     return scheduler

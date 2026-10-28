@@ -242,6 +242,11 @@ class Database:
             row = conn.execute("SELECT min(date)::date AS d FROM transactions").fetchone()
         return row["d"]
 
+    def earliest_rate_date(self, source: str) -> date | None:
+        with self.pool.connection() as conn:
+            row = conn.execute("SELECT min(rate_date) AS d FROM fx_rates WHERE source = %s", (source,)).fetchone()
+        return row["d"]
+
     def upsert_fx_rates(self, rates: Iterable[tuple[str, date, Decimal, str]]) -> int:
         """Inserta tasas (quote, rate_date, rate, source) con base USD. Idempotente: si ya existe
         la misma tasa no hace nada; si la fuente la corrigió, la actualiza. Devuelve las filas

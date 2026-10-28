@@ -38,8 +38,8 @@ class FakeHttp:
 
 
 class FakeStore:
-    def __init__(self, currencies=("COP", "USD", "EUR", "GBP"), oldest=None):
-        self.currencies, self.oldest = set(currencies), oldest
+    def __init__(self, currencies=("COP", "USD", "EUR", "GBP"), oldest=None, earliest_trm=None):
+        self.currencies, self.oldest, self.earliest_trm = set(currencies), oldest, earliest_trm
         self.rows = {}
 
     def active_currencies(self):
@@ -47,6 +47,10 @@ class FakeStore:
 
     def oldest_transaction_date(self):
         return self.oldest
+
+    def earliest_rate_date(self, source):
+        assert source == fx.SOURCE_TRM
+        return self.earliest_trm
 
     def upsert_fx_rates(self, rates):
         changed = 0
@@ -156,6 +160,25 @@ def test_backfill_starts_a_week_before_oldest_transaction_in_yearly_chunks():
 def test_backfill_without_transactions_does_nothing():
     http = FakeHttp()
     assert fx.backfill(FakeStore(oldest=None), http, today=date(2026, 10, 27)) == {}
+    assert http.calls == []
+
+
+def test_ensure_history_backfills_an_empty_base():
+    http = FakeHttp()
+    fx.ensure_history(FakeStore(oldest=date(2026, 9, 1)), http, today=date(2026, 10, 27))
+    assert [url for url, _ in http.calls if url != fx.TRM_URL] == [f"{fx.FRANKFURTER_URL}/2026-08-25..2026-10-27"]
+
+
+def test_ensure_history_fills_only_what_is_missing_before_the_first_rate():
+    http = FakeHttp()
+    fx.ensure_history(FakeStore(oldest=date(2026, 9, 1), earliest_trm=date(2026, 10, 1)), http, today=date(2026, 10, 27))
+    assert [url for url, _ in http.calls if url != fx.TRM_URL] == [f"{fx.FRANKFURTER_URL}/2026-08-25..2026-10-01"]
+
+
+def test_ensure_history_does_nothing_when_covered_or_without_transactions():
+    http = FakeHttp()
+    assert fx.ensure_history(FakeStore(oldest=date(2026, 9, 1), earliest_trm=date(2026, 8, 30)), http, date(2026, 10, 27)) == {}
+    assert fx.ensure_history(FakeStore(oldest=None), http, date(2026, 10, 27)) == {}
     assert http.calls == []
 
 

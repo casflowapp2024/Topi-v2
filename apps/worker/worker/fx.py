@@ -53,6 +53,7 @@ class Http(Protocol):
 class FxStore(Protocol):
     def active_currencies(self) -> set[str]: ...
     def oldest_transaction_date(self) -> date | None: ...
+    def earliest_rate_date(self, source: str) -> date | None: ...
     def upsert_fx_rates(self, rates) -> int: ...
 
 
@@ -156,6 +157,20 @@ def backfill(db: FxStore, http: Http, today: date, start: date | None = None,
         start = oldest - timedelta(days=BACKFILL_MARGIN_DAYS)
     end = end or today + timedelta(days=TRM_DAYS_AHEAD)
     return sync_range(db, http, start, end, today)
+
+
+def ensure_history(db: FxStore, http: Http, today: date) -> dict[str, dict]:
+    """Trae el histórico si falta: sin TRM guardadas o con transacciones más viejas que la primera
+    (base recién restaurada, transacciones importadas). Con el histórico completo no llama a nadie."""
+    oldest = db.oldest_transaction_date()
+    if oldest is None:
+        return {}
+    earliest = db.earliest_rate_date(SOURCE_TRM)
+    if earliest is not None and earliest <= oldest:
+        return {}
+    logger.info("faltan tasas históricas: backfill", extra={"oldest_transaction": oldest.isoformat(),
+                                                             "earliest_trm": earliest.isoformat() if earliest else None})
+    return backfill(db, http, today, end=earliest)
 
 
 def has_errors(summary: dict) -> bool:

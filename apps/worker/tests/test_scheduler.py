@@ -75,12 +75,13 @@ def test_scheduler_jobs_and_triggers():
     assert jobs["refresh_predictions"] == "cron[day='*/2', hour='0', minute='0']"
     assert jobs["cleanup"] == "cron[hour='3', minute='0']"
     assert jobs["fx_sync"] == "cron[hour='19', minute='0']"
+    assert jobs["fx_sync_startup"].startswith("date["), "una vez al arrancar"
     assert str(scheduler.timezone) == "America/Bogota"
 
 
 def test_fx_sync_can_be_disabled():
     scheduler = build_scheduler(Settings.from_env({**BASE, "FX_SYNC_ENABLED": "false"}), FakeApi(), FakeDB())
-    assert "fx_sync" not in {job.id for job in scheduler.get_jobs()}
+    assert not {"fx_sync", "fx_sync_startup"} & {job.id for job in scheduler.get_jobs()}
 
 
 @pytest.mark.db
@@ -108,9 +109,11 @@ def test_sync_fx_fills_pending_transactions(monkeypatch):
         def fill_pending_fx(self):
             return 3
 
+    monkeypatch.setattr(fx, "ensure_history", lambda db, http, today: {"SFC_TRM": {"fetched": 300, "changed": 300}})
     monkeypatch.setattr(fx, "sync_recent", lambda db, http, today, lookback: {"SFC_TRM": {"fetched": 1, "changed": 0}})
     summary = scheduler.sync_fx(Settings.from_env(BASE), Db())
-    assert summary == {"SFC_TRM": {"fetched": 1, "changed": 0}, "pending_fx_filled": 3}
+    assert summary == {"SFC_TRM": {"fetched": 1, "changed": 0}, "SFC_TRM_history": {"fetched": 300, "changed": 300},
+                       "pending_fx_filled": 3}
     assert not fx.has_errors(summary)
 
 
