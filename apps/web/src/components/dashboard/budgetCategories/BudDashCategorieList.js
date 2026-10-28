@@ -176,6 +176,7 @@ const BudDashCategorieList = ({
   } else {
     displayCategories = sortedIncomeCategories;
   }
+  const hasCategories = Array.isArray(displayCategories) && displayCategories.length > 0;
 
 
 
@@ -248,9 +249,10 @@ const BudDashCategorieList = ({
           </div> */}
 
       </div>
-      <div className=''>
+      <div aria-busy={loadingReport} className={`transition-opacity duration-200 ${loadingReport && hasCategories ? 'opacity-50' : ''}`}>
 
-        {loadingReport ?
+        {/* Solo se muestra el spinner la primera vez; al cambiar de mes se conserva la lista (sin saltos) */}
+        {loadingReport && !hasCategories ?
           <div className='mt-10 text-gray-500 flex justify-center items-center'>
             <ThreeDots
               height="40"

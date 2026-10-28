@@ -45,9 +45,9 @@ const DashPlan = ({
         <div className='pb-3 flex flex-row justify-between items-center text-sm font-medium border-b border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-300'>
           <h2>Presupuestos</h2>
         </div>
-        <div className='max-h-[344px] md:h-[344px] overflow-y-auto hide-scrollbar'>
+        <div aria-busy={loadingReport} className={`max-h-[344px] md:h-[344px] overflow-y-auto hide-scrollbar transition-opacity duration-200 ${loadingReport && expenses_report ? 'opacity-50' : ''}`}>
 
-          {loadingReport ?
+          {loadingReport && !expenses_report ?
             <div className='mt-10 text-gray-500 flex justify-center items-center'>
               <ThreeDots
                 height="40"

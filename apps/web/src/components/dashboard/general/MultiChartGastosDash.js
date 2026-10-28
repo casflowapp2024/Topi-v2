@@ -105,7 +105,6 @@ function MultiChartGastosDash({
     return (
         <div className={`${windowContext==="dashboard"? 'h-[220px]' : 'h-[150px]'} w-[370px] md:w-[400px]  xl:w-[500px] flex flex-col`}>
             <ChartLegend lead={(() => { const l = lastPointLead(dataToPlot, 'show', monthlyActivated, moment); return l && { ...l, negative: false, value: formatCurrency2(l.value) }; })()} items={[
-                { type: 'bar', color: '#F2664A', label: 'Gastos' },
                 budgetToUse && !(dailyActivated && !cummulated) ? { type: 'line', label: 'Presupuesto', value: formatCurrency2(Math.abs(budgetToUse)) } : null,
             ]} className="pt-2" />
             <div className="flex-1 min-h-0">

@@ -67,7 +67,7 @@ function MultiChartBalanceDash({
     //#e11d48
     return (
         <div className='h-[220px] w-[370px] md:w-[400px]  xl:w-[500px] flex flex-col'>
-            <ChartLegend lead={(() => { const l = lastPointLead(dataToPlot, 'value', monthlyActivated, moment); return l && { ...l, value: formatCurrency2(l.value) }; })()} items={[{ type: 'bar', color: '#5266EB', label: 'Balance' }]} className="pt-2" />
+            <ChartLegend lead={(() => { const l = lastPointLead(dataToPlot, 'value', monthlyActivated, moment); return l && { ...l, value: formatCurrency2(l.value) }; })()} items={[]} className="pt-2" />
             <div className="flex-1 min-h-0">
 
             <ResponsiveContainer width="100%" height="100%">

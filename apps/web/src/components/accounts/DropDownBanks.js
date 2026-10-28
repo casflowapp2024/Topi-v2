@@ -249,7 +249,7 @@ const DropDownBanks = ({
         <button
             type="button"
             onClick={() => handleOpenCloseWholeDropDown()}
-            className="w-full pl-2 pr-1 py-1 md:py-2 flex justify-between items-center text-gray-900  bg-gray-100 border border-gray-300 rounded-lg shadow-sm hover:border-blue-500 focus:outline-none"
+            className="w-full pl-2 pr-1 py-1 md:py-2 flex justify-between items-center text-gray-900  bg-gray-100 border border-gray-300 rounded-lg shadow-sm hover:border-blue-500 focus:outline-none text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         >   
             <div className='flex flex-row gap-2 justify-start items-center text-sm'>
                 {selectedBank?
@@ -268,7 +268,7 @@ const DropDownBanks = ({
         {isOpen && (
             <>
                 {/* LIST OF BANKS */}
-                <ul className="absolute z-10 w-full text-sm  bg-white border border-gray-300 rounded-lg shadow-lg max-h-[210px] overflow-y-auto">   
+                <ul className="absolute z-10 w-full text-sm  bg-white border border-gray-300 rounded-lg shadow-lg max-h-[210px] overflow-y-auto text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">   
                   
                 {options?
                     <>
@@ -279,7 +279,7 @@ const DropDownBanks = ({
                         key={bank.id}
                         value = {bank.id}
                         
-                        className="flex gap-2 cursor-pointer hover:bg-gray-100  flex-row justify-between"
+                        className="flex gap-2 cursor-pointer hover:bg-gray-100  flex-row justify-between dark:hover:bg-gray-700"
                         >
                             <span 
                             onClick={() => handleSelect(bank.id)}
@@ -313,7 +313,7 @@ const DropDownBanks = ({
                 } 
                 <div className='mt-2 border-t-2 border-gray-300'>
                     <div 
-                    className="cursor-pointer w-full flex flex-row gap-2 items-center py-1 px-2 border-b-2 border-gray-40 hover:bg-gray-200" 
+                    className="cursor-pointer w-full flex flex-row gap-2 items-center py-1 px-2 border-b-2 border-gray-40 hover:bg-gray-200 dark:hover:bg-gray-700" 
                     key={0}
                     onClick={() => onClickAddBank(true)}
                     >
@@ -334,7 +334,7 @@ const DropDownBanks = ({
                             key={bank_def.id}
                             value = {bank_def.id}
                             onClick={() => handleSelect(bank_def.id)}
-                            className="px-3 py-1 flex items-center gap-2 hover:bg-gray-100 cursor-pointer"
+                            className="px-3 py-1 flex items-center gap-2 hover:bg-gray-100 cursor-pointer dark:hover:bg-gray-700"
                             >
                                 <span>
                                     {bank_def.name}
@@ -354,7 +354,7 @@ const DropDownBanks = ({
                 {openBoxDeleteBank && bankToDelete && (
 
                     <div className='relative'>
-                        <div className='absolute top-0 z-30 w-full bg-white border border-gray-300 rounded-lg shadow-lg min-h-[210px]'>
+                        <div className='absolute top-0 z-30 w-full bg-white border border-gray-300 rounded-lg shadow-lg min-h-[210px] text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'>
                             
                             {loading ?
                                 
@@ -420,7 +420,7 @@ const DropDownBanks = ({
                 {openBoxUpdateBank && bankToUpdate && (
 
                     <div className='relative'>
-                        <div className='absolute top-0 z-30 w-full bg-white border border-gray-300 rounded-lg shadow-lg min-h-[210px]'>
+                        <div className='absolute top-0 z-30 w-full bg-white border border-gray-300 rounded-lg shadow-lg min-h-[210px] text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'>
                             
                             {loading ?
                                 
@@ -479,7 +479,7 @@ const DropDownBanks = ({
         )}
 
         {createBox && (
-            <div className='absolute py-2 px-2 z-10 w-full text-sm bg-white border border-gray-300 rounded-lg shadow-lg overflow-y-auto'>      
+            <div className='absolute py-2 px-2 z-10 w-full text-sm bg-white border border-gray-300 rounded-lg shadow-lg overflow-y-auto text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'>      
                 <EditCreateBankForm
                 bankData = {createBankData}
                 onChangeCreate = {onChangeCreate}

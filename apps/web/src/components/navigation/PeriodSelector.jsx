@@ -10,7 +10,7 @@ const MONTHS_LONG = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'jul
  * Selector de periodo global (mes/año) para todo el dashboard.
  * Flechas para mes anterior/siguiente (cruzan de año solas) y una hoja con los 12 meses.
  */
-const PeriodSelector = ({ current_Month, current_Year, set_period, className = '' }) => {
+const PeriodSelector = ({ current_Month, current_Year, set_period, compact = false, className = '' }) => {
   const now = new Date();
   const thisYear = now.getFullYear();
   const thisMonth = now.getMonth() + 1;
@@ -21,7 +21,7 @@ const PeriodSelector = ({ current_Month, current_Year, set_period, className = '
     set_period(Math.floor(idx / 12), (idx % 12) + 1);
   };
 
-  const btn = 'w-8 h-8 flex items-center justify-center rounded-xl text-gray-500 dark:text-gray-400 hover:text-topi-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors';
+  const btn = `${compact ? 'w-7' : 'w-8'} h-8 flex items-center justify-center rounded-xl text-gray-500 dark:text-gray-400 hover:text-topi-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors`;
 
   return (
     <div className={`flex items-center gap-0.5 p-0.5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm ${className}`}>
@@ -31,10 +31,10 @@ const PeriodSelector = ({ current_Month, current_Year, set_period, className = '
 
       <Popover className="relative">
         <PopoverButton
-          className="h-8 px-2 rounded-xl flex items-center gap-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 transition-colors"
+          className="h-8 px-1.5 rounded-xl flex items-center gap-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 transition-colors"
           aria-label={`Periodo: ${MONTHS_LONG[current_Month - 1]} de ${current_Year}. Cambiar`}
         >
-          <CalendarDaysIcon className="w-4 h-4 text-topi-500" aria-hidden="true" />
+          {!compact && <CalendarDaysIcon className="w-4 h-4 text-topi-500" aria-hidden="true" />}
           <span className="tabular-nums whitespace-nowrap">{MONTHS[current_Month - 1]} {current_Year}</span>
         </PopoverButton>
 

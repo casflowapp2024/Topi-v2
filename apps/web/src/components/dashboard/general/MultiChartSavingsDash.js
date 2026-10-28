@@ -62,7 +62,6 @@ function MultiChartSavingsDash({
     return (
         <div className='h-[220px] w-[370px] md:w-[400px]  xl:w-[500px] flex flex-col'>
             <ChartLegend lead={(() => { const l = lastPointLead(dataToPlot, 'value', monthlyActivated, moment); return l && { ...l, value: formatCurrency2(l.value) }; })()} items={[
-                { type: 'bar', color: '#9B5DE5', label: 'Ahorro' },
                 savings_budget ? { type: 'line', label: 'Presupuesto', value: formatCurrency2(Math.abs(savings_budget)) } : null,
             ]} className="pt-2" />
             <div className="flex-1 min-h-0">

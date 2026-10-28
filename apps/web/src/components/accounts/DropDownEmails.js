@@ -75,7 +75,7 @@ const DropDownEmails = ({
                         <div
                             type="button"
                             onClick={() => handleCloseOpenDropDown()}
-                            className="w-full px-2 py-2 flex justify-between items-center text-xs text-gray-500  bg-gray-100 border border-gray-300 rounded-lg shadow-sm hover:border-blue-500 focus:outline-none"
+                            className="w-full px-2 py-2 flex justify-between items-center text-xs text-gray-500  bg-gray-100 border border-gray-300 rounded-lg shadow-sm hover:border-blue-500 focus:outline-none text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         >
                             <div className="flex items-center gap-2">
                                 {selected.email || placeholder}
@@ -86,9 +86,9 @@ const DropDownEmails = ({
                         {isOpen && (
                             <>
                                 
-                                <ul className="absolute z-40 w-full text-sm bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">   
+                                <ul className="absolute z-40 w-full text-sm bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">   
                                 <div 
-                                className="cursor-pointer w-full flex flex-row gap-2 items-center py-1 px-2 border-b-2 border-gray-40 hover:bg-gray-200" 
+                                className="cursor-pointer w-full flex flex-row gap-2 items-center py-1 px-2 border-b-2 border-gray-40 hover:bg-gray-200 dark:hover:bg-gray-700" 
                                 onClick={() => onClickAddEmail(true)}
                                 >
                                     <PlusIcon className="w-4 h-4 text-[#5266EB]" />
@@ -102,7 +102,7 @@ const DropDownEmails = ({
                                             <li
                                             key={option.id}
                                             onClick={() => handleSelect(option)}
-                                            className="px-3 py-1 flex items-center gap-2 hover:bg-gray-100 cursor-pointer"
+                                            className="px-3 py-1 flex items-center gap-2 hover:bg-gray-100 cursor-pointer dark:hover:bg-gray-700"
                                             >
                                             {option.email}
                                             </li>
@@ -119,7 +119,7 @@ const DropDownEmails = ({
                         )}
             
                         {conectBox && (
-                            <div className='absolute p-4 z-10 w-full text-sm bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto'>
+                            <div className='absolute p-4 z-10 w-full text-sm bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'>
             
                             <LinkTransEmailForm
                             closedForm= {conectBox}

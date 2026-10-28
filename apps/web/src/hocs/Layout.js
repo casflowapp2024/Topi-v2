@@ -25,12 +25,11 @@ import {
   ArrowsRightLeftIcon,
   UserIcon,
   SunIcon,
-  MoonIcon
+  MoonIcon,
+  Cog6ToothIcon
 } from '@heroicons/react/20/solid';
 //UX
 import { Oval } from 'react-loader-spinner';
-
-const PAGE_TITLES = { general: 'Resumen', budgets: 'Presupuestos', accounts: 'Cuentas' };
 
 const Layout = ({
   children,
@@ -84,8 +83,8 @@ const Layout = ({
   const activeTab = pathSegments.length > 1 ? pathSegments[1] : 'general';
 
   const isDark = Boolean(user_extra_data?.config?.dark_mode);
-  // Selector de periodo global: solo en las vistas que dependen del mes
-  const showPeriodBar = location.pathname.startsWith('/dashboard') && ['general', 'budgets', 'accounts'].includes(activeTab);
+  // Selector de periodo (móvil, en la barra superior): solo en las vistas que dependen del mes
+  const showPeriod = location.pathname.startsWith('/dashboard') && ['general', 'budgets', 'accounts'].includes(activeTab);
 
   // El tema también va en <html>: así lo toman los modales (que se montan fuera de este div),
   // las barras de scroll y los controles nativos del navegador.
@@ -213,7 +212,7 @@ const Layout = ({
                       <div className="w-8 h-8 rounded-xl bg-[#5266EB]/10 flex items-center justify-center">
                         <Cflogo className="w-5 h-5" />
                       </div>
-                      <span className="font-bold text-[#5266EB] text-lg">Topi</span>
+                      <span className="hidden min-[380px]:inline font-bold text-[#5266EB] text-lg">Topi</span>
                     </div>
                     <div className='gap-2 hidden lg:flex flex-row'>
                       <Link to="/dashboard" className={`${activeTab === 'general' ? "bg-[#5266EB] text-white shadow-lg border-[#5266EB]" : "text-gray-400 bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm"} cursor-pointer px-4 py-2 border border-gray-200 rounded-2xl flex items-center gap-2 text-sm transition-colors duration-300`}>
@@ -245,10 +244,21 @@ const Layout = ({
                           ? <SunIcon className="w-5 h-5 transition-transform duration-300 rotate-0 motion-reduce:transition-none" aria-hidden="true" />
                           : <MoonIcon className="w-5 h-5 transition-transform duration-300 motion-reduce:transition-none" aria-hidden="true" />}
                       </button>
+                      {/* Móvil: botón de ajustes compacto + selector de periodo */}
+                      <button
+                        type="button"
+                        onClick={() => open_settings_modal('profile')}
+                        aria-label="Abrir ajustes y perfil"
+                        title="Ajustes"
+                        className="lg:hidden w-9 h-9 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-topi-500 active:scale-95 transition-all"
+                      >
+                        <Cog6ToothIcon className="w-5 h-5" aria-hidden="true" />
+                      </button>
+                      {showPeriod && <PeriodSelector compact className="lg:hidden" />}
                       <button
                         onClick={() => open_settings_modal('profile')}
                         aria-label="Abrir ajustes y perfil"
-                        className="p-1 px-3 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-gray-700 dark:text-gray-200 transition-all font-semibold"
+                        className="hidden lg:flex p-1 px-3 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 items-center gap-2 text-gray-700 dark:text-gray-200 transition-all font-semibold"
                       >
                         <span className="text-xs">{user?.name || 'Usuario'}</span>
                         <div className="w-7 h-7 rounded-full bg-[#5266EB]/10 flex items-center justify-center">
@@ -271,14 +281,6 @@ const Layout = ({
 
                 <NextStepsPopover open={openNextSteps} setOpen={setOpenNextSteps} />
 
-                {showPeriodBar && (
-                  <div className="sticky top-[53px] md:top-[62px] z-30 w-full flex justify-center bg-gray-100/85 dark:bg-[#0B0F19]/85 backdrop-blur-md transition-colors duration-300">
-                    <div className="w-full lg:w-[806px] xl:w-[930px] px-2 lg:px-0 py-2 flex items-center justify-between gap-2">
-                      <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{PAGE_TITLES[activeTab]}</h1>
-                      <PeriodSelector />
-                    </div>
-                  </div>
-                )}
 
                 <div className="w-full flex justify-center">
                   <div className="md:py-1 w-full lg:w-[806px] xl:w-[930px]">

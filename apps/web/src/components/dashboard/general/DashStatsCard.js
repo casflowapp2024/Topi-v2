@@ -106,7 +106,7 @@ const DashStatsCard = ({
                     </div>
                     {/* bottom card */}
                     <div className='h-[48px] flex flex-row justify-between items-center mt-4'>
-                        {loadingReport ?
+                        {loadingReport && !metric_state ?
                             <div className='pl-10 text-gray-500 flex justify-center items-center'>
                                 <ThreeDots
                                     height="40"
@@ -117,7 +117,7 @@ const DashStatsCard = ({
                             </div>
                             : <>
                                 {metric_state ?
-                                    <div className='flex flex-row justify-between w-full items-end'>
+                                    <div aria-busy={loadingReport} className={`flex flex-row justify-between w-full items-end transition-opacity duration-200 ${loadingReport ? 'opacity-50' : ''}`}>
                                         <FormatMoneyShowDecs
                                             numb={metric_state.value}
                                             showDecimals={true}
