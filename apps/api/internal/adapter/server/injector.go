@@ -35,6 +35,7 @@ type Handlers struct {
 	Transaction            *http.TransactionHandler
 	AccountType            *http.AccountTypeHandler
 	Analysis               *http.AnalysisHandler
+	Fx                     *http.FxHandler
 	Email                  *http.EmailHandler
 	Initialization         *http.InitDevHandler
 	CategoryInitialization *http.InitializationHandler
@@ -114,6 +115,11 @@ func NewInjector(settings *config.Configuration) *Injector {
 	analysisService := service.NewAnalysisService(analysisRepo)
 	analysisHandler := http.NewAnalysisHandler(analysisService)
 
+	// Fx: currencies, exchange rates and net worth
+	fxRepo := dbrepository.NewFxRepository(db)
+	fxService := service.NewFxService(fxRepo)
+	fxHandler := http.NewFxHandler(fxService)
+
 	// Email
 	gmailClient := gmail.NewGmailAPI(settings.Gmail)
 	outlookApiClient := api.NewHttpClient(settings.Outlook.Http.Timeout)
@@ -149,6 +155,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 			AccountType:            accountTypeHandler,
 			Transaction:            transactionHandler,
 			Analysis:               analysisHandler,
+			Fx:                     fxHandler,
 			Email:                  emailHandler,
 			Initialization:         initDevHandler,
 			CategoryInitialization: InitHandler,

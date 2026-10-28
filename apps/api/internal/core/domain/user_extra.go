@@ -25,6 +25,8 @@ type UserExtra struct {
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 	Config              json.RawMessage
+	// BaseCurrency is the currency reports and amount_base are expressed in (default COP)
+	BaseCurrency string
 }
 
 func (u *UserExtra) IsSame(actual *UserExtra) bool {

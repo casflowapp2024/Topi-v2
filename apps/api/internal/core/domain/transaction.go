@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
+	"github.com/shopspring/decimal"
 )
 
 // TransactionType is an enum for payment's type
@@ -31,8 +32,18 @@ type Transaction struct {
 	// SourceMessageID is the provider message id of the email the transaction was read from
 	// (worker). Unique per user: reprocessing an email never duplicates the transaction.
 	SourceMessageID *string
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+
+	// Multicurrency (migration 000024). Currency is always the account's currency (database
+	// trigger). FxRate converts Amount to the user's base currency: AmountBase = Amount × FxRate.
+	// Both are nil while there is no rate for the transaction date.
+	Currency        string
+	FxRate          *decimal.Decimal
+	FxRateSource    *string
+	AmountBase      *decimal.Decimal
+	TransferGroupID *string
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // LegacyDedupeWindow is the time window used to detect transactions already created by the
@@ -65,8 +76,10 @@ func IsSameTransaction(current, new *Transaction) bool {
 	sameAmount := current.Amount == new.Amount
 	sameDate := current.Date.Equal(new.Date)
 	sameCheck := current.Checked == new.Checked
+	sameFxRate := new.FxRate == nil || (current.FxRate != nil && current.FxRate.Equal(*new.FxRate))
 
-	return sameDescription && sameCategory && sameAccount && sameExpense && sameAmount && sameDate && sameCheck
+	return sameDescription && sameCategory && sameAccount && sameExpense && sameAmount && sameDate && sameCheck &&
+		sameFxRate
 }
 
 type Transactions []Transaction

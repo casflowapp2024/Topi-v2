@@ -17,7 +17,7 @@ import (
 // userExtraColumns are the user_extra columns scanned below, in this order. Explicit (not "*") so
 // adding columns to the table does not break the scans.
 const userExtraColumns = "id, user_id, utc_offset, whatsapp, whatsapp_state, created_at, updated_at, " +
-	"onboarding_completed, onboarding_created_at, email, name, last_name, read_email, config"
+	"onboarding_completed, onboarding_created_at, email, name, last_name, read_email, config, base_currency"
 
 type UserExtraRepository struct {
 	db *postgres.DB
@@ -77,6 +77,7 @@ func (ur *UserExtraRepository) Create(ctx context.Context, userExtra *domain.Use
 		&userExtra.LastName,
 		&userExtra.ReadEmail,
 		&userExtra.Config,
+		&userExtra.BaseCurrency,
 	)
 
 	if err != nil {
@@ -115,6 +116,7 @@ func (ur *UserExtraRepository) GetByUserID(ctx context.Context, userID string) (
 		&userExtra.LastName,
 		&userExtra.ReadEmail,
 		&userExtra.Config,
+		&userExtra.BaseCurrency,
 	)
 
 	if err != nil {
@@ -153,6 +155,7 @@ func (ur *UserExtraRepository) GetByID(ctx context.Context, ID uint64) (*domain.
 		&userExtra.LastName,
 		&userExtra.ReadEmail,
 		&userExtra.Config,
+		&userExtra.BaseCurrency,
 	)
 
 	if err != nil {
@@ -204,6 +207,7 @@ func (ur *UserExtraRepository) Update(ctx context.Context, userExtra *domain.Use
 		&userExtra.LastName,
 		&userExtra.ReadEmail,
 		&userExtra.Config,
+		&userExtra.BaseCurrency,
 	)
 
 	if err != nil {
@@ -269,6 +273,7 @@ func (ur *UserExtraRepository) GetAll(ctx context.Context) ([]*domain.UserExtra,
 			&userExtra.LastName,
 			&userExtra.ReadEmail,
 			&userExtra.Config,
+			&userExtra.BaseCurrency,
 		)
 
 		if err != nil {

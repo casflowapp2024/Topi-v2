@@ -73,6 +73,18 @@ var (
 	ErrInvalidDateRange = errors.New("invalid date range, start date must be before end date")
 )
 
+// Multicurrency Errors
+var (
+	// ErrInvalidCurrency is an error for when the currency is not a supported ISO 4217 code
+	ErrInvalidCurrency = errors.New("invalid currency")
+	// ErrAccountCurrencyLocked is an error for when the currency of an account with transactions is changed
+	ErrAccountCurrencyLocked = errors.New("account currency cannot change after its first transaction")
+	// ErrInvalidTransfer is an error for when a transfer has wrong accounts or amounts
+	ErrInvalidTransfer = errors.New("invalid transfer: two different accounts and positive amounts are required")
+	// ErrInvalidFxRate is an error for when an exchange rate is not a positive number
+	ErrInvalidFxRate = errors.New("invalid exchange rate")
+)
+
 // Account Type Errors
 var (
 	// ErrInvalidAccountType is an error for when the account type is invalid

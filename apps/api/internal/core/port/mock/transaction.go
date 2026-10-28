@@ -65,6 +65,20 @@ func (mr *MockTransactionRepositoryMockRecorder) CreateTransaction(ctx, transact
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTransaction", reflect.TypeOf((*MockTransactionRepository)(nil).CreateTransaction), ctx, transaction)
 }
 
+// CreateTransfer mocks base method.
+func (m *MockTransactionRepository) CreateTransfer(ctx context.Context, transfer *domain.Transfer) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateTransfer", ctx, transfer)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateTransfer indicates an expected call of CreateTransfer.
+func (mr *MockTransactionRepositoryMockRecorder) CreateTransfer(ctx, transfer interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTransfer", reflect.TypeOf((*MockTransactionRepository)(nil).CreateTransfer), ctx, transfer)
+}
+
 // DeleteTransaction mocks base method.
 func (m *MockTransactionRepository) DeleteTransaction(ctx context.Context, id uint64, userID string) error {
 	m.ctrl.T.Helper()
@@ -185,6 +199,20 @@ func (m *MockTransactionService) CreateTransaction(ctx context.Context, transact
 func (mr *MockTransactionServiceMockRecorder) CreateTransaction(ctx, transaction interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTransaction", reflect.TypeOf((*MockTransactionService)(nil).CreateTransaction), ctx, transaction)
+}
+
+// CreateTransfer mocks base method.
+func (m *MockTransactionService) CreateTransfer(ctx context.Context, transfer *domain.Transfer) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateTransfer", ctx, transfer)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateTransfer indicates an expected call of CreateTransfer.
+func (mr *MockTransactionServiceMockRecorder) CreateTransfer(ctx, transfer interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTransfer", reflect.TypeOf((*MockTransactionService)(nil).CreateTransfer), ctx, transfer)
 }
 
 // DeleteTransaction mocks base method.

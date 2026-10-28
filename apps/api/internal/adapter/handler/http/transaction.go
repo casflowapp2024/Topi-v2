@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 )
 
 // TransactionHandler represents the HTTP handler for transaction-related requests
@@ -229,6 +230,9 @@ type updateTransactionRequest struct {
 	Date         string  `json:"date" binding:"required" example:"2021-12-20"`
 	ShouldVerify bool    `json:"should_verify" binding:"omitempty" example:"false"`
 	Checked      bool    `json:"checked" binding:"omitempty" example:"false"`
+	// FxRate (optional) sets the exchange rate by hand: fx_rate_source = 'user' and amount_base is
+	// recalculated. Decimal as string.
+	FxRate *string `json:"fx_rate" binding:"omitempty" example:"3900.5"`
 }
 
 // UpdateTransaction godoc
@@ -287,6 +291,15 @@ func (ph *TransactionHandler) UpdateTransaction(ctx *gin.Context) {
 		Checked:      req.Checked,
 		Category:     domain.Category{ID: req.CategoryID},
 		Account:      domain.Account{ID: req.AccountID},
+	}
+
+	if req.FxRate != nil {
+		rate, rErr := decimal.NewFromString(*req.FxRate)
+		if rErr != nil {
+			handleError(ctx, domain.ErrInvalidFxRate)
+			return
+		}
+		transaction.FxRate = &rate
 	}
 
 	err = ph.svc.UpdateTransaction(ctx, transaction)
@@ -477,4 +490,82 @@ func (r *ListTransactionsRequest) mapTransactionFilters(
 	}
 
 	return filters, nil
+}
+
+type createTransferRequest struct {
+	FromAccountID  uint64 `json:"from_account_id" binding:"required" example:"1"`
+	ToAccountID    uint64 `json:"to_account_id" binding:"required" example:"2"`
+	AmountSent     string `json:"amount_sent" binding:"required" example:"100"`
+	AmountReceived string `json:"amount_received" binding:"required" example:"387041"`
+	Date           string `json:"date" binding:"required" example:"2026-10-28T10:00:00-05:00"`
+	CategoryID     uint64 `json:"category_id" binding:"required" example:"10"`
+	Description    string `json:"description" binding:"omitempty,max=255" example:"Cambio a pesos"`
+}
+
+type transferResponse struct {
+	TransferGroupID string              `json:"transfer_group_id"`
+	FromCurrency    string              `json:"from_currency" example:"USD"`
+	ToCurrency      string              `json:"to_currency" example:"COP"`
+	EffectiveRate   string              `json:"effective_rate" example:"3870.41"`
+	MarketRate      *string             `json:"market_rate" example:"3890"`
+	Out             transactionResponse `json:"out"`
+	In              transactionResponse `json:"in"`
+}
+
+// CreateTransfer godoc
+//
+//	@Summary		Transfer between accounts
+//	@Description	Creates an expense in the origin account and an income in the destination with the same transfer_group_id. Between currencies, amount_received is what arrived; effective_rate = amount_received / amount_sent and market_rate is the official rate of the day.
+//	@Tags			Transactions
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		createTransferRequest			true	"Transfer"
+//	@Success		201		{object}	response{data=transferResponse}	"Transfer created"
+//	@Failure		400		{object}	errorResponse					"Validation error"
+//	@Failure		404		{object}	errorResponse					"Account not found"
+//	@Router			/transactions/transfer [post]
+//	@Security		BearerAuth
+func (ph *TransactionHandler) CreateTransfer(ctx *gin.Context) {
+	var req createTransferRequest
+
+	userID, err := domain.GetAuthUserID(ctx, enums.AuthorizationPayloadKey)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	if err = ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+	sent, sErr := decimal.NewFromString(req.AmountSent)
+	received, rErr := decimal.NewFromString(req.AmountReceived)
+	if sErr != nil || rErr != nil {
+		handleError(ctx, domain.ErrInvalidTransfer)
+		return
+	}
+	date, err := time.Parse(enums.DateTimeUtc, req.Date)
+	if err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	transfer := &domain.Transfer{
+		UserID: *userID, FromAccountID: req.FromAccountID, ToAccountID: req.ToAccountID,
+		AmountSent: sent, AmountReceived: received, Date: date,
+		Description: strings.TrimSpace(req.Description), CategoryID: req.CategoryID,
+	}
+	if err = ph.svc.CreateTransfer(ctx, transfer); err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	handleCreatedSuccess(ctx, transferResponse{
+		TransferGroupID: transfer.GroupID,
+		FromCurrency:    transfer.FromCurrency,
+		ToCurrency:      transfer.ToCurrency,
+		EffectiveRate:   transfer.EffectiveRate().String(),
+		MarketRate:      decimalString(transfer.MarketRate),
+		Out:             newTransactionResponse(&transfer.Out),
+		In:              newTransactionResponse(&transfer.In),
+	})
 }

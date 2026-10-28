@@ -26,6 +26,8 @@ type createAccountRequest struct {
 	TypeID         uint64  `json:"type_id" binding:"required,account_type" example:"12"`
 	InitialBalance float64 `json:"initial_balance" example:"0.01"`
 	EmailID        *uint64 `json:"email_id" binding:"omitempty" example:"1"`
+	// Currency is the ISO 4217 code of the account (COP when empty). It cannot change later.
+	Currency string `json:"currency" binding:"omitempty,len=3" example:"USD"`
 }
 
 // CreateAccount creates a new account
@@ -61,6 +63,7 @@ func (ah *AccountHandler) CreateAccount(ctx *gin.Context) {
 		Name:           req.Name,
 		LastFourDigits: req.LastFourDigits,
 		InitialBalance: req.InitialBalance,
+		Currency:       req.Currency,
 		Bank:           domain.Bank{ID: req.BankID},
 		Type:           domain.AccountType{ID: req.TypeID},
 		Email:          domain.Email{ID: req.EmailID},
@@ -181,6 +184,8 @@ type updateAccountRequest struct {
 	TypeID         uint64  `json:"type_id" binding:"required,account_type" example:"12"`
 	InitialBalance float64 `json:"initial_balance" example:"0.01"`
 	EmailID        *uint64 `json:"email_id" binding:"omitempty" example:"1"`
+	// Currency can only change while the account has no transactions
+	Currency string `json:"currency" binding:"omitempty,len=3" example:"USD"`
 }
 
 // UpdateAccount updates an account
@@ -224,6 +229,7 @@ func (ah *AccountHandler) UpdateAccount(ctx *gin.Context) {
 		Name:           req.Name,
 		LastFourDigits: req.LastFourDigits,
 		InitialBalance: req.InitialBalance,
+		Currency:       req.Currency,
 		Bank:           domain.Bank{ID: req.BankID},
 		Type:           domain.AccountType{ID: req.TypeID},
 		Email:          domain.Email{ID: req.EmailID},

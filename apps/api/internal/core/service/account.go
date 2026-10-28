@@ -24,6 +24,10 @@ func NewAccountService(
 func (as *AccountService) CreateAccount(ctx context.Context, account *domain.Account) error {
 	account.UpdateCreditInitialBalance()
 
+	if account.Currency != "" && !domain.IsCurrencyCode(account.Currency) {
+		return domain.ErrInvalidCurrency
+	}
+
 	err := as.repo.CreateAccount(ctx, account)
 	if err != nil {
 		return err
@@ -58,6 +62,15 @@ func (as *AccountService) UpdateAccount(ctx context.Context, account *domain.Acc
 	actualAccount, err := as.repo.GetAccount(ctx, account.UserID, account.ID)
 	if err != nil {
 		return err
+	}
+
+	if account.Currency != "" && !domain.IsCurrencyCode(account.Currency) {
+		return domain.ErrInvalidCurrency
+	}
+
+	// the currency is fixed once the account has movements (changing it needs the migration wizard)
+	if account.Currency != "" && account.Currency != actualAccount.Currency && actualAccount.HasTransactions {
+		return domain.ErrAccountCurrencyLocked
 	}
 
 	if account.IsSame(actualAccount) || account.IsEmpty() {

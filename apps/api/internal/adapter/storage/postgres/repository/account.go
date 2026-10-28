@@ -8,19 +8,25 @@ import (
 	"cash-flow/internal/utils"
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // accountColumns are the account columns scanned below, in this order. Explicit (not "*") so
 // adding columns to the table does not break the scans.
 const accountColumns = "id, user_id, bank_id, type_id, name, last_four_digits, initial_balance, " +
-	"created_at, updated_at, email_id"
+	"created_at, updated_at, email_id, currency"
 
 const accountColumnsA = "a.id, a.user_id, a.bank_id, a.type_id, a.name, a.last_four_digits, a.initial_balance, " +
-	"a.created_at, a.updated_at, a.email_id"
+	"a.created_at, a.updated_at, a.email_id, a.currency"
+
+// hasTransactionsColumn tells whether the account has movements (its currency is then locked)
+const hasTransactionsColumn = "exists (select 1 from " + enums.TransactionsTableName +
+	" t where t.account_id = a.id) as has_transactions"
 
 type AccountRepository struct {
 	db *postgres.DB
@@ -42,6 +48,7 @@ func (ar *AccountRepository) CreateAccount(ctx context.Context, account *domain.
 			"last_four_digits",
 			"initial_balance",
 			"email_id",
+			"currency",
 		).
 		Values(
 			account.UserID,
@@ -51,6 +58,7 @@ func (ar *AccountRepository) CreateAccount(ctx context.Context, account *domain.
 			account.LastFourDigits,
 			account.InitialBalance,
 			account.Email.ID,
+			currencyOrDefault(account.Currency),
 		).
 		Suffix("RETURNING " + accountColumns)
 
@@ -70,10 +78,11 @@ func (ar *AccountRepository) CreateAccount(ctx context.Context, account *domain.
 		&account.CreatedAt,
 		&account.UpdatedAt,
 		&account.Email.ID,
+		&account.Currency,
 	)
 
 	if err != nil {
-		return mappers.MapPostgresErrorCode(err)
+		return mapAccountError(err)
 	}
 
 	return nil
@@ -84,6 +93,7 @@ func (ar *AccountRepository) GetAccount(ctx context.Context, userID string, id u
 
 	query := ar.db.QueryBuilder.Select(
 		accountColumnsA,
+		hasTransactionsColumn,
 		"b.name",
 		"b.email",
 		"at.name",
@@ -125,6 +135,8 @@ func (ar *AccountRepository) GetAccount(ctx context.Context, userID string, id u
 		&account.CreatedAt,
 		&account.UpdatedAt,
 		&account.Email.ID,
+		&account.Currency,
+		&account.HasTransactions,
 		&account.Bank.Name,
 		&account.Bank.Email,
 		&account.Type.Name,
@@ -155,6 +167,7 @@ func (ar *AccountRepository) GetAccountsList(
 
 	query := ar.db.QueryBuilder.Select(
 		accountColumnsA,
+		hasTransactionsColumn,
 		"b.name",
 		"b.email",
 		"at.name",
@@ -208,6 +221,8 @@ func (ar *AccountRepository) GetAccountsList(
 			&account.CreatedAt,
 			&account.UpdatedAt,
 			&account.Email.ID,
+			&account.Currency,
+			&account.HasTransactions,
 			&account.Bank.Name,
 			&account.Bank.Email,
 			&account.Type.Name,
@@ -244,6 +259,7 @@ func (ar *AccountRepository) UpdateAccount(ctx context.Context, account *domain.
 		Set("name", sq.Expr("COALESCE(?, name)", name)).
 		Set("last_four_digits", sq.Expr("COALESCE(?, last_four_digits)", lastFourDigits)).
 		Set("initial_balance", account.InitialBalance).
+		Set("currency", sq.Expr("COALESCE(?, currency)", utils.NullString(account.Currency))).
 		Set("updated_at", time.Now()).
 		Where(sq.Eq{"id": account.ID}).
 		Where(sq.Eq{"user_id": account.UserID}).
@@ -265,10 +281,11 @@ func (ar *AccountRepository) UpdateAccount(ctx context.Context, account *domain.
 		&account.CreatedAt,
 		&account.UpdatedAt,
 		&account.Email.ID,
+		&account.Currency,
 	)
 
 	if err != nil {
-		return mappers.MapPostgresErrorCode(err)
+		return mapAccountError(err)
 	}
 
 	return nil
@@ -378,6 +395,7 @@ func (ar *AccountRepository) AdminGetAccountsList(
 			&account.CreatedAt,
 			&account.UpdatedAt,
 			&account.Email.ID,
+			&account.Currency,
 			&account.Bank.Name,
 			&account.Bank.Email,
 			&account.Type.Name,
@@ -534,4 +552,21 @@ func updateEmail(account *domain.Account, email, access, refresh *string, active
 	if provider != nil {
 		account.Email.Provider = *provider
 	}
+}
+
+// currencyOrDefault is the account currency to store: COP when none was chosen
+func currencyOrDefault(currency string) string {
+	if currency == "" {
+		return domain.DefaultCurrency
+	}
+	return currency
+}
+
+// mapAccountError maps a currency that is not in the currencies table to ErrInvalidCurrency
+func mapAccountError(err error) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.ConstraintName == "accounts_currency_fkey" {
+		return domain.ErrInvalidCurrency
+	}
+	return mappers.MapPostgresErrorCode(err)
 }

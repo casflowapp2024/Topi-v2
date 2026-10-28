@@ -18,6 +18,7 @@ type Routes struct {
 	AccountHandler        *AccountHandler
 	TransactionHandler    *TransactionHandler
 	AnalysisHandler       *AnalysisHandler
+	FxHandler             *FxHandler
 	EmailHandler          *EmailHandler
 	InitDevHandler        *InitDevHandler
 	InitializationHandler *InitializationHandler
@@ -121,6 +122,7 @@ func (r *Routes) TransactionRoutes() {
 	AuthTransactions := r.Router.Group("/transactions").Use(AuthMiddleware(r.UserHandler.svc))
 	{
 		AuthTransactions.POST("/create", r.TransactionHandler.CreateTransaction)
+		AuthTransactions.POST("/transfer", r.TransactionHandler.CreateTransfer)
 		AuthTransactions.GET("/:id", r.TransactionHandler.GetTransaction)
 		AuthTransactions.GET("/list", r.TransactionHandler.ListTransactions)
 		AuthTransactions.PUT("/:id", r.TransactionHandler.UpdateTransaction)
@@ -137,6 +139,7 @@ func (r *Routes) AnalysisRoutes() {
 	AuthAnalysis := r.Router.Group("/analysis").Use(AuthMiddleware(r.UserHandler.svc))
 	{
 		AuthAnalysis.GET("/financial-report", r.AnalysisHandler.GetFinancialReport)
+		AuthAnalysis.GET("/net-worth", r.FxHandler.GetNetWorth)
 		AuthAnalysis.GET("/accounts-balance", r.AnalysisHandler.GetBalanceByAccount)
 		AuthAnalysis.GET("/financial-analysis", r.AnalysisHandler.GetFinancialAnalysis)
 		AuthAnalysis.POST("/categories-report", r.AnalysisHandler.GetCategoriesReport)
@@ -197,7 +200,14 @@ func (r *Routes) Init(env string) {
 	r.AccountsRoutes()
 	r.TransactionRoutes()
 	r.AnalysisRoutes()
+	r.FxRoutes()
 	r.EmailRoutes()
 	r.InitializationRoutes()
 	r.DocRoutes(env)
+}
+
+func (r *Routes) FxRoutes() {
+	auth := AuthMiddleware(r.UserHandler.svc)
+	r.Router.GET("/currencies", auth, r.FxHandler.GetCurrencies)
+	r.Router.GET("/fx/rate", auth, r.FxHandler.GetFxRate)
 }

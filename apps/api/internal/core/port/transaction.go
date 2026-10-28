@@ -24,6 +24,8 @@ type TransactionRepository interface {
 	DeleteTransaction(ctx context.Context, id uint64, userID string) error
 	// PredictTransactionCategory returns predicted category ids for given raw descriptions (raw_description -> category_id)
 	PredictTransactionCategory(ctx context.Context, descriptions []string, cpr *domain.CategoryPredictionResolver)
+	// CreateTransfer stores both legs of a transfer with the same transfer_group_id
+	CreateTransfer(ctx context.Context, transfer *domain.Transfer) error
 }
 
 // TransactionService is an interface for interacting with payment-related business logic
@@ -40,4 +42,6 @@ type TransactionService interface {
 	UpdateTransaction(ctx context.Context, transaction *domain.Transaction) error
 	// DeleteTransaction deletes a payment
 	DeleteTransaction(ctx context.Context, userID string, id uint64) error
+	// CreateTransfer moves money between two accounts of the user (possibly in different currencies)
+	CreateTransfer(ctx context.Context, transfer *domain.Transfer) error
 }

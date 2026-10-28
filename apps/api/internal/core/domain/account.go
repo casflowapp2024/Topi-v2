@@ -14,12 +14,16 @@ type Account struct {
 	Name           string
 	LastFourDigits string
 	InitialBalance float64
-	Bank           Bank
-	Type           AccountType
-	Email          Email
-	Total          uint64
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	// Currency is the ISO 4217 code of the account; every transaction of the account is in it.
+	// It cannot change once the account has transactions (HasTransactions).
+	Currency        string
+	HasTransactions bool
+	Bank            Bank
+	Type            AccountType
+	Email           Email
+	Total           uint64
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 func (a *Account) UpdateCreditInitialBalance() {
@@ -64,8 +68,10 @@ func (a *Account) IsSame(expected *Account) bool {
 	sameType := a.Type.ID == expected.Type.ID
 	sameLastFourDigits := a.LastFourDigits == expected.LastFourDigits
 	sameInitialBalance := a.InitialBalance == expected.InitialBalance
+	sameCurrency := a.Currency == "" || a.Currency == expected.Currency
 
 	return sameBankID &&
+		sameCurrency &&
 		sameName &&
 		sameType &&
 		sameLastFourDigits &&

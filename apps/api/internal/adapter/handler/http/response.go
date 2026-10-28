@@ -56,6 +56,12 @@ var errorStatusMap = map[error]int{
 	// Account Type Errors
 	domain.ErrInvalidAccountType: http.StatusBadRequest,
 
+	// Multicurrency Errors
+	domain.ErrInvalidCurrency:       http.StatusBadRequest,
+	domain.ErrAccountCurrencyLocked: http.StatusConflict,
+	domain.ErrInvalidTransfer:       http.StatusBadRequest,
+	domain.ErrInvalidFxRate:         http.StatusBadRequest,
+
 	// Token Errors
 	domain.ErrExpiredToken:               http.StatusUnauthorized,
 	domain.ErrVerifyingTokenSignature:    http.StatusUnauthorized,
@@ -260,6 +266,7 @@ type userExtraResponse struct {
 	OnboardingCompleted bool            `json:"onboarding_completed"`
 	ReadEmail           bool            `json:"read_email"`
 	Config              json.RawMessage `json:"config,omitempty" swaggertype:"object"`
+	BaseCurrency        string          `json:"base_currency" example:"COP"`
 }
 
 // newUserExtraResponse creates a new userExtraResponse from a domain.UserExtra
@@ -276,6 +283,7 @@ func newUserExtraResponse(userExtra *domain.UserExtra) userExtraResponse {
 		OnboardingCompleted: userExtra.OnboardingCompleted,
 		ReadEmail:           userExtra.ReadEmail,
 		Config:              userExtra.Config,
+		BaseCurrency:        userExtra.BaseCurrency,
 	}
 }
 
@@ -491,14 +499,17 @@ func newAccountTypeResponse(account *domain.AccountType) accountTypeResponse {
 }
 
 type accountResponse struct {
-	ID             uint64              `json:"id" example:"1"`
-	Name           string              `json:"name" example:"account name"`
-	LastFourDigits string              `json:"last_four_digits" example:"1234"`
-	InitialBalance float64             `json:"initial_balance" example:"1000000"`
-	Bank           customBankResponse  `json:"bank"`
-	Type           accountTypeResponse `json:"type"`
-	Email          CustomEmailResponse `json:"email"`
-	Automation     *automationResponse `json:"automation,omitempty"`
+	ID             uint64  `json:"id" example:"1"`
+	Name           string  `json:"name" example:"account name"`
+	LastFourDigits string  `json:"last_four_digits" example:"1234"`
+	InitialBalance float64 `json:"initial_balance" example:"1000000"`
+	Currency       string  `json:"currency" example:"COP"`
+	// HasTransactions: the currency is locked
+	HasTransactions bool                `json:"has_transactions" example:"true"`
+	Bank            customBankResponse  `json:"bank"`
+	Type            accountTypeResponse `json:"type"`
+	Email           CustomEmailResponse `json:"email"`
+	Automation      *automationResponse `json:"automation,omitempty"`
 }
 
 type automationResponse struct {
@@ -507,10 +518,12 @@ type automationResponse struct {
 
 func newAccountResponse(account *domain.Account, create bool) accountResponse {
 	accountR := accountResponse{
-		ID:             account.ID,
-		Name:           account.Name,
-		LastFourDigits: account.LastFourDigits,
-		InitialBalance: account.InitialBalance,
+		ID:              account.ID,
+		Name:            account.Name,
+		LastFourDigits:  account.LastFourDigits,
+		InitialBalance:  account.InitialBalance,
+		Currency:        account.Currency,
+		HasTransactions: account.HasTransactions,
 		Bank: customBankResponse{
 			ID:   account.Bank.ID,
 			Name: account.Bank.Name,
@@ -542,6 +555,7 @@ type customAccountResponse struct {
 	Name           string               `json:"name,omitempty" example:"account name"`
 	LastFourDigits string               `json:"last_four_digits,omitempty" example:"1234"`
 	InitialBalance *float64             `json:"initial_balance,omitempty" example:"1000000"`
+	Currency       string               `json:"currency,omitempty" example:"COP"`
 	Bank           *customBankResponse  `json:"bank,omitempty"`
 	Type           *accountTypeResponse `json:"type,omitempty"`
 	EmailID        *uint64              `json:"email_id"`
@@ -664,6 +678,13 @@ type transactionResponse struct {
 	Checked      bool                   `json:"checked" example:"false"`
 	Category     customCategoryResponse `json:"category"`
 	Account      customAccountResponse  `json:"account"`
+	// Multicurrency: amount is in currency (the account's); amount_base = amount × fx_rate in the
+	// user's base currency. Decimals as strings; null while there is no rate for the date.
+	Currency        string  `json:"currency" example:"USD"`
+	FxRate          *string `json:"fx_rate" example:"3870.41"`
+	FxRateSource    *string `json:"fx_rate_source" example:"SFC_TRM"`
+	AmountBase      *string `json:"amount_base" example:"387041"`
+	TransferGroupID *string `json:"transfer_group_id" example:"0b8f..."`
 }
 
 // newTransactionResponse is a helper function to create a response body for handling transaction data
@@ -707,9 +728,15 @@ func newTransactionResponse(transaction *domain.Transaction) transactionResponse
 			ID:             transaction.Account.ID,
 			Name:           transaction.Account.Name,
 			LastFourDigits: transaction.Account.LastFourDigits,
+			Currency:       transaction.Account.Currency,
 			Bank:           newBank,
 			Type:           newType,
 		},
+		Currency:        transaction.Currency,
+		FxRate:          decimalString(transaction.FxRate),
+		FxRateSource:    transaction.FxRateSource,
+		AmountBase:      decimalString(transaction.AmountBase),
+		TransferGroupID: transaction.TransferGroupID,
 	}
 }
 

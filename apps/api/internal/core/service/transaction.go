@@ -73,6 +73,10 @@ func (ts *TransactionService) UpdateTransaction(ctx context.Context, transaction
 		return err
 	}
 
+	if transaction.FxRate != nil && !transaction.FxRate.IsPositive() {
+		return domain.ErrInvalidFxRate
+	}
+
 	if domain.IsSameTransaction(actualTransaction, transaction) {
 		return domain.ErrNoUpdatedData
 	}
@@ -83,6 +87,17 @@ func (ts *TransactionService) UpdateTransaction(ctx context.Context, transaction
 	}
 
 	return nil
+}
+
+// CreateTransfer validates the transfer and stores both legs
+func (ts *TransactionService) CreateTransfer(ctx context.Context, transfer *domain.Transfer) error {
+	if err := transfer.Validate(); err != nil {
+		return err
+	}
+	if transfer.Description == "" {
+		transfer.Description = "Transferencia"
+	}
+	return ts.repo.CreateTransfer(ctx, transfer)
 }
 
 // DeleteTransaction deletes a transaction record
