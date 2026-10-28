@@ -67,7 +67,7 @@ function MultiChartIncomesDash({
     const [activeIndex, setActiveIndex] = useState(null);
     //#e11d48
     return (
-        <div className='h-[220px] w-[370px] md:w-[400px]  xl:w-[500px] flex flex-col'>
+        <div className='h-[220px] w-full flex flex-col'>
             <ChartLegend lead={(() => { const l = lastPointLead(dataToPlot, 'value', monthlyActivated, moment); return l && { ...l, value: formatCurrency2(l.value) }; })()} items={[
                 income_budget && !(dailyActivated && !cummulated) ? { type: 'line', label: 'Presupuesto', value: formatCurrency2(Math.abs(income_budget)) } : null,
             ]} className="pt-2" />

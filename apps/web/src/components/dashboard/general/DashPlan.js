@@ -3,7 +3,9 @@ import { connect } from 'react-redux';
 import { get_expenses_report } from '../../../redux/actions/reports';
 import { formatCurrency, capitalizeWords, getPerc0, formatDate } from '../../helpers';
 import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/20/solid';
-import { ThreeDots } from 'react-loader-spinner';
+import { SkeletonRows } from '../../ui/Skeleton';
+import EmptyState from '../../ui/EmptyState';
+import { ChartPieIcon } from '@heroicons/react/24/outline';
 import { Emoji } from "emoji-picker-react";
 import FormatMoneyShowDecs from '../../FormatMoneyShowDecs';
 import BudgetProgress, { getMonthPace } from '../../ui/BudgetProgress';
@@ -48,14 +50,7 @@ const DashPlan = ({
         <div aria-busy={loadingReport} className={`max-h-[344px] md:h-[344px] overflow-y-auto hide-scrollbar transition-opacity duration-200 ${loadingReport && expenses_report ? 'opacity-50' : ''}`}>
 
           {loadingReport && !expenses_report ?
-            <div className='mt-10 text-gray-500 flex justify-center items-center'>
-              <ThreeDots
-                height="40"
-                width="40"
-                color="#6b7280"
-                ariaLabel="loading"
-              />
-            </div> :
+            <SkeletonRows rows={5} withBar /> :
             <>
               {expenses_report ? (
                 <ul role="list" className="">
@@ -87,7 +82,7 @@ const DashPlan = ({
                   ))}
                 </ul>
               ) : (
-                <p key={0} className="mt-5 text-gray-600 dark:text-gray-400 text-center">No hay datos para este periodo.</p>
+                <EmptyState compact icon={ChartPieIcon} title="Sin presupuestos este mes" description="Crea presupuestos por categoría en la pestaña Presupuestos para ver aquí cómo vas." />
               )}
 
             </>

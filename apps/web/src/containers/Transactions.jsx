@@ -285,7 +285,7 @@ const Transactions = ({
         <>
 
             <div className="top-0 flex justify-center">
-                <div className="w-screen md:w-full px-2 md:px-0 md:w-[500px] lg:w-[750px] xl:w-[950px] top-0">
+                <div className="w-full px-2 lg:px-0 top-0">
                     <div className="">
 
                         <div className="top-0 rounded-2xl shadow-md bg-white dark:bg-gray-800 w-full transition-colors duration-300">

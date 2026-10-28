@@ -52,7 +52,7 @@ function AccChartHistory({
     const [activeIndex, setActiveIndex] = useState(null);
     //#e11d48
     return (
-        <div className={`h-[156px] md:h-[300px] w-[327px] md:w-[368px]  xl:w-[514px]`}>
+        <div className="h-full w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                     width={400}

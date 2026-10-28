@@ -110,72 +110,44 @@ const AABudgetDashboard = ({
 
     return (
         <div className="flex flex-col w-full">
-            {/* pc screen */}
-
-            <div className="lg:flex lg:flex-row gap-6 hidden justify-center">
-                {/* TOTAL SPENT AND CATEGORIE */}
-                <div className="w-[380px] xl:w-[360px] flex flex-col gap-6">
-                    {/* TOTAL SPENT CARD */}
-                    <BudDashTotalSpent />
-                    {/* BUDGET SUMMARY */}
-                    <BudDashBudgetSummary
-                        setOpenCreateBox={setOpenCreateBox}
-                    />
-
-                    {/* CATEGORIES LIST */}
-                    <BudDashCategorieList
-                        handleOpenEditCat={handleOpenEditCat}
-                        setOpenCreateBox={setOpenCreateBox}
-                        onCategoryClick={() => setActiveChartTab(2)}
-                    />
-                </div>
-
-                {/* DETAILED SPENT PER CATEGORIE */}
-                <div className="w-[400px] xl:w-[546px] flex flex-col gap-6">
-                    <BudDashDailySpent
-                        activeChartTab={activeChartTab}
-                        setActiveChartTab={setActiveChartTab}
-                    />
-                    <BudDashTransCategorie />
-                </div>
-            </div>
-
-
-
-
-            {/* mobile screen dashboard */}
-            <div className="lg:hidden mb-4">
-                <div className="w-auto flex flex-col gap-2 justify-center items-center">
-                    <div className="w-screen md:w-[450px]  px-2">
+            {/*
+                Una sola versión para todos los tamaños (antes había un bloque PC y otro móvil,
+                y cada componente se montaba y pedía sus datos dos veces).
+                En móvil las columnas usan `contents`, así sus hijos entran directo en la pila
+                y `order-*` define el orden; en PC (lg) vuelven a ser columnas.
+            */}
+            <div className="flex flex-col gap-2 lg:flex-row lg:gap-6 px-2 lg:px-0 pb-4 md:max-w-[560px] md:mx-auto lg:max-w-none lg:w-full">
+                {/* Total, resumen y lista de categorías */}
+                <div className="contents lg:flex lg:flex-col lg:gap-6 lg:w-[380px] xl:w-[360px] lg:shrink-0">
+                    <div className="order-1 lg:order-none">
                         <BudDashTotalSpent />
                     </div>
-                    <div className="w-screen md:w-[450px] px-2">
+                    <div className="order-2 lg:order-none">
                         <BudDashBudgetSummary
                             setOpenCreateBox={setOpenCreateBox}
                         />
                     </div>
-                    <div className="w-screen md:w-[450px]  px-2">
+                    <div className="order-3 lg:order-none">
                         <BudDashCategorieList
                             handleOpenEditCat={handleOpenEditCat}
                             setOpenCreateBox={setOpenCreateBox}
                             onCategoryClick={() => setActiveChartTab(2)}
                         />
                     </div>
-                    <div className="w-screen md:w-[450px]  px-2">
-                        <BudDashTransCategorie />
-                    </div>
-                    <div className="w-screen md:w-[450px]  px-2">
+                </div>
+                {/* Gráfica y movimientos de la categoría */}
+                <div className="contents lg:flex lg:flex-col lg:gap-6 lg:flex-1 lg:min-w-0">
+                    <div className="order-5 lg:order-none">
                         <BudDashDailySpent
                             activeChartTab={activeChartTab}
                             setActiveChartTab={setActiveChartTab}
                         />
                     </div>
-
-
+                    <div className="order-4 lg:order-none">
+                        <BudDashTransCategorie />
+                    </div>
                 </div>
             </div>
-
-
             {/*Modal Create category*/}
             <CreateCategory
                 openCreateBox={openCreateBox}

@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { get_expenses_report } from '../../../redux/actions/reports';
 import { formatCurrency, capitalizeWords, getPerc0, formatDate } from '../../helpers';
 import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/20/solid';
-import { ThreeDots } from 'react-loader-spinner';
+import { SkeletonRows } from '../../ui/Skeleton';
 import { Emoji } from "emoji-picker-react";
 import { set_another_month, set_another_year, set_dash_category_activated } from '../../../redux/actions/reports';
 import { set_active_report_tab } from '../../../redux/actions/ui';
@@ -253,14 +253,7 @@ const BudDashCategorieList = ({
 
         {/* Solo se muestra el spinner la primera vez; al cambiar de mes se conserva la lista (sin saltos) */}
         {loadingReport && !hasCategories ?
-          <div className='mt-10 text-gray-500 flex justify-center items-center'>
-            <ThreeDots
-              height="40"
-              width="40"
-              color="#6b7280"
-              ariaLabel="loading"
-            />
-          </div> :
+          <SkeletonRows rows={5} withBar className="px-2" /> :
           <>
 
             {displayCategories && displayCategories.length > 0 ? (

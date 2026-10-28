@@ -5,6 +5,9 @@ import { connect } from 'react-redux';
 import { set_dash_account_activated } from '../../../redux/actions/reports';
 //components
 import { formatCurrency } from '../../helpers';
+import Card, { CardHeader } from '../../ui/Card';
+import Button from '../../ui/Button';
+import EmptyState from '../../ui/EmptyState';
 import {
   BanknotesIcon, BuildingLibraryIcon, ArrowTrendingUpIcon, CreditCardIcon, ChevronRightIcon, PlusIcon,
 } from '@heroicons/react/20/solid';
@@ -41,28 +44,25 @@ const DashAccounts = ({ user_accounts, balance_by_account, set_dash_account_acti
   const hidden = rows.length - visible.length;
 
   return (
-    <section className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow p-4 transition-colors duration-300">
-      <header className="flex items-end justify-between gap-3 pb-3 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col">
-          <h2 className="text-sm font-medium text-gray-900 dark:text-gray-100">Mis cuentas</h2>
-          {total > 0 && (
-            <span className="text-xs text-ink-2 dark:text-gray-400">
-              Disponible en ahorro: <b className="text-gray-900 dark:text-gray-100 tabular-nums">{formatCurrency(total)}</b>
-            </span>
-          )}
-        </div>
-        <Link to="accounts" className="text-xs font-medium text-topi-600 dark:text-indigo-300 hover:underline inline-flex items-center">
-          Ver detalle <ChevronRightIcon className="w-4 h-4" aria-hidden="true" />
-        </Link>
-      </header>
+    <Card className="w-full">
+      <CardHeader
+        className="mb-0"
+        title="Mis cuentas"
+        subtitle={total > 0 && <>Disponible en ahorro: <b className="text-gray-900 dark:text-gray-100 tabular-nums">{formatCurrency(total)}</b></>}
+        action={
+          <Link to="accounts" className="text-xs font-medium text-topi-600 dark:text-indigo-300 hover:underline inline-flex items-center">
+            Ver detalle <ChevronRightIcon className="w-4 h-4" aria-hidden="true" />
+          </Link>
+        }
+      />
 
       {rows.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-6 text-center">
-          <p className="text-sm text-ink-2 dark:text-gray-400">Aún no tienes cuentas. Agrega una para ver tus saldos aquí.</p>
-          <Link to="accounts" className="inline-flex items-center gap-1 rounded-xl bg-topi-500 hover:bg-topi-600 text-white text-sm font-medium px-3 py-2 transition-colors">
-            <PlusIcon className="w-4 h-4" aria-hidden="true" /> Agregar cuenta
-          </Link>
-        </div>
+        <EmptyState
+          icon={BanknotesIcon}
+          title="Aún no tienes cuentas"
+          description="Agrega una cuenta para ver aquí tus saldos."
+          action={<Button size="sm" icon={PlusIcon} onClick={() => navigate('/dashboard/accounts')}>Agregar cuenta</Button>}
+        />
       ) : (
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-3">
           {visible.map(({ acc, balance }) => {
@@ -117,7 +117,7 @@ const DashAccounts = ({ user_accounts, balance_by_account, set_dash_account_acti
           )}
         </ul>
       )}
-    </section>
+    </Card>
   );
 };
 

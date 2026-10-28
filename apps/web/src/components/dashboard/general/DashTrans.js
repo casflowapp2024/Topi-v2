@@ -8,6 +8,8 @@ import { update_transaction_local, update_transaction } from '../../../redux/act
 import { Emoji } from "emoji-picker-react";
 import { formatCurrency, formatDate, findElmentById } from '../../helpers';
 import FormatMoneyShowDecs from '../../FormatMoneyShowDecs';
+import EmptyState from '../../ui/EmptyState';
+import { ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 import TransactionDetail from '../../transactions/TransactionDetail2'
 
 const DashTrans = ({
@@ -115,12 +117,8 @@ const DashTrans = ({
 
             </div>
           ))}
-          {!transactions.items ?
-            <div className='flex mt-3 w-full items-center justify-center'>
-              <h className='text-sm text-center dark:text-gray-400'>
-                Aún no hay transacciones.
-              </h>
-            </div> : <></>
+          {!transactions.items || transactions.items.length === 0 ?
+            <EmptyState compact icon={ArrowsRightLeftIcon} title="Aún no hay transacciones" description="Conecta tu correo o crea una desde Transacciones." /> : null
           }
         </div>
 

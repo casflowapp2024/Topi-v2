@@ -20,7 +20,7 @@ import {
 
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 
-import { ThreeDots } from 'react-loader-spinner';
+import Skeleton from '../../ui/Skeleton';
 import { color } from 'framer-motion';
 
 const DashStatsCard = ({
@@ -107,14 +107,7 @@ const DashStatsCard = ({
                     {/* bottom card */}
                     <div className='h-[48px] flex flex-row justify-between items-center mt-4'>
                         {loadingReport && !metric_state ?
-                            <div className='pl-10 text-gray-500 flex justify-center items-center'>
-                                <ThreeDots
-                                    height="40"
-                                    width="40"
-                                    color="#6b7280"
-                                    ariaLabel="loading"
-                                />
-                            </div>
+                            <Skeleton className="h-6 w-3/4 mt-3" />
                             : <>
                                 {metric_state ?
                                     <div aria-busy={loadingReport} className={`flex flex-row justify-between w-full items-end transition-opacity duration-200 ${loadingReport ? 'opacity-50' : ''}`}>
@@ -138,14 +131,7 @@ const DashStatsCard = ({
                         }
                     </div>
                 </div> :
-                <div className='text-gray-500 flex justify-center items-end h-full'>
-                    <ThreeDots
-                        height="30"
-                        width="30"
-                        color="#6b7280"
-                        ariaLabel="loading"
-                    />
-                </div>
+                <div className="flex flex-col gap-3 h-full justify-center"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-6 w-3/4" /></div>
             }
             {/* info tooltip */}
             <div
