@@ -4,6 +4,7 @@
 - cada 5 min: refresh de las vistas de análisis
 - cada 2 días a las 00:00: refresh de category_predictions
 - diario a las 03:00: limpieza de email_jobs y processed_emails viejos
+- diario a las 19:00: tasas de cambio (TRM del día siguiente ya publicada, BCE del día)
 """
 
 from __future__ import annotations
@@ -14,7 +15,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
-from worker import log
+from worker import fx, log
 from worker.api_client import TopiApi
 from worker.config import Settings
 from worker.db import Database
@@ -45,6 +46,10 @@ def cleanup(settings: Settings, db: Database) -> dict[str, int]:
     return deleted
 
 
+def sync_fx(settings: Settings, db: Database) -> dict[str, dict]:
+    return fx.sync_recent(db, fx.default_http(), fx.today_in(settings.timezone), settings.fx_lookback_days)
+
+
 def _safe(name, fn, *args):
     def run():
         try:
@@ -69,4 +74,7 @@ def build_scheduler(settings: Settings, api: TopiApi, db: Database) -> Backgroun
                       CronTrigger(day="*/2", hour=0, minute=0, timezone=tz), id="refresh_predictions", name="refresh_predictions")
     scheduler.add_job(_safe("cleanup", cleanup, settings, db),
                       CronTrigger(hour=3, minute=0, timezone=tz), id="cleanup", name="cleanup")
+    if settings.fx_sync_enabled:
+        scheduler.add_job(_safe("fx_sync", sync_fx, settings, db),
+                          CronTrigger(hour=19, minute=0, timezone=tz), id="fx_sync", name="fx_sync")
     return scheduler

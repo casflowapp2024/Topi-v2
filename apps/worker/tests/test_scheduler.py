@@ -73,7 +73,13 @@ def test_scheduler_jobs_and_triggers():
     assert jobs["refresh_views"] == "interval[0:05:00]"
     assert jobs["refresh_predictions"] == "cron[day='*/2', hour='0', minute='0']"
     assert jobs["cleanup"] == "cron[hour='3', minute='0']"
+    assert jobs["fx_sync"] == "cron[hour='19', minute='0']"
     assert str(scheduler.timezone) == "America/Bogota"
+
+
+def test_fx_sync_can_be_disabled():
+    scheduler = build_scheduler(Settings.from_env({**BASE, "FX_SYNC_ENABLED": "false"}), FakeApi(), FakeDB())
+    assert "fx_sync" not in {job.id for job in scheduler.get_jobs()}
 
 
 @pytest.mark.db

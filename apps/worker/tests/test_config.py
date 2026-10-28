@@ -16,6 +16,7 @@ def test_defaults():
     assert s.scheduler_enabled is True
     assert s.dry_run is False
     assert s.only_email_ids == frozenset()
+    assert s.fx_sync_enabled is True and s.fx_lookback_days == 10
     assert s.allows_email(123)
 
 

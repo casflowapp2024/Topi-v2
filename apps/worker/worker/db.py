@@ -1,11 +1,12 @@
 """Acceso directo a Postgres (psycopg 3) solo para lo que es del worker:
-email_jobs, email_sync_state, processed_emails, worker_heartbeat, refresh de vistas y limpieza.
+email_jobs, email_sync_state, processed_emails, worker_heartbeat, fx_rates, refresh de vistas y limpieza.
 Las migraciones viven en la API (golang-migrate): el worker no migra."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Any, Iterable
 
 from psycopg.rows import dict_row
@@ -228,6 +229,44 @@ class Database:
                 (worker_id, version),
             )
             conn.execute("DELETE FROM worker_heartbeat WHERE last_seen < now() - interval '7 days'")
+
+    # ------------------------------------------------------------------ fx_rates
+
+    def active_currencies(self) -> set[str]:
+        with self.pool.connection() as conn:
+            rows = conn.execute("SELECT code FROM currencies WHERE is_active").fetchall()
+        return {row["code"] for row in rows}
+
+    def oldest_transaction_date(self) -> date | None:
+        with self.pool.connection() as conn:
+            row = conn.execute("SELECT min(date)::date AS d FROM transactions").fetchone()
+        return row["d"]
+
+    def upsert_fx_rates(self, rates: Iterable[tuple[str, date, Decimal, str]]) -> int:
+        """Inserta tasas (quote, rate_date, rate, source) con base USD. Idempotente: si ya existe
+        la misma tasa no hace nada; si la fuente la corrigió, la actualiza. Devuelve las filas
+        insertadas o cambiadas."""
+        unique = {(q, d, s): r for q, d, r, s in rates}  # un ON CONFLICT no puede tocar la misma fila dos veces
+        if not unique:
+            return 0
+        quotes, dates, values, sources = [], [], [], []
+        for (q, d, s), r in unique.items():
+            quotes.append(q)
+            dates.append(d)
+            values.append(r)
+            sources.append(s)
+        with self.pool.connection() as conn:
+            return conn.execute(
+                """
+                INSERT INTO fx_rates (base, quote, rate_date, rate, source)
+                SELECT 'USD', q, d, r, s
+                FROM unnest(%s::text[], %s::date[], %s::numeric[], %s::text[]) AS t(q, d, r, s)
+                ON CONFLICT (base, quote, rate_date, source) DO UPDATE
+                  SET rate = EXCLUDED.rate, fetched_at = now()
+                  WHERE fx_rates.rate IS DISTINCT FROM EXCLUDED.rate
+                """,
+                (quotes, dates, values, sources),
+            ).rowcount
 
     # ------------------------------------------------------------------ limpieza
 

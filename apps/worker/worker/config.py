@@ -62,6 +62,8 @@ class Settings:
     extractor: str = "gemini"
     confidence_threshold: float = 0.7
     scheduler_enabled: bool = True
+    fx_sync_enabled: bool = True
+    fx_lookback_days: int = 10
     timezone: str = "America/Bogota"
     dry_run: bool = False
     only_email_ids: frozenset[int] = field(default_factory=frozenset)
@@ -94,6 +96,8 @@ class Settings:
             processed_email_retention_days=_int(env, "PROCESSED_EMAIL_RETENTION_DAYS", 365),
             extractor=(env.get("WORKER_EXTRACTOR") or "gemini").strip().lower(),
             scheduler_enabled=_bool(env.get("SCHEDULER_ENABLED"), True),
+            fx_sync_enabled=_bool(env.get("FX_SYNC_ENABLED"), True),
+            fx_lookback_days=max(1, _int(env, "FX_LOOKBACK_DAYS", 10)),
             dry_run=_bool(env.get("WORKER_DRY_RUN"), False),
             only_email_ids=_int_set(env.get("WORKER_ONLY_EMAIL_IDS")),
         )

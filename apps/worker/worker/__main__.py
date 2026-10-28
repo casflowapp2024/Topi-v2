@@ -4,6 +4,9 @@
     python -m worker enqueue-now       encola ya la corrida horaria (lo que haría el scheduler)
     python -m worker process-once      procesa los jobs pendientes y termina
     python -m worker refresh-views     refresca las vistas materializadas (--all incluye predicciones)
+    python -m worker fx-sync           trae las tasas de cambio recientes (lo que hace el job diario)
+    python -m worker fx-backfill       tasas históricas desde la transacción más antigua
+                                       (--from/--to YYYY-MM-DD para un rango; idempotente)
 """
 
 from __future__ import annotations
@@ -13,6 +16,7 @@ import json
 import os
 import signal
 import sys
+from datetime import date
 
 from worker import log
 from worker.config import ConfigError, Settings
@@ -101,6 +105,22 @@ def cmd_refresh_views(settings: Settings, include_predictions: bool) -> int:
     return 1 if any(v.startswith("error") for v in results.values()) else 0
 
 
+def cmd_fx(settings: Settings, backfill: bool, start, end) -> int:
+    from worker import fx
+
+    db, _, _ = _components(settings, processing=False)
+    try:
+        http, today = fx.default_http(), fx.today_in(settings.timezone)
+        if backfill:
+            summary = fx.backfill(db, http, today, start, end)
+        else:
+            summary = fx.sync_recent(db, http, today, settings.fx_lookback_days)
+        print(json.dumps(summary))
+    finally:
+        db.close()
+    return 1 if fx.has_errors(summary) else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m worker", description="Worker de correos de Topi")
     sub = parser.add_subparsers(dest="command")
@@ -109,6 +129,10 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("process-once", help="procesar los jobs pendientes y salir")
     refresh = sub.add_parser("refresh-views", help="refrescar vistas materializadas")
     refresh.add_argument("--all", action="store_true", help="incluye category_predictions")
+    sub.add_parser("fx-sync", help="tasas de cambio recientes")
+    backfill = sub.add_parser("fx-backfill", help="tasas de cambio históricas")
+    backfill.add_argument("--from", dest="start", type=date.fromisoformat, help="desde (por defecto, la transacción más antigua)")
+    backfill.add_argument("--to", dest="end", type=date.fromisoformat, help="hasta (por defecto, la TRM ya publicada)")
     args = parser.parse_args(argv)
 
     log.setup(os.environ.get("LOG_LEVEL", "INFO"))
@@ -126,6 +150,8 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_enqueue_now(settings)
         if command == "process-once":
             return cmd_process_once(settings)
+        if command in ("fx-sync", "fx-backfill"):
+            return cmd_fx(settings, command == "fx-backfill", getattr(args, "start", None), getattr(args, "end", None))
         return cmd_refresh_views(settings, args.all)
     except ConfigError as exc:
         log.get("worker").error(str(exc))
