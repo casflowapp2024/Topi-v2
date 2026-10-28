@@ -79,6 +79,20 @@ func (mr *MockTransactionRepositoryMockRecorder) CreateTransfer(ctx, transfer in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTransfer", reflect.TypeOf((*MockTransactionRepository)(nil).CreateTransfer), ctx, transfer)
 }
 
+// CreateTransferCounterpart mocks base method.
+func (m *MockTransactionRepository) CreateTransferCounterpart(ctx context.Context, link *domain.TransferLink) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateTransferCounterpart", ctx, link)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateTransferCounterpart indicates an expected call of CreateTransferCounterpart.
+func (mr *MockTransactionRepositoryMockRecorder) CreateTransferCounterpart(ctx, link interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTransferCounterpart", reflect.TypeOf((*MockTransactionRepository)(nil).CreateTransferCounterpart), ctx, link)
+}
+
 // DeleteTransaction mocks base method.
 func (m *MockTransactionRepository) DeleteTransaction(ctx context.Context, id uint64, userID string) error {
 	m.ctrl.T.Helper()
@@ -91,6 +105,20 @@ func (m *MockTransactionRepository) DeleteTransaction(ctx context.Context, id ui
 func (mr *MockTransactionRepositoryMockRecorder) DeleteTransaction(ctx, id, userID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTransaction", reflect.TypeOf((*MockTransactionRepository)(nil).DeleteTransaction), ctx, id, userID)
+}
+
+// DismissTransferCandidate mocks base method.
+func (m *MockTransactionRepository) DismissTransferCandidate(ctx context.Context, userID string, outID, inID uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DismissTransferCandidate", ctx, userID, outID, inID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DismissTransferCandidate indicates an expected call of DismissTransferCandidate.
+func (mr *MockTransactionRepositoryMockRecorder) DismissTransferCandidate(ctx, userID, outID, inID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DismissTransferCandidate", reflect.TypeOf((*MockTransactionRepository)(nil).DismissTransferCandidate), ctx, userID, outID, inID)
 }
 
 // GetTransactionByID mocks base method.
@@ -108,6 +136,20 @@ func (mr *MockTransactionRepositoryMockRecorder) GetTransactionByID(ctx, userID,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionByID", reflect.TypeOf((*MockTransactionRepository)(nil).GetTransactionByID), ctx, userID, id)
 }
 
+// LinkTransactions mocks base method.
+func (m *MockTransactionRepository) LinkTransactions(ctx context.Context, link *domain.TransferLink) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LinkTransactions", ctx, link)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LinkTransactions indicates an expected call of LinkTransactions.
+func (mr *MockTransactionRepositoryMockRecorder) LinkTransactions(ctx, link interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkTransactions", reflect.TypeOf((*MockTransactionRepository)(nil).LinkTransactions), ctx, link)
+}
+
 // ListTransactions mocks base method.
 func (m *MockTransactionRepository) ListTransactions(ctx context.Context, filters domain.TransactionFilters) ([]domain.Transaction, error) {
 	m.ctrl.T.Helper()
@@ -123,6 +165,21 @@ func (mr *MockTransactionRepositoryMockRecorder) ListTransactions(ctx, filters i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTransactions", reflect.TypeOf((*MockTransactionRepository)(nil).ListTransactions), ctx, filters)
 }
 
+// ListTransferCandidates mocks base method.
+func (m *MockTransactionRepository) ListTransferCandidates(ctx context.Context, userID string, limit uint64) ([]domain.TransferCandidate, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListTransferCandidates", ctx, userID, limit)
+	ret0, _ := ret[0].([]domain.TransferCandidate)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListTransferCandidates indicates an expected call of ListTransferCandidates.
+func (mr *MockTransactionRepositoryMockRecorder) ListTransferCandidates(ctx, userID, limit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTransferCandidates", reflect.TypeOf((*MockTransactionRepository)(nil).ListTransferCandidates), ctx, userID, limit)
+}
+
 // PredictTransactionCategory mocks base method.
 func (m *MockTransactionRepository) PredictTransactionCategory(ctx context.Context, descriptions []string, cpr *domain.CategoryPredictionResolver) {
 	m.ctrl.T.Helper()
@@ -133,6 +190,20 @@ func (m *MockTransactionRepository) PredictTransactionCategory(ctx context.Conte
 func (mr *MockTransactionRepositoryMockRecorder) PredictTransactionCategory(ctx, descriptions, cpr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PredictTransactionCategory", reflect.TypeOf((*MockTransactionRepository)(nil).PredictTransactionCategory), ctx, descriptions, cpr)
+}
+
+// UnlinkTransfer mocks base method.
+func (m *MockTransactionRepository) UnlinkTransfer(ctx context.Context, userID, groupID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnlinkTransfer", ctx, userID, groupID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UnlinkTransfer indicates an expected call of UnlinkTransfer.
+func (mr *MockTransactionRepositoryMockRecorder) UnlinkTransfer(ctx, userID, groupID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkTransfer", reflect.TypeOf((*MockTransactionRepository)(nil).UnlinkTransfer), ctx, userID, groupID)
 }
 
 // UpdateTransaction mocks base method.
@@ -229,6 +300,20 @@ func (mr *MockTransactionServiceMockRecorder) DeleteTransaction(ctx, userID, id 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTransaction", reflect.TypeOf((*MockTransactionService)(nil).DeleteTransaction), ctx, userID, id)
 }
 
+// DismissTransferCandidate mocks base method.
+func (m *MockTransactionService) DismissTransferCandidate(ctx context.Context, userID string, outID, inID uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DismissTransferCandidate", ctx, userID, outID, inID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DismissTransferCandidate indicates an expected call of DismissTransferCandidate.
+func (mr *MockTransactionServiceMockRecorder) DismissTransferCandidate(ctx, userID, outID, inID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DismissTransferCandidate", reflect.TypeOf((*MockTransactionService)(nil).DismissTransferCandidate), ctx, userID, outID, inID)
+}
+
 // GetTransaction mocks base method.
 func (m *MockTransactionService) GetTransaction(ctx context.Context, userID string, id uint64) (*domain.Transaction, error) {
 	m.ctrl.T.Helper()
@@ -244,6 +329,20 @@ func (mr *MockTransactionServiceMockRecorder) GetTransaction(ctx, userID, id int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransaction", reflect.TypeOf((*MockTransactionService)(nil).GetTransaction), ctx, userID, id)
 }
 
+// LinkTransfer mocks base method.
+func (m *MockTransactionService) LinkTransfer(ctx context.Context, link *domain.TransferLink) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LinkTransfer", ctx, link)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LinkTransfer indicates an expected call of LinkTransfer.
+func (mr *MockTransactionServiceMockRecorder) LinkTransfer(ctx, link interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkTransfer", reflect.TypeOf((*MockTransactionService)(nil).LinkTransfer), ctx, link)
+}
+
 // ListTransactions mocks base method.
 func (m *MockTransactionService) ListTransactions(ctx context.Context, filters domain.TransactionFilters) ([]domain.Transaction, error) {
 	m.ctrl.T.Helper()
@@ -257,6 +356,35 @@ func (m *MockTransactionService) ListTransactions(ctx context.Context, filters d
 func (mr *MockTransactionServiceMockRecorder) ListTransactions(ctx, filters interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTransactions", reflect.TypeOf((*MockTransactionService)(nil).ListTransactions), ctx, filters)
+}
+
+// ListTransferCandidates mocks base method.
+func (m *MockTransactionService) ListTransferCandidates(ctx context.Context, userID string, limit uint64) ([]domain.TransferCandidate, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListTransferCandidates", ctx, userID, limit)
+	ret0, _ := ret[0].([]domain.TransferCandidate)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListTransferCandidates indicates an expected call of ListTransferCandidates.
+func (mr *MockTransactionServiceMockRecorder) ListTransferCandidates(ctx, userID, limit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTransferCandidates", reflect.TypeOf((*MockTransactionService)(nil).ListTransferCandidates), ctx, userID, limit)
+}
+
+// UnlinkTransfer mocks base method.
+func (m *MockTransactionService) UnlinkTransfer(ctx context.Context, userID, groupID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnlinkTransfer", ctx, userID, groupID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UnlinkTransfer indicates an expected call of UnlinkTransfer.
+func (mr *MockTransactionServiceMockRecorder) UnlinkTransfer(ctx, userID, groupID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkTransfer", reflect.TypeOf((*MockTransactionService)(nil).UnlinkTransfer), ctx, userID, groupID)
 }
 
 // UpdateTransaction mocks base method.

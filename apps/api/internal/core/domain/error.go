@@ -83,6 +83,9 @@ var (
 	ErrInvalidTransfer = errors.New("invalid transfer: two different accounts and positive amounts are required")
 	// ErrInvalidFxRate is an error for when an exchange rate is not a positive number
 	ErrInvalidFxRate = errors.New("invalid exchange rate")
+	// ErrTransferLinked is an error for when a transaction is already a leg of a transfer, or the
+	// pair to link is not an expense and an income in different accounts
+	ErrTransferLinked = errors.New("the transactions cannot be linked as a transfer")
 )
 
 // Account Type Errors

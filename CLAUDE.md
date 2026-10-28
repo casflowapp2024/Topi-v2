@@ -62,6 +62,9 @@ plan/         plan de migración
   Modales con `Dialog` de `@headlessui/react`; cada vista con versión PC (`lg:flex`) y móvil (`lg:hidden`).
 - Multimoneda: la moneda la fija la cuenta (`accounts.currency`); los reportes de flujos suman `amount_base`.
   Montos y tasas nuevos viajan como string decimal (shopspring/decimal en Go); no los sumes en float en el front.
+- Transferencias: `transactions.transfer_group_id` liga las dos patas. No cuentan en los totales de ingresos,
+  gastos y ahorro (`flowAmountCalc`, columnas `transfer_*` de `daily_account_totals`), pero sí en saldos y en
+  reportes por categoría/presupuestos (conservan la categoría del usuario). Plan: `plan/10-tipos-de-cuenta.md`.
 
 ## Reglas
 

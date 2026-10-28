@@ -165,3 +165,60 @@ func TestNetWorth_Summarize(t *testing.T) {
 }
 
 func ptrDec(d decimal.Decimal) *decimal.Decimal { return &d }
+
+func TestTransactionService_LinkTransfer(t *testing.T) {
+	ctx := context.Background()
+	amount := decimal.RequireFromString("120.5")
+
+	t.Run("con una transacción existente las liga", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		repo := mock.NewMockTransactionRepository(ctrl)
+		svc := NewTransactionService(repo, mock.NewMockUserService(ctrl), mock.NewMockCategoryService(ctrl))
+		link := &domain.TransferLink{UserID: "u1", TransactionID: 1, CounterpartTransactionID: 2}
+		repo.EXPECT().LinkTransactions(ctx, link).Return(nil)
+		require.NoError(t, svc.LinkTransfer(ctx, link))
+	})
+
+	t.Run("con una cuenta crea la otra pata", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		repo := mock.NewMockTransactionRepository(ctrl)
+		svc := NewTransactionService(repo, mock.NewMockUserService(ctrl), mock.NewMockCategoryService(ctrl))
+		link := &domain.TransferLink{UserID: "u1", TransactionID: 1, CounterpartAccountID: 3, CounterpartAmount: &amount}
+		repo.EXPECT().CreateTransferCounterpart(ctx, link).Return(nil)
+		require.NoError(t, svc.LinkTransfer(ctx, link))
+	})
+
+	negative := decimal.RequireFromString("-1")
+	invalid := map[string]*domain.TransferLink{
+		"sin transacción":           {UserID: "u1", CounterpartAccountID: 3},
+		"sin contraparte":           {UserID: "u1", TransactionID: 1},
+		"las dos contrapartes":      {UserID: "u1", TransactionID: 1, CounterpartAccountID: 3, CounterpartTransactionID: 2},
+		"consigo misma":             {UserID: "u1", TransactionID: 1, CounterpartTransactionID: 1},
+		"monto negativo":            {UserID: "u1", TransactionID: 1, CounterpartAccountID: 3, CounterpartAmount: &negative},
+		"monto al ligar existentes": {UserID: "u1", TransactionID: 1, CounterpartTransactionID: 2, CounterpartAmount: &amount},
+	}
+	for name, link := range invalid {
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			svc := NewTransactionService(mock.NewMockTransactionRepository(ctrl), mock.NewMockUserService(ctrl), mock.NewMockCategoryService(ctrl))
+			assert.ErrorIs(t, svc.LinkTransfer(ctx, link), domain.ErrInvalidTransfer)
+		})
+	}
+
+	t.Run("candidatas: el límite se acota", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		repo := mock.NewMockTransactionRepository(ctrl)
+		svc := NewTransactionService(repo, mock.NewMockUserService(ctrl), mock.NewMockCategoryService(ctrl))
+		repo.EXPECT().ListTransferCandidates(ctx, "u1", uint64(MaxTransferCandidates)).Return(nil, nil).Times(2)
+		repo.EXPECT().ListTransferCandidates(ctx, "u1", uint64(20)).Return(nil, nil)
+		_, _ = svc.ListTransferCandidates(ctx, "u1", 0)
+		_, _ = svc.ListTransferCandidates(ctx, "u1", 5000)
+		_, _ = svc.ListTransferCandidates(ctx, "u1", 20)
+	})
+
+	t.Run("descartar la misma transacción dos veces es inválido", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		svc := NewTransactionService(mock.NewMockTransactionRepository(ctrl), mock.NewMockUserService(ctrl), mock.NewMockCategoryService(ctrl))
+		assert.ErrorIs(t, svc.DismissTransferCandidate(ctx, "u1", 4, 4), domain.ErrInvalidTransfer)
+	})
+}

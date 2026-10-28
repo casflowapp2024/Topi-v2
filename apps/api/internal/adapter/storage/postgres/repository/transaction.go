@@ -636,47 +636,11 @@ func (tr *TransactionRepository) CreateTransfer(ctx context.Context, transfer *d
 
 	groupID := uuid.NewString()
 	insert := func(accountID uint64, expense bool, amount decimal.Decimal) (domain.Transaction, error) {
-		var (
-			created          domain.Transaction
-			fxRate, fxSource *string
-		)
-		if baseValue != nil {
-			fxRate = decimalText(ptrDecimal(baseValue.DivRound(amount, 12)))
-			source := "transfer"
-			fxSource = &source
-		}
-		query := tr.db.QueryBuilder.Insert(enums.TransactionsTableName).
-			Columns("user_id", "category_id", "account_id", "description", "expense", "amount", "date",
-				"automated", "should_verify", "checked", "transfer_group_id", "fx_rate", "fx_rate_source", "amount_base").
-			Values(transfer.UserID, transfer.CategoryID, accountID, transfer.Description, expense, amount.String(),
-				transfer.Date, false, false, true, groupID, fxRate, fxSource, decimalText(baseValue)).
-			Suffix("RETURNING " + transactionColumns)
-		sql, args, qErr := query.ToSql()
-		if qErr != nil {
-			return created, qErr
-		}
-		err := tx.QueryRow(ctx, sql, args...).Scan(
-			&created.ID,
-			&created.UserID,
-			&created.Category.ID,
-			&created.Account.ID,
-			&created.Description,
-			&created.Expense,
-			&created.Amount,
-			&created.Date,
-			&created.Automated,
-			&created.ShouldVerify,
-			&created.Checked,
-			&created.CreatedAt,
-			&created.UpdatedAt,
-			&created.RawDescription,
-			&created.Currency,
-			scanDecimal(&created.FxRate),
-			&created.FxRateSource,
-			scanDecimal(&created.AmountBase),
-			&created.TransferGroupID,
-		)
-		return created, mappers.MapPostgresErrorCode(err)
+		return insertTransferLeg(ctx, tx, transferLeg{
+			UserID: transfer.UserID, AccountID: accountID, CategoryID: transfer.CategoryID,
+			Description: transfer.Description, Expense: expense, Amount: amount, Date: transfer.Date,
+			AmountBase: baseValue, GroupID: groupID,
+		})
 	}
 
 	if transfer.Out, err = insert(transfer.FromAccountID, true, transfer.AmountSent); err != nil {
@@ -694,5 +658,3 @@ func (tr *TransactionRepository) CreateTransfer(ctx context.Context, transfer *d
 	transfer.MarketRate = marketRate
 	return nil
 }
-
-func ptrDecimal(d decimal.Decimal) *decimal.Decimal { return &d }

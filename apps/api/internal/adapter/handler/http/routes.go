@@ -123,6 +123,10 @@ func (r *Routes) TransactionRoutes() {
 	{
 		AuthTransactions.POST("/create", r.TransactionHandler.CreateTransaction)
 		AuthTransactions.POST("/transfer", r.TransactionHandler.CreateTransfer)
+		AuthTransactions.GET("/transfer/candidates", r.TransactionHandler.ListTransferCandidates)
+		AuthTransactions.POST("/transfer/dismiss", r.TransactionHandler.DismissTransferCandidate)
+		AuthTransactions.DELETE("/transfer/:group", r.TransactionHandler.UnlinkTransfer)
+		AuthTransactions.POST("/:id/transfer", r.TransactionHandler.LinkTransfer)
 		AuthTransactions.GET("/:id", r.TransactionHandler.GetTransaction)
 		AuthTransactions.GET("/list", r.TransactionHandler.ListTransactions)
 		AuthTransactions.PUT("/:id", r.TransactionHandler.UpdateTransaction)

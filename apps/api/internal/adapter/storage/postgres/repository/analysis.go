@@ -28,6 +28,12 @@ func NewAnalysisRepository(db *postgres.DB) *AnalysisRepository {
 	}
 }
 
+// flowAmountCalc is a transaction's flow in the user's base currency: positive for income,
+// negative for expenses and zero for transfer legs (they move money between the user's accounts).
+// Reports by category keep counting transfer legs: the user's category still applies to budgets.
+const flowAmountCalc = "case when t.transfer_group_id is not null then 0 " +
+	"when t.expense is false then t.amount_base else -t.amount_base end"
+
 // GetFinancialSummary retrieves a financial summary for a user, including income and expenses
 // grouped by month. The summary includes data for the specified time range, with
 // transactions properly adjusted to the user's timezone.
@@ -58,8 +64,9 @@ func (ar *AnalysisRepository) GetFinancialSummary(
 	// Date calculations in user's timezone
 	userDate := "(t.date at time zone coalesce(u.utc_offset, 'utc'))::date"
 
-	// Amount calculation in the user's base currency: positive for income, negative for expenses
-	amountCalc := "case when t.expense is false then t.amount_base else -t.amount_base end"
+	// Amount calculation in the user's base currency: positive for income, negative for expenses.
+	// Transfer legs (transfer_group_id) are neither income nor expense.
+	amountCalc := flowAmountCalc
 
 	// Income: from categories marked as income AND saving/investment account types
 	incomeSum := fmt.Sprintf(
@@ -783,19 +790,16 @@ func (ar *AnalysisRepository) GetFinancialAccountSummary(
 	userDate := "(t.date at time zone coalesce(u.utc_offset, 'utc'))::date"
 
 	if accountTypes.IsSaving() {
-		// Amount calculation in the user's base currency: positive for income, negative for expenses
-		amountCalc := "case when t.expense is false then t.amount_base else -t.amount_base end"
-
 		// Income: from categories marked as income
-		income = fmt.Sprintf("sum(case when c.income is true then %s else 0 end)", amountCalc)
+		income = fmt.Sprintf("sum(case when c.income is true then %s else 0 end)", flowAmountCalc)
 
 		// Expenses: from categories marked as NOT income
-		expense = fmt.Sprintf("sum(case when c.income is false then %s else 0 end)", amountCalc)
+		expense = fmt.Sprintf("sum(case when c.income is false then %s else 0 end)", flowAmountCalc)
 
 	} else {
-		// Amount calculation: positive for income, negative for expenses
-		income = "sum(case when t.expense is false then t.amount_base else 0 end)"
-		expense = "sum(case when t.expense is true then -t.amount_base else 0 end)"
+		// Amount calculation: positive for income, negative for expenses (transfers excluded)
+		income = "sum(case when t.expense is false and t.transfer_group_id is null then t.amount_base else 0 end)"
+		expense = "sum(case when t.expense is true and t.transfer_group_id is null then -t.amount_base else 0 end)"
 	}
 
 	query := ar.db.QueryBuilder.Select(

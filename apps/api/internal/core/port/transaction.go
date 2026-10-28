@@ -26,6 +26,16 @@ type TransactionRepository interface {
 	PredictTransactionCategory(ctx context.Context, descriptions []string, cpr *domain.CategoryPredictionResolver)
 	// CreateTransfer stores both legs of a transfer with the same transfer_group_id
 	CreateTransfer(ctx context.Context, transfer *domain.Transfer) error
+	// LinkTransactions links two existing transactions (an expense and an income) as one transfer
+	LinkTransactions(ctx context.Context, link *domain.TransferLink) error
+	// CreateTransferCounterpart creates the missing leg of a transfer and links both
+	CreateTransferCounterpart(ctx context.Context, link *domain.TransferLink) error
+	// UnlinkTransfer turns both legs of a transfer back into ordinary transactions
+	UnlinkTransfer(ctx context.Context, userID, groupID string) error
+	// ListTransferCandidates returns pairs of transactions that look like transfers
+	ListTransferCandidates(ctx context.Context, userID string, limit uint64) ([]domain.TransferCandidate, error)
+	// DismissTransferCandidate hides a candidate pair
+	DismissTransferCandidate(ctx context.Context, userID string, outID, inID uint64) error
 }
 
 // TransactionService is an interface for interacting with payment-related business logic
@@ -44,4 +54,13 @@ type TransactionService interface {
 	DeleteTransaction(ctx context.Context, userID string, id uint64) error
 	// CreateTransfer moves money between two accounts of the user (possibly in different currencies)
 	CreateTransfer(ctx context.Context, transfer *domain.Transfer) error
+	// LinkTransfer marks a transaction as a transfer leg, linking it with an existing transaction or
+	// creating the other leg
+	LinkTransfer(ctx context.Context, link *domain.TransferLink) error
+	// UnlinkTransfer turns both legs of a transfer back into ordinary transactions
+	UnlinkTransfer(ctx context.Context, userID, groupID string) error
+	// ListTransferCandidates returns pairs of transactions that look like transfers
+	ListTransferCandidates(ctx context.Context, userID string, limit uint64) ([]domain.TransferCandidate, error)
+	// DismissTransferCandidate hides a candidate pair
+	DismissTransferCandidate(ctx context.Context, userID string, outID, inID uint64) error
 }

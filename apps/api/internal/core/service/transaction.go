@@ -100,6 +100,46 @@ func (ts *TransactionService) CreateTransfer(ctx context.Context, transfer *doma
 	return ts.repo.CreateTransfer(ctx, transfer)
 }
 
+// MaxTransferCandidates caps the candidate pairs returned at once
+const MaxTransferCandidates = 200
+
+// LinkTransfer validates the link and either links two existing transactions or creates the
+// missing leg
+func (ts *TransactionService) LinkTransfer(ctx context.Context, link *domain.TransferLink) error {
+	if err := link.Validate(); err != nil {
+		return err
+	}
+	if link.CounterpartTransactionID != 0 {
+		return ts.repo.LinkTransactions(ctx, link)
+	}
+	return ts.repo.CreateTransferCounterpart(ctx, link)
+}
+
+// UnlinkTransfer turns both legs of a transfer back into ordinary transactions
+func (ts *TransactionService) UnlinkTransfer(ctx context.Context, userID, groupID string) error {
+	return ts.repo.UnlinkTransfer(ctx, userID, groupID)
+}
+
+// ListTransferCandidates returns at most limit candidate pairs (MaxTransferCandidates when 0 or more)
+func (ts *TransactionService) ListTransferCandidates(
+	ctx context.Context,
+	userID string,
+	limit uint64,
+) ([]domain.TransferCandidate, error) {
+	if limit == 0 || limit > MaxTransferCandidates {
+		limit = MaxTransferCandidates
+	}
+	return ts.repo.ListTransferCandidates(ctx, userID, limit)
+}
+
+// DismissTransferCandidate hides a candidate pair so it is not proposed again
+func (ts *TransactionService) DismissTransferCandidate(ctx context.Context, userID string, outID, inID uint64) error {
+	if outID == 0 || inID == 0 || outID == inID {
+		return domain.ErrInvalidTransfer
+	}
+	return ts.repo.DismissTransferCandidate(ctx, userID, outID, inID)
+}
+
 // DeleteTransaction deletes a transaction record
 func (ts *TransactionService) DeleteTransaction(ctx context.Context, userID string, id uint64) error {
 	_, err := ts.repo.GetTransactionByID(ctx, userID, id)

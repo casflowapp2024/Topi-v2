@@ -51,7 +51,8 @@ Reportes resultantes:
 | 1 | Transferencias fuera de los flujos | — | Pagos de tarjeta y aportes a inversiones son transferencias: todo lo demás se apoya en esto |
 | 2 | Clases de cuenta e inversiones con valoraciones | 1 | Saca las revaluaciones falsas de los flujos; resuelve también el cambio a USD de las cuentas de inversión |
 | 3 | Asistente para cambiar la moneda de una cuenta (= Fase 4 del plan multimoneda) + cambio de moneda base | 1, 2 | Para el resto de cuentas; las de inversión ya quedaron resueltas en la 2 |
-| 4 | Tarjetas y créditos como pasivos | 1, 2 | Cupo, corte, pago, cuotas, tarjetas con saldo en COP y USD |
+| 4 | Tarjetas de crédito como pasivos | 1, 2 | Cupo, corte, pago, cuotas |
+| 5 | Patrimonio (después) | 2, 4 | Propiedades, préstamos grandes y posiciones con precio de mercado |
 
 Reglas de siempre en todas: migraciones aditivas con `down`, dinero en NUMERIC/Decimal, `go test ./...`
 verde, verificación antes/después con `TestReportSnapshot` sobre la copia del dump (solo cambian
@@ -62,9 +63,15 @@ migración inversa lo restaura.
 
 ## Etapa 1 — Transferencias fuera de los flujos
 
-**Regla:** una transacción con `transfer_group_id` no cuenta en ingresos, gastos, presupuestos ni
-reportes por categoría (global y por cuenta). Sí cuenta en saldos y patrimonio. La regla la da
-`transfer_group_id`, no la categoría.
+**Estado: hecha** (migración 000027; verificada antes/después sobre el dump: idéntico).
+
+**Regla:** una transacción con `transfer_group_id` no cuenta en los totales de ingresos, gastos y
+ahorro (global y por cuenta). Sí cuenta en saldos y patrimonio. La regla la da `transfer_group_id`,
+no la categoría. **Las patas conservan la categoría que eligió el usuario** y los reportes por
+categoría y los presupuestos las siguen contando como hoy (decisión 28-oct): si presupuestas
+"Inversión" y pasas el capital a la cuenta de inversión, la salida descuenta de ese presupuesto
+(las cuentas de inversión no entran en la suma de gastos, así que la entrada no lo compensa); entre
+dos cuentas de ahorro o hacia la tarjeta, salida y entrada con la misma categoría se compensan.
 
 ### Base de datos
 - `daily_account_totals`: columnas `transfer_inflow`, `transfer_outflow`, `transfer_inflow_base`,
@@ -77,27 +84,33 @@ reportes por categoría (global y por cuenta). Sí cuenta en saldos y patrimonio
   hasta 3 días) e incluye pagos de tarjeta (salida de un depósito, entrada a una cuenta `credit`).
   Ordenada por confianza (mismo monto exacto > mismo día > tolerancia).
 - `unlink_transfer(user, group)`: deshace el vínculo (las dos patas vuelven a ser flujos).
+- Borrar una pata suelta la otra (trigger `transactions_release_transfer`).
+- `transfer_candidate_dismissals`: parejas que el usuario descartó ("No es").
 
 ### API
-- `POST /transactions/:id/transfer` "es una transferencia": recibe la cuenta contraparte y,
-  si ya existe la otra pata (`counterpart_id`), las liga; si no, la crea con el mismo
-  `amount_base` (misma lógica que `CreateTransfer`, partiendo de una pata existente).
-- `GET /transfers/candidates`, `POST /transfers/link`, `DELETE /transfers/:group`.
+- `POST /transactions/:id/transfer` "es una transferencia": con `counterpart_transaction_id` liga
+  dos transacciones existentes (una salida y una entrada en cuentas distintas); con
+  `counterpart_account_id` crea la otra pata (misma fecha, descripción y categoría, mismo
+  `amount_base`; entre monedas `counterpart_amount` o la tasa del día).
+- `GET /transactions/transfer/candidates`, `POST /transactions/transfer/dismiss`,
+  `DELETE /transactions/transfer/:group`.
 
 ### Web
 - En el detalle de una transacción: acción "Es una transferencia a/desde mi cuenta…" con selector
   de cuenta; si hay candidata la sugiere ("¿Es esta entrada de $X en Nequi del 12-oct?").
 - Bandeja "Posibles transferencias" (candidatas sin ligar) con Ligar / Ignorar.
-- Las patas ligadas se ven con un ícono de transferencia y la cuenta contraparte; no se ofrecen
-  en el selector de presupuesto.
+- Las patas ligadas se ven con un ícono de transferencia en la lista y "Tipo: Transferencia" en el
+  detalle, con la opción de desligar.
 
 ### Datos existentes
 - No se liga nada automáticamente (D5). La bandeja muestra las candidatas históricas.
-- Acción masiva opcional: "ligar todas las candidatas de confianza alta" con vista previa.
+- Acción masiva: "ligar las muy probables" que no se cruzan con otra pareja.
+- En la copia del dump hay 155 candidatas (144 muy probables, 11 probables) en 7 usuarios.
 
 ### Verificación
-- Antes/después sin ligar nada: idéntico. Con un usuario de prueba con parejas ligadas: solo
-  bajan ingresos y gastos en el monto ligado; saldos y patrimonio iguales.
+- Antes/después sin ligar nada: idéntico (10.337 resultados de servicios sobre el dump).
+- Test de integración `TestTransfersOutOfFlows`: ligadas salen de ingresos y gastos; saldos,
+  reporte por categoría y totales diarios cuadran; desligar, borrar una pata y descartar.
 
 ---
 
@@ -142,29 +155,21 @@ account_valuations (
 - En la cuenta de inversión: botón "Actualizar valor", historial de valoraciones, gráfica valor
   vs aportes. En el home: el patrimonio usa el valor anclado y muestra la ganancia.
 
-### Migrar las revaluaciones viejas (asistente por cuenta)
-1. El usuario elige la cuenta de inversión y la categoría (o las transacciones) que usaba para
-   revaluar; el asistente propone las candidatas (categorías usadas solo en esa cuenta).
-2. Vista previa: cada revaluación se convierte en una valoración con el saldo corrido de esa fecha;
-   los flujos del periodo bajan en esos montos; el saldo actual no cambia.
-3. Al confirmar: se crean las valoraciones (`source='migration'`) y las transacciones se mueven a
-   `archived_transactions` (misma forma + `archived_reason`, `archived_at`). "Deshacer" las
-   devuelve. Es la única excepción a la inmutabilidad y queda registrada.
-4. **Cambio de moneda en el mismo paso** (cuentas en COP que son USD): cada valoración y movimiento
-   se convierte a la moneda nueva con la tasa de su fecha; `amount_base` no cambia (el histórico
-   en pesos queda igual); los aportes desde cuentas en COP quedan como transferencias entre monedas.
-   El usuario puede corregir el valor en USD de cada valoración (lo que dice el extracto).
+### Revaluaciones registradas antes
+Decisión 28-oct: no se migran. Las valoraciones son para lo que venga; las revaluaciones viejas
+quedan como están (el usuario puede desligarlas o borrarlas a mano). El cambio de moneda de una
+cuenta de inversión existente va por el asistente de la etapa 3.
 
 ### Verificación
-- Antes/después sin usar el asistente: idéntico. Con el asistente sobre una cuenta de prueba: saldo
-  actual igual, flujos del periodo sin las revaluaciones, ganancia = suma de las revaluaciones.
+- Antes/después sin valoraciones: idéntico. Con valoraciones en una cuenta de prueba: el saldo
+  sigue la última valoración y los flujos no cambian.
 
 ---
 
 ## Etapa 3 — Cambiar la moneda de una cuenta (Fase 4 multimoneda)
 
-Para cuentas `deposit` y `credit` con movimientos (las de inversión van por la etapa 2).
-Asistente con tres modos y vista previa:
+Para cuentas con movimientos (también las de inversión creadas en pesos que en realidad son en
+dólares). Asistente con tres modos y vista previa:
 
 | Modo | Cuándo | Qué hace |
 |---|---|---|
@@ -181,14 +186,12 @@ Asistente con tres modos y vista previa:
 
 ---
 
-## Etapa 4 — Tarjetas y créditos como pasivos
+## Etapa 4 — Tarjetas de crédito como pasivos
 
 ### Datos
 ```
 credit_card_details (account_id PK, credit_limit NUMERIC(20,4), statement_day SMALLINT,
                      due_day SMALLINT, interest_rate_ea NUMERIC(9,6) NULL)
-loan_details        (account_id PK, principal, interest_rate_ea, term_months, start_date,
-                     installment NUMERIC(20,4))
 transactions.installments SMALLINT NULL   -- compra diferida a N cuotas (informativo)
 ```
 - Saldo negativo = deuda (como hoy). La UI muestra "Deuda $X" y "Disponible = cupo − deuda".
@@ -201,12 +204,8 @@ transactions.installments SMALLINT NULL   -- compra diferida a N cuotas (informa
 - **Periodo de facturación** derivado de `statement_day`: compras del periodo cerrado, pagos
   posteriores, "pago para no generar intereses" y fecha límite. Avisos solo dentro de la app
   (no hay envío de correos).
-- **Tarjetas con saldo en COP y en USD** (común en Colombia): una cuenta por moneda (la moneda de
-  la cuenta es fija), agrupadas con `accounts.card_group_id` y mostradas como una sola tarjeta con
-  dos saldos. Pagar el saldo en USD desde una cuenta en COP es una transferencia entre monedas a la
-  tasa que cobró el banco.
-- **Préstamos**: "Registrar cuota" divide el pago en abono a capital (transferencia) + intereses
-  (gasto), con la tabla de amortización como sugerencia.
+- **Una moneda por tarjeta** (decisión 28-oct): la oficial de la cuenta; el extracto llega ya
+  convertido. Las compras en otra moneda se registran por lo que cobró el banco.
 
 ### Datos existentes
 - Los pagos de tarjeta históricos aparecen en la bandeja de candidatas de la etapa 1
@@ -214,18 +213,21 @@ transactions.installments SMALLINT NULL   -- compra diferida a N cuotas (informa
 
 ---
 
-## Preguntas abiertas (antes de arrancar cada etapa)
+## Etapa 5 — Patrimonio (después)
 
-1. **Etapa 1**: ¿las patas de una transferencia conservan la categoría que eligió el usuario o
-   pasan a una categoría del sistema "Transferencias"? Propuesta: categoría del sistema (filtros y
-   vistas existentes funcionan sin cambios), aunque la regla use `transfer_group_id`.
-2. **Etapa 2**: ¿cómo registrabas las revaluaciones? (categoría concreta, nombre, siempre en la
-   cuenta de inversión). Define cómo detectarlas en el asistente.
-3. **Etapa 2**: ¿posiciones (acciones: cantidad × precio, con precios automáticos) entran ahora o
-   después? Propuesta: después; arrancar solo con valoraciones.
-4. **Etapa 4**: ¿préstamos en esta etapa o después de tarjetas?
-5. **Etapa 4**: ¿tarjetas bimoneda como dos cuentas agrupadas (propuesta) o como una cuenta con
-   dos saldos (rompe "cada cuenta tiene una moneda")?
+Sección de patrimonio con lo que no es cuenta bancaria: propiedades (activo con valoraciones, el
+mismo modelo de la etapa 2), préstamos grandes (hipoteca, vehículo: pasivo con tabla de
+amortización; "Registrar cuota" = abono a capital como transferencia + intereses como gasto) y
+posiciones (acciones, fondos: cantidad × precio). Se diseña cuando terminen las etapas 1–4.
+
+## Decisiones (28-oct)
+
+1. Las patas de una transferencia conservan la categoría del usuario y llevan la marca de
+   transferencia; los presupuestos las siguen viendo (ver etapa 1).
+2. No se migran revaluaciones registradas antes; las valoraciones son hacia adelante.
+3. Posiciones (cantidad × precio) después, en la etapa 5.
+4. Préstamos grandes y propiedades en la etapa 5 (patrimonio), no con las tarjetas.
+5. Una moneda por tarjeta: la oficial de la cuenta.
 
 ## Fuera de alcance
 

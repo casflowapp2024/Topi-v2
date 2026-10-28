@@ -61,6 +61,7 @@ var errorStatusMap = map[error]int{
 	domain.ErrAccountCurrencyLocked: http.StatusConflict,
 	domain.ErrInvalidTransfer:       http.StatusBadRequest,
 	domain.ErrInvalidFxRate:         http.StatusBadRequest,
+	domain.ErrTransferLinked:        http.StatusConflict,
 
 	// Token Errors
 	domain.ErrExpiredToken:               http.StatusUnauthorized,
