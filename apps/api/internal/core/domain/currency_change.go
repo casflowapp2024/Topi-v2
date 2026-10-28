@@ -38,6 +38,21 @@ type AccountCurrencyChange struct {
 	BalanceAfter    *decimal.Decimal // nil: a conversion with missing rates cannot be computed
 	FlowsBaseBefore decimal.Decimal  // signed sum of amount_base of the account
 	FlowsBaseAfter  *decimal.Decimal
+	// Today in the user's base currency (nil without today's rate): the difference between both
+	// is the exchange rate effect of saying the money is in the new currency
+	BaseCurrency      string
+	BalanceBeforeBase *decimal.Decimal
+	BalanceAfterBase  *decimal.Decimal
+}
+
+// BalanceBaseDelta is BalanceAfterBase − BalanceBeforeBase: what the account gains or loses today in
+// the base currency because of the exchange rate (nil if either is unknown)
+func (c *AccountCurrencyChange) BalanceBaseDelta() *decimal.Decimal {
+	if c.BalanceBeforeBase == nil || c.BalanceAfterBase == nil {
+		return nil
+	}
+	d := c.BalanceAfterBase.Sub(*c.BalanceBeforeBase)
+	return &d
 }
 
 // Normalize upper-cases the currency and validates what does not need the database

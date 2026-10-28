@@ -118,6 +118,8 @@ type netWorthAccountResponse struct {
 	UnrealizedGain *string `json:"unrealized_gain" example:"139944.21"`
 	// MarketGain: investments only, value − contributions in the account currency
 	MarketGain *string `json:"market_gain,omitempty" example:"250000"`
+	// FxGain: part of unrealized_gain due to exchange rates, in the base currency
+	FxGain *string `json:"fx_gain" example:"-18129471"`
 }
 
 type netWorthResponse struct {
@@ -170,6 +172,7 @@ func (fh *FxHandler) GetNetWorth(ctx *gin.Context) {
 			BaseValue: decimalString(a.BaseValue), Cost: decimalString(a.Cost),
 			UnrealizedGain: decimalString(a.UnrealizedGain),
 			MarketGain:     decimalString(a.MarketGain),
+			FxGain:         decimalString(a.FxGain),
 		})
 	}
 	handleSuccess(ctx, rsp)

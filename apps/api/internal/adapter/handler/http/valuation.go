@@ -182,6 +182,8 @@ type investmentPerformanceResponse struct {
 	LastValuationDate  *string `json:"last_valuation_date" example:"2026-10-28"`
 	LastValuationValue *string `json:"last_valuation_value" example:"10600000"`
 	RateEnd            *string `json:"rate_end" example:"1"`
+	// ValueEndBase: value_end × rate_end, in the user's base currency
+	ValueEndBase *string `json:"value_end_base" example:"10600000"`
 }
 
 type investmentsResponse struct {
@@ -252,7 +254,7 @@ func (vh *ValuationHandler) GetInvestments(ctx *gin.Context) {
 			GainPercent:        decimalString(p.GainPercent()),
 			ContributionsTotal: p.ContributionsTotal.String(), MarketGainTotal: p.MarketGainTotal.String(),
 			LastValuationDate: lastDate, LastValuationValue: decimalString(p.LastValuationValue),
-			RateEnd: decimalString(p.RateEnd),
+			RateEnd: decimalString(p.RateEnd), ValueEndBase: decimalString(p.ValueEndBase()),
 		})
 	}
 	handleSuccess(ctx, out)

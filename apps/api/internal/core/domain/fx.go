@@ -53,6 +53,9 @@ type NetWorthAccount struct {
 	UnrealizedGain *decimal.Decimal
 	// MarketGain: investments only, value − contributions in the account currency (valuations)
 	MarketGain *decimal.Decimal
+	// FxGain: the part of UnrealizedGain due to exchange rates (UnrealizedGain − MarketGain × Rate),
+	// in the base currency; set by Summarize
+	FxGain *decimal.Decimal
 }
 
 // NetWorth is the user's net worth today in their base currency
@@ -73,9 +76,16 @@ type NetWorth struct {
 func (n *NetWorth) Summarize() {
 	n.Total, n.UnrealizedGain, n.MissingRates = decimal.Zero, decimal.Zero, false
 	n.MarketGain = decimal.Zero
-	for _, a := range n.Accounts {
-		if a.MarketGain != nil && a.Rate != nil && a.UnrealizedGain != nil {
-			n.MarketGain = n.MarketGain.Add(a.MarketGain.Mul(*a.Rate).Round(4))
+	for i := range n.Accounts {
+		a := &n.Accounts[i]
+		if a.UnrealizedGain != nil {
+			fxGain := *a.UnrealizedGain
+			if a.MarketGain != nil && a.Rate != nil {
+				market := a.MarketGain.Mul(*a.Rate).Round(4)
+				n.MarketGain = n.MarketGain.Add(market)
+				fxGain = fxGain.Sub(market)
+			}
+			a.FxGain = &fxGain
 		}
 		if a.BaseValue == nil {
 			n.MissingRates = true

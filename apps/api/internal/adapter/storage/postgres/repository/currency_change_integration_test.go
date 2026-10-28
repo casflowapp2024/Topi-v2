@@ -118,6 +118,13 @@ func TestCurrencyChanges(t *testing.T) {
 	require.NotNil(t, preview.FlowsBaseAfter)
 	assert.True(t, preview.FlowsBaseAfter.Equal(preview.FlowsBaseBefore))
 	assert.Equal(t, original, brokerRows(), "la vista previa no cambia nada")
+	assert.Equal(t, "COP", preview.BaseCurrency)
+	require.NotNil(t, preview.BalanceBeforeBase)
+	assert.True(t, preview.BalanceBeforeBase.Equal(d("1640000")), "COP es la base: tasa 1")
+	var usdToday string
+	require.NoError(t, db.QueryRow(ctx, "SELECT fx_rate_at('USD', 'COP', (now() AT TIME ZONE 'America/Bogota')::date)::text").Scan(&usdToday))
+	require.NotNil(t, preview.BalanceAfterBase)
+	assert.True(t, preview.BalanceAfterBase.Equal(d("400").Mul(d(usdToday)).Round(4)), preview.BalanceAfterBase.String())
 	noDrift()
 
 	// aplicar

@@ -165,6 +165,10 @@ func TestNetWorth_Summarize(t *testing.T) {
 	assert.Equal(t, "19000", n.UnrealizedGain.String())
 	assert.Equal(t, "8200", n.MarketGain.String())
 	assert.Equal(t, "10800", n.FxGain.String())
+	require.NotNil(t, n.Accounts[4].FxGain)
+	assert.Equal(t, "1800", n.Accounts[4].FxGain.String(), "por cuenta: la parte cambiaria")
+	assert.Equal(t, "10000", n.Accounts[1].FxGain.String())
+	assert.Nil(t, n.Accounts[2].FxGain, "sin tasa no hay ganancia")
 	assert.True(t, n.MissingRates)
 }
 

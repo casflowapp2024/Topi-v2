@@ -75,6 +75,24 @@ func (cr *CurrencyChangeRepository) ChangeAccountCurrency(ctx context.Context, c
 		&c.BalanceBefore: balanceBefore, &c.FlowsBaseBefore: flowsBaseBefore,
 	})
 	c.BalanceAfter, c.FlowsBaseAfter = balanceAfter, flowsBaseAfter
+
+	// lo que vale hoy en la moneda base antes y después (tasa de hoy)
+	var rateBefore, rateAfter *decimal.Decimal
+	err = cr.db.QueryRow(ctx, `
+		WITH t AS (SELECT user_base_currency($1) AS base, (now() AT TIME ZONE user_timezone($1))::date AS day)
+		SELECT t.base, fx_rate_at($2, t.base, t.day)::text, fx_rate_at($3, t.base, t.day)::text FROM t`,
+		c.UserID, c.OldCurrency, c.NewCurrency).Scan(&c.BaseCurrency, scanDecimal(&rateBefore), scanDecimal(&rateAfter))
+	if err != nil {
+		return mappers.MapPostgresErrorCode(err)
+	}
+	if rateBefore != nil {
+		v := c.BalanceBefore.Mul(*rateBefore).Round(4)
+		c.BalanceBeforeBase = &v
+	}
+	if rateAfter != nil && c.BalanceAfter != nil {
+		v := c.BalanceAfter.Mul(*rateAfter).Round(4)
+		c.BalanceAfterBase = &v
+	}
 	return nil
 }
 

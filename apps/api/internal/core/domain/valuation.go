@@ -55,6 +55,15 @@ type InvestmentPerformance struct {
 	RateEnd *decimal.Decimal
 }
 
+// ValueEndBase is ValueEnd in the user's base currency at RateEnd (nil without a rate)
+func (p InvestmentPerformance) ValueEndBase() *decimal.Decimal {
+	if p.RateEnd == nil {
+		return nil
+	}
+	v := p.ValueEnd.Mul(*p.RateEnd).Round(4)
+	return &v
+}
+
 // GainPercent is Gain over what was at stake in the period (ValueStart + Contributions); nil when
 // that is not positive
 func (p InvestmentPerformance) GainPercent() *decimal.Decimal {

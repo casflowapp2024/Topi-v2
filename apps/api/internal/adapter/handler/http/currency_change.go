@@ -51,6 +51,12 @@ type accountCurrencyChangeResponse struct {
 	BalanceAfter    *string `json:"balance_after" example:"2000.15"`
 	FlowsBaseBefore string  `json:"flows_base_before" example:"8000000"`
 	FlowsBaseAfter  *string `json:"flows_base_after" example:"8000000"`
+	// The balance today in the base currency before and after (null without today's rate)
+	BaseCurrency      string  `json:"base_currency" example:"COP"`
+	BalanceBeforeBase *string `json:"balance_before_base" example:"95883802.85"`
+	BalanceAfterBase  *string `json:"balance_after_base" example:"77754331"`
+	// BalanceBaseDelta = balance_after_base − balance_before_base: the exchange rate effect today
+	BalanceBaseDelta *string `json:"balance_base_delta" example:"-18129471.85"`
 }
 
 // ChangeAccountCurrency godoc
@@ -97,6 +103,8 @@ func (ch *CurrencyChangeHandler) ChangeAccountCurrency(ctx *gin.Context) {
 		Transactions: change.TxCount, MissingRates: change.MissingRates, ReplacedRates: change.ReplacedRates,
 		BalanceBefore: change.BalanceBefore.String(), BalanceAfter: decimalString(change.BalanceAfter),
 		FlowsBaseBefore: change.FlowsBaseBefore.String(), FlowsBaseAfter: decimalString(change.FlowsBaseAfter),
+		BaseCurrency: change.BaseCurrency, BalanceBeforeBase: decimalString(change.BalanceBeforeBase),
+		BalanceAfterBase: decimalString(change.BalanceAfterBase), BalanceBaseDelta: decimalString(change.BalanceBaseDelta()),
 	}
 	if change.ID != 0 {
 		rsp.ChangeID = &change.ID
