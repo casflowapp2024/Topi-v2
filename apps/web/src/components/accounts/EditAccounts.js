@@ -7,6 +7,7 @@ import { setAlert } from '../../redux/actions/alert';
 //components
 import { findElmentById, formatedCurrToNumber } from '../helpers';
 import EditCreateFinAccountForm from './EditCreateFinAccountForm';
+import AccountCurrencyTools from './AccountCurrencyTools';
 import { ThreeDots } from 'react-loader-spinner';
 import Alert2 from '../alert2';
 /* This example requires Tailwind CSS v2.0+ */
@@ -42,7 +43,12 @@ function EditAccounts({
     currency: detailInfo.currency || 'COP',
   });
   // moneda al abrir: solo se manda si cambió (y solo se puede sin movimientos)
-  const [originalCurrency] = useState(detailInfo.currency || 'COP');
+  const [originalCurrency, setOriginalCurrency] = useState(detailInfo.currency || 'COP');
+  // el asistente de moneda ya la cambió en la API: el formulario la toma como la de partida
+  const onCurrencyChanged = (currency) => {
+    setOriginalCurrency(currency);
+    setUpdateAccData(prev => ({ ...prev, currency }));
+  };
 
   const onChangeCreate = (e) => {
     const { name, type, checked, value } = e.target;
@@ -205,6 +211,7 @@ function EditAccounts({
                 automatedEmails={automatedEmails}
                 currencyLocked={Boolean(detailInfo.has_transactions)}
               />
+              <AccountCurrencyTools account={detailInfo} setDetailInfo={setDetailInfo} onCurrencyChanged={onCurrencyChanged} />
 
               <div className="w-ful mt-12 justify-items-center items-center flex flex-row justify-around" >
                 {loadingUpdate ?

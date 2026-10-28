@@ -47,6 +47,8 @@ export const classOfTypeId = (typeId, accountTypes) => {
 export const accountClass = (account) => account?.type?.class || classOfTypeId(account?.type?.id ?? account?.type_id);
 export const isCreditAccount = (account) => accountClass(account) === 'credit';
 export const isInvestmentAccount = (account) => accountClass(account) === 'investment';
+// Cuentas cerradas: conservan su historia pero no se ofrecen para movimientos nuevos
+export const isOpenAccount = (account) => !account?.closed_at;
 // Grupo de la cuenta en los reportes de la API (/analysis/...): savings | investments | credits
 export const accountReportGroup = (account) =>
     ({ deposit: 'savings', investment: 'investments', credit: 'credits' })[accountClass(account)];

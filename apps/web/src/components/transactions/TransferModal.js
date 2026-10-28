@@ -10,7 +10,7 @@ import { setAlert } from '../../redux/actions/alert';
 //components
 import InputMoneyInt2Decs from '../InputMoneyInt2Decs';
 import Button from '../ui/Button';
-import { formatMoney, formatedCurrToNumber, getCurrency } from '../helpers';
+import { formatMoney, formatedCurrToNumber, getCurrency, isOpenAccount } from '../helpers';
 
 const fieldClass = 'bg-gray-50 p-2 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white';
 const labelClass = 'block mb-1 text-sm font-medium text-gray-900 dark:text-white';
@@ -44,7 +44,7 @@ const defaultCategoryId = (categories) => {
 // Transferencia entre dos cuentas propias, en la misma o en distinta moneda. Entre monedas pide lo
 // que salió y lo que llegó (prellenado con la tasa de hoy) y muestra la tasa efectiva frente a la de mercado.
 const TransferModal = ({ open, onClose, user_accounts, user_categories, default_limit, get_user_transactions, get_net_worth, setAlert }) => {
-    const accounts = useMemo(() => user_accounts?.items || [], [user_accounts]);
+    const accounts = useMemo(() => (user_accounts?.items || []).filter(isOpenAccount), [user_accounts]);
     const categories = createdCategories(user_categories?.items);
 
     const empty = () => ({

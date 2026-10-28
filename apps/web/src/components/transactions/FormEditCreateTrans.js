@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from 'react'
-import { formatDate, formatMoney, getBaseCurrency, parseDatetimetoDateStrFormat, parseDatetoDatetimeBrow } from "../../components/helpers";
+import { formatDate, formatMoney, getBaseCurrency, parseDatetimetoDateStrFormat, parseDatetoDatetimeBrow, isOpenAccount } from "../../components/helpers";
 
 import InputMoneyInt2Decs from '../InputMoneyInt2Decs';
 import { SingleDateSelector } from '../ui/SingleDateSelector.tsx';
@@ -66,7 +66,8 @@ const FormEditCreateTrans = ({
                                 onChange={e => onChangeCreate(e)}
                                 required
                                 class="bg-gray-50 p-2 py-1 md:py-2 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                                {user_accounts.items && user_accounts.items.map((account, index) => (
+                                {/* las cerradas no reciben movimientos nuevos (salvo la que ya tiene la transacción) */}
+                                {user_accounts.items && user_accounts.items.filter(a => isOpenAccount(a) || String(a.id) === String(editCreateData.account_id)).map((account, index) => (
                                     <option key={account.id} value={account.id}>
                                         {account.name} - ***{account.last_four_digits}{account.currency && account.currency !== getBaseCurrency() ? ` · ${account.currency}` : ''}
                                     </option>

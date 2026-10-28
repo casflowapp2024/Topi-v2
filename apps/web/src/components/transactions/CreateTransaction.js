@@ -8,7 +8,7 @@ import {
 } from '../../redux/actions/cashflow';
 import { setAlert } from '../../redux/actions/alert';
 //components
-import { formatDate, formatMoney, formatMoneyCompact, formatedCurrToNumber, findElmentById, parseDatetimetoDateStrFormat } from '../helpers';
+import { formatDate, formatMoney, formatMoneyCompact, formatedCurrToNumber, findElmentById, parseDatetimetoDateStrFormat, isOpenAccount } from '../helpers';
 import 'react-datepicker/dist/react-datepicker.css'
 import { ThreeDots } from 'react-loader-spinner';
 import FormEditCreateTrans from './FormEditCreateTrans';
@@ -55,7 +55,7 @@ function CreateTransaction({
             setCreatTransData(prev => ({
                 ...prev,
                 category_id: initialCategoryId || (user_categories?.items?.length > 0 ? user_categories.items[0].id : 0),
-                account_id: initialAccountId || (user_accounts?.items?.length > 0 ? user_accounts.items[0].id : 0),
+                account_id: initialAccountId || ((user_accounts?.items || []).find(isOpenAccount)?.id ?? 0),
                 amount: "$0",
             }));
         }
@@ -77,8 +77,9 @@ function CreateTransaction({
 
     useEffect(() => {
         if (openCreatePopUp) {
-            if (user_accounts?.items?.length > 0 && !createTransData.account_id && !initialAccountId) {
-                setCreatTransData(prev => ({ ...prev, account_id: user_accounts.items[0].id }));
+            const firstOpen = (user_accounts?.items || []).find(isOpenAccount);
+            if (firstOpen && !createTransData.account_id && !initialAccountId) {
+                setCreatTransData(prev => ({ ...prev, account_id: firstOpen.id }));
             }
         }
     }, [user_accounts, openCreatePopUp]);

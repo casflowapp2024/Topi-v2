@@ -11,6 +11,7 @@ const SOURCE_LABELS = {
     user: 'editada por ti',
     transfer: 'tasa de la transferencia',
     migration: 'migración',
+    conversion: 'conversión de moneda de la cuenta',
     identity: 'misma moneda',
 };
 

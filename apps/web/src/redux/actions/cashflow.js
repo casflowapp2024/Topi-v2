@@ -299,6 +299,7 @@ export const get_user_accounts = (skip, limit) => async dispatch => {
                 type: GET_USER_ACCOUNTS_SUCCESS,
                 payload: res.data
             });
+            return res.data.data.accounts
         } else if (res.status === 401) {
             dispatch({
                 type: LOGOUT

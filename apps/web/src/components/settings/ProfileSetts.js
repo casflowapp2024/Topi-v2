@@ -5,11 +5,12 @@ import { connect } from 'react-redux';
 import { get_user_extra_data, update_user_extra_data, update_user_config } from "../../redux/actions/auth";
 import { setAlert } from "../../redux/actions/alert";
 //components
-import { UserIcon, ChevronDownIcon, BanknotesIcon, LanguageIcon, GlobeAmericasIcon, SunIcon, MoonIcon, CheckIcon } from '@heroicons/react/24/outline'
+import { UserIcon, ChevronDownIcon, LanguageIcon, GlobeAmericasIcon, SunIcon, MoonIcon, CheckIcon } from '@heroicons/react/24/outline'
 import { timezones_list } from '../info_arrays';
 import { useRef } from 'react';
 import Alert from "../alert";
 import ChangePasswordCard from "./ChangePasswordCard";
+import BaseCurrencyCard from "./BaseCurrencyCard";
 
 const CustomSelect = ({ name, value, options, onChange, Icon, menuUp = false }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -208,16 +209,7 @@ const ProfileSetts = ({
                 <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-6 pl-2 tracking-tight">Preferencias del Sistema</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-                    <CustomSelect
-                        name="local_currency"
-                        value={updateUserExtraData.local_currency || "COP"}
-                        onChange={onChangeUpdate}
-                        Icon={BanknotesIcon}
-                        options={[
-                            { value: "COP", label: "Peso Colombiano (COP)", label_top: "Moneda Local" },
-                            { value: "USD", label: "US Dollar (USD)", label_top: "Moneda Local" }
-                        ]}
-                    />
+                    <BaseCurrencyCard />
 
                     <CustomSelect
                         name="language"

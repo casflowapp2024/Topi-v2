@@ -125,6 +125,7 @@ const AccbyTypeDash = ({
                                             <div className="flex-1 min-w-0 ms-4">
                                                 <p className="text-sm font-medium  truncate dark:text-white">
                                                     {account.name}
+                                                    {account.closed_at && <span className="ml-2 rounded-full bg-gray-200 dark:bg-gray-700 px-2 py-0.5 text-[10px] font-semibold uppercase text-gray-600 dark:text-gray-300">Cerrada</span>}
                                                 </p>
                                                 <p className="text-sm  truncate dark:text-gray-400">
                                                     ****{account.last_four_digits}

@@ -7,7 +7,7 @@ import { get_net_worth, fetch_fx_rate } from '../../redux/actions/fx';
 import { link_transfer, unlink_transfer, fetch_transfer_candidates } from '../../redux/actions/transfers';
 import InputMoneyInt2Decs from '../InputMoneyInt2Decs';
 import Button from '../ui/Button';
-import { formatMoney, formatedCurrToNumber } from '../helpers';
+import { formatMoney, formatedCurrToNumber, isOpenAccount } from '../helpers';
 
 const fieldClass = 'bg-gray-50 p-2 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white';
 
@@ -30,7 +30,7 @@ const TransferLinkSection = ({ detailInfo, setDetailInfo, onChanged, user_accoun
     const id = detailInfo?.id;
     const linked = Boolean(detailInfo?.transfer_group_id);
     const currency = detailInfo?.currency || 'COP';
-    const others = accounts.filter(a => String(a.id) !== String(detailInfo?.account?.id));
+    const others = accounts.filter(a => isOpenAccount(a) && String(a.id) !== String(detailInfo?.account?.id));
     const target = others.find(a => String(a.id) === String(accountId));
     const targetCurrency = target?.currency || 'COP';
     const crossCurrency = Boolean(target) && targetCurrency !== currency;

@@ -38,7 +38,7 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
       acc: items.get(nw.account_id) || { id: nw.account_id, name: nw.name, type: { id: nw.type_id } },
       nw,
       value: nw.base_value != null ? Number(nw.base_value) : null,
-    }));
+    })).filter(r => !(r.acc.closed_at && Number(r.nw.balance) === 0)); // cerradas y en cero: ya no pesan
     // Primero las de mayor valor en moneda base
     rows.sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
     const savings = rows.reduce((sum, r) => sum + (r.value && r.value > 0 ? r.value : 0), 0);

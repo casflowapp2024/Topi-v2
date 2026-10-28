@@ -30,7 +30,7 @@ const CurrencySelect = ({
     </select>
     {locked && (
       <p id={`${id}-locked`} className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-        La moneda queda fija desde el primer movimiento de la cuenta.
+        La cuenta ya tiene movimientos: cámbiala con «Cambiar moneda».
       </p>
     )}
   </div>
