@@ -105,10 +105,10 @@ const TransferCandidatesModal = ({ open, onClose, candidates, setCandidates, use
 
     return (
         <Dialog open={open} onClose={close} className="relative z-40 font-Inter">
-            <div className="fixed inset-0 bg-gray-900/50" aria-hidden="true" />
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" aria-hidden="true" />
             <div className="fixed inset-0 z-10 overflow-y-auto">
                 <div className="flex min-h-full items-end sm:items-center justify-center p-4">
-                    <DialogPanel className="w-full max-w-2xl rounded-3xl bg-white dark:bg-[#151C2C] p-5 shadow-2xl">
+                    <DialogPanel className="w-full max-w-2xl rounded-3xl bg-white dark:bg-[#151C2C] p-5 shadow-2xl ring-1 ring-black/5 dark:ring-white/15">
                         <div className="flex items-center justify-between mb-2">
                             <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
                                 <ArrowsRightLeftIcon className="w-5 h-5 text-topi-500" aria-hidden="true" />

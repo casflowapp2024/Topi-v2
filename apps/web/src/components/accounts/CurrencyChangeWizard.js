@@ -176,14 +176,17 @@ const CurrencyChangeWizard = ({ open, onClose, account, net_worth, user_categori
         onClose();
     };
 
-    const flowsChange = preview ? Number(preview.flows_base_after) - Number(preview.flows_base_before) : 0;
+    // sin todas las tasas la API no calcula el "después" (null)
+    const canCompute = preview && preview.balance_after != null && preview.flows_base_after != null;
+    const flowsChange = canCompute ? Number(preview.flows_base_after) - Number(preview.flows_base_before) : 0;
 
     return (
         <Dialog open={open} onClose={busy ? () => {} : onClose} className="relative z-50 font-Inter">
-            <div className="fixed inset-0 bg-gray-900/50" aria-hidden="true" />
+            {/* se abre encima de la edición de la cuenta: el fondo la oscurece y difumina del todo */}
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-md" aria-hidden="true" />
             <div className="fixed inset-0 z-10 overflow-y-auto">
                 <div className="flex min-h-full items-end sm:items-center justify-center p-4">
-                    <DialogPanel className="w-full max-w-lg rounded-3xl bg-white dark:bg-[#151C2C] p-5 shadow-2xl text-left">
+                    <DialogPanel className="w-full max-w-lg rounded-3xl bg-white dark:bg-[#151C2C] p-5 shadow-2xl ring-1 ring-black/5 dark:ring-white/15 text-left">
                         <div className="flex items-center justify-between mb-3">
                             <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
                                 <ArrowPathIcon className="w-5 h-5 text-topi-500" aria-hidden="true" />
@@ -258,16 +261,19 @@ const CurrencyChangeWizard = ({ open, onClose, account, net_worth, user_categori
                                     </div>
                                     <div className="rounded-xl bg-slate-50 dark:bg-gray-800 p-3">
                                         <dt className="text-xs text-gray-500 dark:text-gray-400">Saldo</dt>
-                                        <dd className="font-semibold text-gray-900 dark:text-white">
-                                            {formatMoney(preview.balance_before, from)} → {formatMoney(preview.balance_after, currency)}
+                                        <dd className="font-semibold text-gray-900 dark:text-white flex flex-wrap gap-x-1">
+                                            <span>{formatMoney(preview.balance_before, from)}</span>
+                                            {canCompute && <span>→ {formatMoney(preview.balance_after, currency)}</span>}
                                         </dd>
                                     </div>
                                     <div className="col-span-2 rounded-xl bg-slate-50 dark:bg-gray-800 p-3">
                                         <dt className="text-xs text-gray-500 dark:text-gray-400">Lo que esta cuenta suma en tus reportes ({base})</dt>
                                         <dd className="font-semibold text-gray-900 dark:text-white">
-                                            {flowsChange === 0
-                                                ? `No cambia: ${formatMoney(preview.flows_base_before, base)}`
-                                                : `${formatMoney(preview.flows_base_before, base)} → ${formatMoney(preview.flows_base_after, base)}`}
+                                            {!canCompute
+                                                ? formatMoney(preview.flows_base_before, base)
+                                                : flowsChange === 0
+                                                    ? `No cambia: ${formatMoney(preview.flows_base_before, base)}`
+                                                    : `${formatMoney(preview.flows_base_before, base)} → ${formatMoney(preview.flows_base_after, base)}`}
                                         </dd>
                                     </div>
                                 </dl>
@@ -275,7 +281,7 @@ const CurrencyChangeWizard = ({ open, onClose, account, net_worth, user_categori
                                     <p className={`flex gap-2 text-sm rounded-xl p-3 ${mode === 'convert' ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'}`}>
                                         <ExclamationTriangleIcon className="w-5 h-5 shrink-0" aria-hidden="true" />
                                         {mode === 'convert'
-                                            ? `Faltan tasas ${from}→${currency} para ${preview.missing_rates === 1 ? '1 fecha' : `${preview.missing_rates} fechas`}: no se puede convertir todavía.`
+                                            ? `Faltan tasas ${from}→${currency} para convertir ${preview.missing_rates === 1 ? '1 monto' : `${preview.missing_rates} montos`} (movimientos, saldo inicial o valoraciones): no se puede convertir todavía. Las tasas se cargan solas cada día; si el aviso sigue, usa «solo corregir la moneda».`
                                             : `${preview.missing_rates === 1 ? '1 movimiento queda' : `${preview.missing_rates} movimientos quedan`} sin valor en ${base} hasta que llegue su tasa.`}
                                     </p>
                                 )}
