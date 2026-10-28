@@ -54,8 +54,8 @@ const AAGenDashboard = ({
                     </div>
                 </div>
                 <div className="h-6"></div>
-                <div className="w-auto">
-                    <div className="w-[80x6px] xl:w-[930px] flex justify-start items-center">
+                <div className="w-full">
+                    <div className="w-full">
                         <DashAccounts />
                     </div>
                 </div>

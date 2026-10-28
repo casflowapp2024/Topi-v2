@@ -202,3 +202,24 @@ input, select, textarea {
 .dark .topi-budget-label { fill: #B9BDD3; }
 .topi-budget-swatch { stroke: #6A6F88; }
 .dark .topi-budget-swatch { stroke: #9097B4; }
+
+/* ---------- Scrollbars con color Topi ---------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(82, 102, 235, 0.45) transparent; /* Firefox */
+}
+.dark * {
+  scrollbar-color: rgba(127, 141, 242, 0.45) transparent;
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: rgba(82, 102, 235, 0.45);
+  border-radius: 999px;
+  border: 3px solid transparent;   /* deja una pastilla delgada con aire alrededor */
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background-color: rgba(82, 102, 235, 0.8); }
+.dark ::-webkit-scrollbar-thumb { background-color: rgba(127, 141, 242, 0.45); }
+.dark ::-webkit-scrollbar-thumb:hover { background-color: rgba(127, 141, 242, 0.85); }
+::-webkit-scrollbar-corner { background: transparent; }

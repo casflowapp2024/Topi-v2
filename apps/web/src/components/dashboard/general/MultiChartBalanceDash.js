@@ -7,6 +7,7 @@ import { formatCurrency, formatCurrency2, parseDatetoDatetimeBrow, getPercPlus, 
 
 //icons
 
+import ChartLegend, { lastPointLead } from '../../ui/ChartLegend';
 import { BarChart, Bar, Rectangle, XAxis, Label, ReferenceLine, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 
@@ -65,7 +66,9 @@ function MultiChartBalanceDash({
     const [activeIndex, setActiveIndex] = useState(null);
     //#e11d48
     return (
-        <div className='h-[220px] w-[370px] md:w-[400px]  xl:w-[500px]'>
+        <div className='h-[220px] w-[370px] md:w-[400px]  xl:w-[500px] flex flex-col'>
+            <ChartLegend lead={(() => { const l = lastPointLead(dataToPlot, 'value', monthlyActivated, moment); return l && { ...l, value: formatCurrency2(l.value) }; })()} items={[{ type: 'bar', color: '#5266EB', label: 'Balance' }]} className="pt-2" />
+            <div className="flex-1 min-h-0">
 
             <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -73,7 +76,7 @@ function MultiChartBalanceDash({
             height={300}
             data={dataToPlot}
             margin={{
-                top: 30,
+                top: 22,
                 right: 20,
                 left: 0,
                 bottom: 5,
@@ -148,24 +151,6 @@ function MultiChartBalanceDash({
                     />
                 
                 )}
-                label={({ x, y, width, value, index }) => {
-                    // Only show label for the last bar
-                    if (index === dataToPlot.length - 1) {
-                    return (
-                        <text
-                        x={x + width / 2}
-                        y={y - 8}
-                        textAnchor="middle"
-                        className="topi-chart-value"
-                        fontWeight="bold"
-                        fontSize={13}
-                        >
-                        {formatCurrency2(value)}
-                        </text>
-                    );
-                    }
-                    return null;
-                }}
                 />
                 {/* {dataToPlot && dataToPlot.length > 0 && (
                 <ReferenceLine
@@ -182,6 +167,7 @@ function MultiChartBalanceDash({
 
             </BarChart>
         </ResponsiveContainer>
+        </div>
         </div>
   );
 }

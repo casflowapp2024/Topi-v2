@@ -82,6 +82,19 @@ const Layout = ({
 
   const isDark = Boolean(user_extra_data?.config?.dark_mode);
 
+  // El tema también va en <html>: así lo toman los modales (que se montan fuera de este div),
+  // las barras de scroll y los controles nativos del navegador.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle('dark', isDark);
+    root.style.colorScheme = isDark ? 'dark' : 'light';
+  }, [isDark]);
+  useEffect(() => () => {
+    // al salir de la app (logout, landing) vuelve al tema claro
+    document.documentElement.classList.remove('dark');
+    document.documentElement.style.colorScheme = '';
+  }, []);
+
   const handleLogout = () => {
     logout();
     navigate("/");

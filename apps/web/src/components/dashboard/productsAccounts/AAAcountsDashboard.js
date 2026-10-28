@@ -65,8 +65,10 @@ const AAAcountsDashboard = ({
 
     useEffect(() => {
         //al cargar el componente, si no hay cuenta activada, activar la primera cuenta de la lista
+        // Respeta la cuenta elegida antes (p. ej. desde "Mis cuentas" en el inicio)
         if (user_accounts.items && user_accounts.items.length > 0) {
-            set_dash_account_activated(user_accounts.items[0]);
+            const stillExists = account_activated && user_accounts.items.some(acc => acc.id === account_activated.id);
+            if (!stillExists) set_dash_account_activated(user_accounts.items[0]);
         }
     }, [user_accounts]);
 

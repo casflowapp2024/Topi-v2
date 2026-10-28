@@ -6,7 +6,7 @@ import { connect } from 'react-redux'
 //components
 import { formatCurrency, formatCurrency2, getPerc0, getColorByValue, getPercPlus,  parseDatetoDatetimeBrow } from '../../helpers';
 //icons
-import ChartLegend from '../../ui/ChartLegend';
+import ChartLegend, { lastPointLead } from '../../ui/ChartLegend';
 import { BarChart, Bar, Rectangle, XAxis, Label, ReferenceLine, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 
@@ -61,7 +61,7 @@ function MultiChartSavingsDash({
     //#e11d48
     return (
         <div className='h-[220px] w-[370px] md:w-[400px]  xl:w-[500px] flex flex-col'>
-            <ChartLegend items={[
+            <ChartLegend lead={(() => { const l = lastPointLead(dataToPlot, 'value', monthlyActivated, moment); return l && { ...l, value: formatCurrency2(l.value) }; })()} items={[
                 { type: 'bar', color: '#9B5DE5', label: 'Ahorro' },
                 savings_budget ? { type: 'line', label: 'Presupuesto', value: formatCurrency2(Math.abs(savings_budget)) } : null,
             ]} className="pt-2" />
@@ -176,24 +176,6 @@ function MultiChartSavingsDash({
                     />
                 
                 )}
-                label={({ x, y, width, value, index }) => {
-                    // Only show label for the last bar
-                    if (index === dataToPlot.length - 1) {
-                    return (
-                        <text
-                        x={x + width / 2}
-                        y={value >= 0 ? y - 8 : y + 20}
-                        textAnchor="middle"
-                        className="topi-chart-value"
-                        fontWeight="bold"
-                        fontSize={13}
-                        >
-                        {formatCurrency2(value)}
-                        </text>
-                    );
-                    }
-                    return null;
-                }}
                 />
             </BarChart>
         </ResponsiveContainer>

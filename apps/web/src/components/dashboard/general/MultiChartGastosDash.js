@@ -7,7 +7,7 @@ import { connect } from 'react-redux'
 import { formatCurrency, parseDatetoDatetimeBrow, formatCurrency2, getPerc0, getColorByValue, getPercPlus} from '../../helpers';
 
 //icons
-import ChartLegend from '../../ui/ChartLegend';
+import ChartLegend, { lastPointLead } from '../../ui/ChartLegend';
 import { BarChart, Bar, Rectangle, XAxis, Label, ReferenceLine, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 
@@ -104,7 +104,7 @@ function MultiChartGastosDash({
     //#e11d48
     return (
         <div className={`${windowContext==="dashboard"? 'h-[220px]' : 'h-[150px]'} w-[370px] md:w-[400px]  xl:w-[500px] flex flex-col`}>
-            <ChartLegend items={[
+            <ChartLegend lead={(() => { const l = lastPointLead(dataToPlot, 'show', monthlyActivated, moment); return l && { ...l, negative: false, value: formatCurrency2(l.value) }; })()} items={[
                 { type: 'bar', color: '#F2664A', label: 'Gastos' },
                 budgetToUse && !(dailyActivated && !cummulated) ? { type: 'line', label: 'Presupuesto', value: formatCurrency2(Math.abs(budgetToUse)) } : null,
             ]} className="pt-2" />
@@ -218,25 +218,6 @@ function MultiChartGastosDash({
                     />
                 
                 )}
-
-                label={({ x, y, width, value, index }) => {
-                    // Only show label for the last bar
-                    if (index === dataToPlot.length - 1 && value !== 0) {
-                    return (
-                        <text
-                        x={x + width / 2}
-                        y={value >= 0 ? y - 8 : y + 20}
-                        textAnchor="middle"
-                        className="topi-chart-value"
-                        fontWeight="bold"
-                        fontSize={13}
-                        >
-                        {formatCurrency2(value)}
-                        </text>
-                    );
-                    }
-                    return null;
-                }}
                 />
 
             </BarChart>
