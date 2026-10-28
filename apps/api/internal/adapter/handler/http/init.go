@@ -237,19 +237,23 @@ func defaultAccountTypes() []domain.AccountType {
 	var accountTypes = make([]domain.AccountType, 4)
 
 	accountTypes[0] = domain.AccountType{
-		Name: "Cuenta Ahorros",
+		Name:  "Cuenta Ahorros",
+		Class: domain.AccountClassDeposit,
 	}
 
 	accountTypes[1] = domain.AccountType{
-		Name: "Cuenta Corriente",
+		Name:  "Cuenta Corriente",
+		Class: domain.AccountClassDeposit,
 	}
 
 	accountTypes[2] = domain.AccountType{
-		Name: "Inversión",
+		Name:  "Inversión",
+		Class: domain.AccountClassInvestment,
 	}
 
 	accountTypes[3] = domain.AccountType{
-		Name: "Tarjeta de Crédito",
+		Name:  "Tarjeta de Crédito",
+		Class: domain.AccountClassCredit,
 	}
 
 	return accountTypes

@@ -19,6 +19,7 @@ type Routes struct {
 	TransactionHandler    *TransactionHandler
 	AnalysisHandler       *AnalysisHandler
 	FxHandler             *FxHandler
+	ValuationHandler      *ValuationHandler
 	EmailHandler          *EmailHandler
 	InitDevHandler        *InitDevHandler
 	InitializationHandler *InitializationHandler
@@ -109,6 +110,9 @@ func (r *Routes) AccountsRoutes() {
 		AuthAccounts.GET("/list", r.AccountHandler.GetAccounts)
 		AuthAccounts.PUT("/:id", r.AccountHandler.UpdateAccount)
 		AuthAccounts.DELETE("/:id", r.AccountHandler.DeleteAccount)
+		AuthAccounts.GET("/:id/valuations", r.ValuationHandler.ListValuations)
+		AuthAccounts.POST("/:id/valuations", r.ValuationHandler.SaveValuation)
+		AuthAccounts.DELETE("/:id/valuations/:valuation_id", r.ValuationHandler.DeleteValuation)
 	}
 
 	admin := AuthAccounts.Use(AdminMiddleware())
@@ -144,6 +148,7 @@ func (r *Routes) AnalysisRoutes() {
 	{
 		AuthAnalysis.GET("/financial-report", r.AnalysisHandler.GetFinancialReport)
 		AuthAnalysis.GET("/net-worth", r.FxHandler.GetNetWorth)
+		AuthAnalysis.GET("/investments", r.ValuationHandler.GetInvestments)
 		AuthAnalysis.GET("/accounts-balance", r.AnalysisHandler.GetBalanceByAccount)
 		AuthAnalysis.GET("/financial-analysis", r.AnalysisHandler.GetFinancialAnalysis)
 		AuthAnalysis.POST("/categories-report", r.AnalysisHandler.GetCategoriesReport)

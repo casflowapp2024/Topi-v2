@@ -21,6 +21,8 @@ func NewAccountTypeHandler(svc port.AccountTypeService) *AccountTypeHandler {
 
 type createAccountTypeRequest struct {
 	Name string `json:"name" binding:"required" example:"savings"`
+	// Class: deposit (default) | investment | credit
+	Class string `json:"class" binding:"omitempty,oneof=deposit investment credit" example:"deposit"`
 }
 
 // CreateAccountType creates a new account type (Admin)
@@ -45,7 +47,11 @@ func (at *AccountTypeHandler) CreateAccountType(ctx *gin.Context) {
 	}
 
 	accountType := &domain.AccountType{
-		Name: req.Name,
+		Name:  req.Name,
+		Class: req.Class,
+	}
+	if accountType.Class == "" {
+		accountType.Class = domain.AccountClassDeposit
 	}
 
 	err := at.svc.CreateAccountType(ctx, accountType)

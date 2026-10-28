@@ -116,25 +116,35 @@ dos cuentas de ahorro o hacia la tarjeta, salida y entrada con la misma categor�
 
 ## Etapa 2 — Clases de cuenta e inversiones con valoraciones
 
+**Estado: hecha** (migraciones 000028 y 000029; antes/después sobre el dump: idéntico, 10.337
+resultados).
+
 ### Clases de cuenta
 - `account_types.class` (`deposit` | `investment` | `credit`), NOT NULL con backfill:
   1, 2 → `deposit`; 3 → `investment`; 4 → `credit`. Tipos nuevos en el catálogo (opcionales):
   Efectivo/Billetera (`deposit`), Préstamo (`credit`).
-- El tipo de cuenta en la API trae `class`; el front reemplaza los `type_id === 4` por la
-  clase (`isCredit(account)` en `helpers.js`). Esto va en un commit propio, sin cambio de
-  comportamiento, verificado en el navegador.
+- El tipo de cuenta en la API trae `class` (cuentas, transacciones y `/account-types`); el front
+  usa `accountClass`, `isCreditAccount`, `isInvestmentAccount` y `accountReportGroup` de
+  `helpers.js` en lugar de comparar `type_id`. En Go los reportes siguen usando los ID de
+  `enums` (`domain.AccountClassOf` repite el backfill); el SQL nuevo usa `account_types.class`.
+- Los tipos nuevos (Efectivo, Préstamo) no se agregaron todavía.
 
 ### Valoraciones
 ```
 account_valuations (
   id BIGSERIAL PK, user_id, account_id FK,
   valuation_date DATE, value NUMERIC(20,4)  -- en la moneda de la cuenta
-  source VARCHAR  -- 'manual' | 'migration' | 'import'
+  source VARCHAR  -- 'manual' | 'import'
   note, created_at, updated_at,
   UNIQUE (account_id, valuation_date)
 )
 ```
-- Solo para cuentas `investment` (trigger que lo valida).
+- Solo para cuentas `investment` del mismo usuario y desde el día en que se creó la cuenta (el
+  saldo inicial es su valor ese día); lo valida un trigger. Una por día: guardar otra el mismo día
+  la reemplaza.
+- Implementación: `account_valuation_deltas(user)` devuelve, por valoración, el ajuste que hace
+  saltar el saldo contable a su valor. `analysis_daily`, `analysis_monthly_accounts`,
+  `net_worth` y los saldos de `analysis.go` solo suman esos ajustes.
 - **Saldo de una inversión en la fecha D** = valor de la última valoración ≤ D + movimientos
   (transferencias y transacciones) posteriores a esa valoración y ≤ D. Sin valoraciones = como
   hoy (saldo inicial + movimientos). Es el modelo "ancla + flujos": un aporte sube el saldo de
@@ -143,17 +153,23 @@ account_valuations (
   **Ganancia de mercado** = saldo − aportes netos. En moneda base se separa ganancia de mercado y
   ganancia cambiaria (la que ya calcula `net_worth`).
 - `net_worth()` y el patrimonio histórico usan el saldo anclado. Los flujos no ven las
-  valoraciones nunca.
+  valoraciones nunca. `net_worth` devuelve `market_gain` por inversión y el resumen separa
+  `market_gain` (inversiones, a la tasa de hoy) de `fx_gain` (cambiaria).
 - Rendimiento de un periodo = (valor final − valor inicial − aportes netos del periodo); % simple
   sobre el valor inicial + aportes. TIR/XIRR queda para después.
 - Los rendimientos que sí se cobran (dividendos, intereses que llegan a una cuenta de ahorros)
   siguen siendo ingresos con su categoría.
 
 ### API y web
-- `GET/POST/PUT/DELETE /accounts/:id/valuations`; `GET /analysis/investments` (valor, aportes,
-  ganancia por cuenta y periodo).
-- En la cuenta de inversión: botón "Actualizar valor", historial de valoraciones, gráfica valor
-  vs aportes. En el home: el patrimonio usa el valor anclado y muestra la ganancia.
+- `GET/POST /accounts/:id/valuations` (POST crea o reemplaza la del día),
+  `DELETE /accounts/:id/valuations/:valuation_id`; `GET /analysis/investments?start&end` (por
+  defecto el mes en curso): valor al inicio y al cierre, aportes netos, ganancia y %, aportado y
+  ganancia total, última valoración.
+- En Cuentas, para una inversión: panel "Valor de la inversión" con "Actualizar valor", las cuatro
+  cifras del periodo elegido y el historial de valoraciones (editar, borrar). La gráfica de saldo
+  histórico ya sale anclada. En el inicio: "Ganancia de tus inversiones" aparte de la cambiaria y
+  la ganancia bajo cada inversión.
+- Pendiente para después: gráfica valor vs aportes.
 
 ### Revaluaciones registradas antes
 Decisión 28-oct: no se migran. Las valoraciones son para lo que venga; las revaluaciones viejas

@@ -181,29 +181,34 @@ func (ar *AnalysisRepository) GetBalanceSummary(
 		Where(sq.Eq{"a.user_id": userID}).
 		Where(sq.Eq{"a.type_id": accountTypes})
 
+	// Native movements per account and day: daily totals plus the valuation adjustments of the
+	// investments (their balance is anchored to the last valuation)
+	movements := ar.db.QueryBuilder.Select("d.account_id", "d.day", "d.inflow - d.outflow as net").
+		From(enums.DailyAccountTotalsTableName+" as d").
+		Where(sq.Eq{"d.user_id": userID}).
+		Suffix("union all select vd.account_id, vd.day, vd.delta from account_valuation_deltas(?) as vd", userID)
+
 	// Query for past month balance (everything before the period)
 	pastMonthBalance := ar.db.QueryBuilder.Select().
-		Column(sq.Expr("coalesce(sum((d.inflow - d.outflow) * "+toBase+"), 0) as past_month_balance", end)).
-		From(enums.DailyAccountTotalsTableName + " as d").
-		Join(enums.AccountTableName + " as a on a.id = d.account_id").
-		Where(sq.Eq{"d.user_id": userID}).
+		Column(sq.Expr("coalesce(sum(m.net * "+toBase+"), 0) as past_month_balance", end)).
+		FromSelect(movements, "m").
+		Join(enums.AccountTableName + " as a on a.id = m.account_id").
 		Where(sq.Eq{"a.type_id": accountTypes}).
-		Where(sq.Expr("d.day < ?::date", start))
+		Where(sq.Expr("m.day < ?::date", start))
 
-	// Query for current period transactions (days are already in the user's timezone)
+	// Query for current period movements (days are already in the user's timezone)
 	currentPeriodBalance := ar.db.QueryBuilder.Select().
-		Column(sq.Expr("coalesce(sum((d.inflow - d.outflow) * "+toBase+"), 0) as current_period_balance", end)).
-		From(enums.DailyAccountTotalsTableName + " as d").
-		Join(enums.AccountTableName + " as a on a.id = d.account_id").
-		Where(sq.Eq{"d.user_id": userID}).
+		Column(sq.Expr("coalesce(sum(m.net * "+toBase+"), 0) as current_period_balance", end)).
+		FromSelect(movements, "m").
+		Join(enums.AccountTableName + " as a on a.id = m.account_id").
 		Where(sq.Eq{"a.type_id": accountTypes}).
-		Where(sq.Expr("d.day >= ?::date", start)).
-		Where(sq.Expr("d.day < ?::date", end))
+		Where(sq.Expr("m.day >= ?::date", start)).
+		Where(sq.Expr("m.day < ?::date", end))
 
 	if len(accounts) > 0 {
 		initialBalance = initialBalance.Where(sq.Eq{"a.id": accounts})
-		pastMonthBalance = pastMonthBalance.Where(sq.Eq{"d.account_id": accounts})
-		currentPeriodBalance = currentPeriodBalance.Where(sq.Eq{"d.account_id": accounts})
+		pastMonthBalance = pastMonthBalance.Where(sq.Eq{"m.account_id": accounts})
+		currentPeriodBalance = currentPeriodBalance.Where(sq.Eq{"m.account_id": accounts})
 	}
 
 	// Convert subqueries to SQL
@@ -283,13 +288,16 @@ func (ar *AnalysisRepository) GetBalanceByAccount(
 	nextMonth := "(date_trunc('month', now() at time zone user_timezone(a.user_id)) + interval '1 month')::date"
 	movements := "(select sum(d.inflow - d.outflow) from " + enums.DailyAccountTotalsTableName +
 		" as d where d.account_id = a.id and d.day < " + nextMonth + ")"
+	// investments: the balance is anchored to their valuations
+	valuations := "(select sum(vd.delta) from account_valuation_deltas(a.user_id) as vd" +
+		" where vd.account_id = a.id and vd.day < " + nextMonth + ")"
 
 	query := ar.db.QueryBuilder.Select(
 		"a.id",
 		"a.name",
 		"b.name as bank",
 		"a.last_four_digits",
-		"coalesce(a.initial_balance, 0) + coalesce("+movements+", 0) as total_balance",
+		"coalesce(a.initial_balance, 0) + coalesce("+movements+", 0) + coalesce("+valuations+", 0) as total_balance",
 	).From(enums.AccountTableName+" as a").
 		LeftJoin(enums.BankTableName+" as b on a.bank_id = b.id and a.user_id = b.user_id").
 		Where(sq.Eq{"a.user_id": userID}).

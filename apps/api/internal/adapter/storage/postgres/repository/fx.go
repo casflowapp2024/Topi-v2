@@ -65,7 +65,7 @@ func (fr *FxRepository) GetNetWorth(ctx context.Context, userID string) (domain.
 
 	rows, err := fr.db.Query(ctx, `
 		SELECT account_id, account_name, coalesce(bank_name, ''), last_four_digits, type_id, currency,
-		       balance::text, rate::text, base_value::text, cost::text, unrealized_gain::text
+		       balance::text, rate::text, base_value::text, cost::text, unrealized_gain::text, market_gain::text
 		FROM net_worth($1)`, userID)
 	if err != nil {
 		return netWorth, mappers.MapPostgresErrorCode(err)
@@ -79,7 +79,7 @@ func (fr *FxRepository) GetNetWorth(ctx context.Context, userID string) (domain.
 		)
 		if err = rows.Scan(&a.AccountID, &a.Name, &a.Bank, &a.LastFourDigits, &a.TypeID, &a.Currency,
 			scanDecimal(&balance), scanDecimal(&a.Rate), scanDecimal(&a.BaseValue), scanDecimal(&a.Cost),
-			scanDecimal(&a.UnrealizedGain)); err != nil {
+			scanDecimal(&a.UnrealizedGain), scanDecimal(&a.MarketGain)); err != nil {
 			return netWorth, mappers.MapPostgresErrorCode(err)
 		}
 		if balance != nil {

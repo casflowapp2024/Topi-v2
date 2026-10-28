@@ -12,6 +12,23 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
+// accountTypeColumns are scanned by scanAccountType, in this order (explicit, not "*")
+const accountTypeColumns = "id, name, created_at, updated_at, class"
+
+type accountTypeScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanAccountType(row accountTypeScanner, accountType *domain.AccountType) error {
+	return row.Scan(
+		&accountType.ID,
+		&accountType.Name,
+		&accountType.CreatedAt,
+		&accountType.UpdatedAt,
+		&accountType.Class,
+	)
+}
+
 type AccountTypeRepository struct {
 	db *postgres.DB
 }
@@ -24,21 +41,16 @@ func NewAccountTypeRepository(db *postgres.DB) *AccountTypeRepository {
 
 func (at AccountTypeRepository) CreateAccountType(ctx context.Context, accountType *domain.AccountType) error {
 	query := at.db.QueryBuilder.Insert(enums.AccountTypeTableName).
-		Columns("name").
-		Values(accountType.Name).
-		Suffix("RETURNING *")
+		Columns("name", "class").
+		Values(accountType.Name, accountType.ClassOrDefault()).
+		Suffix("RETURNING " + accountTypeColumns)
 
 	sql, args, err := query.ToSql()
 	if err != nil {
 		return err
 	}
 
-	err = at.db.QueryRow(ctx, sql, args...).Scan(
-		&accountType.ID,
-		&accountType.Name,
-		&accountType.CreatedAt,
-		&accountType.UpdatedAt,
-	)
+	err = scanAccountType(at.db.QueryRow(ctx, sql, args...), accountType)
 
 	if err != nil {
 		return mappers.MapPostgresErrorCode(err)
@@ -50,7 +62,7 @@ func (at AccountTypeRepository) CreateAccountType(ctx context.Context, accountTy
 func (at AccountTypeRepository) GetAccountType(ctx context.Context, id uint64) (*domain.AccountType, error) {
 	var accountType domain.AccountType
 
-	query := at.db.QueryBuilder.Select("*").
+	query := at.db.QueryBuilder.Select(accountTypeColumns).
 		From(enums.AccountTypeTableName).
 		Where(sq.Eq{"id": id}).
 		Limit(1)
@@ -60,12 +72,7 @@ func (at AccountTypeRepository) GetAccountType(ctx context.Context, id uint64) (
 		return nil, err
 	}
 
-	err = at.db.QueryRow(ctx, sql, args...).Scan(
-		&accountType.ID,
-		&accountType.Name,
-		&accountType.CreatedAt,
-		&accountType.UpdatedAt,
-	)
+	err = scanAccountType(at.db.QueryRow(ctx, sql, args...), &accountType)
 	if err != nil {
 		return nil, mappers.MapPostgresErrorCode(err)
 	}
@@ -76,7 +83,7 @@ func (at AccountTypeRepository) GetAccountType(ctx context.Context, id uint64) (
 func (at AccountTypeRepository) GetAccountTypeList(ctx context.Context, skip uint64, limit uint64) ([]domain.AccountType, error) {
 	var accountTypes []domain.AccountType
 
-	query := at.db.QueryBuilder.Select("*").
+	query := at.db.QueryBuilder.Select(accountTypeColumns).
 		From(enums.AccountTypeTableName).
 		OrderBy("id").
 		Limit(limit).
@@ -95,12 +102,7 @@ func (at AccountTypeRepository) GetAccountTypeList(ctx context.Context, skip uin
 	for rows.Next() {
 		var accountType domain.AccountType
 
-		err = rows.Scan(
-			&accountType.ID,
-			&accountType.Name,
-			&accountType.CreatedAt,
-			&accountType.UpdatedAt,
-		)
+		err = scanAccountType(rows, &accountType)
 		if err != nil {
 			return nil, err
 		}
@@ -118,19 +120,14 @@ func (at AccountTypeRepository) UpdateAccountType(ctx context.Context, accountTy
 		Set("name", sq.Expr("COALESCE(?, name)", typeString)).
 		Set("updated_at", time.Now()).
 		Where(sq.Eq{"id": accountType.ID}).
-		Suffix("RETURNING *")
+		Suffix("RETURNING " + accountTypeColumns)
 
 	sql, args, err := query.ToSql()
 	if err != nil {
 		return err
 	}
 
-	err = at.db.QueryRow(ctx, sql, args...).Scan(
-		&accountType.ID,
-		&accountType.Name,
-		&accountType.CreatedAt,
-		&accountType.UpdatedAt,
-	)
+	err = scanAccountType(at.db.QueryRow(ctx, sql, args...), accountType)
 
 	if err != nil {
 		return mappers.MapPostgresErrorCode(err)

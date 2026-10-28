@@ -51,6 +51,8 @@ type NetWorthAccount struct {
 	BaseValue      *decimal.Decimal
 	Cost           *decimal.Decimal
 	UnrealizedGain *decimal.Decimal
+	// MarketGain: investments only, value − contributions in the account currency (valuations)
+	MarketGain *decimal.Decimal
 }
 
 // NetWorth is the user's net worth today in their base currency
@@ -60,13 +62,21 @@ type NetWorth struct {
 	Accounts       []NetWorthAccount
 	Total          decimal.Decimal // sum of the BaseValue that are known
 	UnrealizedGain decimal.Decimal // sum of the UnrealizedGain that are known
-	MissingRates   bool            // some account could not be valued
+	// UnrealizedGain split: MarketGain (valuations of investments, at today's rate) and FxGain
+	// (exchange rate movements: the rest)
+	MarketGain   decimal.Decimal
+	FxGain       decimal.Decimal
+	MissingRates bool // some account could not be valued
 }
 
 // Summarize fills Total, UnrealizedGain and MissingRates from Accounts
 func (n *NetWorth) Summarize() {
 	n.Total, n.UnrealizedGain, n.MissingRates = decimal.Zero, decimal.Zero, false
+	n.MarketGain = decimal.Zero
 	for _, a := range n.Accounts {
+		if a.MarketGain != nil && a.Rate != nil && a.UnrealizedGain != nil {
+			n.MarketGain = n.MarketGain.Add(a.MarketGain.Mul(*a.Rate).Round(4))
+		}
 		if a.BaseValue == nil {
 			n.MissingRates = true
 		} else {
@@ -76,6 +86,7 @@ func (n *NetWorth) Summarize() {
 			n.UnrealizedGain = n.UnrealizedGain.Add(*a.UnrealizedGain)
 		}
 	}
+	n.FxGain = n.UnrealizedGain.Sub(n.MarketGain)
 }
 
 // Transfer moves money between two accounts of the same user: an expense of AmountSent in the

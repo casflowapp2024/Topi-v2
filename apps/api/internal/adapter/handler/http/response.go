@@ -57,11 +57,14 @@ var errorStatusMap = map[error]int{
 	domain.ErrInvalidAccountType: http.StatusBadRequest,
 
 	// Multicurrency Errors
-	domain.ErrInvalidCurrency:       http.StatusBadRequest,
-	domain.ErrAccountCurrencyLocked: http.StatusConflict,
-	domain.ErrInvalidTransfer:       http.StatusBadRequest,
-	domain.ErrInvalidFxRate:         http.StatusBadRequest,
-	domain.ErrTransferLinked:        http.StatusConflict,
+	domain.ErrInvalidCurrency:        http.StatusBadRequest,
+	domain.ErrAccountCurrencyLocked:  http.StatusConflict,
+	domain.ErrInvalidTransfer:        http.StatusBadRequest,
+	domain.ErrInvalidFxRate:          http.StatusBadRequest,
+	domain.ErrTransferLinked:         http.StatusConflict,
+	domain.ErrInvalidValuation:       http.StatusBadRequest,
+	domain.ErrNotInvestmentAccount:   http.StatusBadRequest,
+	domain.ErrValuationBeforeAccount: http.StatusBadRequest,
 
 	// Token Errors
 	domain.ErrExpiredToken:               http.StatusUnauthorized,
@@ -490,12 +493,15 @@ func newEmailListResponse(emails []domain.Email, limit, skip uint64) emailListRe
 type accountTypeResponse struct {
 	ID   uint64 `json:"id,omitempty" example:"1"`
 	Type string `json:"name,omitempty" example:"savings"`
+	// Class: deposit | investment | credit
+	Class string `json:"class,omitempty" example:"deposit"`
 }
 
 func newAccountTypeResponse(account *domain.AccountType) accountTypeResponse {
 	return accountTypeResponse{
-		ID:   account.ID,
-		Type: account.Name,
+		ID:    account.ID,
+		Type:  account.Name,
+		Class: account.ClassOrDefault(),
 	}
 }
 
@@ -530,8 +536,9 @@ func newAccountResponse(account *domain.Account, create bool) accountResponse {
 			Name: account.Bank.Name,
 		},
 		Type: accountTypeResponse{
-			ID:   account.Type.ID,
-			Type: account.Type.Name,
+			ID:    account.Type.ID,
+			Type:  account.Type.Name,
+			Class: account.Type.ClassOrDefault(),
 		},
 		Email: CustomEmailResponse{
 			ID:       account.Email.ID,
@@ -705,8 +712,9 @@ func newTransactionResponse(transaction *domain.Transaction) transactionResponse
 	if transaction.Account.Type.ID != 0 || transaction.Account.Type.Name != "" {
 		accountType := transaction.Account.Type
 		newType = &accountTypeResponse{
-			ID:   accountType.ID,
-			Type: accountType.Name,
+			ID:    accountType.ID,
+			Type:  accountType.Name,
+			Class: accountType.ClassOrDefault(),
 		}
 	}
 

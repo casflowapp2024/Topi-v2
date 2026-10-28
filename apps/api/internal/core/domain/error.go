@@ -86,6 +86,12 @@ var (
 	// ErrTransferLinked is an error for when a transaction is already a leg of a transfer, or the
 	// pair to link is not an expense and an income in different accounts
 	ErrTransferLinked = errors.New("the transactions cannot be linked as a transfer")
+	// ErrInvalidValuation is an error for when a valuation has a negative value or a future date
+	ErrInvalidValuation = errors.New("invalid valuation: a value of zero or more and a date until today are required")
+	// ErrNotInvestmentAccount is an error for when a valuation is for an account that is not an investment
+	ErrNotInvestmentAccount = errors.New("only investment accounts have valuations")
+	// ErrValuationBeforeAccount is an error for when a valuation is older than its account
+	ErrValuationBeforeAccount = errors.New("the valuation date is before the account was created")
 )
 
 // Account Type Errors

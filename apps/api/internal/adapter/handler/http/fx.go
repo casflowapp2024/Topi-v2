@@ -116,15 +116,20 @@ type netWorthAccountResponse struct {
 	BaseValue      *string `json:"base_value" example:"4839944.21"`
 	Cost           *string `json:"cost" example:"4700000"`
 	UnrealizedGain *string `json:"unrealized_gain" example:"139944.21"`
+	// MarketGain: investments only, value − contributions in the account currency
+	MarketGain *string `json:"market_gain,omitempty" example:"250000"`
 }
 
 type netWorthResponse struct {
-	BaseCurrency   string                    `json:"base_currency" example:"COP"`
-	Date           string                    `json:"date" example:"2026-10-28"`
-	Total          string                    `json:"total" example:"12500000"`
-	UnrealizedGain string                    `json:"unrealized_gain" example:"139944.21"`
-	MissingRates   bool                      `json:"missing_rates" example:"false"`
-	Accounts       []netWorthAccountResponse `json:"accounts"`
+	BaseCurrency   string `json:"base_currency" example:"COP"`
+	Date           string `json:"date" example:"2026-10-28"`
+	Total          string `json:"total" example:"12500000"`
+	UnrealizedGain string `json:"unrealized_gain" example:"139944.21"`
+	// UnrealizedGain = MarketGain (investment valuations) + FxGain (exchange rates)
+	MarketGain   string                    `json:"market_gain" example:"100000"`
+	FxGain       string                    `json:"fx_gain" example:"39944.21"`
+	MissingRates bool                      `json:"missing_rates" example:"false"`
+	Accounts     []netWorthAccountResponse `json:"accounts"`
 }
 
 // GetNetWorth godoc
@@ -153,6 +158,8 @@ func (fh *FxHandler) GetNetWorth(ctx *gin.Context) {
 		Date:           netWorth.Date.Format("2006-01-02"),
 		Total:          netWorth.Total.String(),
 		UnrealizedGain: netWorth.UnrealizedGain.String(),
+		MarketGain:     netWorth.MarketGain.String(),
+		FxGain:         netWorth.FxGain.String(),
 		MissingRates:   netWorth.MissingRates,
 		Accounts:       make([]netWorthAccountResponse, 0, len(netWorth.Accounts)),
 	}
@@ -162,6 +169,7 @@ func (fh *FxHandler) GetNetWorth(ctx *gin.Context) {
 			Currency: a.Currency, Balance: a.Balance.String(), Rate: decimalString(a.Rate),
 			BaseValue: decimalString(a.BaseValue), Cost: decimalString(a.Cost),
 			UnrealizedGain: decimalString(a.UnrealizedGain),
+			MarketGain:     decimalString(a.MarketGain),
 		})
 	}
 	handleSuccess(ctx, rsp)
