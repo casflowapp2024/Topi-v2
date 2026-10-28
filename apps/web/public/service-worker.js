@@ -7,12 +7,20 @@
 
 const BUILD_ID = '__BUILD_ID__';
 const CACHE_NAME = `topi-v2-${BUILD_ID}`;
+// Sin estampar = lo sirve el dev server (npm start). Ahí /static/js/bundle.js no lleva hash y el
+// cache-first dejaría el navegador pegado a un bundle viejo (p. ej. el de otra rama): este SW solo
+// limpia, se desregistra y recarga las ventanas.
+const DEV = BUILD_ID.indexOf('__') === 0;
 const SHELL_URL = '/index.html';
 // Caché del SW de la versión anterior (cache-first de index.html). Si existe, hay que sacar a
 // las ventanas abiertas de esa versión: su JS no escucha controllerchange.
 const LEGACY_CACHES = ['topi-pwa-cache-v1'];
 
 self.addEventListener('install', event => {
+  if (DEV) {
+    event.waitUntil(self.skipWaiting());
+    return;
+  }
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.add(new Request(SHELL_URL, { cache: 'reload' })))
@@ -22,6 +30,16 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
+  if (DEV) {
+    event.waitUntil((async () => {
+      const names = await caches.keys();
+      await Promise.all(names.map(name => caches.delete(name)));
+      await self.registration.unregister();
+      const windows = await self.clients.matchAll({ type: 'window' });
+      windows.forEach(client => client.navigate(client.url).catch(() => undefined));
+    })());
+    return;
+  }
   event.waitUntil((async () => {
     const names = await caches.keys();
     const hadLegacy = names.some(name => LEGACY_CACHES.includes(name));
@@ -38,7 +56,7 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   const { request } = event;
-  if (request.method !== 'GET') return;
+  if (DEV || request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 

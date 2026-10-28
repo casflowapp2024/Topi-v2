@@ -12,7 +12,11 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 
 // Service worker (PWA). Al activarse una versión nueva toma el control (skipWaiting + claim) y se
 // recarga la página una sola vez para que use los bundles nuevos.
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && process.env.NODE_ENV !== 'production') {
+  // En desarrollo no hay PWA: se quitan el SW y sus cachés que hayan quedado de otra corrida.
+  navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(reg => reg.unregister()));
+  if (window.caches) window.caches.keys().then(names => names.forEach(name => window.caches.delete(name)));
+} else if ('serviceWorker' in navigator) {
   const hadController = Boolean(navigator.serviceWorker.controller);
   let reloaded = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
