@@ -170,8 +170,6 @@ const Layout = ({
     }
   }, [user, user_extra_data, first_steps.retrieved_email, automated_emails, location.pathname, navigate])
 
-  console.log("Layout Render - is_settings_open:", is_settings_open);
-
   return (
     <div className={`min-h-screen font-Inter flex flex-col overflow-x-hidden transition-colors duration-300 ${user_extra_data?.config?.dark_mode ? 'dark bg-[#0B0F19]' : 'bg-gray-100'}`}>
       {!user_found && (
@@ -214,10 +212,8 @@ const Layout = ({
                     </div>
                     <div className='flex flex-row items-center gap-2'>
                       <button
-                        onClick={() => {
-                          console.log("Clicked open_settings_modal('profile')");
-                          open_settings_modal('profile');
-                        }}
+                        onClick={() => open_settings_modal('profile')}
+                        aria-label="Abrir ajustes y perfil"
                         className="p-1 px-3 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-gray-700 dark:text-gray-200 transition-all font-semibold"
                       >
                         <span className="text-xs">{user?.name || 'Usuario'}</span>

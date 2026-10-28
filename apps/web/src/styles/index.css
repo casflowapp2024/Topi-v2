@@ -189,3 +189,14 @@ input, select, textarea {
   background-color: theme('colors.gray.800');
   color: theme('colors.gray.200');
 }
+/* ---------- Gráficas (propuesta UX v1) ---------- */
+.recharts-cartesian-axis-tick-value { fill: #5B6078; }
+.dark .recharts-cartesian-axis-tick-value { fill: #9CA3AF; }
+.recharts-cartesian-grid line { stroke: #EEF0F6; }
+.dark .recharts-cartesian-grid line { stroke: #2A3045; }
+.topi-chart-value { fill: #1E1E2A; }
+.dark .topi-chart-value { fill: #ECEDF5; }
+.topi-budget-line line { stroke: #6A6F88; }
+.dark .topi-budget-line line { stroke: #9097B4; }
+.topi-budget-label { fill: #5B6078; }
+.dark .topi-budget-label { fill: #B9BDD3; }

@@ -26,7 +26,6 @@ function MultiChartDash({
 }) {
     useEffect(() => {
         const date_filter = `${current_Year}-${current_Month.toString().padStart(2, '0')}`
-        console.log(date_filter)
         get_history_dash(date_filter);
         get_history_category_by_month(1, date_filter);
     }, [current_Month, current_Year]);

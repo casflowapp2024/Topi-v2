@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { get_expenses_report } from '../../../redux/actions/reports';
-import { formatCurrency, getPerc2, capitalizeWords, getPerc0, formatDate } from '../../helpers';
+import { formatCurrency, capitalizeWords, getPerc0, formatDate } from '../../helpers';
 import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/20/solid';
 import { ThreeDots } from 'react-loader-spinner';
 import { Emoji } from "emoji-picker-react";
 import { set_another_month, set_another_year } from '../../../redux/actions/reports';
 import FormatMoneyShowDecs from '../../FormatMoneyShowDecs';
+import BudgetProgress, { getMonthPace } from '../../ui/BudgetProgress';
 
 const DashPlan = ({
   current_Month,
@@ -15,6 +16,8 @@ const DashPlan = ({
   set_another_year,
   get_expenses_report, expenses_report, user_categories
 }) => {
+  const monthPace = getMonthPace(current_Year, current_Month);
+
 
   const [loadingReport, setLoadingReport] = useState(true)
 
@@ -38,7 +41,6 @@ const DashPlan = ({
 
   const get_expenses_report_confirm = async (dateFormated) => {
     setLoadingReport(true)
-    console.log("get_expenses_report_confirm", dateFormated);
     const getReportResponse = await get_expenses_report(dateFormated)
     if (getReportResponse === true) {
       setLoadingReport(false)
@@ -133,27 +135,13 @@ const DashPlan = ({
                             decClass="text-[10px] xl:text-xs"
                           />
                           {/* <span className='text-[12px] xl:text-sm'>{formatCurrency(category.expenses)}</span> */}
-                          <span className='pl-1 text-[8px] xl:text-[10px] w-full text-left text-gray-400 dark:text-gray-500'>/{formatCurrency(category.budget)}</span>
+                          <span className='pl-1 text-xs w-full text-left text-ink-2 dark:text-gray-400'>de {formatCurrency(category.budget)}</span>
                         </div>
                         <span className="text-[11px] xl:text-[14px] font-medium ">
                           {getPerc0(category.usage)}
                         </span>
                       </div>
-                      <div className="flex w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden transition-colors duration-300">
-                        {parseInt(category.usage) >= 100 ?
-                          <div className="bg-[#3445b4] dark:bg-[#5266EB] h-full transition-colors duration-300" style={{ width: '100%' }}></div>
-                          :
-                          <>
-                            {parseInt(category.usage) >= 80 ?
-                              <div className="bg-[#5266EB] h-full" style={{ width: getPerc2(category.usage) }}></div> :
-                              <div
-                                className="bg-[#808bd3] h-full"
-                                style={{ width: getPerc2(category.usage) }}
-                              ></div>
-                            }
-                          </>
-                        }
-                      </div>
+                      <BudgetProgress usage={category.usage} pace={monthPace} />
                     </li>
                   ))}
                 </ul>

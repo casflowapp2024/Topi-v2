@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { connect } from 'react-redux'
 import { useState, useEffect, useMemo } from 'react';
 import { get_expenses_report } from '../../../redux/actions/reports';
-import { formatCurrency, getPerc2, capitalizeWords, getPerc0, formatDate } from '../../helpers';
+import { formatCurrency, capitalizeWords, getPerc0, formatDate } from '../../helpers';
 import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/20/solid';
 import { ThreeDots } from 'react-loader-spinner';
 import { Emoji } from "emoji-picker-react";
@@ -16,6 +16,7 @@ import { PencilSquareIcon, ChevronDownIcon, ArrowsPointingOutIcon } from '@heroi
 import { PlusIcon } from '@heroicons/react/20/solid';
 
 import FullBudgetsModal from './FullBudgetsModal';
+import BudgetProgress, { getMonthPace } from '../../ui/BudgetProgress';
 
 const BudDashCategorieList = ({
   //actions
@@ -33,6 +34,8 @@ const BudDashCategorieList = ({
   onCategoryClick
 
 }) => {
+  const monthPace = getMonthPace(current_Year, current_Month);
+
 
 
   const [loadingReport, setLoadingReport] = useState(true)
@@ -293,14 +296,14 @@ const BudDashCategorieList = ({
                                   decClass="text-[10px] xl:text-xs"
                                 />
                                 <span className='pl-1 h-full h-[20px] text-gray-400 flex flex-row items-end'>
-                                  <span className='pb-0.5 text-[8px] xl:text-[8px] whitespace-nowrap'> | {category.usage}%</span>
+                                  <span className='pb-0.5 text-xs whitespace-nowrap'> | {category.usage}%</span>
                                 </span>
                               </div>
 
 
                               <div>
 
-                                <span className='pl-1 text-[8px] xl:text-[10px] w-full text-right text-gray-400'>de {formatCurrency(Math.abs(category.budget))} </span>
+                                <span className='pl-1 text-xs w-full text-right text-ink-2 dark:text-gray-400'>de {formatCurrency(Math.abs(category.budget))} </span>
                                 <span className='pl-1 text-[8px] xl:text-[10px] w-full text-right text-green-400'></span>
                               </div>
                             </>
@@ -315,14 +318,14 @@ const BudDashCategorieList = ({
                                   decClass="text-[10px] xl:text-xs"
                                 />
                                 <span className='pl-1 h-full h-[20px] text-gray-400 flex flex-row items-end'>
-                                  <span className='pb-0.5 text-[8px] xl:text-[8px] whitespace-nowrap'> | {category.usage}% </span>
+                                  <span className='pb-0.5 text-xs whitespace-nowrap'> | {category.usage}% </span>
                                 </span>
                               </div>
 
 
                               <div>
 
-                                <span className='pl-1 text-[8px] xl:text-[10px] w-full text-right text-gray-400'>de {formatCurrency(category.budget)} </span>
+                                <span className='pl-1 text-xs w-full text-right text-ink-2 dark:text-gray-400'>de {formatCurrency(category.budget)} </span>
                                 <span className='pl-1 text-[8px] xl:text-[10px] w-full text-right text-green-400'></span>
                               </div>
                             </>
@@ -341,26 +344,13 @@ const BudDashCategorieList = ({
 
                     </div>
 
-                    <div className="flex w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden h-1.5 mt-1 transition-colors duration-300">
-                      {/* Only show progress bar for expenses */}
-                      {parseInt(category.usage) >= 100 ?
-                        <div className="bg-[#3445b4] h-full flex justify-end" style={{ width: '100%' }}>
-                        </div>
-                        :
-                        <>
-                          {parseInt(category.usage) >= 80 ?
-                            <div className="bg-[#5266EB] h-full flex justify-end" style={{ width: getPerc2(category.usage) }}>
-                            </div>
-                            :
-                            <div
-                              className="bg-[#808bd3] h-full flex justify-end"
-                              style={{ width: getPerc2(category.usage) }}
-                            >
-                            </div>
-                          }
-                        </>
-                      }
-                    </div>
+                    <BudgetProgress
+                      usage={category.usage}
+                      isIncome={active_report_tab !== 'Expenses'}
+                      pace={monthPace}
+                      height="h-1.5"
+                      className="mt-1"
+                    />
 
                   </li>
                 ))}

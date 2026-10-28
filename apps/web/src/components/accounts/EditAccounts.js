@@ -115,7 +115,7 @@ function EditAccounts({
     if (parseInt(id) >= 0) {
       return true
     } else {
-      alert('Los Digitos de la cuenta deben ser números!!')
+      setAlert('Los últimos dígitos de la cuenta deben ser solo números.', false, 'text-white', 'bg-red-500', 4000)
       return false
     }
   }

@@ -111,7 +111,7 @@ function MultiChartGastosDash({
             margin={{
                 top: 30,
                 right: 25,
-                left: 25,
+                left: 0,
                 bottom: 1,
             }}
             onMouseMove={state => {
@@ -138,19 +138,21 @@ function MultiChartGastosDash({
                 domain={['auto', 'auto']}
                 tick={{ fontSize: 12 }}
             />
+            <CartesianGrid vertical={false} />
+            <YAxis width={44} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickCount={4} tickFormatter={(v) => formatCurrency2(v)} />
             <Tooltip
             cursor={false}
             content={({ active, payload }) => {
             if (active && payload && payload.length) {
                 return (
-                <div className="flex flex-col text-xs bg-white border border-gray-300 rounded-lg p-2">
+                <div className="flex flex-col gap-0.5 text-xs bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg px-3 py-2">
                     {monthlyActivated?
                     <div className='flex flex-col'>
                         {/* <span className=''>Mes: {moment(payload[0].payload.date).format('MMM')}</span> */}
-                        <span className='text-[#fcd34d]'>Presupuesto: {formatCurrency(budgetToUse)}</span>
-                        <div className='text-gray-300'>
-                            <span className='text-[#eb7852]'>Gastos: {formatCurrency(payload[0].payload.value)}</span> 
-                            {/* (<span className={`text-[${payload[0].payload.color_per}]`}>{payload[0].payload.per_show}</span>) */}
+                        <span className='text-ink-2 dark:text-gray-400'>Presupuesto: {formatCurrency(budgetToUse)}</span>
+                        <div>
+                            <span className='font-semibold text-money-out dark:text-money-out-dark'>Gastos: {formatCurrency(payload[0].payload.value)}</span> 
+                            {/* (<span style={{ color: payload[0].payload.color_per }}>{payload[0].payload.per_show}</span>) */}
                         </div>
                         <span className=''>Gastados: {payload[0].payload.left}</span>
                         {/* <span className=''>Dif: {formatCurrency(payload[0].payload.dif)}</span> */}
@@ -158,8 +160,8 @@ function MultiChartGastosDash({
                     :
                     <>
                         {/* <span className=''>Día: {moment(payload[0].payload.date).format('MMM DD')}</span> */}
-                        <span className='text-[#fcd34d]'>Presupuesto: {formatCurrency(budgetToUse)}</span>
-                        <span className='text-[#eb7852]'>Gastos: {formatCurrency(payload[0].payload.value)}</span>
+                        <span className='text-ink-2 dark:text-gray-400'>Presupuesto: {formatCurrency(budgetToUse)}</span>
+                        <span className='font-semibold text-money-out dark:text-money-out-dark'>Gastos: {formatCurrency(payload[0].payload.value)}</span>
                     </>
                     }
                 </div>
@@ -172,7 +174,7 @@ function MultiChartGastosDash({
             />
             <Bar
                 dataKey="show"
-                fill="#eb7852"
+                fill="#F2664A"
                 barSize={24} // Adjust width here
                 radius={[6, 6, 0, 0]} // Rounded top corners
                 //onMouseOver={(_, index) => setActiveIndex(index)}
@@ -180,9 +182,8 @@ function MultiChartGastosDash({
                 shape={(props) => (
                     <Rectangle
                     {...props}
-                    stroke={props.index === activeIndex ? "#eb7852" : ""} // Border color
-                    strokeWidth={2}  // Border width
-                    fill="#eb7852"
+                    fillOpacity={activeIndex === null || props.index === activeIndex ? 1 : 0.45}
+                    fill="#F2664A"
                     radius={[6, 6, 0, 0]}
                     />
                 
@@ -196,7 +197,7 @@ function MultiChartGastosDash({
                         x={x + width / 2}
                         y={value >= 0 ? y - 8 : y + 20}
                         textAnchor="middle"
-                        fill="#5266EB"
+                        className="topi-chart-value"
                         fontWeight="bold"
                         fontSize={13}
                         >
@@ -211,9 +212,12 @@ function MultiChartGastosDash({
                 
                 <ReferenceLine
                 y={budgetToUse}
-                stroke="#fcd34d"
-                strokeWidth={2}
-                strokeDasharray="10 4"
+                className="topi-budget-line"
+                stroke="#8A90A8"
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                ifOverflow={dailyActivated && !cummulated ? "discard" : "extendDomain"}
+                label={{ value: "Presupuesto", position: "insideTopLeft", className: "topi-budget-label", fontSize: 11, fontWeight: 600 }}
                 >
                 {/* <Label
                     value={`${formatCurrency(expense_budget)}`}
