@@ -268,6 +268,20 @@ class Database:
                 (quotes, dates, values, sources),
             ).rowcount
 
+    def fill_pending_fx(self) -> int:
+        """Completa fx_rate/amount_base de las transacciones que no tenían tasa (función de la
+        migración 000024). Devuelve cuántas quedaron completas."""
+        with self.pool.connection() as conn:
+            return conn.execute("SELECT fill_pending_fx() AS n").fetchone()["n"]
+
+    # ------------------------------------------------------------------ daily_account_totals
+
+    def reconcile_daily_totals(self) -> list[str]:
+        """Recalcula los usuarios cuyos totales no cuadran con transactions y los devuelve."""
+        with self.pool.connection() as conn:
+            rows = conn.execute("SELECT user_id FROM reconcile_daily_account_totals()").fetchall()
+        return [row["user_id"] for row in rows]
+
     # ------------------------------------------------------------------ limpieza
 
     def cleanup(self, job_days: int, processed_days: int) -> dict[str, int]:

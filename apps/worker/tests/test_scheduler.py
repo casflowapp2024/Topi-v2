@@ -70,7 +70,8 @@ def test_scheduler_jobs_and_triggers():
     jobs = {job.id: str(job.trigger) for job in scheduler.get_jobs()}
 
     assert jobs["enqueue_hourly"] == "cron[minute='0']"
-    assert jobs["refresh_views"] == "interval[0:05:00]"
+    assert "refresh_views" not in jobs, "los reportes son en vivo desde la migración 000024"
+    assert jobs["reconcile_totals"] == "cron[hour='3', minute='30']"
     assert jobs["refresh_predictions"] == "cron[day='*/2', hour='0', minute='0']"
     assert jobs["cleanup"] == "cron[hour='3', minute='0']"
     assert jobs["fx_sync"] == "cron[hour='19', minute='0']"
@@ -83,20 +84,54 @@ def test_fx_sync_can_be_disabled():
 
 
 @pytest.mark.db
-def test_all_six_views_refresh_and_do_not_overlap(db):
+def test_views_refresh_and_do_not_overlap(db):
     from worker.views import ALL_VIEWS, LOCK_PREFIX, refresh_view, refresh_views
 
+    assert ALL_VIEWS == ("category_predictions",)
     results = refresh_views(db, ALL_VIEWS)
     assert results == {view: "concurrently" for view in ALL_VIEWS}
 
     # otro proceso tiene el lock de la vista: esta vuelta se omite en vez de solaparse
     with db.pool.connection() as other:
-        other.execute("SELECT pg_advisory_lock(hashtext(%s))", (LOCK_PREFIX + "daily_analysis",))
+        other.execute("SELECT pg_advisory_lock(hashtext(%s))", (LOCK_PREFIX + "category_predictions",))
         try:
-            assert refresh_view(db, "daily_analysis") == "skipped"
+            assert refresh_view(db, "category_predictions") == "skipped"
         finally:
-            other.execute("SELECT pg_advisory_unlock(hashtext(%s))", (LOCK_PREFIX + "daily_analysis",))
-    assert refresh_view(db, "daily_analysis") == "concurrently"
+            other.execute("SELECT pg_advisory_unlock(hashtext(%s))", (LOCK_PREFIX + "category_predictions",))
+    assert refresh_view(db, "category_predictions") == "concurrently"
+
+
+def test_sync_fx_fills_pending_transactions(monkeypatch):
+    from worker import fx, scheduler
+
+    class Db:
+        def fill_pending_fx(self):
+            return 3
+
+    monkeypatch.setattr(fx, "sync_recent", lambda db, http, today, lookback: {"SFC_TRM": {"fetched": 1, "changed": 0}})
+    summary = scheduler.sync_fx(Settings.from_env(BASE), Db())
+    assert summary == {"SFC_TRM": {"fetched": 1, "changed": 0}, "pending_fx_filled": 3}
+    assert not fx.has_errors(summary)
+
+
+def test_reconcile_totals_logs_and_returns_rebuilt_users():
+    from worker import scheduler
+
+    class Db:
+        def __init__(self, users):
+            self.users = users
+
+        def reconcile_daily_totals(self):
+            return self.users
+
+    assert scheduler.reconcile_totals(Db([])) == []
+    assert scheduler.reconcile_totals(Db(["u1"])) == ["u1"]
+
+
+@pytest.mark.db
+def test_reconcile_and_fill_pending_against_db(db):
+    assert db.reconcile_daily_totals() == []
+    assert db.fill_pending_fx() >= 0
 
 
 def test_refresh_rejects_unknown_views():

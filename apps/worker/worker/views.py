@@ -1,5 +1,8 @@
 """Refresh de vistas materializadas (reemplaza pg_cron de RDS).
 
+Desde la migración 000024 los reportes se calculan en vivo (tabla daily_account_totals mantenida
+por trigger + funciones analysis_*): solo queda category_predictions.
+
 - pg_try_advisory_lock por vista: dos refresh de la misma vista nunca se solapan (otro worker o
   una corrida lenta); si el lock está tomado se omite esa vuelta.
 - CONCURRENTLY solo si la vista tiene índice único y ya está poblada; si no, refresh normal
@@ -17,15 +20,8 @@ from worker.db import Database
 
 logger = log.get(__name__)
 
-FREQUENT_VIEWS = (
-    "last_month_balance",
-    "balance_by_date",
-    "daily_analysis",
-    "monthly_analysis",
-    "monthly_accounts_analysis",
-)
 PREDICTION_VIEWS = ("category_predictions",)
-ALL_VIEWS = FREQUENT_VIEWS + PREDICTION_VIEWS
+ALL_VIEWS = PREDICTION_VIEWS
 
 LOCK_PREFIX = "topi:refresh:"
 
@@ -72,7 +68,7 @@ def refresh_view(db: Database, view: str) -> str:
             conn.execute("SELECT pg_advisory_unlock(hashtext(%s))", (LOCK_PREFIX + view,))
 
 
-def refresh_views(db: Database, views=FREQUENT_VIEWS) -> dict[str, str]:
+def refresh_views(db: Database, views=ALL_VIEWS) -> dict[str, str]:
     """Refresca varias vistas; un error en una no impide las demás."""
     results = {}
     for view in views:

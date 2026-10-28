@@ -3,7 +3,8 @@
     python -m worker [run]             scheduler + job loop (proceso de larga duración)
     python -m worker enqueue-now       encola ya la corrida horaria (lo que haría el scheduler)
     python -m worker process-once      procesa los jobs pendientes y termina
-    python -m worker refresh-views     refresca las vistas materializadas (--all incluye predicciones)
+    python -m worker refresh-views     refresca category_predictions (la única vista materializada que queda)
+    python -m worker reconcile-totals  recalcula los totales diarios que no cuadren con transactions
     python -m worker fx-sync           trae las tasas de cambio recientes (lo que hace el job diario)
     python -m worker fx-backfill       tasas históricas desde la transacción más antigua
                                        (--from/--to YYYY-MM-DD para un rango; idempotente)
@@ -93,16 +94,27 @@ def cmd_process_once(settings: Settings) -> int:
     return 0
 
 
-def cmd_refresh_views(settings: Settings, include_predictions: bool) -> int:
-    from worker.views import ALL_VIEWS, FREQUENT_VIEWS, refresh_views
+def cmd_refresh_views(settings: Settings) -> int:
+    from worker.views import ALL_VIEWS, refresh_views
 
     db, _, _ = _components(settings, processing=False)
     try:
-        results = refresh_views(db, ALL_VIEWS if include_predictions else FREQUENT_VIEWS)
+        results = refresh_views(db, ALL_VIEWS)
         print(json.dumps(results))
     finally:
         db.close()
     return 1 if any(v.startswith("error") for v in results.values()) else 0
+
+
+def cmd_reconcile_totals(settings: Settings) -> int:
+    from worker.scheduler import reconcile_totals
+
+    db, _, _ = _components(settings, processing=False)
+    try:
+        print(json.dumps({"rebuilt_users": len(reconcile_totals(db))}))
+    finally:
+        db.close()
+    return 0
 
 
 def cmd_fx(settings: Settings, backfill: bool, start, end) -> int:
@@ -115,6 +127,7 @@ def cmd_fx(settings: Settings, backfill: bool, start, end) -> int:
             summary = fx.backfill(db, http, today, start, end)
         else:
             summary = fx.sync_recent(db, http, today, settings.fx_lookback_days)
+        summary["pending_fx_filled"] = db.fill_pending_fx()
         print(json.dumps(summary))
     finally:
         db.close()
@@ -127,8 +140,9 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("run", help="scheduler + job loop")
     sub.add_parser("enqueue-now", help="encolar ya la corrida horaria")
     sub.add_parser("process-once", help="procesar los jobs pendientes y salir")
-    refresh = sub.add_parser("refresh-views", help="refrescar vistas materializadas")
-    refresh.add_argument("--all", action="store_true", help="incluye category_predictions")
+    refresh = sub.add_parser("refresh-views", help="refrescar category_predictions")
+    refresh.add_argument("--all", action="store_true", help="(compatibilidad: ya no cambia nada)")
+    sub.add_parser("reconcile-totals", help="recalcular totales diarios descuadrados")
     sub.add_parser("fx-sync", help="tasas de cambio recientes")
     backfill = sub.add_parser("fx-backfill", help="tasas de cambio históricas")
     backfill.add_argument("--from", dest="start", type=date.fromisoformat, help="desde (por defecto, la transacción más antigua)")
@@ -150,9 +164,11 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_enqueue_now(settings)
         if command == "process-once":
             return cmd_process_once(settings)
+        if command == "reconcile-totals":
+            return cmd_reconcile_totals(settings)
         if command in ("fx-sync", "fx-backfill"):
             return cmd_fx(settings, command == "fx-backfill", getattr(args, "start", None), getattr(args, "end", None))
-        return cmd_refresh_views(settings, args.all)
+        return cmd_refresh_views(settings)
     except ConfigError as exc:
         log.get("worker").error(str(exc))
         return 2

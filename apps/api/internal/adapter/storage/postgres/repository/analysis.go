@@ -58,8 +58,8 @@ func (ar *AnalysisRepository) GetFinancialSummary(
 	// Date calculations in user's timezone
 	userDate := "(t.date at time zone coalesce(u.utc_offset, 'utc'))::date"
 
-	// Amount calculation: positive for income, negative for expenses
-	amountCalc := "case when t.expense is false then t.amount else -t.amount end"
+	// Amount calculation in the user's base currency: positive for income, negative for expenses
+	amountCalc := "case when t.expense is false then t.amount_base else -t.amount_base end"
 
 	// Income: from categories marked as income AND saving/investment account types
 	incomeSum := fmt.Sprintf(
@@ -163,40 +163,40 @@ func (ar *AnalysisRepository) GetBalanceSummary(
 ) (domain.BalanceSummary, error) {
 	var summary = domain.BalanceSummary{}
 
-	// Date calculations in user's timezone
-	convertedDate := "(t.date at time zone coalesce(u.utc_offset, 'utc'))::date"
+	// Accounts can have different currencies: each account's native amounts are converted to the
+	// user's base currency with the rate of the last day of the period (today at most).
+	toBase := "fx_rate_at(a.currency, user_base_currency(a.user_id), least(?::date - 1, current_date))"
 
 	// Query for initial balance
-	initialBalance := ar.db.QueryBuilder.Select(
-		"coalesce(sum(initial_balance), 0) as initial_balance",
-	).From(enums.AccountTableName).
-		Where(sq.Eq{"user_id": userID}).
-		Where(sq.Eq{"type_id": accountTypes})
+	initialBalance := ar.db.QueryBuilder.Select().
+		Column(sq.Expr("coalesce(sum(a.initial_balance * "+toBase+"), 0) as initial_balance", end)).
+		From(enums.AccountTableName + " as a").
+		Where(sq.Eq{"a.user_id": userID}).
+		Where(sq.Eq{"a.type_id": accountTypes})
 
-	// Query for past month balance
-	pastMonthBalance := ar.db.QueryBuilder.
-		Select("COALESCE(SUM(balance), 0) as past_month_balance").
-		From(enums.BalanceByDateTableName).
-		Where(sq.Eq{"user_id": userID}).
-		Where(sq.Eq{"type_id": accountTypes}).
-		Where(sq.Expr("date < ?::date", start))
+	// Query for past month balance (everything before the period)
+	pastMonthBalance := ar.db.QueryBuilder.Select().
+		Column(sq.Expr("coalesce(sum((d.inflow - d.outflow) * "+toBase+"), 0) as past_month_balance", end)).
+		From(enums.DailyAccountTotalsTableName + " as d").
+		Join(enums.AccountTableName + " as a on a.id = d.account_id").
+		Where(sq.Eq{"d.user_id": userID}).
+		Where(sq.Eq{"a.type_id": accountTypes}).
+		Where(sq.Expr("d.day < ?::date", start))
 
-	// Query for current period transactions
-	currentPeriodBalance := ar.db.QueryBuilder.
-		Select("coalesce(sum(case when t.expense is false then t.amount else 0 end) - " +
-			"sum(case when t.expense is true then t.amount else 0 end), 0) as current_period_balance").
-		From(enums.TransactionsTableName + " AS t").
-		LeftJoin(enums.AccountTableName + " ac ON ac.id = t.account_id").
-		LeftJoin(enums.UserExtraTableName + " u ON u.user_id = t.user_id").
-		Where(sq.Eq{"t.user_id": userID}).
-		Where(sq.Eq{"ac.type_id": accountTypes}).
-		Where(sq.Expr(convertedDate+" >= ?::date", start)).
-		Where(sq.Expr(convertedDate+" < ?::date", end))
+	// Query for current period transactions (days are already in the user's timezone)
+	currentPeriodBalance := ar.db.QueryBuilder.Select().
+		Column(sq.Expr("coalesce(sum((d.inflow - d.outflow) * "+toBase+"), 0) as current_period_balance", end)).
+		From(enums.DailyAccountTotalsTableName + " as d").
+		Join(enums.AccountTableName + " as a on a.id = d.account_id").
+		Where(sq.Eq{"d.user_id": userID}).
+		Where(sq.Eq{"a.type_id": accountTypes}).
+		Where(sq.Expr("d.day >= ?::date", start)).
+		Where(sq.Expr("d.day < ?::date", end))
 
 	if len(accounts) > 0 {
-		initialBalance = initialBalance.Where(sq.Eq{"id": accounts})
-		pastMonthBalance = pastMonthBalance.Where(sq.Eq{"account_id": accounts})
-		currentPeriodBalance = currentPeriodBalance.Where(sq.Eq{"t.account_id": accounts})
+		initialBalance = initialBalance.Where(sq.Eq{"a.id": accounts})
+		pastMonthBalance = pastMonthBalance.Where(sq.Eq{"d.account_id": accounts})
+		currentPeriodBalance = currentPeriodBalance.Where(sq.Eq{"d.account_id": accounts})
 	}
 
 	// Convert subqueries to SQL
@@ -272,49 +272,21 @@ func (ar *AnalysisRepository) GetBalanceByAccount(
 ) ([]domain.BalanceByAccount, error) {
 	var accountsBalanceList = make([]domain.BalanceByAccount, 0)
 
-	// Create a common timezone expression to avoid repetition
-	tzExpr := "now() at time zone coalesce(u.utc_offset, 'utc')"
-
-	// Create date range expressions for readability
-	startOfCurrentMonth := "date_trunc('month', " + tzExpr + ")::date"
-	startOfNextMonth := startOfCurrentMonth + " + interval '1 month'"
-	convertedDate := "(t.date at time zone coalesce(u.utc_offset, 'utc'))::date"
-
-	currentMonth := ar.db.QueryBuilder.Select(
-		"t.user_id",
-		"t.account_id",
-		"sum(case when t.expense is false then t.amount else 0 end) - "+
-			"sum(case when t.expense is true then t.amount else 0 end) as balance",
-	).
-		From(enums.TransactionsTableName + " as t").
-		LeftJoin(enums.AccountTableName + " as a on t.account_id = a.id").
-		LeftJoin(enums.UserExtraTableName + " as u on u.user_id = t.user_id").
-		Where(sq.Eq{"t.user_id": userID}).
-		Where(sq.Expr(convertedDate + " >= " + startOfCurrentMonth)).
-		Where(sq.Expr(convertedDate + " < " + startOfNextMonth)).
-		GroupBy("t.user_id, t.account_id")
-
-	if accountTypes != nil {
-		currentMonth = currentMonth.Where(sq.Eq{"a.type_id": accountTypes})
-	}
-
-	currentMonthSQL, _, err := currentMonth.ToSql()
-	if err != nil {
-		return nil, err
-	}
+	// Native balance (account currency) up to the end of the current month in the user's timezone
+	nextMonth := "(date_trunc('month', now() at time zone user_timezone(a.user_id)) + interval '1 month')::date"
+	movements := "(select sum(d.inflow - d.outflow) from " + enums.DailyAccountTotalsTableName +
+		" as d where d.account_id = a.id and d.day < " + nextMonth + ")"
 
 	query := ar.db.QueryBuilder.Select(
 		"a.id",
 		"a.name",
 		"b.name as bank",
 		"a.last_four_digits",
-		"coalesce(a.initial_balance, 0) + coalesce(c.balance, 0) + coalesce(l.balance, 0) as total_balance",
-	).From(enums.AccountTableName + " as a").
-		LeftJoin(enums.BankTableName + " as b on a.bank_id = b.id and a.user_id = b.user_id").
-		LeftJoin("(" + currentMonthSQL + ") as c on a.id = c.account_id and a.user_id = c.user_id").
-		LeftJoin(enums.PastMonthBalanceTableName + " as l on a.user_id = l.user_id and a.id = l.account_id").
+		"coalesce(a.initial_balance, 0) + coalesce("+movements+", 0) as total_balance",
+	).From(enums.AccountTableName+" as a").
+		LeftJoin(enums.BankTableName+" as b on a.bank_id = b.id and a.user_id = b.user_id").
 		Where(sq.Eq{"a.user_id": userID}).
-		OrderBy("total_balance desc")
+		OrderBy("total_balance desc", "a.id")
 
 	if accountTypes != nil {
 		query = query.Where(sq.Eq{"a.type_id": accountTypes})
@@ -368,7 +340,7 @@ func (ar *AnalysisRepository) GetCategoriesReport(
 	)
 
 	// Calculate the expense
-	amountExpr := "coalesce(sum(case when t.expense is false then t.amount else -t.amount end), 0)"
+	amountExpr := "coalesce(sum(case when t.expense is false then t.amount_base else -t.amount_base end), 0)"
 
 	// Extract month and year expressions for date filtering
 	convertedDate := "t.date at time zone coalesce(u.utc_offset, 'utc')"
@@ -458,7 +430,7 @@ func (ar *AnalysisRepository) GetCategoriesReport(
 	return report, nil
 }
 
-// GetDailyAnalysis queries daily analysis materialized view for the provided date range
+// GetDailyAnalysis queries the daily analysis (analysis_daily) for the month of fr.End
 func (ar *AnalysisRepository) GetDailyAnalysis(ctx context.Context, fr *domain.FinancialResolver) {
 	defer fr.Wg.Done()
 
@@ -467,31 +439,15 @@ func (ar *AnalysisRepository) GetDailyAnalysis(ctx context.Context, fr *domain.F
 		err error
 	)
 
-	qb := ar.db.QueryBuilder.
-		Select(
-			"date",
-			"income",
-			"expense",
-			"mtd_income",
-			"mtd_expense",
-			"mtd_savings",
-			"running_savings_balance",
-			"running_credits_balance",
-			"updated_at",
-		).
-		From(enums.DailyAnalysisTableName).
-		Where(sq.Eq{"user_id": fr.UserID}).
-		Where(sq.Expr("extract(year from date) = extract(year from ?::date)", fr.End)).
-		Where(sq.Expr("extract(month from date) = extract(month from ?::date)", fr.End)).
-		OrderBy("date")
+	sqlQuery := `
+		SELECT date, income, expense, mtd_income, mtd_expense, mtd_savings,
+		       running_savings_balance, running_credits_balance, updated_at
+		FROM ` + enums.DailyAnalysisFunction + `($1)
+		WHERE extract(year from date) = extract(year from $2::date)
+		  AND extract(month from date) = extract(month from $2::date)
+		ORDER BY date`
 
-	sqlQuery, args, err := qb.ToSql()
-	if err != nil {
-		fr.DailyErr = err
-		return
-	}
-
-	rows, err := ar.db.Query(ctx, sqlQuery, args...)
+	rows, err := ar.db.Query(ctx, sqlQuery, fr.UserID, fr.End)
 	if err != nil {
 		fr.DailyErr = mappers.MapPostgresErrorCode(err)
 		return
@@ -536,7 +492,7 @@ func (ar *AnalysisRepository) GetDailyAnalysis(ctx context.Context, fr *domain.F
 	fr.Rsp.Daily = out
 }
 
-// GetMonthlyAnalysis queries MONTHLY_ANALYSIS materialized view for the provided date range
+// GetMonthlyAnalysis queries the monthly analysis (analysis_monthly) for the provided date range
 func (ar *AnalysisRepository) GetMonthlyAnalysis(ctx context.Context, fr *domain.FinancialResolver) {
 	defer fr.Wg.Done()
 
@@ -547,56 +503,27 @@ func (ar *AnalysisRepository) GetMonthlyAnalysis(ctx context.Context, fr *domain
 		expenseBudget float64
 	)
 
-	budgetQb := ar.db.QueryBuilder.
-		Select(
-			"coalesce(sum(budget) filter (where income = true), 0) as income_budget",
-			"coalesce(sum(budget) filter (where income = false), 0) as expense_budget",
-		).
-		From(enums.CategoryTableName).
-		Where(sq.Eq{"user_id": fr.UserID})
-
-	budgetSQL, _, err := budgetQb.ToSql()
-	if err != nil {
-		fr.MonthlyErr = err
-		return
-	}
-
 	// Convert year and month to a comparable numeric format (YYYYMM)
 	startYearMonth := fr.Start.Year()*100 + int(fr.Start.Month())
 	endYearMonth := fr.End.Year()*100 + int(fr.End.Month())
 
-	qb := ar.db.QueryBuilder.
-		Select(
-			"ma.year",
-			"ma.month",
-			"ma.income",
-			"ma.income_past",
-			"ma.expense",
-			"ma.expense_past",
-			"ma.savings",
-			"ma.savings_past",
-			"ma.running_savings_balance",
-			"ma.running_savings_balance_past",
-			"ma.running_credits_balance",
-			"ma.running_credits_balance_past",
-			"ma.updated_at",
-			"budgets.income_budget",
-			"budgets.expense_budget",
-		).
-		From(enums.MonthlyAnalysisTableName + " ma").
-		CrossJoin(fmt.Sprintf("(%s) budgets", budgetSQL)).
-		Where(sq.Eq{"ma.user_id": fr.UserID}).
-		Where(sq.Expr("(ma.year * 100 + ma.month) >= ?", startYearMonth)).
-		Where(sq.Expr("(ma.year * 100 + ma.month) <= ?", endYearMonth)).
-		OrderBy("ma.year, ma.month")
+	sqlQuery := `
+		SELECT ma.year, ma.month, ma.income, ma.income_past, ma.expense, ma.expense_past,
+		       ma.savings, ma.savings_past, ma.running_savings_balance, ma.running_savings_balance_past,
+		       ma.running_credits_balance, ma.running_credits_balance_past, ma.updated_at,
+		       budgets.income_budget, budgets.expense_budget
+		FROM ` + enums.MonthlyAnalysisFunction + `($1) ma
+		CROSS JOIN (
+			SELECT coalesce(sum(budget) filter (where income = true), 0) as income_budget,
+			       coalesce(sum(budget) filter (where income = false), 0) as expense_budget
+			FROM ` + enums.CategoryTableName + `
+			WHERE user_id = $1
+		) budgets
+		WHERE (ma.year * 100 + ma.month) >= $2
+		  AND (ma.year * 100 + ma.month) <= $3
+		ORDER BY ma.year, ma.month`
 
-	sqlQuery, args, err := qb.ToSql()
-	if err != nil {
-		fr.MonthlyErr = err
-		return
-	}
-
-	rows, err := ar.db.Query(ctx, sqlQuery, args...)
+	rows, err := ar.db.Query(ctx, sqlQuery, fr.UserID, startYearMonth, endYearMonth)
 	if err != nil {
 		fr.MonthlyErr = mappers.MapPostgresErrorCode(err)
 		return
@@ -680,7 +607,7 @@ func (ar *AnalysisRepository) GetCategoryAnalysis(
 		"extract(year from "+convertedDate+") as year",
 		"extract(month from "+convertedDate+") as month",
 		"max(c.budget) as budget",
-		"sum((case when t.expense then -1 else 1 end) * t.amount) as expense",
+		"sum((case when t.expense then -1 else 1 end) * t.amount_base) as expense",
 		"bool_or(c.income) as is_income_category",
 	).
 		From(enums.TransactionsTableName + " as t").
@@ -749,7 +676,7 @@ func (ar *AnalysisRepository) GetCategoryAnalysis(
 
 // GetAccountAnalysis retrieves the account behavior analysis over time for the given user and account.
 // It calculates monthly balance, income, and expenses for a specific account over a date range,
-// using the MONTHLY_ACCOUNTS_ANALYSIS materialized view to ensure accurate data.
+// using analysis_monthly_accounts (native balances in the account currency).
 //
 // Parameters:
 //   - ctx: The context for the database operation
@@ -774,28 +701,15 @@ func (ar *AnalysisRepository) GetAccountAnalysis(
 	startYearMonth := start.Year()*100 + int(start.Month())
 	endYearMonth := end.Year()*100 + int(end.Month())
 
-	// Build the query using QueryBuilder to get account details and monthly data
-	query := ar.db.QueryBuilder.Select(
-		"account_name",
-		"type_id",
-		"year",
-		"month",
-		"balance",
-		"balance_past",
-	).
-		From(enums.MonthlyAccountsTableName).
-		Where(sq.Eq{"user_id": userID}).
-		Where(sq.Eq{"account_id": accountID}).
-		Where(sq.Expr("(year * 100 + month) >= ?", startYearMonth)).
-		Where(sq.Expr("(year * 100 + month) <= ?", endYearMonth)).
-		OrderBy("year, month")
+	sqlQuery := `
+		SELECT account_name, type_id, year, month, balance, balance_past
+		FROM ` + enums.MonthlyAccountsFunction + `($1)
+		WHERE account_id = $2
+		  AND (year * 100 + month) >= $3
+		  AND (year * 100 + month) <= $4
+		ORDER BY year, month`
 
-	sqlQuery, args, err := query.ToSql()
-	if err != nil {
-		return analysis, err
-	}
-
-	rows, err := ar.db.Query(ctx, sqlQuery, args...)
+	rows, err := ar.db.Query(ctx, sqlQuery, userID, accountID, startYearMonth, endYearMonth)
 	if err != nil {
 		return analysis, mappers.MapPostgresErrorCode(err)
 	}
@@ -869,8 +783,8 @@ func (ar *AnalysisRepository) GetFinancialAccountSummary(
 	userDate := "(t.date at time zone coalesce(u.utc_offset, 'utc'))::date"
 
 	if accountTypes.IsSaving() {
-		// Amount calculation: positive for income, negative for expenses
-		amountCalc := "case when t.expense is false then t.amount else -t.amount end"
+		// Amount calculation in the user's base currency: positive for income, negative for expenses
+		amountCalc := "case when t.expense is false then t.amount_base else -t.amount_base end"
 
 		// Income: from categories marked as income
 		income = fmt.Sprintf("sum(case when c.income is true then %s else 0 end)", amountCalc)
@@ -880,8 +794,8 @@ func (ar *AnalysisRepository) GetFinancialAccountSummary(
 
 	} else {
 		// Amount calculation: positive for income, negative for expenses
-		income = "sum(case when t.expense is false then t.amount else 0 end)"
-		expense = "sum(case when t.expense is true then -t.amount else 0 end)"
+		income = "sum(case when t.expense is false then t.amount_base else 0 end)"
+		expense = "sum(case when t.expense is true then -t.amount_base else 0 end)"
 	}
 
 	query := ar.db.QueryBuilder.Select(

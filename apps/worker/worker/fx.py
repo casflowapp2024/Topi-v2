@@ -158,5 +158,5 @@ def backfill(db: FxStore, http: Http, today: date, start: date | None = None,
     return sync_range(db, http, start, end, today)
 
 
-def has_errors(summary: dict[str, dict]) -> bool:
-    return any("error" in result for result in summary.values())
+def has_errors(summary: dict) -> bool:
+    return any(isinstance(result, dict) and "error" in result for result in summary.values())

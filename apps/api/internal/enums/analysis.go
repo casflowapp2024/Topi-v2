@@ -1,11 +1,12 @@
 package enums
 
 const (
-	PastMonthBalanceTableName = "last_month_balance"
-	BalanceByDateTableName    = "balance_by_date"
-	DailyAnalysisTableName    = "daily_analysis"
-	MonthlyAnalysisTableName  = "monthly_analysis"
-	MonthlyAccountsTableName  = "monthly_accounts_analysis"
+	// DailyAccountTotalsTableName tiene una fila por (cuenta, categoría, día local) mantenida por
+	// trigger; las funciones de análisis reciben el user_id (migración 000024).
+	DailyAccountTotalsTableName = "daily_account_totals"
+	DailyAnalysisFunction       = "analysis_daily"
+	MonthlyAnalysisFunction     = "analysis_monthly"
+	MonthlyAccountsFunction     = "analysis_monthly_accounts"
 )
 
 const (
