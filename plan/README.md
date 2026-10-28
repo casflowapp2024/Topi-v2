@@ -8,6 +8,7 @@
 | `03-fase-3-worker.md` | Worker de correos (ex-Saturn) y reanudación de lectura |
 | `04-fase-4-web.md` | Frontend listo para producción (sin n8n ni chatbot) |
 | `05-fase-5-deploy.md` | Deploy en Coolify: código (Parte A) y runbook manual (Parte B) |
+| `10-tipos-de-cuenta.md` | Transferencias, inversiones con valoraciones, tarjetas y cambio de moneda de cuentas |
 | `90-evaluacion-jev.md` | Análisis de Jev vs Gemini (para después) |
 | `PROMPT-fase-*.md` | Prompts para Claude Code |
 
