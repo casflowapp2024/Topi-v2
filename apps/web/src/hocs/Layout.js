@@ -14,6 +14,7 @@ import Onboarding2 from './Onboarding2';
 import NextStepsPopover from '../components/onboarding2/NextStepsPopover';
 import InstallPwaModal from '../components/ui/InstallPwaModal';
 import Warnings from '../components/navigation/Warnings';
+import PeriodSelector from '../components/navigation/PeriodSelector';
 import { connectEmailAction, wasPromptedThisSession, markPromptedThisSession } from '../components/conexions/emailConnection';
 import AccountSettings from '../containers/AccountSettings';
 import { ReactComponent as Cflogo } from '../assets/logos/T1.svg';
@@ -28,6 +29,8 @@ import {
 } from '@heroicons/react/20/solid';
 //UX
 import { Oval } from 'react-loader-spinner';
+
+const PAGE_TITLES = { general: 'Resumen', budgets: 'Presupuestos', accounts: 'Cuentas' };
 
 const Layout = ({
   children,
@@ -81,6 +84,8 @@ const Layout = ({
   const activeTab = pathSegments.length > 1 ? pathSegments[1] : 'general';
 
   const isDark = Boolean(user_extra_data?.config?.dark_mode);
+  // Selector de periodo global: solo en las vistas que dependen del mes
+  const showPeriodBar = location.pathname.startsWith('/dashboard') && ['general', 'budgets', 'accounts'].includes(activeTab);
 
   // El tema también va en <html>: así lo toman los modales (que se montan fuera de este div),
   // las barras de scroll y los controles nativos del navegador.
@@ -265,6 +270,15 @@ const Layout = ({
                 )}
 
                 <NextStepsPopover open={openNextSteps} setOpen={setOpenNextSteps} />
+
+                {showPeriodBar && (
+                  <div className="sticky top-[53px] md:top-[62px] z-30 w-full flex justify-center bg-gray-100/85 dark:bg-[#0B0F19]/85 backdrop-blur-md transition-colors duration-300">
+                    <div className="w-full lg:w-[806px] xl:w-[930px] px-2 lg:px-0 py-2 flex items-center justify-between gap-2">
+                      <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{PAGE_TITLES[activeTab]}</h1>
+                      <PeriodSelector />
+                    </div>
+                  </div>
+                )}
 
                 <div className="w-full flex justify-center">
                   <div className="md:py-1 w-full lg:w-[806px] xl:w-[930px]">

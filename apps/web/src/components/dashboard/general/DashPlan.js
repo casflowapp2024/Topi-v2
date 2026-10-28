@@ -5,15 +5,12 @@ import { formatCurrency, capitalizeWords, getPerc0, formatDate } from '../../hel
 import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/20/solid';
 import { ThreeDots } from 'react-loader-spinner';
 import { Emoji } from "emoji-picker-react";
-import { set_another_month, set_another_year } from '../../../redux/actions/reports';
 import FormatMoneyShowDecs from '../../FormatMoneyShowDecs';
 import BudgetProgress, { getMonthPace } from '../../ui/BudgetProgress';
 
 const DashPlan = ({
   current_Month,
   current_Year,
-  set_another_month,
-  set_another_year,
   get_expenses_report, expenses_report, user_categories
 }) => {
   const monthPace = getMonthPace(current_Year, current_Month);
@@ -22,22 +19,7 @@ const DashPlan = ({
   const [loadingReport, setLoadingReport] = useState(true)
 
 
-  const handleMonthChange = (increment) => {
-    let newMonth = current_Month + increment;
-    if (newMonth < 1) {
-      newMonth = 12;
 
-      set_another_year(current_Year - 1);
-    } else if (newMonth > 12) {
-      newMonth = 1;
-      set_another_year(current_Year + 1);
-    }
-    set_another_month(newMonth);
-  };
-
-  const handleYearChange = (increment) => {
-    set_another_year(current_Year + increment);
-  };
 
   const get_expenses_report_confirm = async (dateFormated) => {
     setLoadingReport(true)
@@ -48,12 +30,6 @@ const DashPlan = ({
   }
 
   useEffect(() => {
-    let dateString = `${current_Year}-${current_Month.toString().padStart(2, '0')}-01`
-    get_expenses_report_confirm(dateString);
-
-  }, []);
-
-  useEffect(() => {
 
     if (current_Year && current_Month) {
       let dateString = `${current_Year}-${current_Month.toString().padStart(2, '0')}-01`
@@ -61,20 +37,6 @@ const DashPlan = ({
     }
   }, [current_Month, current_Year]);
 
-  const monthNumberText = {
-    1: 'Ene',
-    2: 'Feb',
-    3: 'Mar',
-    4: 'Abr',
-    5: 'May',
-    6: 'Jun',
-    7: 'Jul',
-    8: 'Ago',
-    9: 'Sep',
-    10: 'Oct',
-    11: 'Nov',
-    12: 'Dic'
-  };
 
 
   return (
@@ -82,27 +44,6 @@ const DashPlan = ({
       <div className="flex flex-col py-4 px-3 w-full">
         <div className='pb-3 flex flex-row justify-between items-center text-sm font-medium border-b border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-300'>
           <h2>Presupuestos</h2>
-
-          <div className='flex md:hidden px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl divide-x divide-gray-200 dark:divide-gray-700 flex-row text-gray-700 dark:text-gray-300 transition-colors duration-300'>
-            <div className='flex flex-row items-center gap-1'>
-              <button onClick={() => handleMonthChange(-1)} className='hover:text-[#5266EB] transition-colors'>
-                <ChevronLeftIcon className='w-4 h-4' />
-              </button>
-              <span>{monthNumberText[current_Month]}</span>
-              <button onClick={() => handleMonthChange(1)} className='hover:text-[#5266EB] transition-colors'>
-                <ChevronRightIcon className='w-4 h-4' />
-              </button>
-            </div>
-            <div className='pl-2 ml-1 flex flex-row items-center gap-1'>
-              <button onClick={() => handleYearChange(-1)} className='hover:text-[#5266EB] transition-colors'>
-                <ChevronLeftIcon className='w-4 h-4' />
-              </button>
-              <span>{current_Year}</span>
-              <button onClick={() => handleYearChange(1)} className='hover:text-[#5266EB] transition-colors'>
-                <ChevronRightIcon className='w-4 h-4' />
-              </button>
-            </div>
-          </div>
         </div>
         <div className='max-h-[344px] md:h-[344px] overflow-y-auto hide-scrollbar'>
 
@@ -166,6 +107,4 @@ const mapStateToProps = (state) => ({
 
 export default connect(mapStateToProps, {
   get_expenses_report,
-  set_another_month,
-  set_another_year
 })(DashPlan);

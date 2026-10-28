@@ -9,7 +9,6 @@ import DropDownAccount from './DropDownAccounts';
 import { formatCurrency, getPerc2 } from '../../helpers';
 import FormatMoneyShowDecs from '../../FormatMoneyShowDecs';
 import DashStatsCard from './DashStatsCard';
-import FlowDash from '../FlowDash';
 import {
     ArrowDownRightIcon,
     ArrowUpRightIcon,
@@ -63,9 +62,8 @@ const DashStats = ({
             <div className='flex flex-col gap-4 h-full'>
                 <div className='flex flex-row justify-between items-center text-gray-900 dark:text-gray-100'>
                     <div className=' font-medium'>
-                        Resumen
+                        Resumen del mes
                     </div>
-                    <FlowDash />
 
                 </div>
 

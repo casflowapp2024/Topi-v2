@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 //redux
 import { connect } from 'react-redux'
 //componentes
-import FlowDash from '../FlowDash';
 import { formatCurrency, formatDate, getPerc0 } from '../../helpers';
 import FormatMoneyShowDecs from '../../FormatMoneyShowDecs';
 import { monthNumberText } from '../../info_arrays';
@@ -71,7 +70,6 @@ const BudDashTotalSpent = ({
     <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-md flex flex-col gap-1 transition-colors duration-300">
       <div className='flex flex-row justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-1 mb-1 transition-colors duration-300'>
         <span className='text-sm font-semibold text-gray-700 dark:text-gray-200'>Presupuesto Mensual</span>
-        <FlowDash />
       </div>
       <div className="flex flex-row justify-between">
         <div className="flex flex-col justify-around items-left">
