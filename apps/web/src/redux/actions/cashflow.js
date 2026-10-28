@@ -69,7 +69,7 @@ import {
 
 } from './types';
 
-import { formatDate, formatDateTimeWithZone, formatToCustomDate, formatToDateFilters } from '../../components/helpers';
+import { formatDate, formatDateTimeWithZone, formatToCustomDate, formatToDateFilters, classOfTypeId } from '../../components/helpers';
 
 
 // categories
@@ -324,7 +324,7 @@ export const create_f_account = (
     amount,
     automation_email,
     currency // ISO 4217 (COP si no se elige)
-) => async dispatch => {
+) => async (dispatch, getState) => {
 
     const config = {
         headers: {
@@ -334,7 +334,8 @@ export const create_f_account = (
     };
 
     let initial_balance
-    if (type_id === 4) {
+    // las tarjetas (clase credit) guardan el saldo inicial como deuda: negativo
+    if (classOfTypeId(type_id, getState().CashFlow.account_types?.items) === 'credit') {
         initial_balance = -amount
     } else {
         initial_balance = amount
@@ -430,7 +431,7 @@ export const update_account = (
     amount,
     automation_email,
     currency // ISO 4217; en la edición solo se manda si cambió
-) => async dispatch => {
+) => async (dispatch, getState) => {
 
 
     const config = {
@@ -441,7 +442,8 @@ export const update_account = (
     };
 
     let initial_balance
-    if (type_id === 4) {
+    // las tarjetas (clase credit) guardan el saldo inicial como deuda: negativo
+    if (classOfTypeId(type_id, getState().CashFlow.account_types?.items) === 'credit') {
         initial_balance = -amount
     } else {
         initial_balance = amount

@@ -3,6 +3,7 @@
  * a conectar una y la orquestación "vincular a las cuentas + leer ahora" después del OAuth.
  */
 import { get_user_accounts, update_account } from "../../redux/actions/cashflow";
+import { isCreditAccount } from "../helpers";
 import { get_automated_emails, read_email_transactions_trigger } from "../../redux/actions/conexions";
 
 const SNOOZE_KEY = 'connectEmailSnoozedUntil';
@@ -76,8 +77,8 @@ export const linkEmailAndReadNow = (emailAddress) => async (dispatch, getState) 
             }
             if (account.email?.id && isUsableEmail(account.email)) continue;
 
-            // update_account vuelve a invertir el signo de las tarjetas de crédito (type 4)
-            const amount = account.type.id === 4 ? -account.initial_balance : account.initial_balance;
+            // update_account vuelve a invertir el signo de las tarjetas de crédito (clase credit)
+            const amount = isCreditAccount(account) ? -account.initial_balance : account.initial_balance;
             const status = await dispatch(update_account(
                 account.id,
                 account.name,

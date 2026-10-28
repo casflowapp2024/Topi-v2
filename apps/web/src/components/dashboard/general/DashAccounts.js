@@ -44,7 +44,9 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
     const savings = rows.reduce((sum, r) => sum + (r.value && r.value > 0 ? r.value : 0), 0);
     return { rows, savings };
   }, [user_accounts, net_worth]);
-  const gain = Number(net_worth?.unrealized_gain || 0);
+  // ganancia no realizada: de las inversiones (valoraciones) y cambiaria (tasas)
+  const marketGain = Number(net_worth?.market_gain || 0);
+  const fxGain = Number(net_worth?.fx_gain ?? net_worth?.unrealized_gain ?? 0);
 
   const openAccount = (acc) => {
     set_dash_account_activated(acc);
@@ -63,9 +65,14 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
           <span className="flex flex-col">
             <span>Patrimonio hoy: <b className="text-gray-900 dark:text-gray-100 tabular-nums">{formatMoney(net_worth.total, baseCurrency)}</b>
               {net_worth.missing_rates && <span title="Alguna cuenta aún no tiene tasa de cambio"> *</span>}</span>
-            {gain !== 0 && (
-              <span className={gain < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}>
-                {gain < 0 ? 'Pérdida' : 'Ganancia'} cambiaria no realizada: {formatMoney(Math.abs(gain), baseCurrency)}
+            {marketGain !== 0 && (
+              <span className={marketGain < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}>
+                {marketGain < 0 ? 'Pérdida' : 'Ganancia'} de tus inversiones: {formatMoney(Math.abs(marketGain), baseCurrency)}
+              </span>
+            )}
+            {fxGain !== 0 && (
+              <span className={fxGain < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}>
+                {fxGain < 0 ? 'Pérdida' : 'Ganancia'} cambiaria no realizada: {formatMoney(Math.abs(fxGain), baseCurrency)}
               </span>
             )}
           </span>
@@ -120,6 +127,12 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
                       baseCurrency={baseCurrency}
                       className={`text-sm font-bold tabular-nums ${balance < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-gray-900 dark:text-gray-100'}`}
                     />
+                    {nw.market_gain != null && Number(nw.market_gain) !== 0 && (
+                      <span className={`text-xs tabular-nums ${Number(nw.market_gain) < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}`}
+                        title="Ganancia de la inversión: valor menos lo aportado">
+                        {Number(nw.market_gain) > 0 ? '+' : ''}{formatMoney(nw.market_gain, nw.currency)}
+                      </span>
+                    )}
                     <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-topi-500 transition-colors" aria-hidden="true" />
                   </span>
                 </button>

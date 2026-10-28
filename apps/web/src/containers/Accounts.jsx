@@ -9,8 +9,8 @@ import Layout from "../hocs/Layout"
 import AccountDetail from "../components/accounts/AccountDetail";
 import AccountCreate from "../components/accounts/AccountCreate";
 /* import LinkTransEmail from "../components/accounts/LinkTransEmail"; */
-import { PlusIcon, CreditCardIcon, DocumentCurrencyDollarIcon } from '@heroicons/react/20/solid'
-import { findElmentById } from "../components/helpers";
+import { PlusIcon, CreditCardIcon, DocumentCurrencyDollarIcon, ArrowTrendingUpIcon } from '@heroicons/react/20/solid'
+import { findElmentById, accountClass } from "../components/helpers";
 import { get_account_types } from "../redux/actions/cashflow";
 import { get_automated_emails } from "../redux/actions/conexions";
 import {get_savings_account} from "../redux/actions/reports";
@@ -103,11 +103,12 @@ const Accounts = ({
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0">
                                         <div className='w-8 h-8 flex justify-center items-center rounded-full bg-[#5266EB]'>
-                                            {account.type.id === 1?
-                                            <DocumentCurrencyDollarIcon className='h-6 w-6 text-white'/>
-                                            :
+                                            {accountClass(account) === 'credit' ?
                                             <CreditCardIcon className='h-6 w-6 text-white'/>
-
+                                            : accountClass(account) === 'investment' ?
+                                            <ArrowTrendingUpIcon className='h-6 w-6 text-white'/>
+                                            :
+                                            <DocumentCurrencyDollarIcon className='h-6 w-6 text-white'/>
                                             }
                                         </div>
                                     </div>

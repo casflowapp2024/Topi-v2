@@ -16,7 +16,8 @@ import AccSummaryCard from "./AccSummaryCard.js";
 import AccountDetail from "../../accounts/AccountDetail";
 import AccountCreate from "../../accounts/AccountCreate";
 import { PlusIcon, CreditCardIcon, DocumentCurrencyDollarIcon } from '@heroicons/react/20/solid'
-import { findElmentById } from "../../helpers.js";
+import { findElmentById, accountReportGroup, isInvestmentAccount } from "../../helpers.js";
+import InvestmentValuationCard from "./InvestmentValuationCard";
 //redux
 //import {  } from "../redux/actions/cashflow";
 
@@ -80,19 +81,10 @@ const AAAcountsDashboard = ({
         const end_date_first = parseDatetimetoDateStrFormat(new Date(current_Year, current_Month, 0), "YYYY-MM-DD")
         set_init_date_account_activated(ini_date_first);
         set_end_date_account_activated(end_date_first);
-        let accounts_type
         if (!account_activated) {
             return
         }
-        if (account_activated.type.id === 1 || account_activated.type.id === 2) {
-            accounts_type = "savings"
-        } else if (account_activated.type.id === 3) {
-            accounts_type = "investments"
-        } else if (account_activated.type.id === 4) {
-            accounts_type = "credits"
-        } else {
-            return
-        }
+        const accounts_type = accountReportGroup(account_activated)
         get_accounts_status_by_period(ini_date_first, end_date_first, accounts_type, [account_activated.id]);
         const date_filter = `${current_Year}-${current_Month.toString().padStart(2, '0')}`
         get_history_accounts_by_month(date_filter, account_activated.id)
@@ -100,19 +92,10 @@ const AAAcountsDashboard = ({
     }, []);
 
     useEffect(() => {
-        let accounts_type
         if (!account_activated) {
             return
         }
-        if (account_activated.type.id === 1 || account_activated.type.id === 2) {
-            accounts_type = "savings"
-        } else if (account_activated.type.id === 3) {
-            accounts_type = "investments"
-        } else if (account_activated.type.id === 4) {
-            accounts_type = "credits"
-        } else {
-            return
-        }
+        const accounts_type = accountReportGroup(account_activated)
         if (endDate_account_dash) {
             console.log("endDate_account_dash", endDate_account_dash)
             const year_from_end_date = endDate_account_dash.substring(0, 4);
@@ -159,6 +142,11 @@ const AAAcountsDashboard = ({
                     {account_activated &&
                         <div className='order-3 lg:order-none p-4 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-xl shadow-md'>
                             <AccSummaryCard acc={account_activated} data={account_activated_stats} />
+                        </div>
+                    }
+                    {account_activated && isInvestmentAccount(account_activated) &&
+                        <div className="order-3 lg:order-none">
+                            <InvestmentValuationCard account={account_activated} />
                         </div>
                     }
                     <div className="order-4 lg:order-none h-[260px] md:h-[364px] lg:h-[360px] p-4 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-xl shadow-md flex flex-col">

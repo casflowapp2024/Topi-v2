@@ -13,7 +13,7 @@ import { set_dash_account_activated, get_accounts_status_by_period, get_history_
 //componentes
 import AccSummaryCard from './AccSummaryCard';
 import { formatMoney, formatDate, findElmentById, formatToDateFilters, deepEqual } from '../../helpers';
-import { parseDatetimetoDateStrFormat } from '../../helpers';
+import { parseDatetimetoDateStrFormat, accountReportGroup } from '../../helpers';
 import TransactionDetail from '../../transactions/TransactionDetail2'
 import CreateTransaction from '../../transactions/CreateTransaction';
 
@@ -160,16 +160,7 @@ const AccTransPeriod = ({
 
         // Also refresh account stats if needed
         if (account_activated) {
-            let accounts_type
-            if (account_activated.type.id === 1 || account_activated.type.id === 2) {
-                accounts_type = "savings"
-            } else if (account_activated.type.id === 3) {
-                accounts_type = "investments"
-            } else if (account_activated.type.id === 4) {
-                accounts_type = "credits"
-            } else {
-                return
-            }
+            const accounts_type = accountReportGroup(account_activated)
             const date_filter = `${current_Year}-${current_Month.toString().padStart(2, '0')}`
             get_history_accounts_by_month(date_filter, account_activated?.id);
             get_accounts_status_by_period(iniDate_account_dash, endDate_account_dash, accounts_type, [account_activated.id]);

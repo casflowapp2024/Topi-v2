@@ -36,6 +36,21 @@ export const currencyOptions = () => {
     return [...first.map(getCurrency), ...rest];
 };
 
+// Clase de la cuenta: deposit (ahorros, corriente) | investment | credit (tarjetas). La manda la API
+// en account.type.class; sin ella sale del tipo (catálogo global: 3 = inversión, 4 = tarjeta).
+export const classOfTypeId = (typeId, accountTypes) => {
+    const known = (accountTypes || []).find(t => Number(t.id) === Number(typeId));
+    if (known?.class) return known.class;
+    const id = Number(typeId);
+    return id === 3 ? 'investment' : id === 4 ? 'credit' : 'deposit';
+};
+export const accountClass = (account) => account?.type?.class || classOfTypeId(account?.type?.id ?? account?.type_id);
+export const isCreditAccount = (account) => accountClass(account) === 'credit';
+export const isInvestmentAccount = (account) => accountClass(account) === 'investment';
+// Grupo de la cuenta en los reportes de la API (/analysis/...): savings | investments | credits
+export const accountReportGroup = (account) =>
+    ({ deposit: 'savings', investment: 'investments', credit: 'credits' })[accountClass(account)];
+
 /**
  * formatMoney(amount, currency, { locale, decimals, compact })
  * amount: número o string decimal (como llega del API). currency: ISO 4217; por defecto la moneda

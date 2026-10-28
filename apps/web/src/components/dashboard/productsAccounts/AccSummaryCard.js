@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatMoney } from '../../helpers';
+import { formatMoney, isCreditAccount } from '../../helpers';
 
 
 import { WalletIcon, FireIcon, BanknotesIcon } from '@heroicons/react/20/solid';
@@ -36,7 +36,7 @@ const AccSummaryCard = ({ acc, data }) => {
           icon={<BanknotesIcon className="w-4 h-4" />}
           colorClass="text-[#5266EB]"
         />
-        {acc?.type?.id === 4 ?
+        {isCreditAccount(acc) ?
           <div></div> :
           <SummaryCard
             title="Ahorro"
@@ -45,7 +45,7 @@ const AccSummaryCard = ({ acc, data }) => {
             colorClass="text-[#5266EB]"
           />
         }
-        {acc?.type?.id === 4 ?
+        {isCreditAccount(acc) ?
           <SummaryCard
             title="Pagos"
             value={formatMoney(income)}

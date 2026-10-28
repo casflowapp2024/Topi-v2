@@ -7,7 +7,7 @@ import { get_user_categories, create_category } from '../../redux/actions/cashfl
 import { get_accounts_status_by_period, get_history_accounts_by_month, get_history_dash, get_history_category_by_month, get_expenses_report } from '../../redux/actions/reports';
 import { setAlert } from '../../redux/actions/alert';
 //components
-import { findElmentNameById, formatDate, formatMoney, formatedCurrToNumber, findElmentById, parseDatetimetoDateStrFormat, formatToDateFilters } from '../helpers';
+import { findElmentNameById, formatDate, formatMoney, formatedCurrToNumber, findElmentById, parseDatetimetoDateStrFormat, formatToDateFilters, accountReportGroup } from '../helpers';
 import TransSumm from './TransSumm';
 import FxRateEditor from './FxRateEditor';
 import TransferLinkSection from './TransferLinkSection';
@@ -71,14 +71,7 @@ function TransactionDetail({
     // Recarga las vistas que dependen de la transacción según dónde se abrió el detalle
     const refreshViews = () => {
         if (contextWindow === "dashAccounts" && account_activated) {
-            let accounts_type
-            if (account_activated.type.id === 1 || account_activated.type.id === 2) {
-                accounts_type = "savings"
-            } else if (account_activated.type.id === 3) {
-                accounts_type = "investments"
-            } else if (account_activated.type.id === 4) {
-                accounts_type = "credits"
-            }
+            const accounts_type = accountReportGroup(account_activated)
 
             if (accounts_type) {
                 const year_from_end_date = endDate_account_dash.substring(0, 4);

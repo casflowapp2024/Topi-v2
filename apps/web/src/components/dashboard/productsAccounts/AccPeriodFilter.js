@@ -11,7 +11,7 @@ import { set_init_date_account_activated, set_end_date_account_activated, get_ac
 //componentes
 import AccSummaryCard from './AccSummaryCard';
 import { formatMoney, formatDate, findElmentById } from '../../helpers';
-import { parseDatetimetoDateStrFormat } from '../../helpers';
+import { parseDatetimetoDateStrFormat, accountReportGroup } from '../../helpers';
 //ui
 import { Emoji } from 'emoji-picker-react';
 
@@ -46,19 +46,10 @@ const AccPeriodFilter = ({
 
     useEffect(() => {
         //al cargar el componente, si no hay cuenta activada, activar la primera cuenta de la list
-        let accounts_type
         if (!account_activated) {
             return
         }
-        if (account_activated.type.id === 1 || account_activated.type.id === 2) {
-            accounts_type = "savings"
-        } else if (account_activated.type.id === 3) {
-            accounts_type = "investments"
-        } else if (account_activated.type.id === 4) {
-            accounts_type = "credits"
-        } else {
-            return
-        }
+        const accounts_type = accountReportGroup(account_activated)
         get_accounts_status_by_period(iniDate_account_dash, endDate_account_dash, accounts_type, [account_activated.id]);
 
     }, [iniDate_account_dash, endDate_account_dash]);
