@@ -1,4 +1,4 @@
--- Chequeo después de la migración 000024 (multimoneda, Fase 2). Solo lee; no muestra datos de usuarios.
+-- Chequeo después de las migraciones 000024 y 000025 (multimoneda, Fase 2). Solo lee; no muestra datos de usuarios.
 --
 --   docker exec -i <contenedor-postgres> psql -U topi -d cashflow -f - < infra/scripts/sql/multicurrency-check.sql
 --
@@ -6,7 +6,7 @@
 -- La comparación completa de reportes ANTES/DESPUÉS es TestReportSnapshot
 -- (apps/api/internal/adapter/storage/postgres/repository/report_snapshot_integration_test.go).
 
-\echo '== versión de migraciones (esperado 24, dirty = f)'
+\echo '== versión de migraciones (esperado 25, dirty = f)'
 SELECT version, dirty FROM schema_migrations;
 
 \echo '== transacciones (informativo) y problemas (todo en 0)'

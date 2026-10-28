@@ -328,7 +328,7 @@ SELECT rebuild_daily_account_totals();
 -- saldo inicial de una cuenta una vez por cada transacción del día de su creación:
 --   - tarjetas (tipo 4) en el saldo de créditos: × transacciones del usuario ese día;
 --   - análisis por cuenta: × transacciones de esa cuenta ese día.
--- Está marcado con "LEGADO" para corregirlo aparte.
+-- Está marcado con "LEGADO"; lo corrige la 000025.
 
 CREATE FUNCTION analysis_daily(p_user_id VARCHAR)
 RETURNS TABLE (

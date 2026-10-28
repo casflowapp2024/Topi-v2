@@ -235,6 +235,39 @@ func TestMulticurrencyReports(t *testing.T) {
 	assert.Equal(t, "100.00", nativeUSD, "el saldo por cuenta queda en la moneda de la cuenta")
 }
 
+// TestInitialBalanceCountsOnce: el saldo inicial cuenta una sola vez aunque haya varias
+// transacciones el día en que se creó la cuenta (las vistas viejas lo multiplicaban; 000025).
+func TestInitialBalanceCountsOnce(t *testing.T) {
+	ctx := context.Background()
+	db := integrationDB(t)
+	tx, err := db.Begin(ctx)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = tx.Rollback(ctx) })
+	f := newMulticurrencyFixture(t, ctx, tx)
+
+	exec(t, ctx, tx, "UPDATE accounts SET created_at = '2026-10-20 08:00:00-05' WHERE user_id = $1", f.userID)
+	exec(t, ctx, tx, "UPDATE accounts SET initial_balance = 1000 WHERE id = $1", f.cop)
+	exec(t, ctx, tx, "UPDATE accounts SET initial_balance = -10 WHERE id = $1", f.usdCard) // deuda de 10 USD
+	// tres transacciones del usuario el día de creación, dos de ellas en la cuenta COP
+	exec(t, ctx, tx, `INSERT INTO transactions (user_id, category_id, account_id, description, expense, amount, date) VALUES
+		($1, $2, $3, 'a', true, 100, '2026-10-20 12:00:00-05'),
+		($1, $2, $3, 'b', true, 50, '2026-10-20 13:00:00-05'),
+		($1, $2, $4, 'c', true, 1, '2026-10-20 14:00:00-05')`,
+		f.userID, f.expenseCat, f.cop, f.usd)
+
+	var copBalance string
+	require.NoError(t, tx.QueryRow(ctx,
+		"SELECT balance::numeric(20,2)::text FROM analysis_monthly_accounts($1) WHERE account_id = $2 AND year = 2026 AND month = 10",
+		f.userID, f.cop).Scan(&copBalance))
+	assert.Equal(t, "850.00", copBalance, "1000 − 100 − 50, sin repetir el saldo inicial")
+
+	var credits string
+	require.NoError(t, tx.QueryRow(ctx,
+		"SELECT running_credits_balance::numeric(20,2)::text FROM analysis_daily($1) WHERE date = '2026-10-20'",
+		f.userID).Scan(&credits))
+	assert.Equal(t, "-40000.00", credits, "−10 USD × 4000, una sola vez")
+}
+
 func exec(t *testing.T, ctx context.Context, tx pgx.Tx, sql string, args ...any) {
 	t.Helper()
 	_, err := tx.Exec(ctx, sql, args...)

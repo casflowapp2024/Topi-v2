@@ -1,6 +1,6 @@
 # CI de Topi: API (Go) + worker (Python) contra un Postgres de servicio, y build del web.
 # Sin Playwright ni el dump: el Postgres arranca con apps/api/testdata/schema_v17.sql (esquema de
-# producción en la versión 17, sin datos de usuarios) y la API migra 18 → 24, como en producción.
+# producción en la versión 17, sin datos de usuarios) y la API migra 18 → 25, como en producción.
 name: ci
 
 on:
@@ -61,15 +61,15 @@ jobs:
         working-directory: apps/api
         run: go test ./...
 
-      - name: go test (integración; migra la base de 17 a 24)
+      - name: go test (integración; migra la base de 17 a 25)
         working-directory: apps/api
         run: go test -tags integration -count=1 ./internal/adapter/storage/postgres/repository/
 
-      - name: Migraciones en la versión 24
+      - name: Migraciones en la versión 25
         run: |
           v="$(docker exec ${{ job.services.postgres.id }} psql -U topi -d cashflow_test -At -c 'SELECT version FROM schema_migrations WHERE NOT dirty')"
           echo "schema_migrations.version = $v"
-          test "$v" -ge 24
+          test "$v" -ge 25
 
       - uses: actions/setup-python@v5
         with:
