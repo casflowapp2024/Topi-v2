@@ -193,12 +193,28 @@ dólares). Asistente con tres modos y vista previa:
 | Convertir | Se registraron en pesos pero la cuenta es en USD | `amount` = monto en COP ÷ tasa de su fecha, moneda nueva, `amount_base` igual (histórico intacto) |
 | Cerrar y abrir | La cuenta cambió de verdad (p. ej. se abrió una cuenta nueva en USD) | Cierra la vieja (`accounts.closed_at`) y crea la nueva con una transferencia del saldo |
 
-- Todo en una transacción de base de datos; el estado anterior se guarda en
-  `account_currency_changes` (cuenta, modo, snapshot de montos) para poder deshacer.
-- `accounts.closed_at`: las cuentas cerradas no se ofrecen para movimientos nuevos y se ocultan
-  del home (siguen en reportes históricos).
-- **Cambio de moneda base** del usuario: job en el worker que recalcula `amount_base` con la tasa
-  de cada fecha y reconstruye `daily_account_totals`; la UI avisa y muestra el progreso.
+**Estado: hecha** (migración 000030; antes/después sobre el dump: idéntico, 10.337 resultados).
+
+- Re-etiquetar y convertir: `change_account_currency(user, cuenta, moneda, modo, aplicar)`. La
+  vista previa corre el mismo código y lo revierte (excepción `TP001`), así muestra exactamente lo
+  que va a pasar: movimientos, saldo antes/después, lo que la cuenta suma en los reportes antes y
+  después, tasas faltantes y tasas a mano que se reemplazan. Convertir también pasa el saldo
+  inicial (tasa del día de creación) y las valoraciones; no se aplica si falta alguna tasa.
+- El estado anterior se guarda en `account_currency_changes` (snapshot). Deshacer
+  (`undo_account_currency_change`): solo el último cambio de la cuenta y solo si después no se
+  agregaron ni editaron movimientos o valoraciones de ella.
+- Cerrar y abrir: lo orquesta el front con las APIs que ya existen (crear cuenta, transferir el
+  saldo, cerrar); no es una sola transacción, y si un paso falla el mensaje dice qué falta hacer.
+- `accounts.closed_at` (`POST /accounts/:id/close` y `/reopen`): las cerradas no se ofrecen al
+  crear movimientos ni transferencias, se marcan "Cerrada" en Cuentas y en el inicio se ocultan
+  si tienen saldo cero. La API no impide registrarles movimientos (el worker de correos podría).
+- API: `POST /accounts/:id/currency` (`apply` false = vista previa),
+  `GET /accounts/:id/currency-changes`, `POST /accounts/:id/currency-changes/:id/undo`.
+- **Cambio de moneda base**: `change_base_currency` + `POST /user-extra/base-currency`, también
+  con vista previa (patrimonio de hoy en las dos monedas). Se hace síncrono en la API y no con un
+  job del worker: con el volumen actual (8.748 transacciones en total) tarda menos de un segundo.
+  Las dos patas de cada transferencia quedan con el mismo `amount_base`. En el front reemplaza el
+  selector "Moneda Local" del perfil (que solo guardaba una preferencia) y recarga la app.
 
 ---
 

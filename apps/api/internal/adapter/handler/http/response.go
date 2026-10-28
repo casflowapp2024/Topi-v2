@@ -57,14 +57,17 @@ var errorStatusMap = map[error]int{
 	domain.ErrInvalidAccountType: http.StatusBadRequest,
 
 	// Multicurrency Errors
-	domain.ErrInvalidCurrency:        http.StatusBadRequest,
-	domain.ErrAccountCurrencyLocked:  http.StatusConflict,
-	domain.ErrInvalidTransfer:        http.StatusBadRequest,
-	domain.ErrInvalidFxRate:          http.StatusBadRequest,
-	domain.ErrTransferLinked:         http.StatusConflict,
-	domain.ErrInvalidValuation:       http.StatusBadRequest,
-	domain.ErrNotInvestmentAccount:   http.StatusBadRequest,
-	domain.ErrValuationBeforeAccount: http.StatusBadRequest,
+	domain.ErrInvalidCurrency:           http.StatusBadRequest,
+	domain.ErrAccountCurrencyLocked:     http.StatusConflict,
+	domain.ErrInvalidTransfer:           http.StatusBadRequest,
+	domain.ErrInvalidFxRate:             http.StatusBadRequest,
+	domain.ErrTransferLinked:            http.StatusConflict,
+	domain.ErrInvalidValuation:          http.StatusBadRequest,
+	domain.ErrNotInvestmentAccount:      http.StatusBadRequest,
+	domain.ErrValuationBeforeAccount:    http.StatusBadRequest,
+	domain.ErrInvalidCurrencyChangeMode: http.StatusBadRequest,
+	domain.ErrMissingFxRates:            http.StatusConflict,
+	domain.ErrCurrencyChangeNotUndoable: http.StatusConflict,
 
 	// Token Errors
 	domain.ErrExpiredToken:               http.StatusUnauthorized,
@@ -512,11 +515,13 @@ type accountResponse struct {
 	InitialBalance float64 `json:"initial_balance" example:"1000000"`
 	Currency       string  `json:"currency" example:"COP"`
 	// HasTransactions: the currency is locked
-	HasTransactions bool                `json:"has_transactions" example:"true"`
-	Bank            customBankResponse  `json:"bank"`
-	Type            accountTypeResponse `json:"type"`
-	Email           CustomEmailResponse `json:"email"`
-	Automation      *automationResponse `json:"automation,omitempty"`
+	HasTransactions bool `json:"has_transactions" example:"true"`
+	// ClosedAt: closed accounts take no new movements (null = open)
+	ClosedAt   *string             `json:"closed_at" example:"2026-10-28T20:00:00Z"`
+	Bank       customBankResponse  `json:"bank"`
+	Type       accountTypeResponse `json:"type"`
+	Email      CustomEmailResponse `json:"email"`
+	Automation *automationResponse `json:"automation,omitempty"`
 }
 
 type automationResponse struct {
@@ -531,6 +536,7 @@ func newAccountResponse(account *domain.Account, create bool) accountResponse {
 		InitialBalance:  account.InitialBalance,
 		Currency:        account.Currency,
 		HasTransactions: account.HasTransactions,
+		ClosedAt:        timeString(account.ClosedAt),
 		Bank: customBankResponse{
 			ID:   account.Bank.ID,
 			Name: account.Bank.Name,

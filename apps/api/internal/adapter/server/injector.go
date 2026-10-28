@@ -37,6 +37,7 @@ type Handlers struct {
 	Analysis               *http.AnalysisHandler
 	Fx                     *http.FxHandler
 	Valuation              *http.ValuationHandler
+	CurrencyChange         *http.CurrencyChangeHandler
 	Email                  *http.EmailHandler
 	Initialization         *http.InitDevHandler
 	CategoryInitialization *http.InitializationHandler
@@ -126,6 +127,11 @@ func NewInjector(settings *config.Configuration) *Injector {
 	valuationService := service.NewValuationService(valuationRepo)
 	valuationHandler := http.NewValuationHandler(valuationService)
 
+	// Currency changes of accounts and of the user, closing accounts
+	currencyChangeRepo := dbrepository.NewCurrencyChangeRepository(db)
+	currencyChangeService := service.NewCurrencyChangeService(currencyChangeRepo)
+	currencyChangeHandler := http.NewCurrencyChangeHandler(currencyChangeService)
+
 	// Email
 	gmailClient := gmail.NewGmailAPI(settings.Gmail)
 	outlookApiClient := api.NewHttpClient(settings.Outlook.Http.Timeout)
@@ -163,6 +169,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 			Analysis:               analysisHandler,
 			Fx:                     fxHandler,
 			Valuation:              valuationHandler,
+			CurrencyChange:         currencyChangeHandler,
 			Email:                  emailHandler,
 			Initialization:         initDevHandler,
 			CategoryInitialization: InitHandler,

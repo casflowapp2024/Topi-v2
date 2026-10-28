@@ -18,12 +18,14 @@ type Account struct {
 	// It cannot change once the account has transactions (HasTransactions).
 	Currency        string
 	HasTransactions bool
-	Bank            Bank
-	Type            AccountType
-	Email           Email
-	Total           uint64
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	// ClosedAt: closed accounts keep their history but take no new movements (nil = open)
+	ClosedAt  *time.Time
+	Bank      Bank
+	Type      AccountType
+	Email     Email
+	Total     uint64
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 func (a *Account) UpdateCreditInitialBalance() {

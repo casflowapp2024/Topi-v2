@@ -69,6 +69,9 @@ plan/         plan de migración
   `isCreditAccount` / `isInvestmentAccount` de `helpers.js`; no compares `type_id`. Inversiones: su saldo es la
   última valoración (`account_valuations`) + movimientos posteriores; los reportes de saldos suman
   `account_valuation_deltas`, los de flujos no.
+- Cambiar la moneda de una cuenta con movimientos o la moneda base: solo con `change_account_currency` /
+  `change_base_currency` (vista previa y aplicar). Cuentas cerradas (`accounts.closed_at`): fuera de los selectores
+  de movimientos nuevos (`isOpenAccount`).
 
 ## Reglas
 

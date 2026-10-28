@@ -92,6 +92,12 @@ var (
 	ErrNotInvestmentAccount = errors.New("only investment accounts have valuations")
 	// ErrValuationBeforeAccount is an error for when a valuation is older than its account
 	ErrValuationBeforeAccount = errors.New("the valuation date is before the account was created")
+	// ErrInvalidCurrencyChangeMode is an error for when the currency change mode is not relabel or convert
+	ErrInvalidCurrencyChangeMode = errors.New("invalid currency change mode: relabel or convert")
+	// ErrMissingFxRates is an error for when a conversion needs exchange rates that are not loaded
+	ErrMissingFxRates = errors.New("some exchange rates needed for the conversion are missing")
+	// ErrCurrencyChangeNotUndoable is an error for when a currency change cannot be undone
+	ErrCurrencyChangeNotUndoable = errors.New("the currency change cannot be undone: the account changed afterwards")
 )
 
 // Account Type Errors

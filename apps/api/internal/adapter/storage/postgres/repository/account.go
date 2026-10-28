@@ -19,10 +19,10 @@ import (
 // accountColumns are the account columns scanned below, in this order. Explicit (not "*") so
 // adding columns to the table does not break the scans.
 const accountColumns = "id, user_id, bank_id, type_id, name, last_four_digits, initial_balance, " +
-	"created_at, updated_at, email_id, currency"
+	"created_at, updated_at, email_id, currency, closed_at"
 
 const accountColumnsA = "a.id, a.user_id, a.bank_id, a.type_id, a.name, a.last_four_digits, a.initial_balance, " +
-	"a.created_at, a.updated_at, a.email_id, a.currency"
+	"a.created_at, a.updated_at, a.email_id, a.currency, a.closed_at"
 
 // hasTransactionsColumn tells whether the account has movements (its currency is then locked)
 const hasTransactionsColumn = "exists (select 1 from " + enums.TransactionsTableName +
@@ -79,6 +79,7 @@ func (ar *AccountRepository) CreateAccount(ctx context.Context, account *domain.
 		&account.UpdatedAt,
 		&account.Email.ID,
 		&account.Currency,
+		&account.ClosedAt,
 	)
 
 	if err != nil {
@@ -136,6 +137,7 @@ func (ar *AccountRepository) GetAccount(ctx context.Context, userID string, id u
 		&account.UpdatedAt,
 		&account.Email.ID,
 		&account.Currency,
+		&account.ClosedAt,
 		&account.HasTransactions,
 		&account.Bank.Name,
 		&account.Bank.Email,
@@ -222,6 +224,7 @@ func (ar *AccountRepository) GetAccountsList(
 			&account.UpdatedAt,
 			&account.Email.ID,
 			&account.Currency,
+			&account.ClosedAt,
 			&account.HasTransactions,
 			&account.Bank.Name,
 			&account.Bank.Email,
@@ -283,6 +286,7 @@ func (ar *AccountRepository) UpdateAccount(ctx context.Context, account *domain.
 		&account.UpdatedAt,
 		&account.Email.ID,
 		&account.Currency,
+		&account.ClosedAt,
 		&account.HasTransactions,
 	)
 
@@ -398,6 +402,7 @@ func (ar *AccountRepository) AdminGetAccountsList(
 			&account.UpdatedAt,
 			&account.Email.ID,
 			&account.Currency,
+			&account.ClosedAt,
 			&account.Bank.Name,
 			&account.Bank.Email,
 			&account.Type.Name,

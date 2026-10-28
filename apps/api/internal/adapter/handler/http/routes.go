@@ -20,6 +20,7 @@ type Routes struct {
 	AnalysisHandler       *AnalysisHandler
 	FxHandler             *FxHandler
 	ValuationHandler      *ValuationHandler
+	CurrencyChangeHandler *CurrencyChangeHandler
 	EmailHandler          *EmailHandler
 	InitDevHandler        *InitDevHandler
 	InitializationHandler *InitializationHandler
@@ -113,6 +114,11 @@ func (r *Routes) AccountsRoutes() {
 		AuthAccounts.GET("/:id/valuations", r.ValuationHandler.ListValuations)
 		AuthAccounts.POST("/:id/valuations", r.ValuationHandler.SaveValuation)
 		AuthAccounts.DELETE("/:id/valuations/:valuation_id", r.ValuationHandler.DeleteValuation)
+		AuthAccounts.POST("/:id/currency", r.CurrencyChangeHandler.ChangeAccountCurrency)
+		AuthAccounts.GET("/:id/currency-changes", r.CurrencyChangeHandler.ListAccountCurrencyChanges)
+		AuthAccounts.POST("/:id/currency-changes/:change_id/undo", r.CurrencyChangeHandler.UndoAccountCurrencyChange)
+		AuthAccounts.POST("/:id/close", r.CurrencyChangeHandler.CloseAccount)
+		AuthAccounts.POST("/:id/reopen", r.CurrencyChangeHandler.ReopenAccount)
 	}
 
 	admin := AuthAccounts.Use(AdminMiddleware())
@@ -172,6 +178,7 @@ func (r *Routes) UserExtraRoutes() {
 		AuthUserExtra.POST("create", r.UserExtraHandler.CreateUserExtra)
 		AuthUserExtra.GET("", r.UserExtraHandler.GetUserExtra)
 		AuthUserExtra.PUT("", r.UserExtraHandler.UpdateUserExtra)
+		AuthUserExtra.POST("base-currency", r.CurrencyChangeHandler.ChangeBaseCurrency)
 	}
 
 	admin := AuthUserExtra.Use(AdminMiddleware())
