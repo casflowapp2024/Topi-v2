@@ -11,7 +11,7 @@ import MultiChartIncomesDash from './MultiChartIncomesDash';
 import MultiChartSavingsDash from './MultiChartSavingsDash';
 
 //icons
-import { ThreeDots } from 'react-loader-spinner';
+import { SkeletonChart } from '../../ui/Skeleton';
 import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/20/solid';
 
 
@@ -26,7 +26,6 @@ function MultiChartDash({
 }) {
     useEffect(() => {
         const date_filter = `${current_Year}-${current_Month.toString().padStart(2, '0')}`
-        console.log(date_filter)
         get_history_dash(date_filter);
         get_history_category_by_month(1, date_filter);
     }, [current_Month, current_Year]);
@@ -134,14 +133,7 @@ function MultiChartDash({
                     }
 
                 </> :
-                <div className='pl-10 text-gray-500 flex justify-center items-center'>
-                    <ThreeDots
-                        height="40"
-                        width="40"
-                        color="#6b7280"
-                        ariaLabel="loading"
-                    />
-                </div>
+                <div className="flex-1 w-full"><SkeletonChart /></div>
 
             }
 

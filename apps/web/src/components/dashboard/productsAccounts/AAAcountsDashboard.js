@@ -65,8 +65,10 @@ const AAAcountsDashboard = ({
 
     useEffect(() => {
         //al cargar el componente, si no hay cuenta activada, activar la primera cuenta de la lista
+        // Respeta la cuenta elegida antes (p. ej. desde "Mis cuentas" en el inicio)
         if (user_accounts.items && user_accounts.items.length > 0) {
-            set_dash_account_activated(user_accounts.items[0]);
+            const stillExists = account_activated && user_accounts.items.some(acc => acc.id === account_activated.id);
+            if (!stillExists) set_dash_account_activated(user_accounts.items[0]);
         }
     }, [user_accounts]);
 
@@ -126,90 +128,49 @@ const AAAcountsDashboard = ({
 
     return (
         <>
-            {/* pc screen */}
-
-            <div className="lg:flex lg:flex-row gap-6 hidden justify-center">
-                {/* TOTAL SPENT AND CATEGORIE */}
-                <div className="w-[380px] xl:w-[360px] flex flex-col gap-6">
-                    {/* ACCOUNTSBYTYPE */}
+            {/*
+                Una sola versión para todos los tamaños (antes había un bloque PC y otro móvil,
+                y cada componente se montaba y pedía sus datos dos veces).
+                En móvil las columnas usan `contents`, así sus hijos entran directo en la pila
+                y `order-*` define el orden; en PC (lg) vuelven a ser columnas.
+            */}
+            <div className="flex flex-col gap-2 lg:flex-row lg:gap-6 px-2 lg:px-0 pb-4 md:max-w-[560px] md:mx-auto lg:max-w-none lg:w-full">
+                {/* Cuentas por tipo y movimientos */}
+                <div className="contents lg:flex lg:flex-col lg:gap-6 lg:w-[380px] xl:w-[360px] lg:shrink-0">
                     {user_accounts &&
-                        <AccbyTypeDash
-                            onOpenDetail={handleOpenAccDetail}
-                            onOpenCreate={() => setOpenCreateBox(true)}
-                        />
-                    }
-
-                    <AccTransPeriod />
-
-                </div>
-
-                {/* STATS ACCOUNTS AND TRANS */}
-                <div className="w-[400px] xl:w-[546px] flex flex-col gap-6">
-                    <div className="w-screen md:w-auto">
-                        {user_accounts && account_activated &&
-                            <AccPeriodFilter />
-                        }
-                    </div>
-                    {account_activated &&
-                        <div className='p-4 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-xl shadow-md'>
-                            <AccSummaryCard acc={account_activated} data={account_activated_stats} />
-                        </div>
-                    }
-
-
-                    {/* ACCOUNTCHART */}
-
-                    <div className="h-[360.5px] p-4 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-xl shadow-md">
-                        <h2 className="text-md font-bold mb-2 text-gray-800 dark:text-gray-100">Saldo Historico de la cuenta</h2>
-                        {account_activated && history_accounts_by_month &&
-                            <AccChartHistory />
-                        }
-                    </div>
-
-                </div>
-            </div>
-
-
-            {/* mobile screen dashboard */}
-            <div className="lg:hidden">
-                <div className="w-auto flex flex-col gap-2 justify-center items-center">
-                    <div className="w-screen md:w-[450px]  px-2">
-                        {user_accounts &&
+                        <div className="order-1 lg:order-none">
                             <AccbyTypeDash
                                 onOpenDetail={handleOpenAccDetail}
                                 onOpenCreate={() => setOpenCreateBox(true)}
                             />
-                        }
+                        </div>
+                    }
+                    <div className="order-5 lg:order-none">
+                        <AccTransPeriod />
                     </div>
-                    <div className="w-screen md:w-[450px]  px-2">
-                        {user_accounts && account_activated &&
+                </div>
+                {/* Filtro, resumen e historial de la cuenta elegida */}
+                <div className="contents lg:flex lg:flex-col lg:gap-6 lg:flex-1 lg:min-w-0">
+                    {user_accounts && account_activated &&
+                        <div className="order-2 lg:order-none">
                             <AccPeriodFilter />
-                        }
-                    </div>
-                    <div className="w-screen md:w-[450px]  px-2">
-                        {account_activated &&
-                            <div className='p-4 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-xl shadow-md'>
-                                <AccSummaryCard acc={account_activated} data={account_activated_stats} />
+                        </div>
+                    }
+                    {account_activated &&
+                        <div className='order-3 lg:order-none p-4 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-xl shadow-md'>
+                            <AccSummaryCard acc={account_activated} data={account_activated_stats} />
+                        </div>
+                    }
+                    <div className="order-4 lg:order-none h-[260px] md:h-[364px] lg:h-[360px] p-4 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-xl shadow-md flex flex-col">
+                        <h2 className="text-md font-bold mb-2 text-gray-800 dark:text-gray-100">Saldo histórico de la cuenta</h2>
+                        {account_activated && history_accounts_by_month &&
+                            <div className="flex-1 min-h-0">
+                                <AccChartHistory />
                             </div>
                         }
                     </div>
-                    <div className="w-screen md:w-[450px]  px-2">
-                        <div className="h-[220px] md:h-[364px] p-4 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-xl shadow-md flex flex-col items-center justify-between">
-                            <h2 className="text-md font-bold mb-2 text-gray-800 dark:text-gray-100">Saldo Historico de la cuenta</h2>
-                            {account_activated && history_accounts_by_month &&
-                                <AccChartHistory />
-                            }
-                        </div>
-                    </div>
-                    <div className="w-screen md:w-[450px]  px-2">
-                        <AccTransPeriod />
-                    </div>
-
-
                 </div>
             </div>
-
-
 
             {/*PopOver Create accounts*/}
             <AccountCreate

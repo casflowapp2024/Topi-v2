@@ -105,7 +105,7 @@ const StepCreateAccount = ({
         if (parseInt(id) >= 0) {
             return true;
         } else {
-            alert('Los Digitos de la cuenta deben ser números!!');
+            setAlert('Los últimos dígitos de la cuenta deben ser solo números.', false, 'text-white', 'bg-red-500', 4000);
             return false;
         }
     };
@@ -124,7 +124,7 @@ const StepCreateAccount = ({
                 let email = automatedEmails.emails[0];
                 email_id = parseInt(email.id);
             } else {
-                alert("No se ha vinculado correo para leer transacciones");
+                setAlert("Primero conecta un correo para que Topi pueda leer tus transacciones.", false, "text-white", "bg-red-500", 4000);
                 setLoadingCreate(false);
                 return;
             }

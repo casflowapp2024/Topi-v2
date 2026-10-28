@@ -5,6 +5,7 @@ import { connect } from 'react-redux'
 //components
 import { formatCurrency, formatCurrency2, parseDatetoDatetimeBrow, getColorByValue, getPercPlus, getPerc0 } from '../../helpers';
 //icons
+import ChartLegend, { lastPointLead } from '../../ui/ChartLegend';
 import { BarChart, Bar, Rectangle, XAxis, Label, ReferenceLine, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 
@@ -66,17 +67,20 @@ function MultiChartIncomesDash({
     const [activeIndex, setActiveIndex] = useState(null);
     //#e11d48
     return (
-        <div className='h-[220px] w-[370px] md:w-[400px]  xl:w-[500px]'>
-
+        <div className='h-[220px] w-full flex flex-col'>
+            <ChartLegend lead={(() => { const l = lastPointLead(dataToPlot, 'value', monthlyActivated, moment); return l && { ...l, value: formatCurrency2(l.value) }; })()} items={[
+                income_budget && !(dailyActivated && !cummulated) ? { type: 'line', label: 'Presupuesto', value: formatCurrency2(Math.abs(income_budget)) } : null,
+            ]} className="pt-2" />
+            <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
             <BarChart
             width={420}
             height={300}
             data={dataToPlot}
             margin={{
-                top: 30,
+                top: 22,
                 right: 20,
-                left: 20,
+                left: 0,
                 bottom: 5,
             }}
             onMouseMove={state => {
@@ -105,19 +109,21 @@ function MultiChartIncomesDash({
                 domain={['auto', 'auto']}
                 tick={{ fontSize: 12 }}
             />
+            <CartesianGrid vertical={false} />
+            <YAxis width={44} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickCount={4} tickFormatter={(v) => formatCurrency2(v)} />
             <Tooltip
             cursor={false}
             content={({ active, payload }) => {
             if (active && payload && payload.length) {
                 return (
-                <div className="flex flex-col text-xs bg-white border border-gray-300 rounded-lg p-2">
+                <div className="flex flex-col gap-0.5 text-xs bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg px-3 py-2">
                     {monthlyActivated?
                     <div className='flex flex-col'>
                         {/* <span className=''>Mes: {moment(payload[0].payload.date).format('MMM')}</span> */}
-                        <span className='text-[#fcd34d]'>Presupuesto: {formatCurrency(income_budget)}</span>
-                        <div className='text-gray-300'>
-                            <span className='text-[#30a349]'>Ingresos: {formatCurrency(payload[0].payload.value)}</span> 
-                            {/* (<span className={`text-[${payload[0].payload.color_per}]`}>{payload[0].payload.per_show}</span>) */}
+                        <span className='text-ink-2 dark:text-gray-400'>Presupuesto: {formatCurrency(income_budget)}</span>
+                        <div>
+                            <span className='font-semibold text-money-in dark:text-money-in-dark'>Ingresos: {formatCurrency(payload[0].payload.value)}</span> 
+                            {/* (<span style={{ color: payload[0].payload.color_per }}>{payload[0].payload.per_show}</span>) */}
                         </div>
                         <span className=''>Recibidos: {payload[0].payload.left}</span>
                         {/* <span className=''>Dif: {formatCurrency(payload[0].payload.dif)}</span> */}
@@ -125,8 +131,8 @@ function MultiChartIncomesDash({
                     :
                     <>
                         {/* <span className=''>Día: {moment(payload[0].payload.date).format('MMM DD')}</span> */}
-                        <span className='text-[#fcd34d]'>Presupuesto: {formatCurrency(income_budget)}</span>
-                        <span className='text-[#30a349]'>Ingresos: {formatCurrency(payload[0].payload.value)}</span>
+                        <span className='text-ink-2 dark:text-gray-400'>Presupuesto: {formatCurrency(income_budget)}</span>
+                        <span className='font-semibold text-money-in dark:text-money-in-dark'>Ingresos: {formatCurrency(payload[0].payload.value)}</span>
                     
                     </>
 
@@ -141,49 +147,16 @@ function MultiChartIncomesDash({
             
             
             />
-            <Bar
-                dataKey="value"
-                fill="#30a349"
-                barSize={24} // Adjust width here
-                radius={[6, 6, 0, 0]} // Rounded top corners
-                //onMouseOver={(_, index) => setActiveIndex(index)}
-                //onMouseOut={() => setActiveIndex(null)}
-                shape={(props) => (
-                    <Rectangle
-                    {...props}
-                    stroke={props.index === activeIndex ? "#30a349" : ""} // Border color
-                    strokeWidth={2}  // Border width
-                    fill="#30a349"
-                    radius={[6, 6, 0, 0]}
-                    />
-                
-                )}
-                label={({ x, y, width, value, index }) => {
-                    // Only show label for the last bar
-                    if (index === dataToPlot.length - 1 && value !== 0) {
-                    return (
-                        <text
-                        x={x + width / 2}
-                        y={y -8 }
-                        textAnchor="middle"
-                        fill="#5266EB"
-                        fontWeight="bold"
-                        fontSize={13}
-                        >
-                        {formatCurrency2(value)}
-                        </text>
-                    );
-                    }
-                    return null;
-                }}
-                />
+            {/* La línea va antes de las barras para quedar detrás de ellas */}
                 {dataToPlot && dataToPlot.length > 0 && (
                 
                 <ReferenceLine
                 y={income_budget}
-                stroke="#fcd34d"
-                strokeWidth={2}
-                strokeDasharray="8 4"
+                className="topi-budget-line"
+                stroke="#8A90A8"
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                ifOverflow={dailyActivated && !cummulated ? "discard" : "extendDomain"}
                 >
                 {/* <Label
                     value={formatCurrency(dataToPlot[dataToPlot.length - 1].value)}
@@ -196,8 +169,26 @@ function MultiChartIncomesDash({
                 </ReferenceLine>
                 
             )}
+            <Bar
+                dataKey="value"
+                fill="#12A877"
+                barSize={24} // Adjust width here
+                radius={[6, 6, 0, 0]} // Rounded top corners
+                //onMouseOver={(_, index) => setActiveIndex(index)}
+                //onMouseOut={() => setActiveIndex(null)}
+                shape={(props) => (
+                    <Rectangle
+                    {...props}
+                    fillOpacity={activeIndex === null || props.index === activeIndex ? 1 : 0.45}
+                    fill="#12A877"
+                    radius={[6, 6, 0, 0]}
+                    />
+                
+                )}
+                />
             </BarChart>
         </ResponsiveContainer>
+        </div>
         </div>
   );
 }

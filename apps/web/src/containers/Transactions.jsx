@@ -22,7 +22,7 @@ import {
     PlusIcon, MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon,
     ArrowDownTrayIcon, ArrowUpTrayIcon, QueueListIcon, ListBulletIcon
 } from '@heroicons/react/20/solid'
-import { FunnelIcon } from '@heroicons/react/20/solid'
+import { FunnelIcon, ExclamationTriangleIcon } from '@heroicons/react/20/solid'
 
 import { Emoji } from "emoji-picker-react";
 import { change_transactions_filter } from "../redux/actions/cashflow";
@@ -285,10 +285,12 @@ const Transactions = ({
         <>
 
             <div className="top-0 flex justify-center">
-                <div className="w-screen md:w-full px-2 md:px-0 md:w-[500px] lg:w-[750px] xl:w-[950px] top-0">
+                <div className="w-full px-2 lg:px-0 top-0">
                     <div className="">
 
                         <div className="top-0 rounded-2xl shadow-md bg-white dark:bg-gray-800 w-full transition-colors duration-300">
+                            {/* Barra fija: buscar, crear, filtrar y encabezados quedan visibles al hacer scroll */}
+                            <div className="sticky top-[53px] md:top-[62px] z-30 bg-white dark:bg-gray-800 rounded-t-2xl shadow-[0_1px_0_0_rgba(0,0,0,0.04)] transition-colors duration-300">
                             {/* Top Buttoms */}
                             <div className="p-4 flex flex-row justify-between gap-1">
                                 <div className="w-3/5 md:w-2/3">
@@ -375,12 +377,13 @@ const Transactions = ({
 
                             </div>
 
+                            </div>
                             {vizTxByDate === false ?
                                 <div>
                                     {user_transactions.total !== null ?
                                         <div>
                                             {user_transactions.total === 0 ?
-                                                <div className="p-6 dark:text-gray-300">Aún no tienes transacciones, crea o escanea to email para agregar....</div>
+                                                <div className="p-6 dark:text-gray-300">Aún no tienes transacciones. Crea una con el botón «Crear» o conecta tu correo para que Topi las agregue solas.</div>
                                                 :
                                                 <ul className='text-gray-400 text-sm'>
                                                     {displayItems && displayItems.map((transaction, index) => (
@@ -450,14 +453,10 @@ const Transactions = ({
                                                             <div className='min-w-[9%] md:min-w-[40px] flex items-center justify-start'>
                                                                 <span className="w-[28px] md:w-[35px] flex justify-start text-center">
                                                                     {transaction.should_verify === true ?
-                                                                        <div class="w-full text-[8px] md:text-[10px] px-1 inline-flex items-center justify-center font-medium text-yellow-800 bg-yellow-100 rounded-full">
-                                                                            !New
-                                                                        </div> :
+                                                                        <span title="Por revisar" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Por revisar</span></span> :
                                                                         <>
                                                                             {transaction.checked === false ?
-                                                                                <div class="w-full text-[8px] md:text-[10px] px-1 inline-flex items-center justify-center font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-gray-700 dark:text-gray-300">
-                                                                                    New
-                                                                                </div> :
+                                                                                <span title="Nuevo" className="inline-flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-topi-500" aria-hidden="true" /><span className="sr-only">Nuevo</span></span> :
                                                                                 <></>}
                                                                         </>}
 
@@ -538,14 +537,10 @@ const Transactions = ({
                                                                 <div className='min-w-[9%] md:min-w-[40px] flex items-center justify-start'>
                                                                     <span className="w-[28px] md:w-[35px] flex justify-start text-center">
                                                                         {tx.should_verify === true ?
-                                                                            <div class="w-full text-[8px] md:text-[10px] px-1 inline-flex items-center justify-center font-medium text-yellow-800 bg-yellow-100 rounded-full">
-                                                                                !New
-                                                                            </div> :
+                                                                            <span title="Por revisar" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Por revisar</span></span> :
                                                                             <>
                                                                                 {tx.checked === false ?
-                                                                                    <div class="w-full text-[8px] md:text-[10px] px-1 inline-flex items-center justify-center font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-gray-700 dark:text-gray-300">
-                                                                                        New
-                                                                                    </div> :
+                                                                                    <span title="Nuevo" className="inline-flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-topi-500" aria-hidden="true" /><span className="sr-only">Nuevo</span></span> :
                                                                                     <></>}
                                                                             </>}
 

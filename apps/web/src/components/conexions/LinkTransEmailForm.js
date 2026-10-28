@@ -74,7 +74,7 @@ const LinkTransEmailForm = ({
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(emailAutomated)) {
-            alert("Ingresa un email válido.");
+            setAlert("Ingresa un correo válido, por ejemplo nombre@gmail.com.", false, "text-white", "bg-red-500", 4000);
             return;
         }else{
             setLoadingLink(true)
@@ -86,7 +86,7 @@ const LinkTransEmailForm = ({
     const handleEmailLink = () => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(emailAutomated)) {
-            alert("Ingresa un email válido.");
+            setAlert("Ingresa un correo válido, por ejemplo nombre@gmail.com.", false, "text-white", "bg-red-500", 4000);
             return;
         }
 

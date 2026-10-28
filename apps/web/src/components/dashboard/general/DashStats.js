@@ -9,7 +9,7 @@ import DropDownAccount from './DropDownAccounts';
 import { formatCurrency, getPerc2 } from '../../helpers';
 import FormatMoneyShowDecs from '../../FormatMoneyShowDecs';
 import DashStatsCard from './DashStatsCard';
-import FlowDash from '../FlowDash';
+import PeriodSelector from '../../navigation/PeriodSelector';
 import {
     ArrowDownRightIcon,
     ArrowUpRightIcon,
@@ -65,7 +65,8 @@ const DashStats = ({
                     <div className=' font-medium'>
                         Resumen
                     </div>
-                    <FlowDash />
+                    {/* En móvil el periodo vive en la barra superior */}
+                    <PeriodSelector className="hidden lg:flex" />
 
                 </div>
 

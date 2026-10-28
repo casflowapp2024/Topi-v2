@@ -141,7 +141,7 @@ const InputMoneyInt2Decs = ({
         value={integerPart}
         onChange={handleIntegerChange}
         onFocus={handleFocus}
-        className={`${showDecimals ? "rounded-l-md w-[85%]" : "rounded-lg w-full"} bg-gray-100 px-2 py-1 md:py-2 border border-gray-300 text-right`}
+        className={`${showDecimals ? "rounded-l-md w-[85%]" : "rounded-lg w-full"} bg-gray-50 px-2 py-1 md:py-2 border border-gray-300 text-right text-gray-900 placeholder-gray-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
       />
 
       {showDecimals && (
@@ -153,7 +153,7 @@ const InputMoneyInt2Decs = ({
             value={decimalPart}
             onChange={handleDecimalChange}
             onKeyDown={handleBackspace}
-            className="bg-gray-100 px-1 py-1 md:py-2 rounded-r-md border border-gray-300 w-[15%]"
+            className="bg-gray-50 px-1 py-1 md:py-2 rounded-r-md border border-gray-300 w-[15%] text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
         </>
       )}

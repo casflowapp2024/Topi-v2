@@ -215,7 +215,6 @@ export const set_another_month = (month) => async dispatch => {
 }
 
 export const set_another_year = (year) => async dispatch => {
-    console.log("accion set_another_year", year);
 
     dispatch({
         type: SET_ANOTHER_YEAR,
@@ -223,6 +222,13 @@ export const set_another_year = (year) => async dispatch => {
     });
     return true
 
+}
+
+// Cambia año y mes en el mismo tick (React agrupa los dos dispatch: una sola recarga de datos)
+export const set_period = (year, month) => dispatch => {
+    dispatch({ type: SET_ANOTHER_YEAR, payload: year });
+    dispatch({ type: SET_ANOTHER_MONTH, payload: month });
+    return true;
 }
 
 //category dashboard

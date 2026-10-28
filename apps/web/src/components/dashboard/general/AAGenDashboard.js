@@ -6,7 +6,6 @@ import { get_savings_account } from "../../../redux/actions/reports";
 //react
 import { useEffect, useState } from "react";
 //components
-import DashBalances from "./DashBalanceChart";
 import DashAccounts from "./DashAccounts";
 import DashTrans from "./DashTrans";
 import DashStats from "./DashStats";
@@ -31,61 +30,35 @@ const AAGenDashboard = ({
 
 
     return (
-        <>
-            {/* pc screen */}
-            <div className="lg:flex lg:flex-col hidden justify-center">
-                <div className="w-auto flex flex-row gap-6 justify-center items-center">
-                    <div className="w-[460px] xl:w-[606px] h-[410px]">
+        <div className="flex flex-col gap-2 lg:gap-6 px-2 lg:px-0 pb-3 md:max-w-[560px] md:mx-auto lg:max-w-none">
+            {/*
+                Una sola versión para todos los tamaños (antes había un bloque PC y otro móvil,
+                y cada componente se montaba y pedía sus datos dos veces).
+                En móvil las columnas usan `contents`, así sus hijos entran directo en la pila
+                y `order-*` define el orden; en PC (lg) vuelven a ser columnas.
+            */}
+            <div className="contents lg:flex lg:flex-row lg:gap-6">
+                <div className="contents lg:flex lg:flex-col lg:gap-6 lg:flex-1 lg:min-w-0">
+                    <div className="order-1 lg:order-none lg:h-[410px]">
                         <DashStats />
                     </div>
-                    <div className="w-[320px] xl:w-[300px]">
-                        <DashPlan />
-                    </div>
-                </div>
-                <div className="h-6"></div>
-                <div className="w-auto flex flex-row gap-6 justify-center items-center">
-                    <div className="w-[460px] xl:w-[606px]">
-                        {/* <DashBalances 
-                        /> */}
+                    <div className="order-4 lg:order-none">
                         <MultiChartDash />
                     </div>
-                    <div className="w-[320px] xl:w-[300px]">
+                </div>
+                <div className="contents lg:flex lg:flex-col lg:gap-6 lg:w-[320px] xl:w-[300px] lg:shrink-0">
+                    <div className="order-2 lg:order-none">
+                        <DashPlan />
+                    </div>
+                    <div className="order-3 lg:order-none">
                         <DashTrans />
                     </div>
                 </div>
-                <div className="h-6"></div>
-                <div className="w-auto">
-                    <div className="w-[80x6px] xl:w-[930px] flex justify-start items-center">
-                        <DashAccounts />
-                    </div>
-                </div>
-
             </div>
-            {/* mobile screen */}
-            <div className="lg:hidden">
-                <div className="w-auto flex flex-col gap-2 justify-center items-center">
-                    <div className="w-screen md:w-[450px]  px-2">
-                        <DashStats />
-                    </div>
-                    <div className="w-screen md:w-[450px]  px-2">
-                        <DashPlan />
-
-                    </div>
-                    <div className="w-screen md:w-[450px]  px-2">
-                        <DashTrans />
-                    </div>
-                    <div className="w-screen md:w-[450px]  px-2">
-                        {/* <DashBalances 
-                        /> */}
-                        <MultiChartDash />
-                    </div>
-                    <div className="w-screen md:w-[450px]  px-2 mb-3">
-                        <DashAccounts />
-                    </div>
-                </div>
+            <div className="order-5 lg:order-none">
+                <DashAccounts />
             </div>
-
-        </>
+        </div>
     )
 }
 

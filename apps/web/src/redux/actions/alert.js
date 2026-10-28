@@ -4,7 +4,6 @@ import {
 } from './types';
 
 export const setAlert = (msg, isSuccess, colorText, colorBg, timeout = 3000) => dispatch => {
-    console.log("alerting")
     if (msg===null){
         dispatch({ type: REMOVE_ALERT })
     }else if(timeout===false){

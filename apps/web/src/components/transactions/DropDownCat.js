@@ -176,7 +176,7 @@ const DropDownCat = ({
       <div ref={listDropRef}  className="relative w-full">
         <div
             onClick={!isOpen ? handleToggleDropdown : undefined}
-            className="w-full pl-2 pr-1 py-1 md:py-2 flex justify-between items-center text-gray-900 bg-gray-100 border border-gray-300 rounded-lg shadow-sm hover:border-blue-500 focus:outline-none"
+            className="w-full pl-2 pr-1 py-1 md:py-2 flex justify-between items-center cursor-pointer text-gray-900 bg-gray-50 border border-gray-300 rounded-lg shadow-sm hover:border-topi-500 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         >
             {isOpen ? (
                 <input
@@ -185,7 +185,7 @@ const DropDownCat = ({
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Buscar o crear categoría..."
-                    className="w-full bg-transparent text-sm focus:outline-none"
+                    className="w-full bg-transparent text-sm focus:outline-none dark:placeholder-gray-400"
                 />
             ) : (
                 <div className='flex flex-row gap-2 justify-start items-center text-sm cursor-pointer'>
@@ -197,23 +197,24 @@ const DropDownCat = ({
                     </span>
                 </div>
             )}
-            <ChevronDownIcon 
-                className="w-4 h-4 text-gray-900 cursor-pointer"
-                onClick={handleToggleDropdown}
+            <ChevronDownIcon
+                className={`w-4 h-4 shrink-0 text-gray-900 dark:text-gray-300 cursor-pointer transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                onClick={(e) => { e.stopPropagation(); handleToggleDropdown(); }}
+                aria-hidden="true"
             />
         </div>
 
         {isOpen && (
             <>
                 
-                <ul className="absolute z-10 w-full text-sm bg-white border border-gray-300 rounded-lg shadow-lg max-h-[260px] overflow-y-auto">   
+                <ul className="absolute z-10 mt-1 w-full text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-lg max-h-[260px] overflow-y-auto dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">   
                 <div 
-                className="cursor-pointer w-full flex flex-row gap-2 items-center py-1 px-2 border-b-2 border-gray-40 hover:bg-gray-200" 
+                className="cursor-pointer w-full flex flex-row gap-2 items-center py-1 px-2 border-b border-gray-200 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700" 
                 key={0}
                 onClick={() => onClickAddCat(true)}
                 >
-                    <PlusIcon className="w-4 h-4 text-[#5266EB]" />
-                    <span className="text-[#5266EB]">
+                    <PlusIcon className="w-4 h-4 text-topi-600 dark:text-indigo-300" />
+                    <span className="text-topi-600 dark:text-indigo-300">
                         Crear nueva Categoría
                     </span>
                 </div>  
@@ -224,7 +225,7 @@ const DropDownCat = ({
                         key={category.id}
                         value = {category.id}
                         onClick={() => handleSelect(category.id)}
-                        className="px-3 py-1 flex items-center gap-2 hover:bg-gray-100 cursor-pointer"
+                        className="px-3 py-1.5 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                         >
 
                             <div className="w-[10%] f-full pt-1 pr-2 rounded-full md:w-6 h-6 flex justify-center items-center">
@@ -238,10 +239,10 @@ const DropDownCat = ({
                     </>:
                     <></>
                 } 
-                <div className='border-t-2 border-gray-300'>
+                <div className='border-t border-gray-200 dark:border-gray-700'>
 
                     {filteredDefaultOptions.length > 0 && (
-                        <h3 className=' py-1 pl-4 text-gray-400 bg-gray-100 font-semibold'>Recomendadas</h3>
+                        <h3 className=' py-1 pl-4 text-xs uppercase tracking-wide text-ink-2 bg-gray-50 font-semibold dark:bg-gray-900 dark:text-gray-400'>Recomendadas</h3>
                     )}
 
                     {filteredDefaultOptions.map((category) => (
@@ -249,7 +250,7 @@ const DropDownCat = ({
                             key={category.id}
                             value = {category.id}
                             onClick={() => handleSelect(category.id)}
-                            className="px-3 py-1 flex items-center gap-2 hover:bg-gray-100 cursor-pointer"
+                            className="px-3 py-1.5 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                             >
                                 <div className="w-[10%] f-full pt-1 pr-2 rounded-full md:w-6 h-6 flex justify-center items-center">
                                     <Emoji unified={(category.emoji).toLowerCase()} emojiStyle="apple" size={16} />
@@ -266,7 +267,7 @@ const DropDownCat = ({
         )}
 
         {createBox && (
-            <div className='absolute pt-8 px-2 z-10 h-[260px] w-full text-sm bg-white border border-gray-300 rounded-lg shadow-lg overflow-y-auto'>      
+            <div className='absolute mt-1 pt-8 px-2 z-10 h-[260px] w-full text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-lg overflow-y-auto dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'>      
                 <EditCreateCategoryForm
                 categoryData = {formDataCreate}
                 selectedEmoji = {selectedEmoji}

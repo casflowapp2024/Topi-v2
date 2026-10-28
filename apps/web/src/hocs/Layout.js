@@ -6,7 +6,7 @@ import { connect } from 'react-redux';
 import { load_user, logout } from '../redux/actions/auth';
 import { get_user_accounts, get_user_categories, get_user_transactions, get_account_types } from '../redux/actions/cashflow';
 import { get_automated_emails, onboarding_reset_read_email } from '../redux/actions/conexions';
-import { request_init_categories, get_user_extra_data, add_user_extra_data, update_user_extra_data, update_user_config } from '../redux/actions/auth';
+import { request_init_categories, get_user_extra_data, add_user_extra_data, update_user_extra_data, update_user_config, toggle_dark_mode } from '../redux/actions/auth';
 import { get_banks, get_official_banks } from '../redux/actions/cashflow';
 import { open_settings_modal, close_settings_modal } from '../redux/actions/ui';
 //Components
@@ -14,6 +14,7 @@ import Onboarding2 from './Onboarding2';
 import NextStepsPopover from '../components/onboarding2/NextStepsPopover';
 import InstallPwaModal from '../components/ui/InstallPwaModal';
 import Warnings from '../components/navigation/Warnings';
+import PeriodSelector from '../components/navigation/PeriodSelector';
 import { connectEmailAction, wasPromptedThisSession, markPromptedThisSession } from '../components/conexions/emailConnection';
 import AccountSettings from '../containers/AccountSettings';
 import { ReactComponent as Cflogo } from '../assets/logos/T1.svg';
@@ -22,7 +23,10 @@ import {
   BanknotesIcon,
   CreditCardIcon,
   ArrowsRightLeftIcon,
-  UserIcon
+  UserIcon,
+  SunIcon,
+  MoonIcon,
+  Cog6ToothIcon
 } from '@heroicons/react/20/solid';
 //UX
 import { Oval } from 'react-loader-spinner';
@@ -43,6 +47,7 @@ const Layout = ({
   add_user_extra_data,
   update_user_extra_data,
   update_user_config,
+  toggle_dark_mode,
   //state
   user_found,
   categories,
@@ -76,6 +81,23 @@ const Layout = ({
 
   const pathSegments = location.pathname.split('/').filter(Boolean);
   const activeTab = pathSegments.length > 1 ? pathSegments[1] : 'general';
+
+  const isDark = Boolean(user_extra_data?.config?.dark_mode);
+  // Selector de periodo (móvil, en la barra superior): solo en las vistas que dependen del mes
+  const showPeriod = location.pathname.startsWith('/dashboard') && ['general', 'budgets', 'accounts'].includes(activeTab);
+
+  // El tema también va en <html>: así lo toman los modales (que se montan fuera de este div),
+  // las barras de scroll y los controles nativos del navegador.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle('dark', isDark);
+    root.style.colorScheme = isDark ? 'dark' : 'light';
+  }, [isDark]);
+  useEffect(() => () => {
+    // al salir de la app (logout, landing) vuelve al tema claro
+    document.documentElement.classList.remove('dark');
+    document.documentElement.style.colorScheme = '';
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -170,10 +192,8 @@ const Layout = ({
     }
   }, [user, user_extra_data, first_steps.retrieved_email, automated_emails, location.pathname, navigate])
 
-  console.log("Layout Render - is_settings_open:", is_settings_open);
-
   return (
-    <div className={`min-h-screen font-Inter flex flex-col overflow-x-hidden transition-colors duration-300 ${user_extra_data?.config?.dark_mode ? 'dark bg-[#0B0F19]' : 'bg-gray-100'}`}>
+    <div className={`min-h-screen font-Inter flex flex-col overflow-x-clip transition-colors duration-300 ${isDark ? 'dark bg-[#0B0F19]' : 'bg-gray-100'}`}>
       {!user_found && (
         <div className="flex items-center justify-center h-screen">
           <Oval height={80} width={80} color="#5266EB" visible={true} ariaLabel='oval-loading' secondaryColor="#5266EB" strokeWidth={2} strokeWidthSecondary={2} />
@@ -192,7 +212,7 @@ const Layout = ({
                       <div className="w-8 h-8 rounded-xl bg-[#5266EB]/10 flex items-center justify-center">
                         <Cflogo className="w-5 h-5" />
                       </div>
-                      <span className="font-bold text-[#5266EB] text-lg">Topi</span>
+                      <span className="hidden min-[380px]:inline font-bold text-[#5266EB] text-lg">Topi</span>
                     </div>
                     <div className='gap-2 hidden lg:flex flex-row'>
                       <Link to="/dashboard" className={`${activeTab === 'general' ? "bg-[#5266EB] text-white shadow-lg border-[#5266EB]" : "text-gray-400 bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm"} cursor-pointer px-4 py-2 border border-gray-200 rounded-2xl flex items-center gap-2 text-sm transition-colors duration-300`}>
@@ -214,11 +234,31 @@ const Layout = ({
                     </div>
                     <div className='flex flex-row items-center gap-2'>
                       <button
-                        onClick={() => {
-                          console.log("Clicked open_settings_modal('profile')");
-                          open_settings_modal('profile');
-                        }}
-                        className="p-1 px-3 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-gray-700 dark:text-gray-200 transition-all font-semibold"
+                        type="button"
+                        onClick={() => toggle_dark_mode()}
+                        aria-label={isDark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+                        title={isDark ? 'Tema claro' : 'Tema oscuro'}
+                        className="w-9 h-9 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center text-gray-600 dark:text-amber-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-topi-500 active:scale-95 transition-all"
+                      >
+                        {isDark
+                          ? <SunIcon className="w-5 h-5 transition-transform duration-300 rotate-0 motion-reduce:transition-none" aria-hidden="true" />
+                          : <MoonIcon className="w-5 h-5 transition-transform duration-300 motion-reduce:transition-none" aria-hidden="true" />}
+                      </button>
+                      {/* Móvil: botón de ajustes compacto + selector de periodo */}
+                      <button
+                        type="button"
+                        onClick={() => open_settings_modal('profile')}
+                        aria-label="Abrir ajustes y perfil"
+                        title="Ajustes"
+                        className="lg:hidden w-9 h-9 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-topi-500 active:scale-95 transition-all"
+                      >
+                        <Cog6ToothIcon className="w-5 h-5" aria-hidden="true" />
+                      </button>
+                      {showPeriod && <PeriodSelector compact className="lg:hidden" />}
+                      <button
+                        onClick={() => open_settings_modal('profile')}
+                        aria-label="Abrir ajustes y perfil"
+                        className="hidden lg:flex p-1 px-3 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 items-center gap-2 text-gray-700 dark:text-gray-200 transition-all font-semibold"
                       >
                         <span className="text-xs">{user?.name || 'Usuario'}</span>
                         <div className="w-7 h-7 rounded-full bg-[#5266EB]/10 flex items-center justify-center">
@@ -240,6 +280,7 @@ const Layout = ({
                 )}
 
                 <NextStepsPopover open={openNextSteps} setOpen={setOpenNextSteps} />
+
 
                 <div className="w-full flex justify-center">
                   <div className="md:py-1 w-full lg:w-[806px] xl:w-[930px]">
@@ -321,6 +362,7 @@ export default connect(mapStateToProps, {
   add_user_extra_data,
   update_user_extra_data,
   update_user_config,
+  toggle_dark_mode,
   onboarding_reset_read_email,
   open_settings_modal,
   close_settings_modal

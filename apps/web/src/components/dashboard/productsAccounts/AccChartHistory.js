@@ -52,7 +52,7 @@ function AccChartHistory({
     const [activeIndex, setActiveIndex] = useState(null);
     //#e11d48
     return (
-        <div className={`h-[156px] md:h-[300px] w-[327px] md:w-[368px]  xl:w-[514px]`}>
+        <div className="h-full w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                     width={400}
@@ -89,13 +89,13 @@ function AccChartHistory({
                         content={({ active, payload }) => {
                             if (active && payload && payload.length) {
                                 return (
-                                    <div className="flex flex-col text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 shadow-lg">
+                                    <div className="flex flex-col gap-0.5 text-xs bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg px-3 py-2">
                                         <div className='flex flex-col'>
-                                            <span className='text-[#5266EB]'>Balance: {formatCurrency(payload[0].payload.value)}</span>
-                                            <div className='text-gray-300'>
+                                            <span className='font-semibold text-topi-600 dark:text-indigo-300'>Balance: {formatCurrency(payload[0].payload.value)}</span>
+                                            <div>
                                                 <span>Dif:</span>
-                                                <span className={`text-[${payload[0].payload.color_per}]`}>{formatCurrency(payload[0].payload.dif)}</span> (
-                                                <span className={`text-[${payload[0].payload.color_per}]`}>{payload[0].payload.per_show}</span>)
+                                                <span style={{ color: payload[0].payload.color_per }}>{formatCurrency(payload[0].payload.dif)}</span> (
+                                                <span style={{ color: payload[0].payload.color_per }}>{payload[0].payload.per_show}</span>)
                                             </div>
 
                                         </div>
@@ -117,9 +117,8 @@ function AccChartHistory({
                         shape={(props) => (
                             <Rectangle
                                 {...props}
-                                stroke={props.index === activeIndex ? "#5266EB" : ""} // Border color
-                                strokeWidth={2}  // Border width
-                                fill={props.value >= 0 ? "#5266EB" : "#e11d48"}
+                                fillOpacity={activeIndex === null || props.index === activeIndex ? 1 : 0.45}
+                                fill={props.value >= 0 ? "#5266EB" : "#DC2626"}
                                 radius={[6, 6, 0, 0]}
                             />
 
@@ -133,7 +132,7 @@ function AccChartHistory({
                                         x={x + width / 3}
                                         y={value >= 0 ? y - 8 : y + 16}
                                         textAnchor="middle"
-                                        fill="#5266EB"
+                                        className="topi-chart-value"
                                         fontWeight="bold"
                                         fontSize={12}
                                     >

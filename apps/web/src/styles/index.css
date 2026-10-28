@@ -16,7 +16,7 @@ display: none; /* Chrome, Safari, Opera */
 
 html, body {
     width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
     font-family: 'Inter'
   }
 
@@ -189,3 +189,37 @@ input, select, textarea {
   background-color: theme('colors.gray.800');
   color: theme('colors.gray.200');
 }
+/* ---------- Gráficas (propuesta UX v1) ---------- */
+.recharts-cartesian-axis-tick-value { fill: #5B6078; }
+.dark .recharts-cartesian-axis-tick-value { fill: #9CA3AF; }
+.recharts-cartesian-grid line { stroke: #EEF0F6; }
+.dark .recharts-cartesian-grid line { stroke: #2A3045; }
+.topi-chart-value { fill: #1E1E2A; }
+.dark .topi-chart-value { fill: #ECEDF5; }
+.topi-budget-line line { stroke: #6A6F88; }
+.dark .topi-budget-line line { stroke: #9097B4; }
+.topi-budget-label { fill: #5B6078; }
+.dark .topi-budget-label { fill: #B9BDD3; }
+.topi-budget-swatch { stroke: #6A6F88; }
+.dark .topi-budget-swatch { stroke: #9097B4; }
+
+/* ---------- Scrollbars con color Topi ---------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(82, 102, 235, 0.45) transparent; /* Firefox */
+}
+.dark * {
+  scrollbar-color: rgba(127, 141, 242, 0.45) transparent;
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: rgba(82, 102, 235, 0.45);
+  border-radius: 999px;
+  border: 3px solid transparent;   /* deja una pastilla delgada con aire alrededor */
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background-color: rgba(82, 102, 235, 0.8); }
+.dark ::-webkit-scrollbar-thumb { background-color: rgba(127, 141, 242, 0.45); }
+.dark ::-webkit-scrollbar-thumb:hover { background-color: rgba(127, 141, 242, 0.85); }
+::-webkit-scrollbar-corner { background: transparent; }
