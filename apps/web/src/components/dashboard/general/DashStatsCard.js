@@ -6,7 +6,7 @@ import { get_financial_report } from '../../../redux/actions/reports';
 import { get_savings_account } from '../../../redux/actions/reports';
 //components
 import DropDownAccount from './DropDownAccounts';
-import { formatCurrency, getPerc2 } from '../../helpers';
+import { formatMoney, getPerc2 } from '../../helpers';
 import FormatMoneyShowDecs from '../../FormatMoneyShowDecs';
 import {
     ArrowDownRightIcon,

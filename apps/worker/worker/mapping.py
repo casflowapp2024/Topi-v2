@@ -45,9 +45,11 @@ def transform_automations_msgs(data: Dict[str, Any]) -> List[Dict[str, Any]]:
                         "user_provider": user_provider,
                         "sender_email": sender_email,
                         "accounts": {},
+                        "currencies": {},
                     }
 
                 grouped_accounts[group_key]["accounts"][account["last_four_digits"]] = str(account["id"])
+                grouped_accounts[group_key]["currencies"][str(account["id"])] = account.get("currency") or "COP"
             except KeyError as e:
                 logger.warning("missing required field in account data", extra={"field": str(e)})
                 continue
@@ -162,3 +164,41 @@ def parse_amount(amount_str: str) -> float:
         raise ve
     except Exception as e:
         raise ValueError(f"Could not convert value '{amount_str}' to float.") from e
+
+
+# Marcas de moneda en el texto de un correo bancario. "$" solo no cuenta: lo usan COP, USD y otras.
+_CURRENCY_PATTERNS = {
+    "USD": re.compile(r"\bUSD\b|\bUS\s?\$|\bU\$S\b|\bd[oó]lar(?:es)?\b", re.IGNORECASE),
+    "EUR": re.compile(r"\bEUR\b|€|\beuros?\b", re.IGNORECASE),
+    "GBP": re.compile(r"\bGBP\b|£|\blibras? esterlinas?\b", re.IGNORECASE),
+    "MXN": re.compile(r"\bMXN\b|\bpesos? mexicanos?\b", re.IGNORECASE),
+    "BRL": re.compile(r"\bBRL\b|\bR\$|\breais\b|\breales\b", re.IGNORECASE),
+    "CAD": re.compile(r"\bCAD\b|\bCA\$", re.IGNORECASE),
+}
+
+
+def detect_currencies(text: str) -> set[str]:
+    """Monedas extranjeras que menciona el correo (ISO 4217). La de la cuenta sale de la base de
+    datos; esto solo sirve para avisar cuando el correo habla de otra (p. ej. una compra en USD con
+    una tarjeta en COP). No usa el LLM ni guarda el texto."""
+    if not text:
+        return set()
+    return {code for code, pattern in _CURRENCY_PATTERNS.items() if pattern.search(text)}
+
+
+def flag_currency_mismatch(transactions: List[Dict[str, Any]], currencies: Dict[str, str]) -> int:
+    """Marca should_verify (queda en "Por revisar") si el correo de la transacción menciona una moneda
+    distinta a la de su cuenta. Usa transaction["detected_currencies"] y account_id. Devuelve cuántas
+    marcó. Sin `currencies` (jobs viejos) no hace nada."""
+    if not currencies:
+        return 0
+    flagged = 0
+    for transaction in transactions:
+        detected = transaction.get("detected_currencies") or set()
+        account_currency = currencies.get(str(transaction.get("account_id")), "COP")
+        if detected - {account_currency}:
+            if not transaction.get("should_verify"):
+                flagged += 1
+            transaction["should_verify"] = True
+    return flagged
+

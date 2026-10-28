@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { formatCurrency, capitalizeWords } from '../../helpers';
+import { formatMoney, capitalizeWords } from '../../helpers';
 import { Emoji } from "emoji-picker-react";
 
 const FullBudgetsModal = ({ isOpen, onClose, categories }) => {
@@ -36,7 +36,7 @@ const FullBudgetsModal = ({ isOpen, onClose, categories }) => {
                             Presupuesto Total
                         </span>
                         <span className="text-4xl md:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-                            {formatCurrency(totalBudget)}
+                            {formatMoney(totalBudget)}
                         </span>
                     </div>
 
@@ -59,7 +59,7 @@ const FullBudgetsModal = ({ isOpen, onClose, categories }) => {
                                         {capitalizeWords(category.name)}
                                     </h3>
                                     <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400 mt-1">
-                                        {formatCurrency(Math.abs(category.budget || 0))}
+                                        {formatMoney(Math.abs(category.budget || 0))}
                                     </p>
                                 </div>
                             </div>

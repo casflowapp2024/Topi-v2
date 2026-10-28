@@ -5,7 +5,7 @@ import { Transition, Dialog, DialogTitle, TransitionChild, DialogPanel } from '@
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import EditCreateCategoryForm from "./EditCreateCategoryForm";
 import Alert from '../alert';
-import { formatedCurrToNumber, formatCurrency } from "../helpers";
+import { formatedCurrToNumber, formatMoney } from "../helpers";
 import { categoriesApiErrors } from "../errosMaping";
 //apiCall
 import { CreateCategoryCall } from '../../apiCalls/categories/CreateCategoryCall'

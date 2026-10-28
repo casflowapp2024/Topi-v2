@@ -4,7 +4,7 @@ import moment from 'moment'
 import { connect } from 'react-redux'
 
 //components
-import { formatCurrency, parseDatetoDatetimeBrow, formatCurrency2, getPerc0, getColorByValue, getPercPlus } from '../../helpers';
+import { formatMoney, parseDatetoDatetimeBrow, formatMoneyCompact, getPerc0, getColorByValue, getPercPlus } from '../../helpers';
 
 //icons
 import { BarChart, Bar, Rectangle, XAxis, Label, ReferenceLine, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -16,7 +16,8 @@ function AccChartHistory({
     //reduxstates
     history_month,
     current_Year,
-    current_Month
+    current_Month,
+    account_activated
 }) {
     const [dataToPlot, setDataToPlot] = useState(null)
     useEffect(() => {
@@ -91,10 +92,10 @@ function AccChartHistory({
                                 return (
                                     <div className="flex flex-col gap-0.5 text-xs bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg px-3 py-2">
                                         <div className='flex flex-col'>
-                                            <span className='font-semibold text-topi-600 dark:text-indigo-300'>Balance: {formatCurrency(payload[0].payload.value)}</span>
+                                            <span className='font-semibold text-topi-600 dark:text-indigo-300'>Balance: {formatMoney(payload[0].payload.value, account_activated?.currency)}</span>
                                             <div>
                                                 <span>Dif:</span>
-                                                <span style={{ color: payload[0].payload.color_per }}>{formatCurrency(payload[0].payload.dif)}</span> (
+                                                <span style={{ color: payload[0].payload.color_per }}>{formatMoney(payload[0].payload.dif, account_activated?.currency)}</span> (
                                                 <span style={{ color: payload[0].payload.color_per }}>{payload[0].payload.per_show}</span>)
                                             </div>
 
@@ -136,7 +137,7 @@ function AccChartHistory({
                                         fontWeight="bold"
                                         fontSize={12}
                                     >
-                                        {formatCurrency2(value)}
+                                        {formatMoneyCompact(value, account_activated?.currency)}
                                     </text>
                                 );
                             }
@@ -153,6 +154,8 @@ function AccChartHistory({
 
 const mapStateToProps = state => ({
     history_month: state.Reports.history_accounts_by_month.monthly,
+    // el historial por cuenta está en la moneda de la cuenta
+    account_activated: state.Reports.account_activated,
     current_Year: state.Reports.current_Year,
     current_Month: state.Reports.current_Month,
 })

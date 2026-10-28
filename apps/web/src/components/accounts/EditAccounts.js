@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 //redux
 import { connect } from 'react-redux'
 import { get_user_accounts, update_account } from '../../redux/actions/cashflow';
 import { setAlert } from '../../redux/actions/alert';
 //components
-import { findElmentById, formatCurrency, formatedCurrToNumber } from '../helpers';
+import { findElmentById, formatedCurrToNumber } from '../helpers';
 import EditCreateFinAccountForm from './EditCreateFinAccountForm';
 import { ThreeDots } from 'react-loader-spinner';
 import Alert2 from '../alert2';
@@ -39,7 +39,10 @@ function EditAccounts({
     initia_balance_amount: detailInfo.initial_balance,
     automated: detailInfo.email.active,
     gmailPersonalEmail: detailInfo.email,
+    currency: detailInfo.currency || 'COP',
   });
+  // moneda al abrir: solo se manda si cambió (y solo se puede sin movimientos)
+  const [originalCurrency] = useState(detailInfo.currency || 'COP');
 
   const onChangeCreate = (e) => {
     const { name, type, checked, value } = e.target;
@@ -143,7 +146,8 @@ function EditAccounts({
         updateAccountData.last_four_digits,
         parseInt(updateAccountData.bankId),
         parseFloat(formatedCurrToNumber(updateAccountData.initia_balance_amount)),
-        email_id)
+        email_id,
+        updateAccountData.currency !== originalCurrency ? updateAccountData.currency : undefined)
 
       console.log("updated: ", updated)
 
@@ -180,9 +184,6 @@ function EditAccounts({
     }
   }
 
-  useEffect(() => {
-    console.log("updateAccountData: ", updateAccountData);
-  }, [updateAccountData]);
 
   return (
 
@@ -202,6 +203,7 @@ function EditAccounts({
                 banks={banks}
                 accountTypesOptions={accountTypesOptions}
                 automatedEmails={automatedEmails}
+                currencyLocked={Boolean(detailInfo.has_transactions)}
               />
 
               <div className="w-ful mt-12 justify-items-center items-center flex flex-row justify-around" >

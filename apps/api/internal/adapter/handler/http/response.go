@@ -584,6 +584,7 @@ func newAdminAccountResponse(account *domain.Account) customAccountResponse {
 		ID:                       account.ID,
 		Name:                     account.Name,
 		LastFourDigits:           account.LastFourDigits,
+		Currency:                 account.Currency,
 		customAutomationResponse: &automation,
 		EmailID:                  account.Email.ID,
 	}

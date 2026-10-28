@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { connect } from 'react-redux'
 //componentes
 import { Emoji } from 'emoji-picker-react';
-import { formatCurrency, formatDate } from '../helpers';
+import { formatMoney, formatDate } from '../helpers';
 import { delete_automated_email, get_automated_emails } from '../../redux/actions/conexions';
 import LinkTransEmailForm from '../conexions/LinkTransEmailForm';
 import ConexionErrorDisplay from './ConexionErrorDisplay';

@@ -6,7 +6,7 @@ import { connect } from 'react-redux'
 import { update_transaction_local, update_transaction } from '../../../redux/actions/cashflow';
 //componentes
 import { Emoji } from "emoji-picker-react";
-import { formatCurrency, formatDate, findElmentById } from '../../helpers';
+import { formatMoney, formatDate, findElmentById } from '../../helpers';
 import FormatMoneyShowDecs from '../../FormatMoneyShowDecs';
 import EmptyState from '../../ui/EmptyState';
 import { ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
@@ -98,6 +98,8 @@ const DashTrans = ({
                   <span className='text-[#16a34a] dark:text-[#22c55e] truncate'>
                     <FormatMoneyShowDecs
                       numb={transaction.amount}
+                      currency={transaction.currency}
+                      base={transaction.amount_base}
                       showDecimals={true}
                       intClass="text-[#16a34a] dark:text-[#22c55e] text-sm"
                       decClass="text-xs"
@@ -107,6 +109,8 @@ const DashTrans = ({
                   <span className='text-[#e11d48] dark:text-[#fb7185] truncate'>
                     <FormatMoneyShowDecs
                       numb={transaction.amount}
+                      currency={transaction.currency}
+                      base={transaction.amount_base}
                       showDecimals={true}
                       intClass="text-[#e11d48] dark:text-[#fb7185] text-sm"
                       decClass="text-xs"

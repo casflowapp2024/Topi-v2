@@ -12,7 +12,7 @@ import { ThreeDots } from 'react-loader-spinner';
 import Alert from '../alert';
 import Alert2 from '../alert2';
 import { Emoji } from "emoji-picker-react";
-import { formatedCurrToNumber, formatCurrency } from "../helpers";
+import { formatedCurrToNumber, formatMoneyInput } from "../helpers";
 import { categoriesApiErrors } from "../errosMaping";
 import { XMarkIcon } from '@heroicons/react/24/solid';
 
@@ -35,7 +35,7 @@ function EditCategory({
     const [selectedEmoji, setSelectedEmoji] = useState("")
     const [categoryData, setCategoryData] = useState({
         name: detailInfo.name,
-        budget: formatCurrency(detailInfo.budget),
+        budget: formatMoneyInput(detailInfo.budget),
         isIncome: detailInfo.income,
     });
 
@@ -43,7 +43,7 @@ function EditCategory({
         console.log(detailInfo)
         setCategoryData({
             name: detailInfo.name,
-            budget: formatCurrency(detailInfo.budget),
+            budget: formatMoneyInput(detailInfo.budget),
             isIncome: detailInfo.income,
         })
         setSelectedEmoji(detailInfo.emoji.toLowerCase())
@@ -58,7 +58,7 @@ function EditCategory({
 
     const onChangeUpdate = (e) => {
         if (e.target.name == "budget") {
-            const formated_budget = formatCurrency(formatedCurrToNumber(e.target.value)); // Remove non-numeric characters except for decimal point and minus sign
+            const formated_budget = formatMoneyInput(formatedCurrToNumber(e.target.value)); // Remove non-numeric characters except for decimal point and minus sign
             setCategoryData({ ...categoryData, [e.target.name]: formated_budget });
         } else if (e.target.name == "isIncome") {
             setCategoryData({ ...categoryData, [e.target.name]: e.target.checked })

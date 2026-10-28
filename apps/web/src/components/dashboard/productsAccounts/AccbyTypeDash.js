@@ -9,7 +9,7 @@ import { get_history_dash, get_history_category_by_month } from '../../../redux/
 import { set_dash_account_activated } from '../../../redux/actions/reports';
 //componentes
 import { Emoji } from "emoji-picker-react";
-import { formatCurrency, formatDate, findElmentById } from '../../helpers';
+import { formatMoney, formatDate, findElmentById } from '../../helpers';
 import TransactionDetail from '../../transactions/TransactionDetail2'
 import { parseDatetimetoDateStrFormat } from '../../helpers';
 //ui

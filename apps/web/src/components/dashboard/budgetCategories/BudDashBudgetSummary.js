@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { connect } from 'react-redux';
-import { formatCurrency } from '../../helpers';
+import { formatMoney } from '../../helpers';
 import { PlusIcon } from '@heroicons/react/20/solid';
 
 const BudDashBudgetSummary = ({ user_categories, setOpenCreateBox }) => {
@@ -24,12 +24,12 @@ const BudDashBudgetSummary = ({ user_categories, setOpenCreateBox }) => {
             <div className="flex flex-row justify-between items-center bg-slate-50 dark:bg-gray-700/50 rounded-xl p-3 border border-gray-100 dark:border-gray-700 transition-colors duration-300">
                 <div className="flex flex-col">
                     <span className="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Presupuesto Gastos</span>
-                    <span className="text-base font-bold text-red-600 dark:text-red-400">{formatCurrency(totalExpenseBudget)}</span>
+                    <span className="text-base font-bold text-red-600 dark:text-red-400">{formatMoney(totalExpenseBudget)}</span>
                 </div>
                 <div className="h-8 w-[1px] bg-gray-200 dark:bg-gray-600"></div>
                 <div className="flex flex-col text-right">
                     <span className="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Presupuesto Ingresos</span>
-                    <span className="text-base font-bold text-[#5266EB] dark:text-indigo-400">{formatCurrency(totalIncomeBudget)}</span>
+                    <span className="text-base font-bold text-[#5266EB] dark:text-indigo-400">{formatMoney(totalIncomeBudget)}</span>
                 </div>
             </div>
 

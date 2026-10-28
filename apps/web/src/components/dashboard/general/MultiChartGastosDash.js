@@ -4,7 +4,7 @@ import moment from  'moment'
 import { connect } from 'react-redux'
 
 //components
-import { formatCurrency, parseDatetoDatetimeBrow, formatCurrency2, getPerc0, getColorByValue, getPercPlus} from '../../helpers';
+import { formatMoney, parseDatetoDatetimeBrow, formatMoneyCompact, getPerc0, getColorByValue, getPercPlus } from '../../helpers';
 
 //icons
 import ChartLegend, { lastPointLead } from '../../ui/ChartLegend';
@@ -104,8 +104,8 @@ function MultiChartGastosDash({
     //#e11d48
     return (
         <div className={`${windowContext==="dashboard"? 'h-[220px]' : 'h-[150px]'} w-full flex flex-col`}>
-            <ChartLegend lead={(() => { const l = lastPointLead(dataToPlot, 'show', monthlyActivated, moment); return l && { ...l, negative: false, value: formatCurrency2(l.value) }; })()} items={[
-                budgetToUse && !(dailyActivated && !cummulated) ? { type: 'line', label: 'Presupuesto', value: formatCurrency2(Math.abs(budgetToUse)) } : null,
+            <ChartLegend lead={(() => { const l = lastPointLead(dataToPlot, 'show', monthlyActivated, moment); return l && { ...l, negative: false, value: formatMoneyCompact(l.value) }; })()} items={[
+                budgetToUse && !(dailyActivated && !cummulated) ? { type: 'line', label: 'Presupuesto', value: formatMoneyCompact(Math.abs(budgetToUse)) } : null,
             ]} className="pt-2" />
             <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
@@ -144,7 +144,7 @@ function MultiChartGastosDash({
                 tick={{ fontSize: 12 }}
             />
             <CartesianGrid vertical={false} />
-            <YAxis width={44} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickCount={4} tickFormatter={(v) => formatCurrency2(v)} />
+            <YAxis width={44} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickCount={4} tickFormatter={(v) => formatMoneyCompact(v)} />
             <Tooltip
             cursor={false}
             content={({ active, payload }) => {
@@ -154,19 +154,19 @@ function MultiChartGastosDash({
                     {monthlyActivated?
                     <div className='flex flex-col'>
                         {/* <span className=''>Mes: {moment(payload[0].payload.date).format('MMM')}</span> */}
-                        <span className='text-ink-2 dark:text-gray-400'>Presupuesto: {formatCurrency(budgetToUse)}</span>
+                        <span className='text-ink-2 dark:text-gray-400'>Presupuesto: {formatMoney(budgetToUse)}</span>
                         <div>
-                            <span className='font-semibold text-money-out dark:text-money-out-dark'>Gastos: {formatCurrency(payload[0].payload.value)}</span> 
+                            <span className='font-semibold text-money-out dark:text-money-out-dark'>Gastos: {formatMoney(payload[0].payload.value)}</span> 
                             {/* (<span style={{ color: payload[0].payload.color_per }}>{payload[0].payload.per_show}</span>) */}
                         </div>
                         <span className=''>Gastados: {payload[0].payload.left}</span>
-                        {/* <span className=''>Dif: {formatCurrency(payload[0].payload.dif)}</span> */}
+                        {/* <span className=''>Dif: {formatMoney(payload[0].payload.dif)}</span> */}
                     </div>
                     :
                     <>
                         {/* <span className=''>Día: {moment(payload[0].payload.date).format('MMM DD')}</span> */}
-                        <span className='text-ink-2 dark:text-gray-400'>Presupuesto: {formatCurrency(budgetToUse)}</span>
-                        <span className='font-semibold text-money-out dark:text-money-out-dark'>Gastos: {formatCurrency(payload[0].payload.value)}</span>
+                        <span className='text-ink-2 dark:text-gray-400'>Presupuesto: {formatMoney(budgetToUse)}</span>
+                        <span className='font-semibold text-money-out dark:text-money-out-dark'>Gastos: {formatMoney(payload[0].payload.value)}</span>
                     </>
                     }
                 </div>
@@ -189,7 +189,7 @@ function MultiChartGastosDash({
                 ifOverflow={dailyActivated && !cummulated ? "discard" : "extendDomain"}
                 >
                 {/* <Label
-                    value={`${formatCurrency(expense_budget)}`}
+                    value={`${formatMoney(expense_budget)}`}
                     position="right"
                     fill="#fcd34d"
                     fontWeight="bold"

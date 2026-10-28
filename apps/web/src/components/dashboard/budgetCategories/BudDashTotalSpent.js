@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 //redux
 import { connect } from 'react-redux'
 //componentes
-import { formatCurrency, formatDate, getPerc0 } from '../../helpers';
+import { formatMoney, formatDate, getPerc0 } from '../../helpers';
 import FormatMoneyShowDecs from '../../FormatMoneyShowDecs';
 import { monthNumberText } from '../../info_arrays';
 import { useState, useEffect } from 'react';

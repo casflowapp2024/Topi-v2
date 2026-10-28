@@ -1,9 +1,11 @@
 
-import { capitalizeWords } from "../helpers";
+import { formatMoney, formatedCurrToNumber, getBaseCurrency, getCurrency } from "../helpers";
 import { useEffect, useState } from 'react';
 import DropDownEmails from "./DropDownEmails";
 import DropDownBanks from "./DropDownBanks";
 import InputMoneyInt2Decs from "../InputMoneyInt2Decs";
+import CurrencySelect from "../ui/CurrencySelect";
+import { fetch_fx_rate } from "../../redux/actions/fx";
 
 const EditCreateFinAccountForm = ({
     createAccountData,
@@ -12,7 +14,8 @@ const EditCreateFinAccountForm = ({
     banks,
     accountTypesOptions,
     automatedEmails,
-    contexWindow
+    contexWindow,
+    currencyLocked = false, // la cuenta ya tiene movimientos
 }) => {
 
     const {
@@ -22,8 +25,22 @@ const EditCreateFinAccountForm = ({
         accountType,
         initia_balance_amount,
         automated,
-        gmailPersonalEmail
+        gmailPersonalEmail,
+        currency = 'COP',
     } = createAccountData;
+
+    // equivalente del saldo inicial en la moneda base (tasa de hoy)
+    const baseCurrency = getBaseCurrency();
+    const [todayRate, setTodayRate] = useState(null);
+    useEffect(() => {
+        let active = true;
+        setTodayRate(null);
+        if (currency !== baseCurrency) {
+            fetch_fx_rate(currency, baseCurrency).then(q => { if (active) setTodayRate(q?.rate ?? 'none'); });
+        }
+        return () => { active = false; };
+    }, [currency, baseCurrency]);
+    const initialAmount = Number(formatedCurrToNumber(String(initia_balance_amount ?? '')));
 
     const [bankAutomated, setBankAutomated] = useState(true);
     //const [activeTooltip, setActiveTooltip] = useState(null);
@@ -137,6 +154,16 @@ const EditCreateFinAccountForm = ({
                     required />
             </div>
 
+            {/* moneda */}
+            {contexWindow !== 'onboarding' && (
+                <CurrencySelect
+                    id="accountCurrency"
+                    value={currency}
+                    onChange={e => onChangeCreate({ target: { name: 'currency', value: e.target.value, type: 'select' } })}
+                    locked={currencyLocked}
+                />
+            )}
+
             {/* monto inicial */}
             {contexWindow !== 'onboarding' && (
                 <div>
@@ -152,7 +179,19 @@ const EditCreateFinAccountForm = ({
                         id="initia_balance_amount"
                         onChangeCreate={e => onChangeCreate(e)}
                         number={createAccountData.initia_balance_amount}
+                        currency={currency}
+                        ariaLabel={accountType === '4' ? 'Deuda inicial' : 'Monto inicial'}
                     />
+                    {currency !== baseCurrency && (
+                        <p className="mt-1 text-xs text-right text-gray-500 dark:text-gray-400" aria-live="polite">
+                            {todayRate === null && 'Buscando la tasa de hoy…'}
+                            {todayRate === 'none' && `Aún no hay tasa ${currency}→${baseCurrency}.`}
+                            {todayRate && todayRate !== 'none' && (
+                                <>≈ {formatMoney(initialAmount * Number(todayRate), baseCurrency)} con la tasa de hoy
+                                    {' '}(1 {getCurrency(currency).symbol} = {formatMoney(todayRate, baseCurrency, { decimals: 2 })})</>
+                            )}
+                        </p>
+                    )}
                     {/* <input 
                 type="text" 
                 name="initia_balance_amount" 

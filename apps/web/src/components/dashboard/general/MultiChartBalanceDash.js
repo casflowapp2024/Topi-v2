@@ -3,7 +3,7 @@ import moment from  'moment'
 //redux
 import { connect } from 'react-redux'
 //components
-import { formatCurrency, formatCurrency2, parseDatetoDatetimeBrow, getPercPlus, getColorByValue} from '../../helpers';
+import { formatMoney, formatMoneyCompact, parseDatetoDatetimeBrow, getPercPlus, getColorByValue } from '../../helpers';
 
 //icons
 
@@ -67,7 +67,7 @@ function MultiChartBalanceDash({
     //#e11d48
     return (
         <div className='h-[220px] w-full flex flex-col'>
-            <ChartLegend lead={(() => { const l = lastPointLead(dataToPlot, 'value', monthlyActivated, moment); return l && { ...l, value: formatCurrency2(l.value) }; })()} items={[]} className="pt-2" />
+            <ChartLegend lead={(() => { const l = lastPointLead(dataToPlot, 'value', monthlyActivated, moment); return l && { ...l, value: formatMoneyCompact(l.value) }; })()} items={[]} className="pt-2" />
             <div className="flex-1 min-h-0">
 
             <ResponsiveContainer width="100%" height="100%">
@@ -105,7 +105,7 @@ function MultiChartBalanceDash({
                 tick={{ fontSize: 12 }}
             />
             <CartesianGrid vertical={false} />
-            <YAxis width={44} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickCount={4} tickFormatter={(v) => formatCurrency2(v)} />
+            <YAxis width={44} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickCount={4} tickFormatter={(v) => formatMoneyCompact(v)} />
             <Tooltip
             cursor={false}
             content={({ active, payload }) => {
@@ -116,14 +116,14 @@ function MultiChartBalanceDash({
                     <div className='flex flex-col'>
                         {/* <span className=''>Mes: {moment(payload[0].payload.date).format('MMM')}</span> */}
                         <div>
-                            <span className='font-semibold text-topi-600 dark:text-indigo-300'>Balance: {formatCurrency(payload[0].payload.value)}</span> (
+                            <span className='font-semibold text-topi-600 dark:text-indigo-300'>Balance: {formatMoney(payload[0].payload.value)}</span> (
                             <span style={{ color: payload[0].payload.color_per }}>{payload[0].payload.per_show}</span>)
                         </div>
-                        {/* <span className=''>Dif: {formatCurrency(payload[0].payload.dif)}</span> */}
+                        {/* <span className=''>Dif: {formatMoney(payload[0].payload.dif)}</span> */}
                     </div>:
                     <>
                         {/* <span className=''>Día: {moment(payload[0].payload.date).format('MMM DD')}</span> */}
-                        <span className='font-semibold text-topi-600 dark:text-indigo-300'>Balance: {formatCurrency(payload[0].payload.value)}</span>
+                        <span className='font-semibold text-topi-600 dark:text-indigo-300'>Balance: {formatMoney(payload[0].payload.value)}</span>
                     </>
                     }
 

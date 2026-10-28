@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { formatCurrency } from "./helpers"; // your existing helper
+import { formatMoneyInput, getBaseCurrency, getCurrency } from "./helpers";
 
 // FormatMoneyShowDecs.jsx
 const InputMoneyInt2Decs = ({
@@ -7,7 +7,10 @@ const InputMoneyInt2Decs = ({
   id,
   onChangeCreate,
   number, // float or numeric string
+  currency = getBaseCurrency(), // ISO 4217: el símbolo que se muestra
+  ariaLabel,
 }) => {
+  const symbol = getCurrency(currency).symbol;
   const [integerPart, setIntegerPart] = useState("");
   const [decimalPart, setDecimalPart] = useState("");
   const [showDecimals, setShowDecimals] = useState(false);
@@ -20,8 +23,8 @@ const InputMoneyInt2Decs = ({
     if (typeof number === 'string') {
       //console.log("InputMoneyInt2Decs is string: ", number);
       if (number === "") return;
-      if (number === "$0") {
-      setIntegerPart("$0");
+      if (/^[^0-9]*0$/.test(number)) {
+      setIntegerPart(`${symbol}0`);
       setDecimalPart("");
       setShowDecimals(false);
       }else return
@@ -39,7 +42,7 @@ const InputMoneyInt2Decs = ({
       //console.log("InputMoneyInt2Decs intStr: ", intStr, " decStrRaw: ", decStrRaw);
       // format the integer with your helper (which handles $ and grouping)
       // to keep the sign, pass a negative integer if original number was negative
-      const formattedInt = formatCurrency(isNeg ? -Number(intStr) : Number(intStr));
+      const formattedInt = formatMoneyInput(isNeg ? -Number(intStr) : Number(intStr), currency);
       
       setIntegerPart(formattedInt);
 
@@ -51,7 +54,15 @@ const InputMoneyInt2Decs = ({
         setShowDecimals(false);
       }
     } else return
-  }, [number]);
+  }, [number, currency, symbol]);
+
+  // al cambiar la moneda cambia el símbolo del valor ya escrito
+  useEffect(() => {
+    setIntegerPart(prev => {
+      const digits = String(prev || '').replace(/[^0-9-]/g, '');
+      return digits === '' ? `${symbol}0` : formatMoneyInput(digits, currency);
+    });
+  }, [currency, symbol]);
 
 
   const decimalRef = useRef(null);
@@ -68,7 +79,7 @@ const InputMoneyInt2Decs = ({
 
     if (val.includes('.')) {
       const [int, dec] = val.split('.');
-      setIntegerPart(`${formatCurrency(int)}` || '$0');
+      setIntegerPart(`${formatMoneyInput(int, currency)}` || `${symbol}0`);
       setDecimalPart(dec?.slice(0, 2) || '');
       setShowDecimals(true);
 
@@ -76,7 +87,7 @@ const InputMoneyInt2Decs = ({
         decimalRef.current?.focus();
       }, 10);
     } else {
-      const newFormattedValue = `${formatCurrency(val)}` || '$0';
+      const newFormattedValue = `${formatMoneyInput(val, currency)}` || `${symbol}0`;
       setIntegerPart(newFormattedValue);
 
       // After state update, calculate and set the new cursor position
@@ -123,8 +134,8 @@ const InputMoneyInt2Decs = ({
     const handleFocus = (e) => {
         // If the current value is "$0", treat it as a placeholder and clear it.
         // This allows the user to start typing a new number without fighting the "0".
-        if (e.target.value === "$0" || e.target.value === "" || e.target.value === null) {
-            setIntegerPart("$");
+        if (e.target.value === `${symbol}0` || e.target.value === "" || e.target.value === null) {
+            setIntegerPart(symbol);
             setDecimalPart("");
         }
     };
@@ -140,6 +151,8 @@ const InputMoneyInt2Decs = ({
         type="text"
         value={integerPart}
         onChange={handleIntegerChange}
+        inputMode="decimal"
+        aria-label={ariaLabel ? `${ariaLabel} en ${getCurrency(currency).name}` : `Monto en ${getCurrency(currency).name}`}
         onFocus={handleFocus}
         className={`${showDecimals ? "rounded-l-md w-[85%]" : "rounded-lg w-full"} bg-gray-50 px-2 py-1 md:py-2 border border-gray-300 text-right text-gray-900 placeholder-gray-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
       />
@@ -152,6 +165,8 @@ const InputMoneyInt2Decs = ({
             type="text"
             value={decimalPart}
             onChange={handleDecimalChange}
+            inputMode="numeric"
+            aria-label="Centavos"
             onKeyDown={handleBackspace}
             className="bg-gray-50 px-1 py-1 md:py-2 rounded-r-md border border-gray-300 w-[15%] text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />

@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { formatedCurrToNumber, formatCurrency} from "../../components/helpers";
+import { formatedCurrToNumber, formatMoneyInput } from "../../components/helpers";
 import { categoriesApiErrors } from "../../components/errosMaping";
 
 // Define el estado inicial del formulario
@@ -51,7 +51,7 @@ export const CreateCategoryCall = (
   // También podemos mover onChangeCreate al hook
   const onChangeCreate = (e) => {
     if(e.target.name == "budget"){
-      const formated_budget = formatCurrency(formatedCurrToNumber(e.target.value)); // Remove non-numeric characters except for decimal point and minus sign
+      const formated_budget = formatMoneyInput(formatedCurrToNumber(e.target.value)); // Remove non-numeric characters except for decimal point and minus sign
       setformDataCreate({ ...formDataCreate, [e.target.name]: formated_budget });
 
     }else if(e.target.name == "isIncome"){

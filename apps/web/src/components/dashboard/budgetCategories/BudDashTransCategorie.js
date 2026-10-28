@@ -9,7 +9,8 @@ import { get_history_dash, get_history_category_by_month, get_expenses_report } 
 import { set_dash_category_activated } from '../../../redux/actions/reports';
 //componentes
 import { Emoji } from "emoji-picker-react";
-import { formatCurrency, formatDate, findElmentById, deepEqual } from '../../helpers';
+import { formatMoney, formatDate, findElmentById, deepEqual } from '../../helpers';
+import Money from '../../ui/Money';
 import TransactionDetail from '../../transactions/TransactionDetail2'
 import { parseDatetimetoDateStrFormat } from '../../helpers';
 import CreateTransaction from '../../transactions/CreateTransaction';
@@ -153,9 +154,9 @@ const BudDashTransCategorie = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center flex-col">
                   <p className="text-3xl font-bold text-gray-800 dark:text-gray-100">
-                    {formatCurrency(category_activated.value || category_activated.expenses || 0)}
+                    {formatMoney(category_activated.value || category_activated.expenses || 0)}
                   </p>
-                  <span className='pl-1 text-[8px] xl:text-[10px] w-full text-left text-gray-400 dark:text-gray-500'>de {formatCurrency(category_activated.budget)}</span>
+                  <span className='pl-1 text-[8px] xl:text-[10px] w-full text-left text-gray-400 dark:text-gray-500'>de {formatMoney(category_activated.budget)}</span>
                 </div>
 
                 <button
@@ -194,7 +195,7 @@ const BudDashTransCategorie = ({
                             </div>
                           </div>
                           <div className="transaction-amount text-right">
-                            <p className={`primary-amount font-semibold ${tx.expense ? 'text-gray-800 dark:text-gray-200' : 'text-green-600 dark:text-green-400'}`}>{formatCurrency(tx.amount)}</p>
+                            <p className={`primary-amount font-semibold ${tx.expense ? 'text-gray-800 dark:text-gray-200' : 'text-green-600 dark:text-green-400'}`}><Money amount={tx.amount} currency={tx.currency} base={tx.amount_base} /></p>
                           </div>
                         </li>
                       ))}

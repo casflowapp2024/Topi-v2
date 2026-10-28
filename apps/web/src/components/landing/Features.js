@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useEffect, useState } from "react";
 
-import { getPerc0, getPerc2, capitalizeWords, formatCurrency } from "../helpers";
+import { getPerc0, getPerc2, capitalizeWords, formatMoney } from "../helpers";
 import { Emoji } from "emoji-picker-react";
 //redux
 
@@ -156,7 +156,7 @@ const Features = ({
                                         {/* bottom card */}
                                         <div className='h-[48px] flex flex-row justify-between items-center mt-4'>
                                             <div className='flex flex-row justify-center w-full items-end'>
-                                                <span className='md:text-2xl'>{formatCurrency(anal.value2)}</span>
+                                                <span className='md:text-2xl'>{formatMoney(anal.value2)}</span>
                                             </div>
                                                 
                                         </div>

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { connect } from 'react-redux'
 import { useState, useEffect, useMemo } from 'react';
 import { get_expenses_report } from '../../../redux/actions/reports';
-import { formatCurrency, capitalizeWords, getPerc0, formatDate } from '../../helpers';
+import { formatMoney, capitalizeWords, getPerc0, formatDate } from '../../helpers';
 import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/20/solid';
 import { SkeletonRows } from '../../ui/Skeleton';
 import { Emoji } from "emoji-picker-react";
@@ -298,7 +298,7 @@ const BudDashCategorieList = ({
 
                               <div>
 
-                                <span className='pl-1 text-xs w-full text-right text-ink-2 dark:text-gray-400'>de {formatCurrency(Math.abs(category.budget))} </span>
+                                <span className='pl-1 text-xs w-full text-right text-ink-2 dark:text-gray-400'>de {formatMoney(Math.abs(category.budget))} </span>
                                 <span className='pl-1 text-[8px] xl:text-[10px] w-full text-right text-green-400'></span>
                               </div>
                             </>
@@ -320,7 +320,7 @@ const BudDashCategorieList = ({
 
                               <div>
 
-                                <span className='pl-1 text-xs w-full text-right text-ink-2 dark:text-gray-400'>de {formatCurrency(category.budget)} </span>
+                                <span className='pl-1 text-xs w-full text-right text-ink-2 dark:text-gray-400'>de {formatMoney(category.budget)} </span>
                                 <span className='pl-1 text-[8px] xl:text-[10px] w-full text-right text-green-400'></span>
                               </div>
                             </>

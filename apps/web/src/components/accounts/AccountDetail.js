@@ -9,7 +9,7 @@ import AccCard from './AccCard';
 import EditAccounts from './EditAccounts';
 import Alert from '../alert';
 import Alert2 from '../alert2';
-import { formatCurrency, formatedCurrToNumber } from '../helpers';
+import { formatMoney, formatedCurrToNumber } from '../helpers';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 /* This example requires Tailwind CSS v2.0+ */
 import { ThreeDots } from 'react-loader-spinner';
@@ -177,6 +177,7 @@ function AccountDetail({
                                                     bankId={detailInfo.bank.id}
                                                     initia_balance_amount={findBalanceByAccountId(balance_by_account, detailInfo.id)}
                                                     lastFourDigits={detailInfo.last_four_digits}
+                                                    currency={detailInfo.currency}
                                                 />
                                             </div>
                                             {detailInfo && detailInfo.automation.configured === true ?

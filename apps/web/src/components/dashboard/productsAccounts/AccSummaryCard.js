@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatCurrency } from '../../helpers';
+import { formatMoney } from '../../helpers';
 
 
 import { WalletIcon, FireIcon, BanknotesIcon } from '@heroicons/react/20/solid';
@@ -32,7 +32,7 @@ const AccSummaryCard = ({ acc, data }) => {
       <div className="grid grid-cols-2 gap-4">
         <SummaryCard
           title="Saldo final"
-          value={formatCurrency(balance)}
+          value={formatMoney(balance)}
           icon={<BanknotesIcon className="w-4 h-4" />}
           colorClass="text-[#5266EB]"
         />
@@ -40,7 +40,7 @@ const AccSummaryCard = ({ acc, data }) => {
           <div></div> :
           <SummaryCard
             title="Ahorro"
-            value={formatCurrency(savings)}
+            value={formatMoney(savings)}
             icon={<FireIcon className="w-4 h-4" />}
             colorClass="text-[#5266EB]"
           />
@@ -48,20 +48,20 @@ const AccSummaryCard = ({ acc, data }) => {
         {acc?.type?.id === 4 ?
           <SummaryCard
             title="Pagos"
-            value={formatCurrency(income)}
+            value={formatMoney(income)}
             icon={<ArrowUpIcon className="w-4 h-4" />}
             colorClass="text-green-500"
           /> :
           <SummaryCard
             title="Ingresos"
-            value={formatCurrency(income)}
+            value={formatMoney(income)}
             icon={<ArrowUpIcon className="w-4 h-4" />}
             colorClass="text-green-500"
           />
         }
         <SummaryCard
           title="Gastos"
-          value={formatCurrency(expenses)}
+          value={formatMoney(expenses)}
           icon={<ArrowDownIcon className="w-4 h-4" />}
           colorClass="text-red-500"
         />

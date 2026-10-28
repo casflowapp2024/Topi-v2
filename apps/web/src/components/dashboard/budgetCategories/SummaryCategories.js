@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { formatCurrency } from '../../helpers';
+import { formatMoney } from '../../helpers';
 
 const SummaryCategories = () => {
     const userCategories = useSelector(state => state.CashFlow.user_categories);
@@ -27,7 +27,7 @@ const SummaryCategories = () => {
                     <div className="w-2 h-2 rounded-full bg-green-500"></div>
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Ingresos Planeados</span>
                 </div>
-                <span className="text-2xl font-black text-green-600">{formatCurrency(incomeTotal)}</span>
+                <span className="text-2xl font-black text-green-600">{formatMoney(incomeTotal)}</span>
                 {/* <p className="text-[10px] text-gray-400 mt-1 italic">Presupuesto mensual proyectado</p> */}
             </div>
 
@@ -37,7 +37,7 @@ const SummaryCategories = () => {
                     <div className="w-2 h-2 rounded-full bg-red-500"></div>
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Gastos Planeados</span>
                 </div>
-                <span className="text-2xl font-black text-red-600">{formatCurrency(expenseTotal)}</span>
+                <span className="text-2xl font-black text-red-600">{formatMoney(expenseTotal)}</span>
                 {/* <p className="text-[10px] text-gray-400 mt-1 italic">Límite mensual establecido</p> */}
             </div>
         </div>

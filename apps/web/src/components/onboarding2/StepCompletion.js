@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { connect } from 'react-redux';
 import { ThreeDots } from 'react-loader-spinner';
 import { XCircleIcon, CheckCircleIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
-import { formatCurrency } from '../helpers'; // Assuming this helper exists and is exported
+import { formatMoney } from '../helpers'; // Assuming this helper exists and is exported
 import { get_user_extra_data } from '../../redux/actions/auth';
 import { get_user_transactions } from '../../redux/actions/cashflow';
 import { read_email_transactions_trigger } from '../../redux/actions/conexions';
@@ -169,7 +169,7 @@ const StepCompletion = ({
                                             </div>
 
                                             <span className={`font-semibold ${tx.expense !== true ? 'text-green-600' : 'gray-900'}`}>
-                                                {formatCurrency(tx.amount)}
+                                                {formatMoney(tx.amount, tx.currency)}
                                             </span>
                                         </div>
                                     ))}

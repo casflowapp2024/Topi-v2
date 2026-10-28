@@ -263,7 +263,8 @@ func (ar *AccountRepository) UpdateAccount(ctx context.Context, account *domain.
 		Set("updated_at", time.Now()).
 		Where(sq.Eq{"id": account.ID}).
 		Where(sq.Eq{"user_id": account.UserID}).
-		Suffix("RETURNING " + accountColumns)
+		Suffix("RETURNING " + accountColumns + ", exists (select 1 from " + enums.TransactionsTableName +
+			" t where t.account_id = " + enums.AccountTableName + ".id)")
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -282,6 +283,7 @@ func (ar *AccountRepository) UpdateAccount(ctx context.Context, account *domain.
 		&account.UpdatedAt,
 		&account.Email.ID,
 		&account.Currency,
+		&account.HasTransactions,
 	)
 
 	if err != nil {

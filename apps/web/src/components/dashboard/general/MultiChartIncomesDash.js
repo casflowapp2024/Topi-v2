@@ -3,7 +3,7 @@ import moment from  'moment'
 //redux
 import { connect } from 'react-redux'
 //components
-import { formatCurrency, formatCurrency2, parseDatetoDatetimeBrow, getColorByValue, getPercPlus, getPerc0 } from '../../helpers';
+import { formatMoney, formatMoneyCompact, parseDatetoDatetimeBrow, getColorByValue, getPercPlus, getPerc0 } from '../../helpers';
 //icons
 import ChartLegend, { lastPointLead } from '../../ui/ChartLegend';
 import { BarChart, Bar, Rectangle, XAxis, Label, ReferenceLine, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -68,8 +68,8 @@ function MultiChartIncomesDash({
     //#e11d48
     return (
         <div className='h-[220px] w-full flex flex-col'>
-            <ChartLegend lead={(() => { const l = lastPointLead(dataToPlot, 'value', monthlyActivated, moment); return l && { ...l, value: formatCurrency2(l.value) }; })()} items={[
-                income_budget && !(dailyActivated && !cummulated) ? { type: 'line', label: 'Presupuesto', value: formatCurrency2(Math.abs(income_budget)) } : null,
+            <ChartLegend lead={(() => { const l = lastPointLead(dataToPlot, 'value', monthlyActivated, moment); return l && { ...l, value: formatMoneyCompact(l.value) }; })()} items={[
+                income_budget && !(dailyActivated && !cummulated) ? { type: 'line', label: 'Presupuesto', value: formatMoneyCompact(Math.abs(income_budget)) } : null,
             ]} className="pt-2" />
             <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
@@ -110,7 +110,7 @@ function MultiChartIncomesDash({
                 tick={{ fontSize: 12 }}
             />
             <CartesianGrid vertical={false} />
-            <YAxis width={44} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickCount={4} tickFormatter={(v) => formatCurrency2(v)} />
+            <YAxis width={44} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickCount={4} tickFormatter={(v) => formatMoneyCompact(v)} />
             <Tooltip
             cursor={false}
             content={({ active, payload }) => {
@@ -120,19 +120,19 @@ function MultiChartIncomesDash({
                     {monthlyActivated?
                     <div className='flex flex-col'>
                         {/* <span className=''>Mes: {moment(payload[0].payload.date).format('MMM')}</span> */}
-                        <span className='text-ink-2 dark:text-gray-400'>Presupuesto: {formatCurrency(income_budget)}</span>
+                        <span className='text-ink-2 dark:text-gray-400'>Presupuesto: {formatMoney(income_budget)}</span>
                         <div>
-                            <span className='font-semibold text-money-in dark:text-money-in-dark'>Ingresos: {formatCurrency(payload[0].payload.value)}</span> 
+                            <span className='font-semibold text-money-in dark:text-money-in-dark'>Ingresos: {formatMoney(payload[0].payload.value)}</span> 
                             {/* (<span style={{ color: payload[0].payload.color_per }}>{payload[0].payload.per_show}</span>) */}
                         </div>
                         <span className=''>Recibidos: {payload[0].payload.left}</span>
-                        {/* <span className=''>Dif: {formatCurrency(payload[0].payload.dif)}</span> */}
+                        {/* <span className=''>Dif: {formatMoney(payload[0].payload.dif)}</span> */}
                     </div>
                     :
                     <>
                         {/* <span className=''>Día: {moment(payload[0].payload.date).format('MMM DD')}</span> */}
-                        <span className='text-ink-2 dark:text-gray-400'>Presupuesto: {formatCurrency(income_budget)}</span>
-                        <span className='font-semibold text-money-in dark:text-money-in-dark'>Ingresos: {formatCurrency(payload[0].payload.value)}</span>
+                        <span className='text-ink-2 dark:text-gray-400'>Presupuesto: {formatMoney(income_budget)}</span>
+                        <span className='font-semibold text-money-in dark:text-money-in-dark'>Ingresos: {formatMoney(payload[0].payload.value)}</span>
                     
                     </>
 
@@ -159,7 +159,7 @@ function MultiChartIncomesDash({
                 ifOverflow={dailyActivated && !cummulated ? "discard" : "extendDomain"}
                 >
                 {/* <Label
-                    value={formatCurrency(dataToPlot[dataToPlot.length - 1].value)}
+                    value={formatMoney(dataToPlot[dataToPlot.length - 1].value)}
                     position="right"
                     fill="#fcd34d"
                     fontWeight="bold"

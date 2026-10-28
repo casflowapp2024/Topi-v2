@@ -18,6 +18,8 @@ import {
 } from './types'
 
 //import { setAlert } from './alert';
+import { setBaseCurrency } from '../../components/helpers';
+import { get_currencies } from './fx';
 
 import axios from 'axios'
 
@@ -125,6 +127,9 @@ export const get_user_extra_data = () => async dispatch => {
 
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/user-extra`, config);
         if (res.status === 200) {
+            // moneda base del usuario: la usa formatMoney por defecto (antes de pintar montos)
+            setBaseCurrency(res.data?.data?.base_currency);
+            dispatch(get_currencies());
             dispatch({
                 type: GET_USER_EXTRA_SUCESS,
                 payload: res.data,

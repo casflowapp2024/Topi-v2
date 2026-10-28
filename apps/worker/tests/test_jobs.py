@@ -216,3 +216,29 @@ def test_missing_oauth_or_gemini_config_fails_without_marking():
     processor, db, api, _, _ = make([email("m1", "TX:1111:1")], extractor=GeminiExtractor(api_key=""))
     assert processor.handle(job(attempts=3)) == "failed"
     assert api.errors == []
+
+
+def test_email_in_other_currency_goes_to_review():
+    """D6: la moneda la da la cuenta; si el correo habla de otra (USD en una tarjeta COP), la
+    transacción se crea en "Por revisar" (should_verify) en vez de pasar como COP sin más."""
+    usd = EmailMessage(id="m9", subject="Compra internacional por USD 45,99", sender="a@banco.co",
+                       received_at=LAST_RUN + timedelta(minutes=30), body="TX:1111:45.99")
+    cop = email("m10", "TX:2222:120000")
+    processor, _, api, _, _ = make([usd, cop])
+
+    processor.handle(job(currencies={"11": "COP", "22": "COP"}))
+
+    sent = {t["source_message_id"]: t for t in api.create_calls[0]}
+    assert sent["m9"]["should_verify"] is True
+    assert sent["m10"]["should_verify"] is False
+    assert "detected_currencies" not in sent["m9"], "no viaja a la API"
+
+
+def test_usd_email_on_usd_account_is_not_flagged():
+    usd = EmailMessage(id="m11", subject="Compra por US$ 20", sender="a@banco.co",
+                       received_at=LAST_RUN + timedelta(minutes=30), body="TX:2222:20")
+    processor, _, api, _, _ = make([usd])
+
+    processor.handle(job(currencies={"11": "COP", "22": "USD"}))
+
+    assert api.create_calls[0][0]["should_verify"] is False

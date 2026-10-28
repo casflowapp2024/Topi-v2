@@ -104,6 +104,7 @@ func TestEmailHandler_ReadEmail_EnqueuesJob(t *testing.T) {
 		Provider:    enums.Gmail,
 		SenderEmail: sender,
 		Accounts:    map[string]string{"1234": "10"},
+		Currencies:  map[string]string{"10": "COP"},
 		Onboarding:  true,
 	}, store.payloads[0])
 

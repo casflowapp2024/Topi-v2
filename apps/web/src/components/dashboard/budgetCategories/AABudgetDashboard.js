@@ -18,7 +18,7 @@ import EditCategory from "../../expensePlan/EditCategory";
 
 import { PlusIcon } from '@heroicons/react/20/solid';
 import { Emoji } from "emoji-picker-react";
-import { formatCurrency, capitalizeWords, findElmentById } from "../../helpers";
+import { formatMoney, capitalizeWords, findElmentById } from "../../helpers";
 //redux
 //import {  } from "../redux/actions/cashflow";
 

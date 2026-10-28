@@ -322,7 +322,8 @@ export const create_f_account = (
     type_id,
     bank_id,
     amount,
-    automation_email
+    automation_email,
+    currency // ISO 4217 (COP si no se elige)
 ) => async dispatch => {
 
     const config = {
@@ -345,6 +346,7 @@ export const create_f_account = (
         "type_id": type_id,
         "bank_id": bank_id,
         "initial_balance": initial_balance,
+        ...(currency ? { "currency": currency } : {}),
         "email_id": automation_email,
     });
 
@@ -355,6 +357,7 @@ export const create_f_account = (
             "type_id": type_id,
             "bank_id": bank_id,
             "initial_balance": initial_balance,
+        ...(currency ? { "currency": currency } : {}),
         });
     }
 
@@ -425,7 +428,8 @@ export const update_account = (
     last_four_digits,
     bank_id,
     amount,
-    automation_email
+    automation_email,
+    currency // ISO 4217; en la edición solo se manda si cambió
 ) => async dispatch => {
 
 
@@ -449,6 +453,7 @@ export const update_account = (
         "type_id": type_id,
         "bank_id": bank_id,
         "initial_balance": initial_balance,
+        ...(currency ? { "currency": currency } : {}),
         "email_id": automation_email,
     });
 
@@ -459,6 +464,7 @@ export const update_account = (
             "type_id": type_id,
             "bank_id": bank_id,
             "initial_balance": initial_balance,
+        ...(currency ? { "currency": currency } : {}),
         });
     }
 
@@ -694,7 +700,8 @@ export const update_transaction = (
     amount,
     date,
     checked,
-    should_verify
+    should_verify,
+    fx_rate // opcional: tasa manual hacia la moneda base (string decimal)
 ) => async dispatch => {
 
     const config = {
@@ -714,6 +721,7 @@ export const update_transaction = (
         "date": date,
         "checked": true,
         "should_verify": false,
+        ...(fx_rate ? { "fx_rate": String(fx_rate) } : {}),
     });
 
     console.log("updating transaction")

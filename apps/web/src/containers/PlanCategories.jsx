@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import CreateCategory from "../components/expensePlan/CreateCategory";
 import EditCategory from "../components/expensePlan/EditCategory";
 import SummaryCategories from "../components/dashboard/budgetCategories/SummaryCategories";
-import { formatCurrency, capitalizeWords, findElmentById } from "../components/helpers";
+import { formatMoney, capitalizeWords, findElmentById } from "../components/helpers";
 
 //third components
 import { PlusIcon } from '@heroicons/react/20/solid'
@@ -143,7 +143,7 @@ const PlanCategories = ({
                                             <div className="flex flex-row justify-between">
                                               <h3 className="text-sm font-semibold text-gray-700 mb-1">{capitalizeWords(category.name)}</h3>
                                             </div>
-                                            <span className='text-[20px] text-[#5266EB]'>{formatCurrency(category.budget)}</span>
+                                            <span className='text-[20px] text-[#5266EB]'>{formatMoney(category.budget)}</span>
 
                                           </div>
 

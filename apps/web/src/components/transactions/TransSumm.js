@@ -1,5 +1,5 @@
 //components
-import { formatCurrency, capitalizeWords, formatDate, parseDatetimetoDateStrFormat, parseDatetoDatetimeBrow } from "../helpers";
+import { formatMoney, capitalizeWords, formatDate, parseDatetimetoDateStrFormat, parseDatetoDatetimeBrow } from "../helpers";
 import { Emoji } from "emoji-picker-react";
 import FormatMoneyShowDecs from "../FormatMoneyShowDecs";
 const TransSumm = ({
@@ -20,6 +20,8 @@ const TransSumm = ({
                             <span className=' text-xl text-emerald-600 '>
                                 +<FormatMoneyShowDecs
                                     numb={detailInfo.amount && detailInfo.amount}
+                                    currency={detailInfo.currency}
+                                    base={detailInfo.amount_base}
                                     showDecimals={true}
                                     intClass="text-xl"
                                     decClass="text-sm"
@@ -29,6 +31,8 @@ const TransSumm = ({
                             <span className=' text-xl text-red-600'>
                                 -<FormatMoneyShowDecs
                                     numb={detailInfo.amount && detailInfo.amount}
+                                    currency={detailInfo.currency}
+                                    base={detailInfo.amount_base}
                                     showDecimals={true}
                                     intClass="text-xl"
                                     decClass="text-sm"

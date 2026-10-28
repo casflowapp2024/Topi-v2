@@ -1,10 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 //redux
 import { connect } from 'react-redux';
 import { set_dash_account_activated } from '../../../redux/actions/reports';
+import { get_net_worth } from '../../../redux/actions/fx';
 //components
-import { formatCurrency } from '../../helpers';
+import { formatMoney, getBaseCurrency } from '../../helpers';
+import Money from '../../ui/Money';
 import Card, { CardHeader } from '../../ui/Card';
 import Button from '../../ui/Button';
 import EmptyState from '../../ui/EmptyState';
@@ -21,19 +23,28 @@ const TYPE_STYLE = {
 };
 const MAX_VISIBLE = 6;
 
-const DashAccounts = ({ user_accounts, balance_by_account, set_dash_account_activated }) => {
+// Patrimonio de hoy (GET /analysis/net-worth): saldo nativo de cada cuenta, su valor en la moneda
+// base con la tasa de hoy y la ganancia o pérdida cambiaria no realizada.
+const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_account_activated }) => {
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
 
-  const { rows, total } = useMemo(() => {
-    const items = user_accounts?.items || [];
-    const balances = new Map((balance_by_account || []).map(b => [b.account_id, b.balance]));
-    const rows = items.map(acc => ({ acc, balance: balances.has(acc.id) ? Number(balances.get(acc.id)) : null }));
-    // Primero las que tienen saldo, de mayor a menor
-    rows.sort((a, b) => (b.balance ?? -Infinity) - (a.balance ?? -Infinity));
-    const total = rows.reduce((sum, r) => sum + (r.balance && r.balance > 0 ? r.balance : 0), 0);
-    return { rows, total };
-  }, [user_accounts, balance_by_account]);
+  useEffect(() => { get_net_worth(); }, [get_net_worth, user_accounts]);
+
+  const baseCurrency = net_worth?.base_currency || getBaseCurrency();
+  const { rows, savings } = useMemo(() => {
+    const items = new Map((user_accounts?.items || []).map(acc => [acc.id, acc]));
+    const rows = (net_worth?.accounts || []).map(nw => ({
+      acc: items.get(nw.account_id) || { id: nw.account_id, name: nw.name, type: { id: nw.type_id } },
+      nw,
+      value: nw.base_value != null ? Number(nw.base_value) : null,
+    }));
+    // Primero las de mayor valor en moneda base
+    rows.sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
+    const savings = rows.reduce((sum, r) => sum + (r.value && r.value > 0 ? r.value : 0), 0);
+    return { rows, savings };
+  }, [user_accounts, net_worth]);
+  const gain = Number(net_worth?.unrealized_gain || 0);
 
   const openAccount = (acc) => {
     set_dash_account_activated(acc);
@@ -48,7 +59,17 @@ const DashAccounts = ({ user_accounts, balance_by_account, set_dash_account_acti
       <CardHeader
         className="mb-0"
         title="Mis cuentas"
-        subtitle={total > 0 && <>Disponible en ahorro: <b className="text-gray-900 dark:text-gray-100 tabular-nums">{formatCurrency(total)}</b></>}
+        subtitle={net_worth && rows.length > 0 && (
+          <span className="flex flex-col">
+            <span>Patrimonio hoy: <b className="text-gray-900 dark:text-gray-100 tabular-nums">{formatMoney(net_worth.total, baseCurrency)}</b>
+              {net_worth.missing_rates && <span title="Alguna cuenta aún no tiene tasa de cambio"> *</span>}</span>
+            {gain !== 0 && (
+              <span className={gain < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}>
+                {gain < 0 ? 'Pérdida' : 'Ganancia'} cambiaria no realizada: {formatMoney(Math.abs(gain), baseCurrency)}
+              </span>
+            )}
+          </span>
+        )}
         action={
           <Link to="accounts" className="text-xs font-medium text-topi-600 dark:text-indigo-300 hover:underline inline-flex items-center">
             Ver detalle <ChevronRightIcon className="w-4 h-4" aria-hidden="true" />
@@ -65,10 +86,11 @@ const DashAccounts = ({ user_accounts, balance_by_account, set_dash_account_acti
         />
       ) : (
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-3">
-          {visible.map(({ acc, balance }) => {
+          {visible.map(({ acc, nw, value }) => {
             const style = TYPE_STYLE[parseInt(acc.type?.id)] || TYPE_STYLE[1];
             const { Icon } = style;
-            const share = balance && balance > 0 && total > 0 ? Math.round((balance / total) * 100) : null;
+            const share = value && value > 0 && savings > 0 ? Math.round((value / savings) * 100) : null;
+            const balance = Number(nw.balance);
             return (
               <li key={acc.id}>
                 <button
@@ -82,7 +104,7 @@ const DashAccounts = ({ user_accounts, balance_by_account, set_dash_account_acti
                   <span className="flex flex-col min-w-0 flex-1">
                     <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{acc.name}</span>
                     <span className="text-xs text-ink-2 dark:text-gray-400 truncate">
-                      {acc.bank?.name || acc.type?.name}{acc.last_four_digits ? ` · ••${acc.last_four_digits}` : ''}
+                      {nw.bank || acc.bank?.name || acc.type?.name}{nw.last_four_digits ? ` · ••${nw.last_four_digits}` : ''}
                     </span>
                     {share !== null && (
                       <span className="mt-1.5 h-1 w-full rounded-full bg-gray-100 dark:bg-gray-700" title={`${share}% de tu ahorro`}>
@@ -91,13 +113,13 @@ const DashAccounts = ({ user_accounts, balance_by_account, set_dash_account_acti
                     )}
                   </span>
                   <span className="flex flex-col items-end shrink-0">
-                    {balance !== null ? (
-                      <span className={`text-sm font-bold tabular-nums ${balance < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-gray-900 dark:text-gray-100'}`}>
-                        {formatCurrency(balance)}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-ink-2 dark:text-gray-400">{acc.type?.name}</span>
-                    )}
+                    <Money
+                      amount={nw.balance}
+                      currency={nw.currency}
+                      base={nw.base_value}
+                      baseCurrency={baseCurrency}
+                      className={`text-sm font-bold tabular-nums ${balance < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-gray-900 dark:text-gray-100'}`}
+                    />
                     <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-topi-500 transition-colors" aria-hidden="true" />
                   </span>
                 </button>
@@ -123,7 +145,7 @@ const DashAccounts = ({ user_accounts, balance_by_account, set_dash_account_acti
 
 const mapStateToProps = state => ({
   user_accounts: state.CashFlow.user_accounts,
-  balance_by_account: state.Reports.balance_by_account,
+  net_worth: state.Fx.net_worth,
 });
 
-export default connect(mapStateToProps, { set_dash_account_activated })(DashAccounts);
+export default connect(mapStateToProps, { set_dash_account_activated, get_net_worth })(DashAccounts);

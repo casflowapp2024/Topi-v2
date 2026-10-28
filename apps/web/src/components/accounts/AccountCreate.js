@@ -7,7 +7,7 @@ import Alert from '../alert';
 import Alert2 from "../alert2";
 import AccCard from "./AccCard";
 import EditCreateFinAccountForm from "./EditCreateFinAccountForm";
-import { formatCurrency, formatedCurrToNumber, findElmentById } from '../helpers';
+import { formatedCurrToNumber, findElmentById } from '../helpers';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 //redux
 import { connect } from 'react-redux';
@@ -42,6 +42,7 @@ const AccountCreate = ({
         accountType: 1,
         bankId: '', // Default to the first bank if available
         initia_balance_amount: '$0',
+        currency: 'COP',
         automated: true,
         gmailPersonalEmail: '',
     });
@@ -57,10 +58,6 @@ const AccountCreate = ({
         });
     }, [banks, openCreateBox]);
 
-    useEffect(() => {
-        console.log("createAccountData changed:", createAccountData);
-
-    }, [createAccountData]);
 
 
 
@@ -99,6 +96,7 @@ const AccountCreate = ({
             accountType: 1,
             bankId: '', // Default to the first bank if available
             initia_balance_amount: '$0',
+            currency: 'COP',
             automated: true,
             gmailPersonalEmail: '',
         })
@@ -153,7 +151,8 @@ const AccountCreate = ({
                 parseInt(createAccountData.accountType),
                 parseInt(newBankId),
                 parseFloat(formatedCurrToNumber(createAccountData.initia_balance_amount)),
-                email_id
+                email_id,
+                createAccountData.currency
             )
 
             if (created === 201) {
@@ -188,6 +187,7 @@ const AccountCreate = ({
                 accountType: 1,
                 bankId: '', // se elige al volver a abrir el diálogo (defaultBankId)
                 initia_balance_amount: '$0',
+                currency: 'COP',
                 automated: true,
                 gmailPersonalEmail: '',
             }
@@ -261,6 +261,7 @@ const AccountCreate = ({
                                                     banks={banks}
                                                     bankId={createAccountData.bankId}
                                                     initia_balance_amount={parseFloat(formatedCurrToNumber(createAccountData.initia_balance_amount))}
+                                                    currency={createAccountData.currency}
                                                     last_four_digits={createAccountData.last_four_digits}
                                                 />
                                             </div>
@@ -333,6 +334,7 @@ const AccountCreate = ({
                                                             banks={banks}
                                                             bankId={createAccountData.bankId}
                                                             initia_balance_amount={parseFloat(formatedCurrToNumber(createAccountData.initia_balance_amount))}
+                                                    currency={createAccountData.currency}
                                                             lastFourDigits={createAccountData.last_four_digits}
                                                         />
                                                     </div>

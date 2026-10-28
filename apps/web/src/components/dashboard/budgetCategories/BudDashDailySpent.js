@@ -4,7 +4,7 @@ import moment from 'moment'
 import { connect } from 'react-redux'
 
 //components
-import { formatCurrency, parseDatetoDatetimeBrow, formatCurrency2, getPerc0, getColorByValue, getPercPlus } from '../../helpers';
+import { formatMoney, parseDatetoDatetimeBrow, formatMoneyCompact, getPerc0, getColorByValue, getPercPlus } from '../../helpers';
 import MultiChartGastosDash from '../general/MultiChartGastosDash';
 import { ThreeDots } from 'react-loader-spinner';
 //icons

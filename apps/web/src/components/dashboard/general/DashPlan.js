@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { get_expenses_report } from '../../../redux/actions/reports';
-import { formatCurrency, capitalizeWords, getPerc0, formatDate } from '../../helpers';
+import { formatMoney, capitalizeWords, getPerc0, formatDate } from '../../helpers';
 import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/20/solid';
 import { SkeletonRows } from '../../ui/Skeleton';
 import EmptyState from '../../ui/EmptyState';
@@ -70,8 +70,8 @@ const DashPlan = ({
                             intClass="text-xs xl:text-sm"
                             decClass="text-[10px] xl:text-xs"
                           />
-                          {/* <span className='text-[12px] xl:text-sm'>{formatCurrency(category.expenses)}</span> */}
-                          <span className='pl-1 text-xs w-full text-left text-ink-2 dark:text-gray-400'>de {formatCurrency(category.budget)}</span>
+                          {/* <span className='text-[12px] xl:text-sm'>{formatMoney(category.expenses)}</span> */}
+                          <span className='pl-1 text-xs w-full text-left text-ink-2 dark:text-gray-400'>de {formatMoney(category.budget)}</span>
                         </div>
                         <span className="text-[11px] xl:text-[14px] font-medium ">
                           {getPerc0(category.usage)}

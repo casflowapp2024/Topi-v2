@@ -4,35 +4,84 @@ import axios from 'axios';
 ;
 
 
-export const formatCurrency = (amount, locale = 'en-US', currency = 'USD') => {
-    return new Intl.NumberFormat(locale, {
-        style: 'currency',
-        currency: currency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(amount);
-}
+// ---------------------------------------------------------------- dinero
+// Un único formateador de montos (multimoneda). Los montos se guardan exactos; aquí solo se
+// redondea para mostrar, con los decimales de cada moneda (currencies.minor_units).
+// Valores por defecto = semilla de la tabla currencies; setCurrencies los actualiza desde la API.
+const CURRENCY_DEFAULTS = {
+    COP: { code: 'COP', name: 'Peso colombiano', symbol: '$', minor_units: 0 },
+    USD: { code: 'USD', name: 'Dólar estadounidense', symbol: 'US$', minor_units: 2 },
+    EUR: { code: 'EUR', name: 'Euro', symbol: '€', minor_units: 2 },
+    MXN: { code: 'MXN', name: 'Peso mexicano', symbol: 'MX$', minor_units: 2 },
+    GBP: { code: 'GBP', name: 'Libra esterlina', symbol: '£', minor_units: 2 },
+    BRL: { code: 'BRL', name: 'Real brasileño', symbol: 'R$', minor_units: 2 },
+    CAD: { code: 'CAD', name: 'Dólar canadiense', symbol: 'CA$', minor_units: 2 },
+};
+let currencyInfo = { ...CURRENCY_DEFAULTS };
+let baseCurrency = 'COP';
 
-export const formatCurrency2 = (amount, locale = 'en-US', currency = 'USD') => {
-    let formattedAmount = amount;
-    let suffix = '';
+export const setCurrencies = (list) => {
+    if (!Array.isArray(list)) return;
+    list.forEach(c => { currencyInfo[c.code] = { ...currencyInfo[c.code], ...c }; });
+};
+export const getCurrencies = () => Object.values(currencyInfo);
+export const getCurrency = (code) => currencyInfo[code] || { code, name: code, symbol: code, minor_units: 2 };
+export const setBaseCurrency = (code) => { if (code) baseCurrency = code; };
+export const getBaseCurrency = () => baseCurrency;
 
-    if (Math.abs(amount) >= 1_000_000) {
-        formattedAmount = amount / 1_000_000;
-        suffix = 'M';
-    } else if (Math.abs(amount) >= 1_000) {
-        formattedAmount = amount / 1_000;
-        suffix = 'K';
-    }
+// Monedas para un selector: COP primero, luego USD y EUR, luego el resto por nombre
+export const currencyOptions = () => {
+    const first = ['COP', 'USD', 'EUR'];
+    const rest = getCurrencies().filter(c => !first.includes(c.code)).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+    return [...first.map(getCurrency), ...rest];
+};
 
-    return (
-        new Intl.NumberFormat(locale, {
+/**
+ * formatMoney(amount, currency, { locale, decimals, compact })
+ * amount: número o string decimal (como llega del API). currency: ISO 4217; por defecto la moneda
+ * base del usuario. compact: 1,5 M / 250 mil para ejes y leyendas.
+ */
+export const formatMoney = (amount, currency = baseCurrency, { locale = 'es-CO', decimals, compact = false } = {}) => {
+    const n = Number(amount);
+    if (amount === null || amount === undefined || amount === '' || !Number.isFinite(n)) return '—';
+    const digits = decimals ?? getCurrency(currency).minor_units;
+    try {
+        return new Intl.NumberFormat(locale, {
             style: 'currency',
-            currency: currency,
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 1, // allow 1 digit
-        }).format(formattedAmount) + suffix
-    );
+            currency,
+            notation: compact ? 'compact' : 'standard',
+            minimumFractionDigits: compact ? 0 : digits,
+            maximumFractionDigits: compact ? 1 : digits,
+        }).format(n);
+    } catch {
+        return `${currency} ${n.toFixed(digits)}`;
+    }
+};
+
+export const formatMoneyCompact = (amount, currency = baseCurrency) => formatMoney(amount, currency, { compact: true });
+
+// Texto para lectores de pantalla: "100 dólares estadounidenses"
+export const moneyAriaLabel = (amount, currency = baseCurrency) => {
+    const n = Number(amount);
+    if (!Number.isFinite(n)) return '';
+    try {
+        return new Intl.NumberFormat('es-CO', {
+            style: 'currency', currency, currencyDisplay: 'name',
+            maximumFractionDigits: getCurrency(currency).minor_units,
+        }).format(n);
+    } catch {
+        return `${n} ${currency}`;
+    }
+};
+
+// Formato del campo de entrada de montos (InputMoneyInt2Decs): símbolo de la moneda y miles con
+// coma, porque formatedCurrToNumber lo vuelve a leer quitando todo lo que no sea dígito, punto o signo.
+export const formatMoneyInput = (amount, currency = baseCurrency) => {
+    const n = Number(amount);
+    const symbol = getCurrency(currency).symbol;
+    if (!Number.isFinite(n)) return `${symbol}0`;
+    const abs = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.abs(n));
+    return `${n < 0 ? '-' : ''}${symbol}${abs}`;
 };
 
 export const formatedCurrToNumber = (formated) => {

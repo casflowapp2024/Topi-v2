@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useEffect, useState } from "react";
 
-import { getPerc0, getPerc2, capitalizeWords, formatCurrency, formatDate } from "../helpers";
+import { getPerc0, getPerc2, capitalizeWords, formatMoney, formatDate } from "../helpers";
 import { Emoji } from "emoji-picker-react";
 //redux
 
@@ -83,7 +83,7 @@ const Trans = ({
                                             }
                                                 
                                             <div className='text-xs lg:text-base px-1 flex items-center text-gray-700'>
-                                                <span className='w-[70px] md:w-[96px] lg:w-[100px] text-left'>{formatCurrency(transaction.amount)}</span>
+                                                <span className='w-[70px] md:w-[96px] lg:w-[100px] text-left'>{formatMoney(transaction.amount)}</span>
                                             </div>
                                         </div>
                                         <div className="xl:hidden w-full text-left pl-[28px] md:pl-[32px] lg:pl-[38px] text-[10px] md:text-sm">

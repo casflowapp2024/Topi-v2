@@ -8,7 +8,7 @@ import {
 } from '../../redux/actions/cashflow';
 import { setAlert } from '../../redux/actions/alert';
 //components
-import { formatDate, formatCurrency, formatCurrency2, formatedCurrToNumber, findElmentById, parseDatetimetoDateStrFormat } from '../helpers';
+import { formatDate, formatMoney, formatMoneyCompact, formatedCurrToNumber, findElmentById, parseDatetimetoDateStrFormat } from '../helpers';
 import 'react-datepicker/dist/react-datepicker.css'
 import { ThreeDots } from 'react-loader-spinner';
 import FormEditCreateTrans from './FormEditCreateTrans';

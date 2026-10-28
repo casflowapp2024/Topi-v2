@@ -10,7 +10,7 @@ import { get_user_transactions } from '../../../redux/actions/cashflow';
 import { set_init_date_account_activated, set_end_date_account_activated, get_accounts_status_by_period } from '../../../redux/actions/reports';
 //componentes
 import AccSummaryCard from './AccSummaryCard';
-import { formatCurrency, formatDate, findElmentById } from '../../helpers';
+import { formatMoney, formatDate, findElmentById } from '../../helpers';
 import { parseDatetimetoDateStrFormat } from '../../helpers';
 //ui
 import { Emoji } from 'emoji-picker-react';

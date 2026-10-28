@@ -220,6 +220,7 @@ func (a Accounts) BuildReadEmailRequests() []ReadEmailBodyRequest {
 			Provider:    firstAccount.Email.Provider,
 			SenderEmail: *firstAccount.Bank.Email,
 			Accounts:    Accounts(accounts).buildAccountsMap(),
+			Currencies:  Accounts(accounts).buildCurrenciesMap(),
 			Onboarding:  true,
 		}
 
@@ -285,4 +286,17 @@ type AccountBasicInfo struct {
 	ID             uint64 `json:"id"`
 	Name           string `json:"name"`
 	LastFourDigits string `json:"last_four_digits"`
+}
+
+// buildCurrenciesMap returns account_id: currency (COP when the account has none loaded)
+func (a Accounts) buildCurrenciesMap() map[string]string {
+	currencies := make(map[string]string, len(a))
+	for _, account := range a {
+		currency := account.Currency
+		if currency == "" {
+			currency = DefaultCurrency
+		}
+		currencies[fmt.Sprintf("%d", account.ID)] = currency
+	}
+	return currencies
 }

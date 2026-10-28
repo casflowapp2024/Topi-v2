@@ -6,6 +6,7 @@ import Reports from './reports';
 import Alert from './alert';
 import Conexions from './conexions';
 import UI from './ui';
+import Fx from './fx';
 
 export default combineReducers({
     Auth,
@@ -13,6 +14,7 @@ export default combineReducers({
     Reports,
     UI,
     Conexions,
+    Fx,
     Alert
 
     //Alert,

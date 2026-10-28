@@ -22,7 +22,7 @@ from worker.errors import (
     CredentialError, PermanentJobError, TransientError, WorkerError, backoff_seconds, classify,
 )
 from worker.extractors.base import AccountRef, TransactionExtractor
-from worker.mapping import map_account_ids, to_api_date
+from worker.mapping import detect_currencies, flag_currency_mismatch, map_account_ids, to_api_date
 from worker.providers.base import MailProvider
 from worker.providers.senders import split_senders
 
@@ -142,6 +142,7 @@ class JobProcessor:
         provider_name = payload["user_provider"]
         sender_email = payload["sender_email"]
         accounts: dict[str, str] = payload["accounts"] or {}
+        currencies: dict[str, str] = payload.get("currencies") or {}  # account_id: moneda (opcional)
         if not accounts:
             raise PermanentJobError("el job no tiene cuentas")
 
@@ -208,6 +209,7 @@ class JobProcessor:
                     self.db.update_message(email_id, email.id, "no_transaction")
                 continue
 
+            mentioned = detect_currencies(f"{email.subject or ''} {email.body or ''}")
             for item in found:
                 transaction = {
                     "account_number": item.account_number,
@@ -216,6 +218,7 @@ class JobProcessor:
                     "amount": item.amount,
                     "date": to_api_date(item.date or email.received_at),
                     "source_message_id": email.id,
+                    "detected_currencies": mentioned,
                 }
                 if item.confidence is not None and item.confidence < self.settings.confidence_threshold:
                     transaction["should_verify"] = True
@@ -225,6 +228,9 @@ class JobProcessor:
         # 5. cuentas y creación (idempotente por source_message_id)
         if transactions:
             map_account_ids(transactions, accounts)
+            flagged = flag_currency_mismatch(transactions, currencies)
+            if flagged:
+                logger.info("moneda distinta a la de la cuenta: a revisión", extra={"email_id": email_id, "flagged": flagged})
             to_send = []
             for t in transactions:
                 if "error" in t:

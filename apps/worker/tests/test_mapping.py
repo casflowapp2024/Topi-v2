@@ -14,7 +14,7 @@ def test_transform_groups_by_user_email_and_sender():
             {"id": 1, "last_four_digits": "1111", "email_id": 7, "user_email": "u1@gmail.com",
              "user_provider": "gmail", "sender_email": "a@b.co,c@b.co"},
             {"id": 2, "last_four_digits": "2222", "email_id": 7, "user_email": "u1@gmail.com",
-             "user_provider": "gmail", "sender_email": "a@b.co,c@b.co"},
+             "user_provider": "gmail", "sender_email": "a@b.co,c@b.co", "currency": "USD"},
             {"id": 3, "last_four_digits": "3333", "email_id": 7, "user_email": "u1@gmail.com",
              "user_provider": "gmail", "sender_email": "nu@nu.com.co"},
             {"id": 4, "last_four_digits": "4444"},  # incompleta: se ignora
@@ -25,9 +25,10 @@ def test_transform_groups_by_user_email_and_sender():
 
     assert jobs == [
         {"user_id": "u1", "user_mail": "u1@gmail.com", "email_id": 7, "user_provider": "gmail",
-         "sender_email": "a@b.co,c@b.co", "accounts": {"1111": "1", "2222": "2"}},
+         "sender_email": "a@b.co,c@b.co", "accounts": {"1111": "1", "2222": "2"},
+         "currencies": {"1": "COP", "2": "USD"}},
         {"user_id": "u1", "user_mail": "u1@gmail.com", "email_id": 7, "user_provider": "gmail",
-         "sender_email": "nu@nu.com.co", "accounts": {"3333": "3"}},
+         "sender_email": "nu@nu.com.co", "accounts": {"3333": "3"}, "currencies": {"3": "COP"}},
     ]
     assert dedupe_key(jobs[0]) == "7:a@b.co,c@b.co"
 
@@ -59,3 +60,45 @@ def test_dates_are_utc_aware():
     assert to_api_date(parsed) == "2026-10-18 15:15:00 +0000"
     with pytest.raises(ValueError):
         to_api_date(datetime(2026, 10, 18))
+
+
+# ------------------------------------------------------------------ moneda del correo (D6)
+
+import pytest  # noqa: E402
+
+from worker.mapping import detect_currencies, flag_currency_mismatch  # noqa: E402
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("Compra por USD 25,00 en AMAZON con tu tarjeta *1234", {"USD"}),
+    ("Realizaste una compra por US$45.99", {"USD"}),
+    ("Pago de 30 dólares aprobado", {"USD"}),
+    ("Compra internacional por EUR 12,50", {"EUR"}),
+    ("Cargo de 9,99 € en Spotify", {"EUR"}),
+    ("Compra por $120.000 en EXITO", set()),               # "$" solo no dice la moneda
+    ("Transferencia de $ 1.500.000 pesos", set()),
+    ("Compra USD 10 y comisión EUR 1", {"USD", "EUR"}),
+    ("", set()),
+])
+def test_detect_currencies(text, expected):
+    assert detect_currencies(text) == expected
+
+
+def test_flag_currency_mismatch_marks_only_other_currencies():
+    txs = [
+        {"account_id": 1, "detected_currencies": {"USD"}},           # USD en tarjeta COP: a revisión
+        {"account_id": 2, "detected_currencies": {"USD"}},           # USD en cuenta USD: bien
+        {"account_id": 1, "detected_currencies": set()},             # sin marca: bien
+        {"account_id": 1, "detected_currencies": {"EUR"}, "should_verify": True},  # ya estaba marcada
+    ]
+    flagged = flag_currency_mismatch(txs, {"1": "COP", "2": "USD"})
+
+    assert flagged == 1
+    assert [t.get("should_verify", False) for t in txs] == [True, False, False, True]
+
+
+def test_flag_currency_mismatch_without_currencies_does_nothing():
+    txs = [{"account_id": 1, "detected_currencies": {"USD"}}]
+    assert flag_currency_mismatch(txs, {}) == 0
+    assert "should_verify" not in txs[0]
+

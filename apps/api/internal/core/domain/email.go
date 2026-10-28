@@ -55,7 +55,10 @@ type ReadEmailBodyRequest struct {
 	Provider    string            `json:"user_provider"`
 	SenderEmail string            `json:"sender_email"`
 	Accounts    map[string]string `json:"accounts"` // account_number: account_id
-	Onboarding  bool              `json:"onboarding"`
+	// Currencies is account_id: ISO 4217 currency. The worker marks a transaction for review
+	// (should_verify) when the email mentions another currency. Optional: old jobs do not have it.
+	Currencies map[string]string `json:"currencies,omitempty"`
+	Onboarding bool              `json:"onboarding"`
 }
 
 // DedupeKey identifies the (connection, sender) pair in email_jobs: at most one pending or

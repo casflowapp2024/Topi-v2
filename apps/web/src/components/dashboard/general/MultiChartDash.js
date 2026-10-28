@@ -4,7 +4,7 @@ import moment from 'moment'
 import { connect } from 'react-redux'
 import { get_history_dash, get_history_category_by_month } from '../../../redux/actions/reports';
 //components
-import { formatCurrency } from '../../helpers';
+import { formatMoney } from '../../helpers';
 import MultiChartBalanceDash from './MultiChartBalanceDash';
 import MultiChartGastosDash from './MultiChartGastosDash';
 import MultiChartIncomesDash from './MultiChartIncomesDash';

@@ -12,15 +12,16 @@ import {
 //components
 //import Layout from "../hocs/Layout"
 import TransactionDetail from "../components/transactions/TransactionDetail2";
-import { formatCurrency, formatDate, capitalizeWords, parseDatetimetoDateStrFormat, parseDatetoDatetimeBrow } from "../components/helpers";
+import { formatMoney, formatDate, capitalizeWords, parseDatetimetoDateStrFormat, parseDatetoDatetimeBrow } from "../components/helpers";
 
 import FilterTransactions from "../components/transactions/FilterTransactions";
 import CreateTransaction from "../components/transactions/CreateTransaction";
+import TransferModal from "../components/transactions/TransferModal";
 import FormatMoneyShowDecs from "../components/FormatMoneyShowDecs";
 //icons
 import {
     PlusIcon, MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon,
-    ArrowDownTrayIcon, ArrowUpTrayIcon, QueueListIcon, ListBulletIcon
+    ArrowDownTrayIcon, ArrowUpTrayIcon, QueueListIcon, ListBulletIcon, ArrowsRightLeftIcon
 } from '@heroicons/react/20/solid'
 import { FunnelIcon, ExclamationTriangleIcon } from '@heroicons/react/20/solid'
 
@@ -93,6 +94,7 @@ const Transactions = ({
 
     //CREATE TRANSACTION POPUP
     const [openCreatePopUp, SetOpenCreatePopUp] = useState(false)
+    const [openTransfer, setOpenTransfer] = useState(false)
     const handleOpenCreatePopUp = () => {
         /*  const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
          document.body.style.paddingRight = `0px`;
@@ -320,6 +322,15 @@ const Transactions = ({
                                         SetOpenCreatePopUp={handleCloseCreatePopUp}
                                         currentFrontendPage={currentFrontendPage}
                                     />
+
+                                    <button className="py-2 rounded-2xl px-4 flex flex-row items-center border border-[#e9e8ee] dark:border-gray-700 hover:bg-slate-200 dark:hover:bg-gray-700 dark:text-gray-100 transition-colors duration-300"
+                                        onClick={() => setOpenTransfer(true)}
+                                        aria-label="Transferir entre cuentas"
+                                    >
+                                        <ArrowsRightLeftIcon className="w-4 h-4 md:mr-2" aria-hidden="true" />
+                                        <span className="md:inline hidden text-base"> Transferir </span>
+                                    </button>
+                                    <TransferModal open={openTransfer} onClose={() => setOpenTransfer(false)} />
                                     {openFilterPopUp ?
                                         <div className="h-full">
                                             <button className={`${oneFilterActivated ? "border-[#5266EB]" : "border-[#e9e8ee] dark:border-gray-700"} h-full py-2 px-4 flex flex-row items-center border rounded-2xl hover:bg-slate-200 dark:hover:bg-gray-700 dark:text-gray-100 transition-colors duration-300`}
@@ -414,13 +425,16 @@ const Transactions = ({
                                                                     <div className='w-[70px] md:w-[96px] lg:w-[100px] px-1 flex items-center text-gray-700 dark:text-gray-200'>
                                                                         <FormatMoneyShowDecs
                                                                             numb={transaction.amount}
+                                                                            currency={transaction.currency}
+                                                                            base={transaction.amount_base}
+                                                                            align="start"
                                                                             showDecimals={true}
                                                                             intClass="text-left text-xs lg:text-base"
                                                                             decClass="text-left text-[8px] lg:text-[10px]"
 
                                                                         />
 
-                                                                        {/* <span className='w-[70px] md:w-[96px] lg:w-[100px] text-left'>{formatCurrency(transaction.amount)}</span> */}
+                                                                        {/* <span className='w-[70px] md:w-[96px] lg:w-[100px] text-left'>{formatMoney(transaction.amount)}</span> */}
                                                                     </div>
                                                                 </div>
                                                                 <div className="xl:hidden w-full text-left pl-[28px] md:pl-[32px] lg:pl-[38px] text-xs text-gray-400 dark:text-gray-500">
@@ -512,6 +526,9 @@ const Transactions = ({
                                                                         <p className={`w-[70px] md:w-[96px] lg:w-[100px] px-1 flex items-center font-semibold ${tx.expense ? 'text-gray-800 dark:text-gray-200' : 'text-green-600 dark:text-green-500'}`}>
                                                                             <FormatMoneyShowDecs
                                                                                 numb={tx.amount}
+                                                                                currency={tx.currency}
+                                                                                base={tx.amount_base}
+                                                                                align="start"
                                                                                 showDecimals={true}
                                                                                 intClass="text-left text-xs lg:text-base"
                                                                                 decClass="text-left text-[8px] lg:text-[10px]"

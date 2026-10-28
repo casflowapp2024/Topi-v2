@@ -12,7 +12,7 @@ import { set_dash_account_activated, get_accounts_status_by_period, get_history_
 
 //componentes
 import AccSummaryCard from './AccSummaryCard';
-import { formatCurrency, formatDate, findElmentById, formatToDateFilters, deepEqual } from '../../helpers';
+import { formatMoney, formatDate, findElmentById, formatToDateFilters, deepEqual } from '../../helpers';
 import { parseDatetimetoDateStrFormat } from '../../helpers';
 import TransactionDetail from '../../transactions/TransactionDetail2'
 import CreateTransaction from '../../transactions/CreateTransaction';
@@ -236,7 +236,7 @@ const AccTransPeriod = ({
                                             <div className='text-sm font-medium text-gray-800 dark:text-gray-200'>{tx.description}</div>
                                         </div>
 
-                                        <div className={`text-sm font-bold ${tx.expense === true ? 'text-red-600' : 'text-green-600'}`}>{formatCurrency(tx.amount)}</div>
+                                        <div className={`text-sm font-bold ${tx.expense === true ? 'text-red-600' : 'text-green-600'}`}>{formatMoney(tx.amount, tx.currency)}</div>
 
                                     </li>
                                 ))}

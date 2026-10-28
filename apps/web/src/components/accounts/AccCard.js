@@ -1,6 +1,5 @@
-import {useState,useEffect } from 'react'
 //components
-import { formatCurrency, findElmentNameById } from "../../components/helpers";
+import { findElmentNameById } from "../../components/helpers";
 import FormatMoneyShowDecs from "../../components/FormatMoneyShowDecs";
 
 const AccCard = ({
@@ -10,14 +9,12 @@ const AccCard = ({
     banks,
     bankId,
     initia_balance_amount,
-    lastFourDigits
+    lastFourDigits,
+    currency,
 }) => {
 
     
 
-    useEffect(() => {
-        console.log("initia_balance_amount card: ", initia_balance_amount);
-        }, [initia_balance_amount]);
 
     return(
         <div className="flex-shrink-0 block h-[150px] w-[270px] bg-gradient-to-r from-[#9fa7da] from-0% to-gray-200 to-95% p-3 border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700" >
@@ -49,6 +46,7 @@ const AccCard = ({
                     <div className=" text-xl text-end font-medium">
                         <FormatMoneyShowDecs
                             numb={initia_balance_amount}
+                            currency={currency}
                             showDecimals={true}
                             intClass="text-xl"
                             decClass="text-base"

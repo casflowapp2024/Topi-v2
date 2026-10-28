@@ -7,8 +7,9 @@ import { get_user_categories, create_category } from '../../redux/actions/cashfl
 import { get_accounts_status_by_period, get_history_accounts_by_month, get_history_dash, get_history_category_by_month, get_expenses_report } from '../../redux/actions/reports';
 import { setAlert } from '../../redux/actions/alert';
 //components
-import { findElmentNameById, formatDate, formatCurrency, formatedCurrToNumber, findElmentById, parseDatetimetoDateStrFormat, formatToDateFilters } from '../helpers';
+import { findElmentNameById, formatDate, formatMoney, formatedCurrToNumber, findElmentById, parseDatetimetoDateStrFormat, formatToDateFilters } from '../helpers';
 import TransSumm from './TransSumm';
+import FxRateEditor from './FxRateEditor';
 import FormEditCreateTrans from './FormEditCreateTrans';
 import Alert from '../alert';
 import Alert2 from '../alert2';
@@ -453,6 +454,7 @@ function TransactionDetail({
                                                     </div>
                                                     {/* resumen */}
                                                     <TransSumm detailInfo={detailInfo} />
+                                                    <FxRateEditor detailInfo={detailInfo} setDetailInfo={setDetailInfo} contextWindow={contextWindow} />
                                                     {/* botones */}
                                                     <div className="flex flex-row justify-between items-center mt-6">
                                                         <div class="flex items-center space-x-3 sm:space-x-4">
