@@ -5,6 +5,7 @@ import { connect } from 'react-redux'
 //components
 import { formatCurrency, formatCurrency2, parseDatetoDatetimeBrow, getColorByValue, getPercPlus, getPerc0 } from '../../helpers';
 //icons
+import ChartLegend from '../../ui/ChartLegend';
 import { BarChart, Bar, Rectangle, XAxis, Label, ReferenceLine, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 
@@ -66,15 +67,19 @@ function MultiChartIncomesDash({
     const [activeIndex, setActiveIndex] = useState(null);
     //#e11d48
     return (
-        <div className='h-[220px] w-[370px] md:w-[400px]  xl:w-[500px]'>
-
+        <div className='h-[220px] w-[370px] md:w-[400px]  xl:w-[500px] flex flex-col'>
+            <ChartLegend items={[
+                { type: 'bar', color: '#12A877', label: 'Ingresos' },
+                income_budget && !(dailyActivated && !cummulated) ? { type: 'line', label: 'Presupuesto', value: formatCurrency2(Math.abs(income_budget)) } : null,
+            ]} className="pt-2" />
+            <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
             <BarChart
             width={420}
             height={300}
             data={dataToPlot}
             margin={{
-                top: 30,
+                top: 22,
                 right: 20,
                 left: 0,
                 bottom: 5,
@@ -143,6 +148,28 @@ function MultiChartIncomesDash({
             
             
             />
+            {/* La línea va antes de las barras para quedar detrás de ellas */}
+                {dataToPlot && dataToPlot.length > 0 && (
+                
+                <ReferenceLine
+                y={income_budget}
+                className="topi-budget-line"
+                stroke="#8A90A8"
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                ifOverflow={dailyActivated && !cummulated ? "discard" : "extendDomain"}
+                >
+                {/* <Label
+                    value={formatCurrency(dataToPlot[dataToPlot.length - 1].value)}
+                    position="right"
+                    fill="#fcd34d"
+                    fontWeight="bold"
+                    fontSize={13}
+                    offset={10}
+                /> */}
+                </ReferenceLine>
+                
+            )}
             <Bar
                 dataKey="value"
                 fill="#12A877"
@@ -178,30 +205,9 @@ function MultiChartIncomesDash({
                     return null;
                 }}
                 />
-                {dataToPlot && dataToPlot.length > 0 && (
-                
-                <ReferenceLine
-                y={income_budget}
-                className="topi-budget-line"
-                stroke="#8A90A8"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-                ifOverflow={dailyActivated && !cummulated ? "discard" : "extendDomain"}
-                label={{ value: "Presupuesto", position: "insideTopLeft", className: "topi-budget-label", fontSize: 11, fontWeight: 600 }}
-                >
-                {/* <Label
-                    value={formatCurrency(dataToPlot[dataToPlot.length - 1].value)}
-                    position="right"
-                    fill="#fcd34d"
-                    fontWeight="bold"
-                    fontSize={13}
-                    offset={10}
-                /> */}
-                </ReferenceLine>
-                
-            )}
             </BarChart>
         </ResponsiveContainer>
+        </div>
         </div>
   );
 }

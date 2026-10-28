@@ -16,7 +16,7 @@ display: none; /* Chrome, Safari, Opera */
 
 html, body {
     width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
     font-family: 'Inter'
   }
 
@@ -200,3 +200,5 @@ input, select, textarea {
 .dark .topi-budget-line line { stroke: #9097B4; }
 .topi-budget-label { fill: #5B6078; }
 .dark .topi-budget-label { fill: #B9BDD3; }
+.topi-budget-swatch { stroke: #6A6F88; }
+.dark .topi-budget-swatch { stroke: #9097B4; }

@@ -7,6 +7,7 @@ import { connect } from 'react-redux'
 import { formatCurrency, parseDatetoDatetimeBrow, formatCurrency2, getPerc0, getColorByValue, getPercPlus} from '../../helpers';
 
 //icons
+import ChartLegend from '../../ui/ChartLegend';
 import { BarChart, Bar, Rectangle, XAxis, Label, ReferenceLine, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 
@@ -102,14 +103,19 @@ function MultiChartGastosDash({
     const [activeIndex, setActiveIndex] = useState(null);
     //#e11d48
     return (
-        <div className={`${windowContext==="dashboard"? 'h-[220px]' : 'h-[150px]'} w-[370px] md:w-[400px]  xl:w-[500px]`}>
+        <div className={`${windowContext==="dashboard"? 'h-[220px]' : 'h-[150px]'} w-[370px] md:w-[400px]  xl:w-[500px] flex flex-col`}>
+            <ChartLegend items={[
+                { type: 'bar', color: '#F2664A', label: 'Gastos' },
+                budgetToUse && !(dailyActivated && !cummulated) ? { type: 'line', label: 'Presupuesto', value: formatCurrency2(Math.abs(budgetToUse)) } : null,
+            ]} className="pt-2" />
+            <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
             <BarChart
             width={420}
             height={300}
             data={dataToPlot}
             margin={{
-                top: 30,
+                top: 22,
                 right: 25,
                 left: 0,
                 bottom: 1,
@@ -172,6 +178,30 @@ function MultiChartGastosDash({
             
             
             />
+            {/* La línea va antes de las barras para quedar detrás de ellas */}
+                {dataToPlot && dataToPlot.length > 0 && (
+                
+                <ReferenceLine
+                y={budgetToUse}
+                className="topi-budget-line"
+                stroke="#8A90A8"
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                ifOverflow={dailyActivated && !cummulated ? "discard" : "extendDomain"}
+                >
+                {/* <Label
+                    value={`${formatCurrency(expense_budget)}`}
+                    position="right"
+                    fill="#fcd34d"
+                    fontWeight="bold"
+                    fontSize={10}
+                    offset={10}
+                />*/}
+                </ReferenceLine> 
+                    
+                
+                
+            )}
             <Bar
                 dataKey="show"
                 fill="#F2664A"
@@ -208,33 +238,10 @@ function MultiChartGastosDash({
                     return null;
                 }}
                 />
-                {dataToPlot && dataToPlot.length > 0 && (
-                
-                <ReferenceLine
-                y={budgetToUse}
-                className="topi-budget-line"
-                stroke="#8A90A8"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-                ifOverflow={dailyActivated && !cummulated ? "discard" : "extendDomain"}
-                label={{ value: "Presupuesto", position: "insideTopLeft", className: "topi-budget-label", fontSize: 11, fontWeight: 600 }}
-                >
-                {/* <Label
-                    value={`${formatCurrency(expense_budget)}`}
-                    position="right"
-                    fill="#fcd34d"
-                    fontWeight="bold"
-                    fontSize={10}
-                    offset={10}
-                />*/}
-                </ReferenceLine> 
-                    
-                
-                
-            )}
 
             </BarChart>
         </ResponsiveContainer>
+        </div>
         </div>
   );
 }

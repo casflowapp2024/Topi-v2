@@ -6,7 +6,7 @@ import { connect } from 'react-redux';
 import { load_user, logout } from '../redux/actions/auth';
 import { get_user_accounts, get_user_categories, get_user_transactions, get_account_types } from '../redux/actions/cashflow';
 import { get_automated_emails, onboarding_reset_read_email } from '../redux/actions/conexions';
-import { request_init_categories, get_user_extra_data, add_user_extra_data, update_user_extra_data, update_user_config } from '../redux/actions/auth';
+import { request_init_categories, get_user_extra_data, add_user_extra_data, update_user_extra_data, update_user_config, toggle_dark_mode } from '../redux/actions/auth';
 import { get_banks, get_official_banks } from '../redux/actions/cashflow';
 import { open_settings_modal, close_settings_modal } from '../redux/actions/ui';
 //Components
@@ -22,7 +22,9 @@ import {
   BanknotesIcon,
   CreditCardIcon,
   ArrowsRightLeftIcon,
-  UserIcon
+  UserIcon,
+  SunIcon,
+  MoonIcon
 } from '@heroicons/react/20/solid';
 //UX
 import { Oval } from 'react-loader-spinner';
@@ -43,6 +45,7 @@ const Layout = ({
   add_user_extra_data,
   update_user_extra_data,
   update_user_config,
+  toggle_dark_mode,
   //state
   user_found,
   categories,
@@ -76,6 +79,8 @@ const Layout = ({
 
   const pathSegments = location.pathname.split('/').filter(Boolean);
   const activeTab = pathSegments.length > 1 ? pathSegments[1] : 'general';
+
+  const isDark = Boolean(user_extra_data?.config?.dark_mode);
 
   const handleLogout = () => {
     logout();
@@ -171,7 +176,7 @@ const Layout = ({
   }, [user, user_extra_data, first_steps.retrieved_email, automated_emails, location.pathname, navigate])
 
   return (
-    <div className={`min-h-screen font-Inter flex flex-col overflow-x-hidden transition-colors duration-300 ${user_extra_data?.config?.dark_mode ? 'dark bg-[#0B0F19]' : 'bg-gray-100'}`}>
+    <div className={`min-h-screen font-Inter flex flex-col overflow-x-clip transition-colors duration-300 ${isDark ? 'dark bg-[#0B0F19]' : 'bg-gray-100'}`}>
       {!user_found && (
         <div className="flex items-center justify-center h-screen">
           <Oval height={80} width={80} color="#5266EB" visible={true} ariaLabel='oval-loading' secondaryColor="#5266EB" strokeWidth={2} strokeWidthSecondary={2} />
@@ -211,6 +216,17 @@ const Layout = ({
                       </Link>
                     </div>
                     <div className='flex flex-row items-center gap-2'>
+                      <button
+                        type="button"
+                        onClick={() => toggle_dark_mode()}
+                        aria-label={isDark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+                        title={isDark ? 'Tema claro' : 'Tema oscuro'}
+                        className="w-9 h-9 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center text-gray-600 dark:text-amber-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-topi-500 active:scale-95 transition-all"
+                      >
+                        {isDark
+                          ? <SunIcon className="w-5 h-5 transition-transform duration-300 rotate-0 motion-reduce:transition-none" aria-hidden="true" />
+                          : <MoonIcon className="w-5 h-5 transition-transform duration-300 motion-reduce:transition-none" aria-hidden="true" />}
+                      </button>
                       <button
                         onClick={() => open_settings_modal('profile')}
                         aria-label="Abrir ajustes y perfil"
@@ -317,6 +333,7 @@ export default connect(mapStateToProps, {
   add_user_extra_data,
   update_user_extra_data,
   update_user_config,
+  toggle_dark_mode,
   onboarding_reset_read_email,
   open_settings_modal,
   close_settings_modal

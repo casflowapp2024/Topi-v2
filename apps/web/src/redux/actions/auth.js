@@ -220,7 +220,6 @@ export const update_user_extra_data = (
 
     try {
         const res = await axios.put(`${process.env.REACT_APP_API_URL}/user-extra`, body, config);
-        console.log(res.data)
         if (res.status === 200) {
 
             return true
@@ -258,11 +257,9 @@ export const update_user_config = (
         language: user_extra.language
     });
 
-    console.log("updating config", body)
 
     try {
         const res = await axios.put(`${process.env.REACT_APP_API_URL}/user-extra`, body, config);
-        console.log(res.data)
         if (res.status === 200) {
 
             return true
@@ -277,6 +274,19 @@ export const update_user_config = (
 };
 
 
+
+// Cambia el tema al instante (optimista) y lo guarda en el perfil; si falla, lo revierte.
+export const toggle_dark_mode = () => async (dispatch, getState) => {
+    const prev = getState().Auth.user_extra_data;
+    if (!prev) return false;
+    const nextConfig = { ...(prev.config || {}), dark_mode: !prev.config?.dark_mode };
+    dispatch({ type: GET_USER_EXTRA_SUCESS, payload: { data: { ...prev, config: nextConfig } } });
+    const ok = await dispatch(update_user_config(nextConfig));
+    if (!ok) {
+        dispatch({ type: GET_USER_EXTRA_SUCESS, payload: { data: prev } });
+    }
+    return ok;
+};
 
 export const login = (email, password) => async dispatch => {
     dispatch({

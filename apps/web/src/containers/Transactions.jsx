@@ -289,6 +289,8 @@ const Transactions = ({
                     <div className="">
 
                         <div className="top-0 rounded-2xl shadow-md bg-white dark:bg-gray-800 w-full transition-colors duration-300">
+                            {/* Barra fija: buscar, crear, filtrar y encabezados quedan visibles al hacer scroll */}
+                            <div className="sticky top-[53px] md:top-[62px] z-30 bg-white dark:bg-gray-800 rounded-t-2xl shadow-[0_1px_0_0_rgba(0,0,0,0.04)] transition-colors duration-300">
                             {/* Top Buttoms */}
                             <div className="p-4 flex flex-row justify-between gap-1">
                                 <div className="w-3/5 md:w-2/3">
@@ -375,6 +377,7 @@ const Transactions = ({
 
                             </div>
 
+                            </div>
                             {vizTxByDate === false ?
                                 <div>
                                     {user_transactions.total !== null ?
