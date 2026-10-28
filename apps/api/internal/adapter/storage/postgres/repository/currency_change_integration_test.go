@@ -112,8 +112,10 @@ func TestCurrencyChanges(t *testing.T) {
 	assert.Equal(t, 3, preview.TxCount)
 	assert.Zero(t, preview.MissingRates)
 	assert.True(t, preview.BalanceBefore.Equal(d("1640000")), preview.BalanceBefore.String())
+	require.NotNil(t, preview.BalanceAfter)
 	assert.True(t, preview.BalanceAfter.Equal(d("400")), preview.BalanceAfter.String()) // valoración 1.640.000 / 4100
 	assert.True(t, preview.FlowsBaseBefore.Equal(d("1169000")), preview.FlowsBaseBefore.String())
+	require.NotNil(t, preview.FlowsBaseAfter)
 	assert.True(t, preview.FlowsBaseAfter.Equal(preview.FlowsBaseBefore))
 	assert.Equal(t, original, brokerRows(), "la vista previa no cambia nada")
 	noDrift()
@@ -159,6 +161,7 @@ func TestCurrencyChanges(t *testing.T) {
 	relabel := &domain.AccountCurrencyChange{UserID: userID, AccountID: wallet, NewCurrency: "USD", Mode: domain.CurrencyChangeRelabel, Apply: true}
 	require.NoError(t, repo.ChangeAccountCurrency(ctx, relabel))
 	assert.True(t, relabel.FlowsBaseBefore.Equal(d("-100")), relabel.FlowsBaseBefore.String())
+	require.NotNil(t, relabel.FlowsBaseAfter)
 	assert.True(t, relabel.FlowsBaseAfter.Equal(d("-410000")), relabel.FlowsBaseAfter.String())
 	var amount, base string
 	require.NoError(t, db.QueryRow(ctx, "SELECT currency, amount::text, amount_base::text FROM transactions WHERE id = $1", walletTx).
@@ -177,15 +180,18 @@ func TestCurrencyChanges(t *testing.T) {
 	assert.ErrorIs(t, repo.ChangeAccountCurrency(ctx, same), domain.ErrInvalidCurrency)
 	foreign := &domain.AccountCurrencyChange{UserID: "otro", AccountID: broker, NewCurrency: "USD", Mode: domain.CurrencyChangeConvert}
 	assert.ErrorIs(t, repo.ChangeAccountCurrency(ctx, foreign), domain.ErrDataNotFound)
-	var noBRL bool
-	require.NoError(t, db.QueryRow(ctx, "SELECT fx_rate_at('COP', 'BRL', '2026-09-20') IS NULL").Scan(&noBRL))
-	if noBRL {
-		brl := &domain.AccountCurrencyChange{UserID: userID, AccountID: broker, NewCurrency: "BRL", Mode: domain.CurrencyChangeConvert, Apply: true}
-		assert.ErrorIs(t, repo.ChangeAccountCurrency(ctx, brl), domain.ErrMissingFxRates)
-		brl.Apply = false
-		require.NoError(t, repo.ChangeAccountCurrency(ctx, brl))
-		assert.Positive(t, brl.MissingRates)
-	}
+	// faltan tasas (un movimiento de 1980): no se aplica y la vista previa no inventa un "después"
+	old := account("Antigua IT", "0004", 1, "0")
+	oldTx := tx(old, true, "1000", "1980-01-15 10:00:00-05", nil)
+	missing := &domain.AccountCurrencyChange{UserID: userID, AccountID: old, NewCurrency: "USD", Mode: domain.CurrencyChangeConvert, Apply: true}
+	assert.ErrorIs(t, repo.ChangeAccountCurrency(ctx, missing), domain.ErrMissingFxRates)
+	missing.Apply = false
+	require.NoError(t, repo.ChangeAccountCurrency(ctx, missing))
+	assert.Equal(t, 1, missing.MissingRates)
+	assert.Nil(t, missing.BalanceAfter, "sin tasas no hay \"después\"")
+	assert.Nil(t, missing.FlowsBaseAfter)
+	_, err = db.Exec(ctx, "DELETE FROM transactions WHERE id = $1", oldTx)
+	require.NoError(t, err)
 
 	// moneda base: vista previa y aplicar; las dos patas de la transferencia quedan iguales
 	basePreview := &domain.BaseCurrencyChange{UserID: userID, NewCurrency: "USD"}

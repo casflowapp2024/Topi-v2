@@ -38,18 +38,19 @@ type changeAccountCurrencyRequest struct {
 }
 
 type accountCurrencyChangeResponse struct {
-	ChangeID        *uint64 `json:"change_id,omitempty" example:"7"`
-	Applied         bool    `json:"applied" example:"true"`
-	Mode            string  `json:"mode" example:"convert"`
-	OldCurrency     string  `json:"old_currency" example:"COP"`
-	NewCurrency     string  `json:"new_currency" example:"USD"`
-	Transactions    int     `json:"transactions" example:"42"`
-	MissingRates    int     `json:"missing_rates" example:"0"`
-	ReplacedRates   int     `json:"replaced_rates" example:"0"`
-	BalanceBefore   string  `json:"balance_before" example:"8000000"`
-	BalanceAfter    string  `json:"balance_after" example:"2000.15"`
+	ChangeID      *uint64 `json:"change_id,omitempty" example:"7"`
+	Applied       bool    `json:"applied" example:"true"`
+	Mode          string  `json:"mode" example:"convert"`
+	OldCurrency   string  `json:"old_currency" example:"COP"`
+	NewCurrency   string  `json:"new_currency" example:"USD"`
+	Transactions  int     `json:"transactions" example:"42"`
+	MissingRates  int     `json:"missing_rates" example:"0"`
+	ReplacedRates int     `json:"replaced_rates" example:"0"`
+	BalanceBefore string  `json:"balance_before" example:"8000000"`
+	// BalanceAfter and FlowsBaseAfter are null when a conversion lacks rates (missing_rates > 0)
+	BalanceAfter    *string `json:"balance_after" example:"2000.15"`
 	FlowsBaseBefore string  `json:"flows_base_before" example:"8000000"`
-	FlowsBaseAfter  string  `json:"flows_base_after" example:"8000000"`
+	FlowsBaseAfter  *string `json:"flows_base_after" example:"8000000"`
 }
 
 // ChangeAccountCurrency godoc
@@ -94,8 +95,8 @@ func (ch *CurrencyChangeHandler) ChangeAccountCurrency(ctx *gin.Context) {
 	rsp := accountCurrencyChangeResponse{
 		Applied: change.ID != 0, Mode: change.Mode, OldCurrency: change.OldCurrency, NewCurrency: change.NewCurrency,
 		Transactions: change.TxCount, MissingRates: change.MissingRates, ReplacedRates: change.ReplacedRates,
-		BalanceBefore: change.BalanceBefore.String(), BalanceAfter: change.BalanceAfter.String(),
-		FlowsBaseBefore: change.FlowsBaseBefore.String(), FlowsBaseAfter: change.FlowsBaseAfter.String(),
+		BalanceBefore: change.BalanceBefore.String(), BalanceAfter: decimalString(change.BalanceAfter),
+		FlowsBaseBefore: change.FlowsBaseBefore.String(), FlowsBaseAfter: decimalString(change.FlowsBaseAfter),
 	}
 	if change.ID != 0 {
 		rsp.ChangeID = &change.ID

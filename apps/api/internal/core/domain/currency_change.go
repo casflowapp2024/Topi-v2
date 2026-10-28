@@ -35,9 +35,9 @@ type AccountCurrencyChange struct {
 	MissingRates    int // convert: rates not found (it cannot be applied); relabel: amounts left pending
 	ReplacedRates   int // relabel: manual or transfer rates replaced by the market rate
 	BalanceBefore   decimal.Decimal
-	BalanceAfter    decimal.Decimal
-	FlowsBaseBefore decimal.Decimal // signed sum of amount_base of the account
-	FlowsBaseAfter  decimal.Decimal
+	BalanceAfter    *decimal.Decimal // nil: a conversion with missing rates cannot be computed
+	FlowsBaseBefore decimal.Decimal  // signed sum of amount_base of the account
+	FlowsBaseAfter  *decimal.Decimal
 }
 
 // Normalize upper-cases the currency and validates what does not need the database

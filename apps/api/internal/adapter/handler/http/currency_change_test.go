@@ -39,7 +39,8 @@ func TestCurrencyChangeHandler(t *testing.T) {
 			assert.Equal(t, "convert", c.Mode)
 			assert.False(t, c.Apply)
 			c.OldCurrency, c.TxCount = "COP", 3
-			c.BalanceBefore, c.BalanceAfter = decimal.RequireFromString("1640000"), decimal.RequireFromString("400")
+			after := decimal.RequireFromString("400")
+			c.BalanceBefore, c.BalanceAfter = decimal.RequireFromString("1640000"), &after
 			return nil
 		})
 		w := doJSON(currencyChangeRouter(svc), http.MethodPost, "/accounts/3/currency",
@@ -51,7 +52,8 @@ func TestCurrencyChangeHandler(t *testing.T) {
 		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &body))
 		assert.False(t, body.Data.Applied)
 		assert.Nil(t, body.Data.ChangeID)
-		assert.Equal(t, "400", body.Data.BalanceAfter)
+		require.NotNil(t, body.Data.BalanceAfter)
+		assert.Equal(t, "400", *body.Data.BalanceAfter)
 	})
 
 	t.Run("modo inválido", func(t *testing.T) {

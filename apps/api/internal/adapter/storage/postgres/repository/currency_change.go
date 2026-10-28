@@ -72,9 +72,9 @@ func (cr *CurrencyChangeRepository) ChangeAccountCurrency(ctx context.Context, c
 		c.ID = *changeID
 	}
 	setDecimals(map[*decimal.Decimal]*decimal.Decimal{
-		&c.BalanceBefore: balanceBefore, &c.BalanceAfter: balanceAfter,
-		&c.FlowsBaseBefore: flowsBaseBefore, &c.FlowsBaseAfter: flowsBaseAfter,
+		&c.BalanceBefore: balanceBefore, &c.FlowsBaseBefore: flowsBaseBefore,
 	})
+	c.BalanceAfter, c.FlowsBaseAfter = balanceAfter, flowsBaseAfter
 	return nil
 }
 
