@@ -6,7 +6,6 @@ import { get_savings_account } from "../../../redux/actions/reports";
 //react
 import { useEffect, useState } from "react";
 //components
-import DashBalances from "./DashBalanceChart";
 import DashAccounts from "./DashAccounts";
 import DashTrans from "./DashTrans";
 import DashStats from "./DashStats";
