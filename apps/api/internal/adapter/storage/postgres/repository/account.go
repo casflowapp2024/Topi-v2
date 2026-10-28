@@ -14,6 +14,14 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// accountColumns are the account columns scanned below, in this order. Explicit (not "*") so
+// adding columns to the table does not break the scans.
+const accountColumns = "id, user_id, bank_id, type_id, name, last_four_digits, initial_balance, " +
+	"created_at, updated_at, email_id"
+
+const accountColumnsA = "a.id, a.user_id, a.bank_id, a.type_id, a.name, a.last_four_digits, a.initial_balance, " +
+	"a.created_at, a.updated_at, a.email_id"
+
 type AccountRepository struct {
 	db *postgres.DB
 }
@@ -44,7 +52,7 @@ func (ar *AccountRepository) CreateAccount(ctx context.Context, account *domain.
 			account.InitialBalance,
 			account.Email.ID,
 		).
-		Suffix("RETURNING *")
+		Suffix("RETURNING " + accountColumns)
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -75,7 +83,7 @@ func (ar *AccountRepository) GetAccount(ctx context.Context, userID string, id u
 	var account domain.Account
 
 	query := ar.db.QueryBuilder.Select(
-		"a.*",
+		accountColumnsA,
 		"b.name",
 		"b.email",
 		"at.name",
@@ -146,7 +154,7 @@ func (ar *AccountRepository) GetAccountsList(
 	var accounts []domain.Account
 
 	query := ar.db.QueryBuilder.Select(
-		"a.*",
+		accountColumnsA,
 		"b.name",
 		"b.email",
 		"at.name",
@@ -239,7 +247,7 @@ func (ar *AccountRepository) UpdateAccount(ctx context.Context, account *domain.
 		Set("updated_at", time.Now()).
 		Where(sq.Eq{"id": account.ID}).
 		Where(sq.Eq{"user_id": account.UserID}).
-		Suffix("RETURNING *")
+		Suffix("RETURNING " + accountColumns)
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -309,7 +317,7 @@ func (ar *AccountRepository) AdminGetAccountsList(
 	}
 
 	query := ar.db.QueryBuilder.Select(
-		"a.*",
+		accountColumnsA,
 		"b.name",
 		"b.email",
 		"t.name",

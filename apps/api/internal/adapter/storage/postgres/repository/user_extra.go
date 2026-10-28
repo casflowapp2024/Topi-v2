@@ -14,6 +14,11 @@ import (
 )
 
 // UserExtraRepository implements the port.UserExtraRepository interface
+// userExtraColumns are the user_extra columns scanned below, in this order. Explicit (not "*") so
+// adding columns to the table does not break the scans.
+const userExtraColumns = "id, user_id, utc_offset, whatsapp, whatsapp_state, created_at, updated_at, " +
+	"onboarding_completed, onboarding_created_at, email, name, last_name, read_email, config"
+
 type UserExtraRepository struct {
 	db *postgres.DB
 }
@@ -50,7 +55,7 @@ func (ur *UserExtraRepository) Create(ctx context.Context, userExtra *domain.Use
 			userExtra.ReadEmail,
 			userExtra.Config,
 		).
-		Suffix("RETURNING *")
+		Suffix("RETURNING " + userExtraColumns)
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -85,7 +90,7 @@ func (ur *UserExtraRepository) Create(ctx context.Context, userExtra *domain.Use
 func (ur *UserExtraRepository) GetByUserID(ctx context.Context, userID string) (*domain.UserExtra, error) {
 	var userExtra domain.UserExtra
 
-	query := ur.db.QueryBuilder.Select("*").
+	query := ur.db.QueryBuilder.Select(userExtraColumns).
 		From(enums.UserExtraTableName).
 		Where(sq.Eq{"user_id": userID}).
 		Limit(1)
@@ -123,7 +128,7 @@ func (ur *UserExtraRepository) GetByUserID(ctx context.Context, userID string) (
 func (ur *UserExtraRepository) GetByID(ctx context.Context, ID uint64) (*domain.UserExtra, error) {
 	var userExtra domain.UserExtra
 
-	query := ur.db.QueryBuilder.Select("*").
+	query := ur.db.QueryBuilder.Select(userExtraColumns).
 		From(enums.UserExtraTableName).
 		Where(sq.Eq{"id": ID}).
 		Limit(1)
@@ -177,7 +182,7 @@ func (ur *UserExtraRepository) Update(ctx context.Context, userExtra *domain.Use
 		Set("config", userExtra.Config).
 		Set("updated_at", time.Now()).
 		Where(sq.Eq{"user_id": userExtra.UserID}).
-		Suffix("RETURNING *")
+		Suffix("RETURNING " + userExtraColumns)
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -232,7 +237,7 @@ func (ur *UserExtraRepository) Delete(ctx context.Context, ID uint64) error {
 
 // GetAll retrieves all user extra information records
 func (ur *UserExtraRepository) GetAll(ctx context.Context) ([]*domain.UserExtra, error) {
-	query := ur.db.QueryBuilder.Select("*").
+	query := ur.db.QueryBuilder.Select(userExtraColumns).
 		From(enums.UserExtraTableName)
 
 	sql, args, err := query.ToSql()
