@@ -8,7 +8,7 @@ import { setAlert } from '../../../redux/actions/alert';
 import { fetch_valuations, save_valuation, delete_valuation, fetch_investments } from '../../../redux/actions/valuations';
 import InputMoneyInt2Decs from '../../InputMoneyInt2Decs';
 import Button from '../../ui/Button';
-import { formatMoney, formatedCurrToNumber, accountReportGroup } from '../../helpers';
+import { formatMoney, formatedCurrToNumber, accountReportGroup, getBaseCurrency } from '../../helpers';
 
 const fieldClass = 'bg-gray-50 p-2 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white';
 const labelClass = 'block mb-1 text-xs font-medium text-gray-600 dark:text-gray-300';
@@ -32,9 +32,13 @@ const Stat = ({ label, children, hint }) => (
 
 // Valor de una cuenta de inversión: valoraciones ("el día X valía Y"), aportes y ganancia del
 // periodo elegido en el tablero de cuentas. Actualizar el valor no crea ingresos ni gastos.
-const InvestmentValuationCard = ({ account, iniDate, endDate, current_Month, current_Year,
+const InvestmentValuationCard = ({ account, iniDate, endDate, current_Month, current_Year, net_worth,
     get_accounts_status_by_period, get_history_accounts_by_month, get_net_worth, setAlert }) => {
     const currency = account?.currency || 'COP';
+    const base = net_worth?.base_currency || getBaseCurrency();
+    const foreign = currency !== base;
+    // diferencia cambiaria de hoy: lo aportado se registró en la moneda base a la tasa de cada fecha
+    const fxGain = Number(net_worth?.accounts?.find(a => a.account_id === account?.id)?.fx_gain ?? 0);
     const [performance, setPerformance] = useState(null);
     const [valuations, setValuations] = useState(null);
     const [showAll, setShowAll] = useState(false);
@@ -52,6 +56,7 @@ const InvestmentValuationCard = ({ account, iniDate, endDate, current_Month, cur
     }, [account?.id, iniDate, endDate]);
 
     useEffect(() => { setForm(null); setShowAll(false); load(); }, [load]);
+    useEffect(() => { if (!net_worth) get_net_worth(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // el saldo, el resumen y la gráfica de la cuenta dependen de las valoraciones
     const refreshAccount = () => {
@@ -145,6 +150,9 @@ const InvestmentValuationCard = ({ account, iniDate, endDate, current_Month, cur
                         ? `Última valoración: ${moment(performance.last_valuation_date).format('DD-MM-YYYY')}`
                         : 'Sin valoraciones: saldo según movimientos'}>
                         <span className="text-gray-900 dark:text-white">{formatMoney(performance.value_end, currency)}</span>
+                        {foreign && performance.value_end_base != null && (
+                            <span className="block text-sm font-medium text-gray-500 dark:text-gray-400">≈ {formatMoney(performance.value_end_base, base)}</span>
+                        )}
                     </Stat>
                     <Stat label="Aportes netos del periodo">
                         <span className="text-gray-900 dark:text-white">{signed(Number(performance.contributions), currency)}</span>
@@ -155,6 +163,14 @@ const InvestmentValuationCard = ({ account, iniDate, endDate, current_Month, cur
                     <Stat label="Ganancia total" hint={`Aportado: ${formatMoney(performance.contributions_total, currency)}`}>
                         <span className={signClass(totalGain)}>{signed(totalGain, currency)}</span>
                     </Stat>
+                    {foreign && fxGain !== 0 && (
+                        <div className="col-span-2">
+                            <Stat label={`Diferencia cambiaria (en ${base}, hoy)`}
+                                hint={`Lo aportado se registró en ${base} a la tasa de cada fecha; a la tasa de hoy vale ${fxGain < 0 ? 'menos' : 'más'}. No es ingreso ni gasto: se ve en tu patrimonio.`}>
+                                <span className={signClass(fxGain)}>{signed(fxGain, base)}</span>
+                            </Stat>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -188,6 +204,7 @@ const InvestmentValuationCard = ({ account, iniDate, endDate, current_Month, cur
 };
 
 const mapStateToProps = state => ({
+    net_worth: state.Fx?.net_worth,
     iniDate: state.Reports.iniDate_account_dash,
     endDate: state.Reports.endDate_account_dash,
     current_Month: state.Reports.current_Month,

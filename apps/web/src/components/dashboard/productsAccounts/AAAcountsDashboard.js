@@ -139,7 +139,8 @@ const AAAcountsDashboard = ({
                             <AccPeriodFilter />
                         </div>
                     }
-                    {account_activated &&
+                    {/* las inversiones tienen su propio resumen: valor, aportes y ganancia */}
+                    {account_activated && !isInvestmentAccount(account_activated) &&
                         <div className='order-3 lg:order-none p-4 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-xl shadow-md'>
                             <AccSummaryCard acc={account_activated} data={account_activated_stats} />
                         </div>

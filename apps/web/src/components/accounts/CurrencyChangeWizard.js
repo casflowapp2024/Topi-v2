@@ -179,6 +179,9 @@ const CurrencyChangeWizard = ({ open, onClose, account, net_worth, user_categori
     // sin todas las tasas la API no calcula el "después" (null)
     const canCompute = preview && preview.balance_after != null && preview.flows_base_after != null;
     const flowsChange = canCompute ? Number(preview.flows_base_after) - Number(preview.flows_base_before) : 0;
+    // efecto cambiario de hoy; menos del 0,1 % es redondeo y no se explica
+    const baseDelta = Number(preview?.balance_base_delta ?? 0);
+    const showBaseDelta = Math.abs(baseDelta) >= Math.max(1, Math.abs(Number(preview?.balance_before_base ?? 0)) * 0.001);
 
     return (
         <Dialog open={open} onClose={busy ? () => {} : onClose} className="relative z-50 font-Inter">
@@ -266,8 +269,29 @@ const CurrencyChangeWizard = ({ open, onClose, account, net_worth, user_categori
                                             {canCompute && <span>→ {formatMoney(preview.balance_after, currency)}</span>}
                                         </dd>
                                     </div>
+                                    {canCompute && preview.balance_after_base != null && preview.balance_before_base != null && (
+                                        <div className="col-span-2 rounded-xl bg-slate-50 dark:bg-gray-800 p-3">
+                                            <dt className="text-xs text-gray-500 dark:text-gray-400">Lo que vale hoy en {base}</dt>
+                                            <dd className="font-semibold text-gray-900 dark:text-white flex flex-wrap gap-x-1">
+                                                <span>{formatMoney(preview.balance_before_base, base)}</span>
+                                                <span>→ {formatMoney(preview.balance_after_base, base)}</span>
+                                                {showBaseDelta && (
+                                                    <span className={Number(preview.balance_base_delta) < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}>
+                                                        ({Number(preview.balance_base_delta) > 0 ? '+' : ''}{formatMoney(preview.balance_base_delta, base)})
+                                                    </span>
+                                                )}
+                                            </dd>
+                                            {showBaseDelta && (
+                                                <dd className="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                                                    {mode === 'convert'
+                                                        ? `Los movimientos se registraron en ${from} y se convierten con la tasa de su fecha. A la tasa de hoy la cuenta vale ${formatMoney(preview.balance_after_base, base)}: la diferencia es el efecto del cambio del ${getCurrency(currency).name.toLowerCase()} desde esas fechas y queda en tu patrimonio como ${Number(preview.balance_base_delta) < 0 ? 'pérdida' : 'ganancia'} cambiaria. Tus ingresos y gastos no cambian.`
+                                                        : `Los montos se toman como ${currency}: a la tasa de hoy la cuenta vale ${formatMoney(preview.balance_after_base, base)} en lugar de ${formatMoney(preview.balance_before_base, base)}.`}
+                                                </dd>
+                                            )}
+                                        </div>
+                                    )}
                                     <div className="col-span-2 rounded-xl bg-slate-50 dark:bg-gray-800 p-3">
-                                        <dt className="text-xs text-gray-500 dark:text-gray-400">Lo que esta cuenta suma en tus reportes ({base})</dt>
+                                        <dt className="text-xs text-gray-500 dark:text-gray-400">Ingresos y gastos de esta cuenta en tus reportes ({base})</dt>
                                         <dd className="font-semibold text-gray-900 dark:text-white">
                                             {!canCompute
                                                 ? formatMoney(preview.flows_base_before, base)
@@ -305,7 +329,8 @@ const CurrencyChangeWizard = ({ open, onClose, account, net_worth, user_categori
                             <div className="space-y-4">
                                 <p className="flex gap-2 text-sm text-gray-700 dark:text-gray-200">
                                     <CheckCircleIcon className="w-5 h-5 shrink-0 text-money-in dark:text-money-in-dark" aria-hidden="true" />
-                                    La cuenta ahora es en {getCurrency(currency).name} ({currency}). Saldo: {formatMoney(applied.balance_after, currency)}.
+                                    La cuenta ahora es en {getCurrency(currency).name} ({currency}). Saldo: {formatMoney(applied.balance_after, currency)}
+                                    {applied.balance_after_base != null && currency !== base ? ` (hoy ≈ ${formatMoney(applied.balance_after_base, base)})` : ''}.
                                 </p>
                                 <div className="flex justify-end gap-2">
                                     <Button variant="secondary" onClick={undo} loading={busy}>Deshacer</Button>

@@ -10,6 +10,7 @@ import EditAccounts from './EditAccounts';
 import Alert from '../alert';
 import Alert2 from '../alert2';
 import { formatMoney, formatedCurrToNumber } from '../helpers';
+import { get_net_worth } from '../../redux/actions/fx';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 /* This example requires Tailwind CSS v2.0+ */
 import { ThreeDots } from 'react-loader-spinner';
@@ -25,7 +26,9 @@ function AccountDetail({
     delete_account,
     get_user_accounts,
     setAlert,
-    balance_by_account
+    balance_by_account,
+    net_worth,
+    get_net_worth
 
 }) {
 
@@ -109,10 +112,17 @@ function AccountDetail({
 
     }, [openAccDetail]);
 
+    // Saldo de hoy en la moneda de la cuenta y su equivalente en la moneda base: sale del
+    // patrimonio, que se recarga después de cada cambio (incluido el de moneda); el reporte de
+    // saldos por cuenta queda de respaldo
+    const accountNetWorth = (id) => net_worth?.accounts?.find(a => a.account_id === id);
     const findBalanceByAccountId = (elements, id) => {
-        const element = elements.find(element => element.account_id === id);
-        return element ? element.balance : null; // Return the name if found, otherwise null
+        const nw = accountNetWorth(id);
+        if (nw) return Number(nw.balance);
+        const element = (elements || []).find(element => element.account_id === id);
+        return element ? element.balance : null;
     };
+    useEffect(() => { if (openAccDetail) get_net_worth(); }, [openAccDetail]); // eslint-disable-line react-hooks/exhaustive-deps
 
     /* useEffect(() => {
     console.log("detailInfo: ", detailInfo);
@@ -178,6 +188,7 @@ function AccountDetail({
                                                     initia_balance_amount={findBalanceByAccountId(balance_by_account, detailInfo.id)}
                                                     lastFourDigits={detailInfo.last_four_digits}
                                                     currency={detailInfo.currency}
+                                                    base={accountNetWorth(detailInfo.id)?.base_value}
                                                 />
                                             </div>
                                             {detailInfo && detailInfo.automation.configured === true ?
@@ -322,12 +333,14 @@ const mapStateToProps = state => ({
     banks: state.CashFlow.banks.items,
     accountTypesOptions: state.CashFlow.account_types,
     balance_by_account: state.Reports.balance_by_account,
+    net_worth: state.Fx?.net_worth,
 
 })
 
 export default connect(mapStateToProps, {
     delete_account,
     get_user_accounts,
-    setAlert
+    setAlert,
+    get_net_worth
 
 })(AccountDetail)

@@ -11,6 +11,7 @@ const AccCard = ({
     initia_balance_amount,
     lastFourDigits,
     currency,
+    base, // equivalente en la moneda base (si la cuenta es en otra moneda)
 }) => {
 
     
@@ -47,6 +48,7 @@ const AccCard = ({
                         <FormatMoneyShowDecs
                             numb={initia_balance_amount}
                             currency={currency}
+                            base={base}
                             showDecimals={true}
                             intClass="text-xl"
                             decClass="text-base"
