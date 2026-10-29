@@ -1,6 +1,10 @@
 
 import { useMemo } from 'react';
 import { useEffect, useState, useRef } from "react";
+import 'moment/locale/es';
+import Button from '../../ui/Button';
+import EmptyState from '../../ui/EmptyState';
+import { ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 import moment from 'moment';
 import DatePicker from 'react-datepicker';
 //redux
@@ -180,73 +184,57 @@ const AccTransPeriod = ({
 
     return (
         <>
-            <div className='p-4 bg-white dark:bg-gray-800 rounded-xl shadow-md transition-colors duration-300'>
-                {/* TRANSACCIONES DE CUENTA EN EL PERIODO */}
-
-                <div className='flex flex-row justify-between items-center pb-2 mb-2 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300'>
-
-                    <div className='text-md font-bold text-gray-800 dark:text-gray-100'>Transacciones</div>
-
-                    <button
-                        onClick={() => handleOpenCreatePopUp()}
-                        className="flex gap-2 items-center justify-between px-1.5 p-1 bg-[#5266EB] hover:bg-indigo-600 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md group"
-                    >
-                        <span className="text-[12px] font-semibold">Agregar Trx.</span>
-                        <div className="p-1 bg-white/20 rounded-lg group-hover:scale-110 transition-transform">
-                            <PlusIcon className="w-4 h-4 text-white" />
-                        </div>
-                    </button>
-                    {/* <button
-                        onClick={() => handleOpenCreatePopUp()}
-                        className="p-2 rounded-lg hover:bg-[#5266EB] hover:text-white transition-all duration-200">
-                        <PlusIcon className="size-5" />
-                    </button> */}
+            <section aria-label="Movimientos de la cuenta" className='lg:h-full lg:flex lg:flex-col p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-md transition-colors duration-300'>
+                <div className='flex items-start justify-between gap-2 pb-3 mb-1 border-b border-gray-100 dark:border-gray-700'>
+                    <div>
+                        <h3 className='text-sm font-semibold text-gray-900 dark:text-gray-100'>Movimientos</h3>
+                        {iniDate_account_dash && endDate_account_dash && (
+                            <p className='text-xs text-ink-2 dark:text-gray-400'>
+                                {moment(iniDate_account_dash, 'YYYY-MM-DD').locale('es').format('D MMM')} – {moment(endDate_account_dash, 'YYYY-MM-DD').locale('es').format('D MMM YYYY')}
+                                {Array.isArray(transactions_accounts_activated?.transactions) ? ` · ${transactions_accounts_activated.transactions.length}` : ''}
+                            </p>
+                        )}
+                    </div>
+                    <Button size="sm" icon={PlusIcon} onClick={() => handleOpenCreatePopUp()} aria-label="Agregar movimiento">
+                        <span className="hidden sm:inline">Agregar</span>
+                    </Button>
                 </div>
 
-
-                <div className='min-h-[282px] max-h-[282px] overflow-y-scroll'>
+                <div className='max-h-[360px] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto overscroll-contain'>
                     {(transactions_accounts_activated !== null) && groupedTransactions.sortedDates && groupedTransactions.sortedDates.map(date => (
-                        <section key={date} className="l date-group mb-4" aria-labelledby={`date-${date}`}>
-                            <div className="flex items-center justify-between">
-                                <h3 id={`date-${date}`} className="date-header text-sm font-semibold text-gray-500 dark:text-gray-400 mb-0 sticky top-0 bg-white dark:bg-gray-800 py-1 transition-colors duration-300">
-                                    {date}
-                                </h3>
-                            </div>
-                            <ul className="transactions-list space-y-1 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
-                                {groupedTransactions.groups[date].map((tx) => (
-                                    <li key={tx.id} className="cursor-pointer transaction-item hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150 flex flex-row justify-between items-center py-2"
-                                        onClick={() => handleOpenTransDetail(tx.id)}
-                                    >
-
-                                        <div className='flex flex-row items-center'>
-                                            <div className="w-[10%] f-full pt-1 pr-2 rounded-full md:w-8 h-8 flex justify-center items-center">
-                                                {tx.category?.emoji && tx.category.emoji !== "" && (
-                                                    <Emoji unified={(tx.category.emoji).toLowerCase()} emojiStyle="apple" size={18} />
-                                                )}
-                                            </div>
-                                            <div className='text-sm font-medium text-gray-800 dark:text-gray-200'>{tx.description}</div>
-                                        </div>
-
-                                        <div className={`text-sm font-bold ${tx.expense === true ? 'text-red-600' : 'text-green-600'}`}>{formatMoney(tx.amount, tx.currency)}</div>
-
-                                    </li>
-                                ))}
+                        <section key={date} aria-labelledby={`acc-date-${date}`}>
+                            <h4 id={`acc-date-${date}`} className="sticky top-0 z-[1] px-1 py-1.5 text-xs font-semibold uppercase tracking-wide text-ink-2 dark:text-gray-400 bg-white/95 dark:bg-gray-800/95 backdrop-blur">
+                                {moment(date, 'YYYY-MM-DD').isValid() ? moment(date, 'YYYY-MM-DD').locale('es').format('dddd D [de] MMMM') : date}
+                            </h4>
+                            <ul>
+                                {groupedTransactions.groups[date].map((tx) => {
+                                    const transfer = !!tx.transfer_group_id;
+                                    return (
+                                        <li key={tx.id}>
+                                            <button type="button" onClick={() => handleOpenTransDetail(tx.id)}
+                                                className="w-full flex items-center gap-3 px-1 py-2 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                                <span className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
+                                                    {tx.category?.emoji ? <Emoji unified={(tx.category.emoji).toLowerCase()} emojiStyle="apple" size={16} /> : null}
+                                                </span>
+                                                <span className="flex-1 min-w-0">
+                                                    <span className="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>
+                                                    <span className="block text-xs text-ink-2 dark:text-gray-400 truncate">{transfer ? 'Transferencia' : (tx.category?.name || '')}</span>
+                                                </span>
+                                                <span className={`text-sm font-semibold tabular-nums whitespace-nowrap ${transfer ? 'text-gray-700 dark:text-gray-200' : tx.expense ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}`}>
+                                                    {transfer ? '' : tx.expense ? '−' : '+'}{formatMoney(tx.amount, tx.currency)}
+                                                </span>
+                                            </button>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         </section>
-
-
                     ))}
-                    <div>
-                        {transactions_accounts_activated === null || transactions_accounts_activated.transactions === null ? (
-                            <p className="text-gray-500 pt-4 text-sm">Aún no hay transacciones en este periodo</p>
-                        ) : <></>}
-                    </div>
+                    {(transactions_accounts_activated === null || !transactions_accounts_activated.transactions || transactions_accounts_activated.transactions.length === 0) && (
+                        <EmptyState compact icon={ArrowsRightLeftIcon} title="Sin movimientos en este periodo" description="Cambia el periodo o agrega un movimiento." />
+                    )}
                 </div>
-
-
-
-
-            </div>
+            </section>
             <TransactionDetail
                 openTransDetail={openTransDetail}
                 setOpenTransDetail={handleCloseTransDetail}

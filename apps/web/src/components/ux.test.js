@@ -5,8 +5,10 @@ import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { createStore, applyMiddleware } from 'redux';
 import { thunk } from 'redux-thunk';
-import AccbyTypeDash from './dashboard/productsAccounts/AccbyTypeDash';
-import AccountGroupSummary from './dashboard/productsAccounts/AccountGroupSummary';
+import AccountsTypeBar from './dashboard/productsAccounts/AccountsTypeBar';
+import AccountGroupCard from './dashboard/productsAccounts/AccountGroupCard';
+import { billingCycles } from './dashboard/productsAccounts/AccountPeriodControl';
+import moment from 'moment';
 import DashAccounts from './dashboard/general/DashAccounts';
 import TransactionFilterSheet from './transactions/TransactionFilterSheet';
 import CardReconcile from './dashboard/productsAccounts/CardReconcile';
@@ -55,25 +57,39 @@ const render = (ui) => {
   return { el, root };
 };
 
-test('Mis cuentas: grupos con conteo y lista del grupo elegido', () => {
-  const onGroupChange = jest.fn();
-  const { el, root } = render(<AccbyTypeDash group="deposit" onGroupChange={onGroupChange} onOpenDetail={() => {}} onOpenCreate={() => {}} />);
+test('Cuentas: barra de tipos con conteo, Todo y Cerradas aparte', () => {
+  const onChange = jest.fn();
+  const { el, root } = render(<AccountsTypeBar group="all" onChange={onChange} onCreate={() => {}} />);
   const tabs = [...el.querySelectorAll('[role=tab]')].map(t => t.textContent.replace(/\s+/g, ' ').trim());
-  expect(tabs).toEqual(['Efectivo 2', 'Tarjetas 1', 'Inversiones 1', 'Cerradas 1']);
-  expect(el.textContent).toContain('Nómina');
-  expect(el.textContent).not.toContain('Vieja');
-  act(() => [...el.querySelectorAll('[role=tab]')][3].dispatchEvent(new MouseEvent('click', { bubbles: true })));
-  expect(onGroupChange).toHaveBeenCalledWith('closed');
+  expect(tabs).toEqual(['Todo 4', 'Efectivo 2', 'Tarjetas 1', 'Inversiones 1', 'Cerradas (1)']);
+  act(() => [...el.querySelectorAll('[role=tab]')][2].dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  expect(onChange).toHaveBeenCalledWith('credit');
   act(() => root.unmount());
 });
 
-test('Tarjeta con saldo positivo: pagado de más (cargos sin registrar)', () => {
-  const { el, root } = render(<AccbyTypeDash group="credit" onGroupChange={() => {}} onOpenDetail={() => {}} onOpenCreate={() => {}} />);
+test('Cuentas: el total del grupo va con sus cuentas; tarjeta con saldo positivo = pagado de más', () => {
+  const { el, root } = render(<AccountGroupCard group="credit" onGroupChange={() => {}} onOpenDetail={() => {}} />);
+  expect(el.textContent).toContain('Tarjetas de crédito · deuda hoy');
+  expect(el.textContent).toContain('Visa');
   expect(el.textContent).toContain('Pagado de más');
+  expect(el.textContent).not.toContain('Nómina');
   act(() => root.unmount());
-  const s = render(<AccountGroupSummary group="credit" />);
-  expect(s.el.textContent).toContain('Pagado de más');
-  act(() => s.root.unmount());
+  const all = render(<AccountGroupCard group="all" onGroupChange={() => {}} onOpenDetail={() => {}} />);
+  expect(all.el.textContent).toContain('Patrimonio · hoy');
+  expect(all.el.textContent).toMatch(/Efectivo.*Tarjetas.*Inversiones/);
+  act(() => all.root.unmount());
+});
+
+test('Ciclo de facturación desde el día de corte', () => {
+  const c = billingCycles(13, moment('2026-10-29'));
+  expect(c.current.from.format('YYYY-MM-DD')).toBe('2026-10-14');
+  expect(c.current.to.format('YYYY-MM-DD')).toBe('2026-11-13');
+  expect(c.previous.from.format('YYYY-MM-DD')).toBe('2026-09-14');
+  expect(c.previous.to.format('YYYY-MM-DD')).toBe('2026-10-13');
+  const d = billingCycles(31, moment('2026-03-05'));
+  expect(d.current.from.format('YYYY-MM-DD')).toBe('2026-03-01'); // corte 28 feb
+  expect(d.current.to.format('YYYY-MM-DD')).toBe('2026-03-31');
+  expect(billingCycles(null)).toBeNull();
 });
 
 test('Inicio: las cuentas cerradas no aparecen y se avisa del pagado de más', () => {

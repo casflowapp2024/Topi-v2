@@ -18,15 +18,16 @@ function AccChartHistory({ history_month, current_Year, account_activated }) {
     if (!history_month?.month) return [];
     return monthlyRows(history_month, current_Year).map((r, i) => ({
       ...r,
-      value: metricValue(history_month.balance?.[i]),
-      diff: Number(history_month.balance?.[i]?.diff ?? 0),
+      // En tarjetas se grafica la deuda en positivo (barras hacia arriba); un saldo a favor queda bajo cero
+      value: cls === 'credit' ? -metricValue(history_month.balance?.[i]) : metricValue(history_month.balance?.[i]),
+      diff: Number(history_month.balance?.[i]?.diff ?? 0), // en tarjetas la API ya da + cuando la deuda sube
     }));
-  }, [history_month, current_Year]);
+  }, [history_month, current_Year, cls]);
 
   const last = data[data.length - 1];
   const lead = last && {
     label: cls === 'credit' ? `deuda en ${last.longLabel.split(' ')[0]}` : last.longLabel,
-    value: formatMoneyCompact(cls === 'credit' ? Math.abs(last.value) : last.value, currency),
+    value: formatMoneyCompact(last.value, currency),
     tone: cls !== 'credit' && last.value < 0 ? 'neg' : undefined,
   };
 
@@ -37,8 +38,8 @@ function AccChartHistory({ history_month, current_Year, account_activated }) {
       <ChartTooltip
         title={p.longLabel}
         rows={[
-          { label: cls === 'credit' ? 'Deuda' : 'Saldo', value: formatMoney(cls === 'credit' ? Math.abs(p.value) : p.value, currency), color },
-          p.diff ? { label: 'Cambio vs mes anterior', value: `${p.diff > 0 ? '+' : ''}${formatMoney(p.diff, currency)}`, tone: p.diff < 0 ? 'out' : 'in' } : null,
+          { label: cls === 'credit' ? (p.value < 0 ? 'Pagado de más' : 'Deuda') : 'Saldo', value: formatMoney(Math.abs(p.value), currency), color },
+          p.diff ? { label: 'Cambio vs mes anterior', value: `${p.diff > 0 ? '+' : ''}${formatMoney(p.diff, currency)}`, tone: (cls === 'credit' ? p.diff > 0 : p.diff < 0) ? 'out' : 'in' } : null,
         ]}
       />
     );

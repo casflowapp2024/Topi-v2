@@ -1,215 +1,146 @@
-
-import { use, useEffect, useState } from "react";
-
-//redux
+import { useEffect, useState } from "react";
 import { connect } from 'react-redux';
-import { get_user_transactions } from "../../../redux/actions/cashflow.js";
-import { set_dash_account_activated, set_init_date_account_activated, set_end_date_account_activated } from "../../../redux/actions/reports.js";
-import { get_accounts_status_by_period, get_history_accounts_by_month } from "../../../redux/actions/reports.js";
-//components
-import { parseDatetimetoDateStrFormat } from '../../helpers.js';
-import AccbyTypeDash from "./AccbyTypeDash.js";
-import AccPeriodFilter from "./AccPeriodFilter.js";
+import { set_dash_account_activated, get_accounts_status_by_period, get_history_accounts_by_month } from "../../../redux/actions/reports.js";
+import { PencilSquareIcon } from '@heroicons/react/20/solid';
 import AccChartHistory from "./AccChartHistory.js";
 import AccTransPeriod from "./AccTransPeriod.js";
 import AccSummaryCard from "./AccSummaryCard.js";
 import AccountDetail from "../../accounts/AccountDetail";
 import AccountCreate from "../../accounts/AccountCreate";
-import { PlusIcon, CreditCardIcon, DocumentCurrencyDollarIcon } from '@heroicons/react/20/solid'
-import { findElmentById, accountReportGroup, isInvestmentAccount, isCreditAccount, isOpenAccount } from "../../helpers.js";
 import CreditCardPanel from "./CreditCardPanel";
 import InvestmentValuationCard from "./InvestmentValuationCard";
-import AccountGroupSummary from "./AccountGroupSummary";
-import { groupOfAccount, accountsOfGroup } from "./accountGroups";
-//redux
-//import {  } from "../redux/actions/cashflow";
+import AccountsTypeBar from "./AccountsTypeBar";
+import AccountGroupCard from "./AccountGroupCard";
+import AccountPeriodControl from "./AccountPeriodControl";
+import Button from "../../ui/Button";
+import { findElmentById, accountReportGroup, accountClass, isOpenAccount } from "../../helpers.js";
+import { groupOfAccount, accountsOfGroup, ACCOUNT_GROUPS } from "./accountGroups";
 
+const CHART_TITLE = {
+    deposit: ['Saldo', 'últimos 12 meses, al cierre de cada mes'],
+    credit: ['Deuda', 'al cierre de cada mes, últimos 12 meses'],
+    investment: ['Valor', 'al cierre de cada mes, últimos 12 meses'],
+};
+
+/**
+ * Cuentas, en tres niveles:
+ *  1. Barra de tipos (Todo · Efectivo · Tarjetas · Inversiones · Cerradas) y "Agregar cuenta".
+ *  2. El total del grupo con sus cuentas en la misma tarjeta (en "Todo": el patrimonio).
+ *  3. El detalle de la cuenta elegida: periodo (mes, corte de la tarjeta o rango), sus cifras,
+ *     la gráfica propia de su tipo y los movimientos del periodo.
+ */
 const AAAcountsDashboard = ({
-    //actions
-    get_user_transactions,
-    set_dash_account_activated,
-    set_init_date_account_activated,
-    set_end_date_account_activated,
-    get_accounts_status_by_period,
-    get_history_accounts_by_month,
-
-    //state
-    current_Month,
-    current_Year,
-    user_accounts,
-    account_activated,
-    iniDate_account_dash,
-    endDate_account_dash,
-    account_activated_stats,
-    history_accounts_by_month,
-
-    /* get_user_transactions,
-    get_savings_account,
-    default_limit, */
+    set_dash_account_activated, get_accounts_status_by_period, get_history_accounts_by_month,
+    current_Month, current_Year, user_accounts, account_activated,
+    iniDate_account_dash, endDate_account_dash, account_activated_stats, history_accounts_by_month,
 }) => {
-
-
-    //////////////////////////////////////////////////////////////////7
-    //////CREAR CUENTAS//////////////////////////////77///////////////
-
-    const [openCreateBox, setOpenCreateBox] = useState(false)
-
-    ///////////////////////////////////////////////////////////////77
-    /////////////OPEN DETAIL////////////////////////////////77777
-
-    const [detailInfo, setDetailInfo] = useState(null)
-    const [openAccDetail, setOpenAccDetail] = useState(false)
-
-    const handleOpenAccDetail = (AccId) => {
-        const selectedAcc = findElmentById(user_accounts.items, AccId)
-        setDetailInfo(selectedAcc)
+    const [openCreateBox, setOpenCreateBox] = useState(false);
+    const [detailInfo, setDetailInfo] = useState(null);
+    const [openAccDetail, setOpenAccDetail] = useState(false);
+    const handleOpenAccDetail = (accId) => {
+        setDetailInfo(findElmentById(user_accounts.items, accId));
         setOpenAccDetail(true);
-    }
+    };
 
-
+    // Grupo: si llegas con una cuenta elegida (p. ej. desde el inicio) se abre su grupo; si no, "Todo"
+    const [group, setGroup] = useState(() => (account_activated ? groupOfAccount(account_activated) : 'all'));
     useEffect(() => {
-        //al cargar el componente, si no hay cuenta activada, activar la primera cuenta de la lista
-        // Respeta la cuenta elegida antes (p. ej. desde "Mis cuentas" en el inicio)
-        if (user_accounts.items && user_accounts.items.length > 0) {
-            const stillExists = account_activated && user_accounts.items.some(acc => acc.id === account_activated.id);
-            if (!stillExists) {
-                // primero una cuenta abierta (las cerradas solo si no hay otra)
-                set_dash_account_activated(user_accounts.items.find(isOpenAccount) || user_accounts.items[0]);
-            }
-        }
-    }, [user_accounts]);
-
-    // Grupo elegido en "Mis cuentas" (Efectivo, Tarjetas, Inversiones, Cerradas). Sigue a la cuenta
-    // activa (p. ej. si llegas desde el inicio con una tarjeta) y al cambiarlo abre su primera cuenta.
-    const [group, setGroup] = useState(() => (account_activated ? groupOfAccount(account_activated) : 'deposit'));
-    useEffect(() => {
-        if (account_activated) setGroup(groupOfAccount(account_activated));
+        if (account_activated && group !== 'all') setGroup(groupOfAccount(account_activated));
     }, [account_activated?.id]); // eslint-disable-line react-hooks/exhaustive-deps
     const handleGroupChange = (g) => {
         setGroup(g);
-        const first = accountsOfGroup(user_accounts.items, g)[0];
-        if (first && groupOfAccount(account_activated) !== g) set_dash_account_activated(first);
+        if (g === 'all') return;
+        const list = accountsOfGroup(user_accounts?.items, g);
+        if (list.length && !list.some(a => a.id === account_activated?.id)) set_dash_account_activated(list[0]);
     };
 
-
+    // Sin cuenta elegida (o si se borró): la primera abierta
     useEffect(() => {
-        //al cargar el componente, si no hay cuenta activada, activar la primera cuenta de la list
-        const ini_date_first = parseDatetimetoDateStrFormat(new Date(current_Year, current_Month - 1, 1), "YYYY-MM-DD");
-        const end_date_first = parseDatetimetoDateStrFormat(new Date(current_Year, current_Month, 0), "YYYY-MM-DD")
-        set_init_date_account_activated(ini_date_first);
-        set_end_date_account_activated(end_date_first);
-        if (!account_activated) {
-            return
+        const items = user_accounts?.items;
+        if (!items?.length) return;
+        if (!account_activated || !items.some(a => a.id === account_activated.id)) {
+            set_dash_account_activated(items.find(isOpenAccount) || items[0]);
         }
-        const accounts_type = accountReportGroup(account_activated)
-        get_accounts_status_by_period(ini_date_first, end_date_first, accounts_type, [account_activated.id]);
-        const date_filter = `${current_Year}-${current_Month.toString().padStart(2, '0')}`
-        get_history_accounts_by_month(date_filter, account_activated.id)
+    }, [user_accounts]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    }, []);
-
+    // Cifras del periodo (el periodo lo pone AccountPeriodControl)
     useEffect(() => {
-        if (!account_activated) {
-            return
-        }
-        const accounts_type = accountReportGroup(account_activated)
-        if (endDate_account_dash) {
-            console.log("endDate_account_dash", endDate_account_dash)
-            const year_from_end_date = endDate_account_dash.substring(0, 4);
-            const month_from_end_date = endDate_account_dash.substring(5, 7);
-            get_accounts_status_by_period(iniDate_account_dash, endDate_account_dash, accounts_type, [account_activated.id]);
-            const date_filter = `${year_from_end_date}-${month_from_end_date.toString().padStart(2, '0')}`
-            get_history_accounts_by_month(date_filter, account_activated.id)
-        }
+        if (!account_activated || !iniDate_account_dash || !endDate_account_dash) return;
+        get_accounts_status_by_period(iniDate_account_dash, endDate_account_dash, accountReportGroup(account_activated), [account_activated.id]);
+    }, [account_activated?.id, iniDate_account_dash, endDate_account_dash]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    }, [account_activated]);
+    // Historial de 12 meses hasta el mes elegido
+    useEffect(() => {
+        if (!account_activated) return;
+        get_history_accounts_by_month(`${current_Year}-${String(current_Month).padStart(2, '0')}`, account_activated.id);
+    }, [account_activated?.id, current_Month, current_Year]); // eslint-disable-line react-hooks/exhaustive-deps
 
-
+    const showDetail = group !== 'all' && account_activated && groupOfAccount(account_activated) === group;
+    const cls = account_activated ? accountClass(account_activated) : 'deposit';
+    const [chartTitle, chartHint] = CHART_TITLE[cls] || CHART_TITLE.deposit;
+    const meta = ACCOUNT_GROUPS.find(g => g.id === groupOfAccount(account_activated));
 
     return (
         <>
-            {/*
-                Una sola versión para todos los tamaños (antes había un bloque PC y otro móvil,
-                y cada componente se montaba y pedía sus datos dos veces).
-                En móvil las columnas usan `contents`, así sus hijos entran directo en la pila
-                y `order-*` define el orden; en PC (lg) vuelven a ser columnas.
-            */}
-            <div className="flex flex-col gap-2 lg:flex-row lg:gap-6 px-2 lg:px-0 pb-4 md:max-w-[560px] md:mx-auto lg:max-w-none lg:w-full">
-                {/* Cuentas por tipo y movimientos */}
-                <div className="contents lg:flex lg:flex-col lg:gap-6 lg:w-[380px] xl:w-[360px] lg:shrink-0">
-                    {user_accounts &&
-                        <div className="order-1 lg:order-none">
-                            <AccbyTypeDash
-                                group={group}
-                                onGroupChange={handleGroupChange}
-                                onOpenDetail={handleOpenAccDetail}
-                                onOpenCreate={() => setOpenCreateBox(true)}
-                            />
-                        </div>
-                    }
-                    <div className="order-5 lg:order-none">
-                        <AccTransPeriod />
-                    </div>
-                </div>
-                {/* Filtro, resumen e historial de la cuenta elegida */}
-                <div className="contents lg:flex lg:flex-col lg:gap-6 lg:flex-1 lg:min-w-0">
-                    {user_accounts?.items?.length > 0 &&
-                        <div className="order-2 lg:order-none">
-                            <AccountGroupSummary group={group} />
-                        </div>
-                    }
-                    {user_accounts && account_activated &&
-                        <div className="order-2 lg:order-none">
-                            <AccPeriodFilter />
-                        </div>
-                    }
-                    {/* inversiones y tarjetas tienen su propio resumen */}
-                    {account_activated && !isInvestmentAccount(account_activated) && !isCreditAccount(account_activated) &&
-                        <div className='order-3 lg:order-none p-4 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-xl shadow-md'>
-                            <AccSummaryCard acc={account_activated} data={account_activated_stats} />
-                        </div>
-                    }
-                    {account_activated && isInvestmentAccount(account_activated) &&
-                        <div className="order-3 lg:order-none">
-                            <InvestmentValuationCard account={account_activated} />
-                        </div>
-                    }
-                    {account_activated && isCreditAccount(account_activated) &&
-                        <div className="order-3 lg:order-none">
-                            <CreditCardPanel account={account_activated} data={account_activated_stats} />
-                        </div>
-                    }
-                    <div className="order-4 lg:order-none h-[260px] md:h-[364px] lg:h-[360px] p-4 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-xl shadow-md flex flex-col">
-                        <h2 className="text-md font-bold mb-2 text-gray-800 dark:text-gray-100">Saldo histórico de la cuenta</h2>
-                        {account_activated && history_accounts_by_month &&
-                            <div className="flex-1 min-h-0">
-                                <AccChartHistory />
+            <div className="flex flex-col gap-2 lg:gap-6 px-2 lg:px-0 pb-4 md:max-w-[560px] md:mx-auto lg:max-w-none lg:w-full">
+                <AccountsTypeBar group={group} onChange={handleGroupChange} onCreate={() => setOpenCreateBox(true)} />
+                <AccountGroupCard group={group} onGroupChange={handleGroupChange} onOpenDetail={handleOpenAccDetail} />
+
+                {showDetail && (
+                    <>
+                        {/* Encabezado de la cuenta y su periodo */}
+                        <section className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-md flex flex-col gap-3" aria-label="Cuenta elegida">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    {meta && <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${meta.tint}`}><meta.Icon className="w-5 h-5" aria-hidden="true" /></span>}
+                                    <div className="min-w-0">
+                                        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">{account_activated.name}</h2>
+                                        <p className="text-xs text-ink-2 dark:text-gray-400 truncate">
+                                            {account_activated.bank?.name}{account_activated.last_four_digits ? ` · ••${account_activated.last_four_digits}` : ''} · {account_activated.currency || 'COP'}{account_activated.type?.name ? ` · ${account_activated.type.name}` : ''}
+                                        </p>
+                                    </div>
+                                </div>
+                                <Button size="sm" variant="secondary" icon={PencilSquareIcon} onClick={() => handleOpenAccDetail(account_activated.id)}>
+                                    <span className="hidden sm:inline">Editar</span>
+                                </Button>
                             </div>
-                        }
-                    </div>
-                </div>
+                            <AccountPeriodControl account={account_activated} />
+                        </section>
+
+                        {/* Cifras + gráfica a la izquierda, movimientos a la derecha */}
+                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 lg:gap-6">
+                            <div className="lg:col-span-3 flex flex-col gap-2 lg:gap-6 min-w-0">
+                                {cls === 'credit' ? (
+                                    <CreditCardPanel account={account_activated} data={account_activated_stats} />
+                                ) : cls === 'investment' ? (
+                                    <InvestmentValuationCard account={account_activated} />
+                                ) : (
+                                    <AccSummaryCard acc={account_activated} data={account_activated_stats} />
+                                )}
+                                <section className="h-[280px] md:h-[320px] p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-md flex flex-col" aria-label={chartTitle}>
+                                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{chartTitle} <span className="font-normal text-ink-2 dark:text-gray-400">· {chartHint}</span></h3>
+                                    {history_accounts_by_month && (
+                                        <div className="flex-1 min-h-0 mt-1">
+                                            <AccChartHistory />
+                                        </div>
+                                    )}
+                                </section>
+                            </div>
+                            <div className="lg:col-span-2 min-w-0 lg:min-h-[560px]">
+                                <AccTransPeriod />
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
 
-            {/*PopOver Create accounts*/}
-            <AccountCreate
-                openCreateBox={openCreateBox}
-                setOpenCreateBox={setOpenCreateBox}
-            />
-
-            {/*PopOver Detail Accounts*/}
-            <AccountDetail
-                openAccDetail={openAccDetail}
-                setOpenAccDetail={setOpenAccDetail}
-                detailInfo={detailInfo}
-                setDetailInfo={setDetailInfo}
-            />
-
+            <AccountCreate openCreateBox={openCreateBox} setOpenCreateBox={setOpenCreateBox} />
+            <AccountDetail openAccDetail={openAccDetail} setOpenAccDetail={setOpenAccDetail} detailInfo={detailInfo} setDetailInfo={setDetailInfo} />
         </>
-    )
-}
+    );
+};
 
 const mapStateToProps = state => ({
-
     current_Month: state.Reports.current_Month,
     current_Year: state.Reports.current_Year,
     user_accounts: state.CashFlow.user_accounts,
@@ -218,16 +149,8 @@ const mapStateToProps = state => ({
     endDate_account_dash: state.Reports.endDate_account_dash,
     account_activated_stats: state.Reports.account_activated_stats,
     history_accounts_by_month: state.Reports.history_accounts_by_month,
-
-
-})
+});
 
 export default connect(mapStateToProps, {
-    get_user_transactions,
-    set_dash_account_activated,
-    set_init_date_account_activated,
-    set_end_date_account_activated,
-    get_accounts_status_by_period,
-    get_history_accounts_by_month
-
-})(AAAcountsDashboard)
+    set_dash_account_activated, get_accounts_status_by_period, get_history_accounts_by_month,
+})(AAAcountsDashboard);

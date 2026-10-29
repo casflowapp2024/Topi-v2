@@ -1,7 +1,10 @@
-import { BanknotesIcon, CreditCardIcon, PresentationChartLineIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline';
+import { BanknotesIcon, CreditCardIcon, PresentationChartLineIcon, ArchiveBoxIcon, ScaleIcon } from '@heroicons/react/24/outline';
 import { accountClass, isOpenAccount } from '../../helpers';
 
 // Grupos de la vista Cuentas. Las cerradas van aparte, sin importar su clase.
+// 'all' es la vista de patrimonio (no es un grupo de cuentas)
+export const ALL_GROUP = { id: 'all', label: 'Todo', title: 'Patrimonio', Icon: ScaleIcon, tint: 'bg-topi-50 text-topi-600 dark:bg-indigo-500/15 dark:text-indigo-300' };
+
 export const ACCOUNT_GROUPS = [
   { id: 'deposit', label: 'Efectivo', title: 'Cuentas de efectivo', Icon: BanknotesIcon, tint: 'bg-topi-50 text-topi-600 dark:bg-indigo-500/15 dark:text-indigo-300' },
   { id: 'credit', label: 'Tarjetas', title: 'Tarjetas de crédito', Icon: CreditCardIcon, tint: 'bg-orange-50 text-money-out dark:bg-orange-500/15 dark:text-money-out-dark' },

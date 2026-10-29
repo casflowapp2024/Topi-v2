@@ -15,7 +15,8 @@ jest.mock('axios', () => {
   return { __esModule: true, default: { ...api, create: () => api } };
 });
 
-// En jsdom ResponsiveContainer mide 0 y no dibuja: se reemplaza por un tamaño fijo.
+// En jsdom ResponsiveContainer mide 0 y no dibuja: se reemplaza por un tamaño fijo. (Con algunos anchos
+// el cálculo de ticks de recharts no termina en jsdom, que mide todo el texto en 0; con 500 es estable.)
 jest.mock('recharts', () => {
   const actual = jest.requireActual('recharts');
   const React = jest.requireActual('react');

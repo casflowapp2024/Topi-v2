@@ -22,7 +22,7 @@ const DUE_SOON_DAYS = 7;
 const dueSoon = (cards) => (cards || []).filter(c => Number(c.pending_statement) > 0 && c.due_date
   && moment(c.due_date).diff(moment().startOf('day'), 'days') <= DUE_SOON_DAYS);
 
-// Tipos de cuenta (mismos ids que AccbyTypeDash)
+// Tipos de cuenta (ids del catálogo account_types)
 const TYPE_STYLE = {
   1: { Icon: BanknotesIcon, tint: 'bg-topi-50 text-topi-600 dark:bg-indigo-500/15 dark:text-indigo-300' },
   2: { Icon: BuildingLibraryIcon, tint: 'bg-topi-50 text-topi-600 dark:bg-indigo-500/15 dark:text-indigo-300' },
