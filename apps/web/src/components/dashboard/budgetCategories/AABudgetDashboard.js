@@ -112,13 +112,14 @@ const AABudgetDashboard = ({
                 En móvil las columnas usan `contents`, así sus hijos entran directo en la pila
                 y `order-*` define el orden; en PC (lg) vuelven a ser columnas.
             */}
-            <div className="flex flex-col gap-2 lg:flex-row lg:gap-6 px-2 lg:px-0 pb-4 md:max-w-[560px] md:mx-auto lg:max-w-none lg:w-full">
+            {/* En PC la vista ocupa el alto de la pantalla: las dos listas se desplazan por dentro y las columnas quedan alineadas */}
+            <div className="flex flex-col gap-2 lg:flex-row lg:gap-6 px-2 lg:px-0 pb-4 md:max-w-[560px] md:mx-auto lg:max-w-none lg:w-full lg:h-[calc(100dvh-96px)] lg:min-h-[640px]">
                 {/* Izquierda: Gastos | Ingresos con el total del mes, y la lista (manda en toda la vista) */}
-                <div className="contents lg:flex lg:flex-col lg:gap-6 lg:w-[380px] xl:w-[360px] lg:shrink-0">
+                <div className="contents lg:flex lg:flex-col lg:gap-6 lg:w-[380px] xl:w-[360px] lg:shrink-0 lg:min-h-0">
                     <div className="order-1 lg:order-none">
                         <BudgetOverview />
                     </div>
-                    <div className="order-2 lg:order-none">
+                    <div className="order-2 lg:order-none lg:flex-1 lg:min-h-0">
                         <BudDashCategorieList
                             handleOpenEditCat={handleOpenEditCat}
                             setOpenCreateBox={setOpenCreateBox}
@@ -126,11 +127,11 @@ const AABudgetDashboard = ({
                     </div>
                 </div>
                 {/* Derecha: la gráfica y los movimientos responden a la categoría elegida (o al total) */}
-                <div className="contents lg:flex lg:flex-col lg:gap-6 lg:flex-1 lg:min-w-0">
-                    <div className="order-3 lg:order-none">
+                <div className="contents lg:flex lg:flex-col lg:gap-6 lg:flex-1 lg:min-w-0 lg:min-h-0">
+                    <div id="budget-chart" className="order-3 lg:order-none lg:shrink-0 scroll-mt-20">
                         <BudDashDailySpent />
                     </div>
-                    <div className="order-4 lg:order-none">
+                    <div className="order-4 lg:order-none lg:flex-1 lg:min-h-0">
                         <BudDashTransCategorie />
                     </div>
                 </div>

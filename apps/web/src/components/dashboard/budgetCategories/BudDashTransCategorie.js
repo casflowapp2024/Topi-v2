@@ -139,7 +139,7 @@ const BudDashTransCategorie = ({
   };
 
   return (
-    <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-md transition-colors duration-300" aria-label="Movimientos">
+    <section className="lg:h-full lg:flex lg:flex-col bg-white dark:bg-gray-800 rounded-2xl shadow-md transition-colors duration-300" aria-label="Movimientos">
       <header className="px-4 pt-4 pb-3 flex items-start justify-between gap-3 border-b border-gray-100 dark:border-gray-700">
         <div className="min-w-0">
           {cat ? (
@@ -165,9 +165,9 @@ const BudDashTransCategorie = ({
         </Button>
       </header>
 
-      <div className="px-2 py-2">
+      <div className="px-2 py-2 lg:flex-1 lg:min-h-0 lg:flex lg:flex-col">
         {category_transactions && category_transactions.length > 0 ? (
-          <div className="max-h-[300px] md:max-h-[380px] overflow-y-auto">
+          <div className="max-h-[300px] md:max-h-[380px] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto overscroll-contain">
             {groupedTransactions.sortedDates && groupedTransactions.sortedDates.map(date => (
               <section key={date} aria-labelledby={`date-${date}`}>
                 <h3 id={`date-${date}`} className="sticky top-0 z-[1] px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-ink-2 dark:text-gray-400 bg-white/95 dark:bg-gray-800/95 backdrop-blur">

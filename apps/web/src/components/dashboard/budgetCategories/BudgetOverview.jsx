@@ -48,8 +48,13 @@ const BudgetOverview = ({
 
   return (
     <section className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-md transition-colors duration-300" aria-label="Resumen de presupuestos">
-      <div className="flex items-center justify-between gap-2">
-        <div role="tablist" aria-label="Ver presupuestos de" className="flex-1 lg:flex-none grid grid-cols-2 p-1 rounded-xl bg-gray-100 dark:bg-gray-700/60">
+      {/* En PC el mes va en su propia fila (en móvil está en la barra superior) */}
+      <div className="hidden lg:flex items-center justify-between gap-2 mb-3">
+        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Presupuesto de</span>
+        <PeriodSelector />
+      </div>
+      <div>
+        <div role="tablist" aria-label="Ver presupuestos de" className="w-full grid grid-cols-2 p-1 rounded-xl bg-gray-100 dark:bg-gray-700/60">
           {TABS.map(t => {
             const on = t.id === active_report_tab || (t.id === 'Income' && isIncome);
             return (
@@ -62,7 +67,6 @@ const BudgetOverview = ({
             );
           })}
         </div>
-        <PeriodSelector className="hidden lg:flex" />
       </div>
 
       <div className="mt-4">

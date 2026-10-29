@@ -49,10 +49,18 @@ const BudDashCategorieList = ({
   }, [isIncome, income_report, expenses_report, sortKey]);
 
   const selectedId = category_activated?.category_id;
-  const toggle = (cat) => set_dash_category_activated(cat.category_id === selectedId ? null : cat);
+  const toggle = (cat) => {
+    const selecting = cat.category_id !== selectedId;
+    set_dash_category_activated(selecting ? cat : null);
+    // En móvil la gráfica queda debajo de la lista: al elegir, se trae a la vista para ver la reacción
+    if (selecting && window.matchMedia?.('(max-width: 1023px)').matches) {
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      requestAnimationFrame(() => document.getElementById('budget-chart')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' }));
+    }
+  };
 
   return (
-    <section className="bg-white rounded-2xl shadow-md dark:bg-gray-800 transition-colors duration-300" aria-label="Presupuestos por categoría">
+    <section className="lg:h-full lg:flex lg:flex-col bg-white rounded-2xl shadow-md dark:bg-gray-800 transition-colors duration-300" aria-label="Presupuestos por categoría">
       <header className="px-4 pt-4 pb-3 flex items-center justify-between gap-2">
         <div>
           <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Categorías</h2>
@@ -77,14 +85,14 @@ const BudDashCategorieList = ({
           options={[{ id: 'amount', label: 'Monto' }, { id: 'usage', label: '% usado' }]} />
       </div>
 
-      <div aria-busy={loadingReport} className={`px-2 pb-3 transition-opacity duration-200 ${loadingReport && categories.length ? 'opacity-50' : ''}`}>
+      <div aria-busy={loadingReport} className={`relative px-2 pb-3 lg:flex-1 lg:min-h-0 lg:flex lg:flex-col transition-opacity duration-200 ${loadingReport && categories.length ? 'opacity-50' : ''}`}>
         {loadingReport && !categories.length ? (
           <SkeletonRows rows={5} withBar className="px-2" />
         ) : categories.length === 0 ? (
           <EmptyState compact icon={ChartPieIcon} title="Sin presupuestos este mes"
             description={`Crea un presupuesto de ${isIncome ? 'ingresos' : 'gastos'} para seguirlo aquí.`} />
         ) : (
-          <ul className="flex flex-col gap-1 max-h-[420px] lg:max-h-[460px] overflow-y-auto">
+          <ul className="flex flex-col gap-1 max-h-[264px] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto overscroll-contain">
             {categories.map(cat => {
               const selected = cat.category_id === selectedId;
               return (
@@ -126,6 +134,10 @@ const BudDashCategorieList = ({
               );
             })}
           </ul>
+        )}
+        {/* En móvil la lista es corta: un degradado indica que hay más abajo */}
+        {categories.length > 4 && (
+          <div className="pointer-events-none absolute bottom-3 left-2 right-2 h-8 rounded-b-xl bg-gradient-to-t from-white dark:from-gray-800 lg:hidden" aria-hidden="true" />
         )}
       </div>
 
