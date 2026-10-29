@@ -68,6 +68,8 @@ var errorStatusMap = map[error]int{
 	domain.ErrInvalidCurrencyChangeMode: http.StatusBadRequest,
 	domain.ErrMissingFxRates:            http.StatusConflict,
 	domain.ErrCurrencyChangeNotUndoable: http.StatusConflict,
+	domain.ErrInvalidCreditCard:         http.StatusBadRequest,
+	domain.ErrNotCreditAccount:          http.StatusBadRequest,
 
 	// Token Errors
 	domain.ErrExpiredToken:               http.StatusUnauthorized,
@@ -700,6 +702,8 @@ type transactionResponse struct {
 	FxRateSource    *string `json:"fx_rate_source" example:"SFC_TRM"`
 	AmountBase      *string `json:"amount_base" example:"387041"`
 	TransferGroupID *string `json:"transfer_group_id" example:"0b8f..."`
+	// Installments: card purchase deferred to N payments (null = none)
+	Installments *int16 `json:"installments" example:"6"`
 }
 
 // newTransactionResponse is a helper function to create a response body for handling transaction data
@@ -753,6 +757,7 @@ func newTransactionResponse(transaction *domain.Transaction) transactionResponse
 		FxRateSource:    transaction.FxRateSource,
 		AmountBase:      decimalString(transaction.AmountBase),
 		TransferGroupID: transaction.TransferGroupID,
+		Installments:    transaction.Installments,
 	}
 }
 

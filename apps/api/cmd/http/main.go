@@ -69,6 +69,7 @@ func main() {
 		FxHandler:             injector.Handlers.Fx,
 		ValuationHandler:      injector.Handlers.Valuation,
 		CurrencyChangeHandler: injector.Handlers.CurrencyChange,
+		CreditCardHandler:     injector.Handlers.CreditCard,
 		EmailHandler:          injector.Handlers.Email,
 		InitDevHandler:        injector.Handlers.Initialization,
 		InitializationHandler: injector.Handlers.CategoryInitialization,

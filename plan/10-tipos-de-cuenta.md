@@ -220,6 +220,25 @@ dólares). Asistente con tres modos y vista previa:
 
 ## Etapa 4 — Tarjetas de crédito como pasivos
 
+**Estado: hecha** (migración 000032; antes/después sobre el dump: idéntico).
+
+Cómo quedó:
+- `credit_card_details` (cupo, día de corte, día de pago, tasa EA; todo opcional) con
+  `GET/PUT /accounts/:id/credit-card`; `transactions.installments` (2–120, informativo) en crear y
+  editar transacciones.
+- `credit_card_status(user)` + `GET /analysis/credit-cards`: deuda, disponible, último y próximo
+  corte, deuda al corte, pagado desde el corte, lo que falta pagar del corte y la fecha límite. Con
+  compras a cuotas el banco cobra solo la cuota: lo que falta pagar es un tope y la UI lo advierte.
+- Las categorías "Intereses" y "Comisiones" se crean al configurar la primera tarjeta si no hay
+  una con ese nombre. Son categorías normales: `categories.is_editable` existe pero nada lo
+  respeta (ni la API ni el front), así que no se marcan como no editables.
+- Web: en Cuentas, "Resumen de la tarjeta" reemplaza al resumen de la cuenta (deuda, disponible
+  con barra del cupo, corte y fecha límite, configurar); campo "Cuotas" en el formulario de
+  transacciones para gastos con tarjeta; en el inicio, aviso de las tarjetas con saldo del corte
+  por pagar y fecha límite en 7 días o vencida.
+- No se hizo: extractos guardados (`credit_card_statements`), pago mínimo ni simulación de
+  intereses.
+
 ### Datos
 ```
 credit_card_details (account_id PK, credit_limit NUMERIC(20,4), statement_day SMALLINT,

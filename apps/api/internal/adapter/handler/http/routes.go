@@ -21,6 +21,7 @@ type Routes struct {
 	FxHandler             *FxHandler
 	ValuationHandler      *ValuationHandler
 	CurrencyChangeHandler *CurrencyChangeHandler
+	CreditCardHandler     *CreditCardHandler
 	EmailHandler          *EmailHandler
 	InitDevHandler        *InitDevHandler
 	InitializationHandler *InitializationHandler
@@ -119,6 +120,8 @@ func (r *Routes) AccountsRoutes() {
 		AuthAccounts.POST("/:id/currency-changes/:change_id/undo", r.CurrencyChangeHandler.UndoAccountCurrencyChange)
 		AuthAccounts.POST("/:id/close", r.CurrencyChangeHandler.CloseAccount)
 		AuthAccounts.POST("/:id/reopen", r.CurrencyChangeHandler.ReopenAccount)
+		AuthAccounts.GET("/:id/credit-card", r.CreditCardHandler.GetCreditCard)
+		AuthAccounts.PUT("/:id/credit-card", r.CreditCardHandler.SaveCreditCard)
 	}
 
 	admin := AuthAccounts.Use(AdminMiddleware())
@@ -155,6 +158,7 @@ func (r *Routes) AnalysisRoutes() {
 		AuthAnalysis.GET("/financial-report", r.AnalysisHandler.GetFinancialReport)
 		AuthAnalysis.GET("/net-worth", r.FxHandler.GetNetWorth)
 		AuthAnalysis.GET("/investments", r.ValuationHandler.GetInvestments)
+		AuthAnalysis.GET("/credit-cards", r.CreditCardHandler.ListCreditCards)
 		AuthAnalysis.GET("/accounts-balance", r.AnalysisHandler.GetBalanceByAccount)
 		AuthAnalysis.GET("/financial-analysis", r.AnalysisHandler.GetFinancialAnalysis)
 		AuthAnalysis.POST("/categories-report", r.AnalysisHandler.GetCategoriesReport)

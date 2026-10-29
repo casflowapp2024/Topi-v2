@@ -41,6 +41,9 @@ type Transaction struct {
 	FxRateSource    *string
 	AmountBase      *decimal.Decimal
 	TransferGroupID *string
+	// Installments: a card purchase deferred to N payments (2–120). Informative: the purchase is a
+	// full expense on its date. In an update, nil keeps it and 0 or 1 clears it.
+	Installments *int16
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -77,9 +80,18 @@ func IsSameTransaction(current, new *Transaction) bool {
 	sameDate := current.Date.Equal(new.Date)
 	sameCheck := current.Checked == new.Checked
 	sameFxRate := new.FxRate == nil || (current.FxRate != nil && current.FxRate.Equal(*new.FxRate))
+	sameInstallments := new.Installments == nil || InstallmentsOrZero(current.Installments) == InstallmentsOrZero(new.Installments)
 
 	return sameDescription && sameCategory && sameAccount && sameExpense && sameAmount && sameDate && sameCheck &&
-		sameFxRate
+		sameFxRate && sameInstallments
+}
+
+// InstallmentsOrZero is the number of installments, 0 when there are none (nil, 0 or 1)
+func InstallmentsOrZero(n *int16) int16 {
+	if n == nil || *n < 2 {
+		return 0
+	}
+	return *n
 }
 
 type Transactions []Transaction

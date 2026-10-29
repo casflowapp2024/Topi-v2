@@ -72,6 +72,8 @@ plan/         plan de migración
 - Cambiar la moneda de una cuenta con movimientos o la moneda base: solo con `change_account_currency` /
   `change_base_currency` (vista previa y aplicar). Cuentas cerradas (`accounts.closed_at`): fuera de los selectores
   de movimientos nuevos (`isOpenAccount`).
+- Tarjetas: términos en `credit_card_details` y estado del corte con `credit_card_status` (deuda, disponible,
+  lo que falta pagar del corte). `transactions.installments` es informativo: la compra es gasto completo en su fecha.
 
 ## Reglas
 

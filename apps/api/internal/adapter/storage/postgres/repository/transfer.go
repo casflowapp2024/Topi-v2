@@ -72,6 +72,7 @@ func insertTransferLeg(ctx context.Context, tx pgx.Tx, leg transferLeg) (domain.
 		&created.FxRateSource,
 		scanDecimal(&created.AmountBase),
 		&created.TransferGroupID,
+		&created.Installments,
 	)
 	return created, mappers.MapPostgresErrorCode(err)
 }

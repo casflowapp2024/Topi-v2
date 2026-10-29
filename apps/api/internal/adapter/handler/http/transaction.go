@@ -34,6 +34,8 @@ type createTransactionRequest struct {
 	Amount       float64 `json:"amount" binding:"required" example:"100000"`
 	Date         string  `json:"date" binding:"required" example:"2025-05-03 14:00:00 -0500"`
 	ShouldVerify bool    `json:"should_verify" binding:"omitempty" example:"false"`
+	// Installments: card purchase deferred to N payments (informative; 0 or 1 = none)
+	Installments *int16 `json:"installments" binding:"omitempty,min=0,max=120" example:"6"`
 }
 
 // CreateTransaction godoc
@@ -74,13 +76,14 @@ func (ph *TransactionHandler) CreateTransaction(ctx *gin.Context) {
 	}
 
 	transaction := &domain.Transaction{
-		UserID:      *userID,
-		Description: req.Description,
-		Expense:     req.Expense,
-		Amount:      req.Amount,
-		Date:        parsedDate,
-		Category:    domain.Category{ID: req.CategoryID},
-		Account:     domain.Account{ID: req.AccountID},
+		UserID:       *userID,
+		Description:  req.Description,
+		Expense:      req.Expense,
+		Amount:       req.Amount,
+		Date:         parsedDate,
+		Category:     domain.Category{ID: req.CategoryID},
+		Account:      domain.Account{ID: req.AccountID},
+		Installments: req.Installments,
 	}
 
 	err = ph.svc.CreateTransaction(ctx, transaction)
@@ -233,6 +236,8 @@ type updateTransactionRequest struct {
 	// FxRate (optional) sets the exchange rate by hand: fx_rate_source = 'user' and amount_base is
 	// recalculated. Decimal as string.
 	FxRate *string `json:"fx_rate" binding:"omitempty" example:"3900.5"`
+	// Installments (optional): card purchase deferred to N payments; omitted keeps it, 0 clears it
+	Installments *int16 `json:"installments" binding:"omitempty,min=0,max=120" example:"6"`
 }
 
 // UpdateTransaction godoc
@@ -291,6 +296,7 @@ func (ph *TransactionHandler) UpdateTransaction(ctx *gin.Context) {
 		Checked:      req.Checked,
 		Category:     domain.Category{ID: req.CategoryID},
 		Account:      domain.Account{ID: req.AccountID},
+		Installments: req.Installments,
 	}
 
 	if req.FxRate != nil {

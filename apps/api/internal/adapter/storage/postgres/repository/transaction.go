@@ -20,11 +20,11 @@ import (
 // Explicit (not "*") so adding columns to the table does not break the scans.
 const transactionColumns = "id, user_id, category_id, account_id, description, expense, amount, date, " +
 	"automated, should_verify, checked, created_at, updated_at, raw_description, " +
-	"currency, fx_rate::text, fx_rate_source, amount_base::text, transfer_group_id::text"
+	"currency, fx_rate::text, fx_rate_source, amount_base::text, transfer_group_id::text, installments"
 
 const transactionColumnsT = "t.id, t.user_id, t.category_id, t.account_id, t.description, t.expense, t.amount, t.date, " +
 	"t.automated, t.should_verify, t.checked, t.created_at, t.updated_at, t.raw_description, " +
-	"t.currency, t.fx_rate::text, t.fx_rate_source, t.amount_base::text, t.transfer_group_id::text"
+	"t.currency, t.fx_rate::text, t.fx_rate_source, t.amount_base::text, t.transfer_group_id::text, t.installments"
 
 // TransactionRepository implements port.TransactionRepository interface
 // and provides access to the postgres database
@@ -53,6 +53,7 @@ func (tr *TransactionRepository) CreateTransaction(
 			"expense",
 			"amount",
 			"date",
+			"installments",
 		).Values(
 		transaction.UserID,
 		transaction.Category.ID,
@@ -61,6 +62,7 @@ func (tr *TransactionRepository) CreateTransaction(
 		transaction.Expense,
 		transaction.Amount,
 		transaction.Date,
+		installmentsValue(transaction.Installments),
 	).
 		Suffix("RETURNING " + transactionColumns)
 
@@ -89,6 +91,7 @@ func (tr *TransactionRepository) CreateTransaction(
 		&transaction.FxRateSource,
 		scanDecimal(&transaction.AmountBase),
 		&transaction.TransferGroupID,
+		&transaction.Installments,
 	)
 
 	if err != nil {
@@ -142,6 +145,7 @@ func (tr *TransactionRepository) GetTransactionByID(
 		&transaction.FxRateSource,
 		scanDecimal(&transaction.AmountBase),
 		&transaction.TransferGroupID,
+		&transaction.Installments,
 		&transaction.Category.Name,
 		&transaction.Category.Emoji,
 		&transaction.Account.Name,
@@ -246,6 +250,7 @@ func (tr *TransactionRepository) ListTransactions(
 			&transaction.FxRateSource,
 			scanDecimal(&transaction.AmountBase),
 			&transaction.TransferGroupID,
+			&transaction.Installments,
 			&transaction.Category.Name,
 			&transaction.Category.Emoji,
 			&transaction.Account.Name,
@@ -290,6 +295,9 @@ func (tr *TransactionRepository) UpdateTransaction(ctx context.Context, transact
 		Set("fx_rate", sq.Expr("COALESCE(?::numeric, fx_rate)", decimalText(transaction.FxRate))).
 		Set("fx_rate_source", sq.Expr("CASE WHEN ?::numeric IS NULL THEN fx_rate_source ELSE 'user' END",
 			decimalText(transaction.FxRate))).
+		// nil keeps the installments; 0 or 1 clears them
+		Set("installments", sq.Expr("CASE WHEN ?::smallint IS NULL THEN installments WHEN ?::smallint < 2 THEN NULL ELSE ?::smallint END",
+			transaction.Installments, transaction.Installments, transaction.Installments)).
 		Set("updated_at", time.Now()).
 		Where(sq.Eq{"id": transaction.ID}).
 		Where(sq.Eq{"user_id": transaction.UserID}).
@@ -320,6 +328,7 @@ func (tr *TransactionRepository) UpdateTransaction(ctx context.Context, transact
 		&transaction.FxRateSource,
 		scanDecimal(&transaction.AmountBase),
 		&transaction.TransferGroupID,
+		&transaction.Installments,
 	)
 
 	if err != nil {
@@ -443,6 +452,7 @@ func (tr *TransactionRepository) AdminCreateTransactions(
 			&created.FxRateSource,
 			scanDecimal(&created.AmountBase),
 			&created.TransferGroupID,
+			&created.Installments,
 			&created.SourceMessageID,
 		)
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -657,4 +667,12 @@ func (tr *TransactionRepository) CreateTransfer(ctx context.Context, transfer *d
 	transfer.FromCurrency, transfer.ToCurrency = fromCur, toCur
 	transfer.MarketRate = marketRate
 	return nil
+}
+
+// installmentsValue is the value to store: NULL when there are no installments (nil, 0 or 1)
+func installmentsValue(n *int16) *int16 {
+	if domain.InstallmentsOrZero(n) == 0 {
+		return nil
+	}
+	return n
 }

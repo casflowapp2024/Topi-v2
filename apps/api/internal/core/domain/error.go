@@ -98,6 +98,10 @@ var (
 	ErrMissingFxRates = errors.New("some exchange rates needed for the conversion are missing")
 	// ErrCurrencyChangeNotUndoable is an error for when a currency change cannot be undone
 	ErrCurrencyChangeNotUndoable = errors.New("the currency change cannot be undone: the account changed afterwards")
+	// ErrInvalidCreditCard is an error for when card terms are out of range
+	ErrInvalidCreditCard = errors.New("invalid credit card: days 1-31, limit and rate of zero or more")
+	// ErrNotCreditAccount is an error for when card terms are set on an account that is not a credit card
+	ErrNotCreditAccount = errors.New("only credit card accounts have card terms")
 )
 
 // Account Type Errors
