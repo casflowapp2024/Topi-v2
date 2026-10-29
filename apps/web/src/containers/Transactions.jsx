@@ -52,9 +52,12 @@ const Transactions = ({
 
 }) => {
 
+    // Al entrar: cargar la primera página con los filtros que estén puestos (antes la cargaba el
+    // panel de filtros viejo al montarse; sin él, la lista se quedaba en "Cargando...")
     useEffect(() => {
-
-    }, []);
+        get_user_transactions(0, default_limit, trans_filters_activated.params);
+        setCurrentFrontendPage(1);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const findElmentById = (elements, id) => {
         const element = elements.find(element => element.id === id);
