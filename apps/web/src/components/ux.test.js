@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { createStore, applyMiddleware } from 'redux';
 import { thunk } from 'redux-thunk';
-import AccountsTypeBar from './dashboard/productsAccounts/AccountsTypeBar';
+import AccountSwitcher from './dashboard/productsAccounts/AccountSwitcher';
 import AccountGroupCard from './dashboard/productsAccounts/AccountGroupCard';
 import { billingCycles } from './dashboard/productsAccounts/AccountPeriodControl';
 import moment from 'moment';
@@ -57,27 +57,36 @@ const render = (ui) => {
   return { el, root };
 };
 
-test('Cuentas: barra de tipos con conteo, Todo y Cerradas aparte', () => {
+test('Cuentas: el total va primero y debajo el selector de tipo (con Cerradas aparte)', () => {
   const onChange = jest.fn();
-  const { el, root } = render(<AccountsTypeBar group="all" onChange={onChange} onCreate={() => {}} />);
+  const { el, root } = render(<AccountGroupCard group="credit" onGroupChange={onChange} onCreate={() => {}} />);
+  expect(el.textContent).toContain('Tarjetas de crédito · deuda hoy · 1 cuenta');
+  expect(el.textContent).toContain('Pagado de más');
   const tabs = [...el.querySelectorAll('[role=tab]')].map(t => t.textContent.replace(/\s+/g, ' ').trim());
   expect(tabs).toEqual(['Todo 4', 'Efectivo 2', 'Tarjetas 1', 'Inversiones 1', 'Cerradas (1)']);
-  act(() => [...el.querySelectorAll('[role=tab]')][2].dispatchEvent(new MouseEvent('click', { bubbles: true })));
-  expect(onChange).toHaveBeenCalledWith('credit');
+  // la tarjeta ya no lista las cuentas (se recorren en el detalle)
+  expect(el.textContent).not.toContain('Visa');
+  act(() => [...el.querySelectorAll('[role=tab]')][1].dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  expect(onChange).toHaveBeenCalledWith('deposit');
   act(() => root.unmount());
+  const all = render(<AccountGroupCard group="all" onGroupChange={() => {}} onCreate={() => {}} />);
+  expect(all.el.textContent).toContain('Patrimonio · hoy');
+  act(() => all.root.unmount());
 });
 
-test('Cuentas: el total del grupo va con sus cuentas; tarjeta con saldo positivo = pagado de más', () => {
-  const { el, root } = render(<AccountGroupCard group="credit" onGroupChange={() => {}} onOpenDetail={() => {}} />);
-  expect(el.textContent).toContain('Tarjetas de crédito · deuda hoy');
-  expect(el.textContent).toContain('Visa');
-  expect(el.textContent).toContain('Pagado de más');
-  expect(el.textContent).not.toContain('Nómina');
+test('Cuentas: pasar entre las cuentas del grupo con las flechas', () => {
+  const reducer = (s = state, a) => (a.type === 'SET_DASH_ACCOUNT_ACTIVATED' ? { ...s, Reports: { ...s.Reports, account_activated: a.payload } } : s);
+  const st = createStore(reducer, applyMiddleware(thunk));
+  const el = document.createElement('div'); document.body.appendChild(el); const root = createRoot(el);
+  act(() => root.render(<Provider store={st}><AccountSwitcher group="deposit" onEdit={() => {}} /></Provider>));
+  expect(el.textContent).toContain('Nómina');
+  expect(el.textContent).toContain('1 de 2');
+  const next = el.querySelector('[aria-label="Cuenta siguiente"]');
+  act(() => next.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  expect(st.getState().Reports.account_activated.name).toBe('Bolsillo');
+  act(() => next.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  expect(st.getState().Reports.account_activated.name).toBe('Nómina'); // da la vuelta
   act(() => root.unmount());
-  const all = render(<AccountGroupCard group="all" onGroupChange={() => {}} onOpenDetail={() => {}} />);
-  expect(all.el.textContent).toContain('Patrimonio · hoy');
-  expect(all.el.textContent).toMatch(/Efectivo.*Tarjetas.*Inversiones/);
-  act(() => all.root.unmount());
 });
 
 test('Ciclo de facturación desde el día de corte', () => {

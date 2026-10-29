@@ -59,9 +59,11 @@ export const accountReportGroup = (account) =>
  * base del usuario. compact: 1,5 M / 250 mil para ejes y leyendas.
  */
 export const formatMoney = (amount, currency = baseCurrency, { locale = 'es-CO', decimals, compact = false } = {}) => {
-    const n = Number(amount);
+    let n = Number(amount);
     if (amount === null || amount === undefined || amount === '' || !Number.isFinite(n)) return '—';
     const digits = decimals ?? getCurrency(currency).minor_units;
+    // Lo que redondea a cero se muestra sin signo (nunca "-$ 0")
+    if (Math.abs(n) < 0.5 * 10 ** -(compact ? 1 : digits)) n = 0;
     try {
         return new Intl.NumberFormat(locale, {
             style: 'currency',

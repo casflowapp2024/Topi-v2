@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { connect } from 'react-redux';
 import { set_dash_account_activated, get_accounts_status_by_period, get_history_accounts_by_month } from "../../../redux/actions/reports.js";
-import { PencilSquareIcon } from '@heroicons/react/20/solid';
 import AccChartHistory from "./AccChartHistory.js";
 import AccTransPeriod from "./AccTransPeriod.js";
 import AccSummaryCard from "./AccSummaryCard.js";
@@ -9,12 +8,11 @@ import AccountDetail from "../../accounts/AccountDetail";
 import AccountCreate from "../../accounts/AccountCreate";
 import CreditCardPanel from "./CreditCardPanel";
 import InvestmentValuationCard from "./InvestmentValuationCard";
-import AccountsTypeBar from "./AccountsTypeBar";
+import AccountSwitcher from "./AccountSwitcher";
 import AccountGroupCard from "./AccountGroupCard";
 import AccountPeriodControl from "./AccountPeriodControl";
-import Button from "../../ui/Button";
 import { findElmentById, accountReportGroup, accountClass, isOpenAccount } from "../../helpers.js";
-import { groupOfAccount, accountsOfGroup, ACCOUNT_GROUPS } from "./accountGroups";
+import { groupOfAccount, accountsOfGroup } from "./accountGroups";
 
 const CHART_TITLE = {
     deposit: ['Saldo', 'últimos 12 meses, al cierre de cada mes'],
@@ -24,9 +22,9 @@ const CHART_TITLE = {
 
 /**
  * Cuentas, en tres niveles:
- *  1. Barra de tipos (Todo · Efectivo · Tarjetas · Inversiones · Cerradas) y "Agregar cuenta".
- *  2. El total del grupo con sus cuentas en la misma tarjeta (en "Todo": el patrimonio).
- *  3. El detalle de la cuenta elegida: periodo (mes, corte de la tarjeta o rango), sus cifras,
+ *  1. El total del grupo elegido y, debajo, el selector de tipo y "Agregar cuenta" (en "Todo": el patrimonio).
+ *  2. La cuenta que estás viendo, con flechas / deslizar / lista para pasar a las otras del grupo.
+ *  3. Su detalle: periodo (mes, corte de la tarjeta o rango), sus cifras,
  *     la gráfica propia de su tipo y los movimientos del periodo.
  */
 const AAAcountsDashboard = ({
@@ -78,34 +76,18 @@ const AAAcountsDashboard = ({
     const showDetail = group !== 'all' && account_activated && groupOfAccount(account_activated) === group;
     const cls = account_activated ? accountClass(account_activated) : 'deposit';
     const [chartTitle, chartHint] = CHART_TITLE[cls] || CHART_TITLE.deposit;
-    const meta = ACCOUNT_GROUPS.find(g => g.id === groupOfAccount(account_activated));
 
     return (
         <>
             <div className="flex flex-col gap-2 lg:gap-6 px-2 lg:px-0 pb-4 md:max-w-[560px] md:mx-auto lg:max-w-none lg:w-full">
-                <AccountsTypeBar group={group} onChange={handleGroupChange} onCreate={() => setOpenCreateBox(true)} />
-                <AccountGroupCard group={group} onGroupChange={handleGroupChange} onOpenDetail={handleOpenAccDetail} />
+                <AccountGroupCard group={group} onGroupChange={handleGroupChange} onCreate={() => setOpenCreateBox(true)} />
 
                 {showDetail && (
                     <>
-                        {/* Encabezado de la cuenta y su periodo */}
-                        <section className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-md flex flex-col gap-3" aria-label="Cuenta elegida">
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="flex items-center gap-3 min-w-0">
-                                    {meta && <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${meta.tint}`}><meta.Icon className="w-5 h-5" aria-hidden="true" /></span>}
-                                    <div className="min-w-0">
-                                        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">{account_activated.name}</h2>
-                                        <p className="text-xs text-ink-2 dark:text-gray-400 truncate">
-                                            {account_activated.bank?.name}{account_activated.last_four_digits ? ` · ••${account_activated.last_four_digits}` : ''} · {account_activated.currency || 'COP'}{account_activated.type?.name ? ` · ${account_activated.type.name}` : ''}
-                                        </p>
-                                    </div>
-                                </div>
-                                <Button size="sm" variant="secondary" icon={PencilSquareIcon} onClick={() => handleOpenAccDetail(account_activated.id)}>
-                                    <span className="hidden sm:inline">Editar</span>
-                                </Button>
-                            </div>
+                        {/* La cuenta que estás viendo (con flechas / deslizar para pasar a las otras) y su periodo */}
+                        <AccountSwitcher group={group} onEdit={handleOpenAccDetail}>
                             <AccountPeriodControl account={account_activated} />
-                        </section>
+                        </AccountSwitcher>
 
                         {/* Cifras + gráfica a la izquierda, movimientos a la derecha */}
                         <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 lg:gap-6">
@@ -126,8 +108,11 @@ const AAAcountsDashboard = ({
                                     )}
                                 </section>
                             </div>
-                            <div className="lg:col-span-2 min-w-0 lg:min-h-[560px]">
-                                <AccTransPeriod />
+                            {/* En PC los movimientos toman el alto de la columna izquierda y se desplazan por dentro */}
+                            <div className="lg:col-span-2 min-w-0 lg:relative">
+                                <div className="lg:absolute lg:inset-0">
+                                    <AccTransPeriod />
+                                </div>
                             </div>
                         </div>
                     </>

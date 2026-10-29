@@ -1,14 +1,40 @@
 import { useEffect, useMemo, useState } from 'react';
 import { connect } from 'react-redux';
 import moment from 'moment-timezone';
-import { EllipsisHorizontalIcon } from '@heroicons/react/20/solid';
+import { PlusIcon } from '@heroicons/react/20/solid';
+import Chip from '../../ui/Chip';
 import { fetch_credit_cards } from '../../../redux/actions/creditCards';
 import { get_net_worth } from '../../../redux/actions/fx';
-import { set_dash_account_activated } from '../../../redux/actions/reports';
-import AccountBalance from '../../ui/AccountBalance';
-import EmptyState from '../../ui/EmptyState';
 import { formatMoney, getBaseCurrency } from '../../helpers';
 import { ACCOUNT_GROUPS, ALL_GROUP, accountsOfGroup } from './accountGroups';
+
+// Selector de tipo + Agregar, debajo del total (en móvil la fila se desliza)
+const TypeChips = ({ items, group, onChange, onCreate }) => {
+  const groups = ACCOUNT_GROUPS.filter(g => g.id !== 'closed').map(g => ({ ...g, count: accountsOfGroup(items, g.id).length }))
+    .filter(g => g.count > 0 || g.id === group);
+  const closed = accountsOfGroup(items, 'closed').length;
+  return (
+    <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2">
+      <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto hide-scrollbar" role="tablist" aria-label="Tipo de cuenta">
+        {[{ ...ALL_GROUP, count: items.filter(a => !a.closed_at).length }, ...groups].map(g => (
+          <Chip key={g.id} role="tab" aria-selected={g.id === group} selected={g.id === group} icon={g.Icon} onClick={() => onChange(g.id)}>
+            {g.label} <span className={g.id === group ? 'text-white/80' : 'text-ink-2 dark:text-gray-400'}>{g.count}</span>
+          </Chip>
+        ))}
+        {closed > 0 && (
+          <button type="button" role="tab" aria-selected={group === 'closed'} onClick={() => onChange('closed')}
+            className={`shrink-0 h-8 px-2 text-sm font-medium rounded-full transition-colors ${group === 'closed' ? 'text-topi-600 dark:text-indigo-300 underline underline-offset-4' : 'text-ink-2 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}>
+            Cerradas ({closed})
+          </button>
+        )}
+      </div>
+      <button type="button" onClick={onCreate} aria-label="Agregar cuenta"
+        className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-topi-500 hover:bg-topi-600 text-white text-sm font-semibold shadow-sm transition-colors">
+        <PlusIcon className="w-4 h-4" aria-hidden="true" /><span className="hidden sm:inline">Agregar cuenta</span>
+      </button>
+    </div>
+  );
+};
 
 const Stat = ({ label, value, tone, hint }) => (
   <div className="flex flex-col min-w-0">
@@ -21,14 +47,12 @@ const Stat = ({ label, value, tone, hint }) => (
 const toneOf = (v) => (v < 0 ? 'out' : undefined);
 
 /**
- * El total del grupo y, dentro de la misma tarjeta, las cuentas que lo forman: así el número grande
- * se lee como la suma de esas cuentas. Todo en moneda base con la tasa de hoy.
+ * Cabecera de Cuentas: primero el total del grupo elegido (en moneda base, tasa de hoy) con sus
+ * cifras clave, y debajo el selector de tipo y "Agregar cuenta". Las cuentas del grupo se recorren
+ * en el detalle (AccountSwitcher), así esta tarjeta no crece con el número de cuentas.
  * group 'all' = patrimonio: efectivo + inversiones − deudas, con un acceso a cada grupo.
  */
-const AccountGroupCard = ({
-  group, onGroupChange, onOpenDetail, user_accounts, net_worth, account_activated,
-  get_net_worth, set_dash_account_activated,
-}) => {
+const AccountGroupCard = ({ group, onGroupChange, onCreate, user_accounts, net_worth, get_net_worth }) => {
   useEffect(() => { get_net_worth(); }, [get_net_worth, user_accounts]);
   const base = net_worth?.base_currency || getBaseCurrency();
   const nwById = useMemo(() => new Map((net_worth?.accounts || []).map(a => [a.account_id, a])), [net_worth]);
@@ -64,7 +88,8 @@ const AccountGroupCard = ({
             {debt > 0 && <span className="bg-data-gasto" style={{ width: `${(debt / (assets + debt)) * 100}%` }} />}
           </div>
         )}
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <TypeChips items={items} group={group} onChange={onGroupChange} onCreate={onCreate} />
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
           {tiles.map(t => (
             <button key={t.id} type="button" onClick={() => onGroupChange(t.id)}
               className="text-left rounded-xl border border-gray-100 dark:border-gray-700 p-3 hover:border-topi-500/40 hover:bg-topi-50/60 dark:hover:bg-gray-700/60 transition-colors">
@@ -116,13 +141,12 @@ const AccountGroupCard = ({
   } else {
     headline = { label: 'Cuentas cerradas', value: String(accs.length) };
   }
-  const depositTotal = group === 'deposit' ? sumBase(accs, a => Number(a.base_value) > 0) : 0;
 
   return (
     <section className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-md" aria-label={meta.title}>
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-2 dark:text-gray-400">{headline.label}</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-2 dark:text-gray-400">{headline.label}{group !== 'closed' ? ` · ${accs.length} ${accs.length === 1 ? 'cuenta' : 'cuentas'}` : ''}</span>
           <p className={`text-3xl font-extrabold tabular-nums ${headline.tone === 'out' ? 'text-money-out dark:text-money-out-dark' : 'text-gray-900 dark:text-gray-100'}`}>{headline.value}</p>
         </div>
         <div className="flex flex-wrap gap-x-6 gap-y-2">
@@ -133,58 +157,7 @@ const AccountGroupCard = ({
         <p className="mt-2 text-xs text-ink-2 dark:text-gray-400">Conservan su historia y siguen en tus reportes, pero no aparecen en el inicio ni para movimientos nuevos.</p>
       )}
 
-      {accs.length === 0 ? (
-        <EmptyState compact icon={meta.Icon} title={`No tienes ${meta.title.toLowerCase()}`} description="Agrégala con «Agregar cuenta»." />
-      ) : (
-        <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2" role="listbox" aria-label={`Cuentas: ${meta.title}`}>
-          {accs.map(acc => {
-            const nw = nwById.get(acc.id);
-            const active = acc.id === account_activated?.id;
-            const share = group === 'deposit' && nw && Number(nw.base_value) > 0 && depositTotal > 0 ? Math.round(Number(nw.base_value) / depositTotal * 100) : null;
-            const card = group === 'credit' ? (cards || []).find(c => c.account_id === acc.id) : null;
-            const used = card?.credit_limit ? Math.min(100, Math.round(Number(card.debt || 0) / Number(card.credit_limit) * 100)) : null;
-            return (
-              <li key={acc.id} role="option" aria-selected={active}>
-                <div role="button" tabIndex={0}
-                  onClick={() => set_dash_account_activated(acc)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); set_dash_account_activated(acc); } }}
-                  className={`group h-full flex flex-col gap-1.5 rounded-xl border p-3 cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 ${active
-                    ? 'border-topi-500 bg-topi-50 dark:bg-indigo-500/15'
-                    : 'border-gray-100 dark:border-gray-700 hover:border-topi-500/40 hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}>
-                  <div className="flex items-start gap-2">
-                    <span className="flex-1 min-w-0">
-                      <span className={`block text-sm font-semibold truncate ${active ? 'text-topi-600 dark:text-indigo-200' : 'text-gray-900 dark:text-gray-100'}`}>{acc.name}</span>
-                      <span className="block text-xs text-ink-2 dark:text-gray-400 truncate">{acc.bank?.name}{acc.last_four_digits ? ` · ••${acc.last_four_digits}` : ''}</span>
-                    </span>
-                    <AccountBalance account={acc} nw={nw} baseCurrency={base} />
-                    <button type="button" onClick={(e) => { e.stopPropagation(); onOpenDetail(acc.id); }} aria-label={`Editar ${acc.name}`}
-                      className="p-1 -mr-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 dark:hover:text-gray-100">
-                      <EllipsisHorizontalIcon className="w-5 h-5" aria-hidden="true" />
-                    </button>
-                  </div>
-                  {share !== null && (
-                    <span className="flex items-center gap-2 text-[11px] text-ink-2 dark:text-gray-400">
-                      <span className="flex-1 h-1 rounded-full bg-gray-100 dark:bg-gray-700"><span className="block h-full rounded-full bg-topi-500" style={{ width: `${share}%` }} /></span>
-                      {share}% de tu efectivo
-                    </span>
-                  )}
-                  {used !== null && (
-                    <span className="flex items-center gap-2 text-[11px] text-ink-2 dark:text-gray-400">
-                      <span className="flex-1 h-1 rounded-full bg-gray-100 dark:bg-gray-700"><span className={`block h-full rounded-full ${used >= 90 ? 'bg-status-crit' : 'bg-topi-500'}`} style={{ width: `${used}%` }} /></span>
-                      {used}% del cupo
-                    </span>
-                  )}
-                  {group === 'investment' && nw?.market_gain != null && Number(nw.market_gain) !== 0 && (
-                    <span className={`text-[11px] font-semibold ${Number(nw.market_gain) < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}`}>
-                      {Number(nw.market_gain) > 0 ? '+' : ''}{formatMoney(nw.market_gain, nw.currency)} de ganancia
-                    </span>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      <TypeChips items={items} group={group} onChange={onGroupChange} onCreate={onCreate} />
     </section>
   );
 };
@@ -192,7 +165,6 @@ const AccountGroupCard = ({
 const mapStateToProps = state => ({
   user_accounts: state.CashFlow.user_accounts,
   net_worth: state.Fx.net_worth,
-  account_activated: state.Reports.account_activated,
 });
 
-export default connect(mapStateToProps, { get_net_worth, set_dash_account_activated })(AccountGroupCard);
+export default connect(mapStateToProps, { get_net_worth })(AccountGroupCard);
