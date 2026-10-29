@@ -9,14 +9,14 @@ import { ACCOUNT_GROUPS, accountsOfGroup } from './accountGroups';
 const Stat = ({ label, value, tone, hint }) => (
   <div className="flex flex-col min-w-0">
     <span className="text-xs font-medium text-ink-2 dark:text-gray-400">{label}</span>
-    <span className={`text-lg font-bold tabular-nums truncate ${tone === 'out' ? 'text-money-out dark:text-money-out-dark' : tone === 'in' ? 'text-money-in dark:text-money-in-dark' : 'text-gray-900 dark:text-gray-100'}`}>{value}</span>
+    <span className={`text-lg font-bold tabular-nums truncate ${tone === 'out' ? 'text-money-out dark:text-money-out-dark' : tone === 'in' ? 'text-money-in dark:text-money-in-dark' : tone === 'warn' ? 'text-status-warn-text dark:text-amber-300' : 'text-gray-900 dark:text-gray-100'}`}>{value}</span>
     {hint && <span className="text-xs text-ink-2 dark:text-gray-400">{hint}</span>}
   </div>
 );
 
 /**
  * Resumen del grupo elegido en Cuentas (todo en moneda base, con la tasa de hoy):
- * efectivo = total y cuenta principal; tarjetas = deuda, saldo a favor, cupo disponible y
+ * efectivo = total y cuenta principal; tarjetas = deuda, pagado de más, cupo disponible y
  * próximo pago; inversiones = valor y ganancia; cerradas = cuántas y qué significa.
  */
 const AccountGroupSummary = ({ group, user_accounts, net_worth }) => {
@@ -49,7 +49,7 @@ const AccountGroupSummary = ({ group, user_accounts, net_worth }) => {
       .sort((a, b) => moment(a.due_date) - moment(b.due_date))[0];
     stats = [
       { label: 'Deuda total', value: formatMoney(debt, base), tone: debt > 0 ? 'out' : undefined },
-      favor > 0 ? { label: 'Saldo a favor', value: formatMoney(favor, base), tone: 'in', hint: 'Pagaste de más en alguna tarjeta' }
+      favor > 0 ? { label: 'Pagado de más', value: formatMoney(favor, base), tone: 'warn', hint: 'Intereses o cuota de manejo sin registrar: ajústalo en cada tarjeta' }
         : available > 0 ? { label: 'Cupo disponible', value: formatMoney(available, base) } : null,
       next && { label: 'Próximo pago', value: formatMoney(next.pending_statement, next.currency), hint: `${next.name} · antes del ${moment(next.due_date).format('DD MMM')}` },
     ];

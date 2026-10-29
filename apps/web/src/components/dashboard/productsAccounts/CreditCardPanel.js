@@ -7,6 +7,8 @@ import { get_net_worth } from '../../../redux/actions/fx';
 import { fetch_credit_cards, save_credit_card } from '../../../redux/actions/creditCards';
 import InputMoneyInt2Decs from '../../InputMoneyInt2Decs';
 import Button from '../../ui/Button';
+import CardReconcile from './CardReconcile';
+import { set_dash_account_activated } from '../../../redux/actions/reports';
 import { formatMoney, formatedCurrToNumber, getBaseCurrency } from '../../helpers';
 
 const fieldClass = 'bg-gray-50 p-2 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white';
@@ -24,7 +26,8 @@ const Box = ({ label, children, hint, className = '' }) => (
 // Resumen de una tarjeta de crédito (reemplaza al resumen de la cuenta): deuda, cupo disponible,
 // el último corte con lo que falta pagar y la fecha límite, y lo comprado en el periodo elegido.
 // Los pagos son transferencias desde otra cuenta: no cuentan como ingreso.
-const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth }) => {
+const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, set_dash_account_activated }) => {
+    const [reconcile, setReconcile] = useState(false);
     const currency = account?.currency || 'COP';
     const [card, setCard] = useState(null);       // estado de hoy (null = cargando)
     const [form, setForm] = useState(null);       // null = cerrado
@@ -36,8 +39,8 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth }) 
         setCard((list || []).find(c => c.account_id === account.id) || {});
     }, [account?.id]);
 
-    useEffect(() => { setForm(null); setCard(null); load(); }, [load]);
-    // El saldo de la cuenta (para mostrar un saldo a favor) sale del patrimonio de hoy
+    useEffect(() => { setForm(null); setReconcile(false); setCard(null); load(); }, [load]);
+    // El saldo de la cuenta (para detectar cargos sin registrar) sale del patrimonio de hoy
     useEffect(() => { get_net_worth(); }, [get_net_worth, data]);
     // el saldo cambia con cada movimiento del periodo: se recalcula cuando cambia el resumen
     useEffect(() => { load(); }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -73,7 +76,10 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth }) 
 
     const debt = Number(card?.debt ?? 0);
     const nwBalance = Number((net_worth?.accounts || []).find(a => a.account_id === account.id)?.balance ?? 0);
-    const inFavor = debt === 0 && nwBalance > 0 ? nwBalance : 0; // pagaste más de lo que debías
+    // Saldo positivo en una tarjeta: casi siempre son cargos que no llegaron por correo
+    // (intereses, cuota de manejo): se pagaron pero no se registraron como gasto.
+    const unrecorded = debt === 0 && nwBalance > 0 ? nwBalance : 0;
+    const afterReconcile = () => { setReconcile(false); load(); get_net_worth(); set_dash_account_activated({ ...account }); };
     const limit = card?.credit_limit != null ? Number(card.credit_limit) : null;
     const used = limit ? Math.min(100, Math.round((debt / limit) * 100)) : null;
     const pending = card?.pending_statement != null ? Number(card.pending_statement) : null;
@@ -89,7 +95,13 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth }) 
                     <CreditCardIcon className="w-4 h-4 text-topi-500" aria-hidden="true" />
                     Resumen de la tarjeta
                 </h2>
-                {!form && <Button size="sm" variant="secondary" onClick={openForm} disabled={card === null}>Configurar</Button>}
+                {!form && !reconcile && (
+                    <div className="flex gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => setReconcile(true)} disabled={card === null}
+                            title="Compara con la deuda que muestra tu banco y registra lo que falte">Ajustar saldo</Button>
+                        <Button size="sm" variant="secondary" onClick={openForm} disabled={card === null}>Configurar</Button>
+                    </div>
+                )}
             </div>
 
             {form && (
@@ -124,14 +136,25 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth }) 
                 </form>
             )}
 
+            {reconcile && (
+                <div className="mb-4">
+                    <CardReconcile account={account} balance={nwBalance} card={card}
+                        onDone={afterReconcile} onCancel={() => setReconcile(false)} />
+                </div>
+            )}
+
             {card === null ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400" aria-live="polite">Cargando…</p>
             ) : (
                 <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
-                        {inFavor > 0 ? (
-                            <Box label="Saldo a favor" hint="Pagaste más de lo que debías: se descuenta de tus próximas compras.">
-                                <span className="text-money-in dark:text-money-in-dark">{formatMoney(inFavor, currency)}</span>
+                        {unrecorded > 0 ? (
+                            <Box label="Pagado de más" className="ring-1 ring-status-warn/60 bg-status-warn-soft dark:bg-amber-500/10">
+                                <span className="text-status-warn-text dark:text-amber-300">{formatMoney(unrecorded, currency)}</span>
+                                <span className="block mt-1 text-xs font-normal text-gray-700 dark:text-gray-300">
+                                    Suelen ser intereses o cuota de manejo sin registrar.{' '}
+                                    {!reconcile && <button type="button" onClick={() => setReconcile(true)} className="font-semibold text-topi-600 dark:text-indigo-300 underline-offset-2 hover:underline">Ajustar</button>}
+                                </span>
                             </Box>
                         ) : (
                             <Box label="Deuda hoy" hint={debt === 0 ? 'No debes nada en esta tarjeta.' : undefined}>
@@ -192,4 +215,4 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth }) 
     );
 };
 
-export default connect(state => ({ net_worth: state.Fx.net_worth }), { setAlert, get_net_worth })(CreditCardPanel);
+export default connect(state => ({ net_worth: state.Fx.net_worth }), { setAlert, get_net_worth, set_dash_account_activated })(CreditCardPanel);

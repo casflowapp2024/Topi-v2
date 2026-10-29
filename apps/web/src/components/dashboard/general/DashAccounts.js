@@ -52,11 +52,13 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
     })).filter(r => isOpenAccount(r.acc)); // las cerradas no se muestran en el inicio (siguen en Cuentas)
     // Primero las de mayor valor en moneda base
     rows.sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
-    // % de tu ahorro: solo cuentas de efectivo (una tarjeta con saldo a favor no es ahorro)
+    // % de tu ahorro: solo cuentas de efectivo (lo pagado de más en una tarjeta no es ahorro)
     const savings = rows.reduce((sum, r) => sum + (accountClass(r.acc) === 'deposit' && r.value > 0 ? r.value : 0), 0);
     return { rows, savings };
   }, [user_accounts, net_worth]);
   const investmentsTotal = Number(net_worth?.investments_total || 0);
+  // Tarjetas con saldo positivo: cargos (intereses, cuota de manejo) pagados pero sin registrar
+  const overpaid = rows.filter(r => accountClass(r.acc) === 'credit' && Number(r.nw.balance) > 0);
 
   const openAccount = (acc) => {
     set_dash_account_activated(acc);
@@ -90,6 +92,22 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
         }
       />
 
+      {overpaid.length > 0 && (
+        <ul className="mt-3 space-y-1" aria-label="Tarjetas con cargos sin registrar">
+          {overpaid.map(({ acc, nw }) => (
+            <li key={acc.id}>
+              <button type="button" onClick={() => openAccount(acc)}
+                className="w-full flex gap-2 rounded-xl px-3 py-2 text-sm text-left bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors">
+                <ExclamationTriangleIcon className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+                <span>
+                  {acc.name}: pagaste <b>{formatMoney(nw.balance, nw.currency)}</b> más de lo registrado. Suelen ser intereses o cuota de manejo.{' '}
+                  <span className="font-semibold underline underline-offset-2">Ajustar</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       {dueCards.length > 0 && (
         <ul className="mt-3 space-y-1" aria-label="Pagos de tarjeta próximos">
           {dueCards.map(c => {
@@ -145,17 +163,17 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
                   </span>
                   <span className="flex flex-col items-end shrink-0">
                     {cls === 'credit' ? (
-                      /* Tarjeta: deuda (saldo negativo) o saldo a favor (pagaste de más), siempre con su palabra */
+                      /* Tarjeta: deuda (saldo negativo) o pagado de más (cargos sin registrar), siempre con su palabra */
                       <span className="flex flex-col items-end">
                         <span className="text-[11px] font-medium text-ink-2 dark:text-gray-400">
-                          {balance < 0 ? 'Deuda' : balance > 0 ? 'Saldo a favor' : 'Sin deuda'}
+                          {balance < 0 ? 'Deuda' : balance > 0 ? 'Pagado de más' : 'Sin deuda'}
                         </span>
                         <Money
                           amount={Math.abs(balance)}
                           currency={nw.currency}
                           base={nw.base_value != null ? Math.abs(Number(nw.base_value)) : null}
                           baseCurrency={baseCurrency}
-                          className={`text-sm font-bold tabular-nums ${balance < 0 ? 'text-money-out dark:text-money-out-dark' : balance > 0 ? 'text-money-in dark:text-money-in-dark' : 'text-gray-900 dark:text-gray-100'}`}
+                          className={`text-sm font-bold tabular-nums ${balance < 0 ? 'text-money-out dark:text-money-out-dark' : balance > 0 ? 'text-status-warn-text dark:text-amber-300' : 'text-gray-900 dark:text-gray-100'}`}
                         />
                       </span>
                     ) : (

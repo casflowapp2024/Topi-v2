@@ -9,6 +9,7 @@ import AccbyTypeDash from './dashboard/productsAccounts/AccbyTypeDash';
 import AccountGroupSummary from './dashboard/productsAccounts/AccountGroupSummary';
 import DashAccounts from './dashboard/general/DashAccounts';
 import TransactionFilterSheet from './transactions/TransactionFilterSheet';
+import CardReconcile from './dashboard/productsAccounts/CardReconcile';
 
 jest.mock('axios', () => {
   const noop = { use() {} };
@@ -63,17 +64,18 @@ test('Mis cuentas: grupos con conteo y lista del grupo elegido', () => {
   act(() => root.unmount());
 });
 
-test('Tarjeta con saldo positivo se muestra como saldo a favor', () => {
+test('Tarjeta con saldo positivo: pagado de más (cargos sin registrar)', () => {
   const { el, root } = render(<AccbyTypeDash group="credit" onGroupChange={() => {}} onOpenDetail={() => {}} onOpenCreate={() => {}} />);
-  expect(el.textContent).toContain('Saldo a favor');
+  expect(el.textContent).toContain('Pagado de más');
   act(() => root.unmount());
   const s = render(<AccountGroupSummary group="credit" />);
-  expect(s.el.textContent).toContain('Saldo a favor');
+  expect(s.el.textContent).toContain('Pagado de más');
   act(() => s.root.unmount());
 });
 
-test('Inicio: las cuentas cerradas no aparecen', () => {
+test('Inicio: las cuentas cerradas no aparecen y se avisa del pagado de más', () => {
   const { el, root } = render(<DashAccounts />);
+  expect(el.textContent).toMatch(/Visa: pagaste .*más de lo registrado/);
   expect(el.textContent).toContain('Nómina');
   expect(el.textContent).not.toContain('Vieja');
   act(() => root.unmount());
@@ -87,5 +89,24 @@ test('Panel de filtros: aplica tipo y categoría', () => {
   act(() => byText('Mercado').dispatchEvent(new MouseEvent('click', { bubbles: true })));
   act(() => byText('Ver resultados').dispatchEvent(new MouseEvent('click', { bubbles: true })));
   expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ expenseFilter: true, selectedCategories: [10] }));
+  act(() => root.unmount());
+});
+
+test('Ajustar saldo: propone registrar la diferencia como gasto en Intereses', () => {
+  const st = { ...state, CashFlow: { ...state.CashFlow, user_categories: { items: [
+    { id: 10, name: 'mercado', emoji: '1f6d2', income: false },
+    { id: 11, name: 'Intereses', emoji: '1f4b8', income: false },
+    { id: 12, name: 'Comisiones', emoji: '1f9fe', income: false },
+    { id: 13, name: 'salario', income: true },
+  ] } } };
+  const el = document.createElement('div'); document.body.appendChild(el); const root = createRoot(el);
+  act(() => root.render(<Provider store={createStore((s = st) => s, applyMiddleware(thunk))}>
+    <CardReconcile account={accounts[2]} balance={50000} card={{ last_statement: '2026-10-15' }} onDone={() => {}} onCancel={() => {}} />
+  </Provider>));
+  expect(el.textContent).toMatch(/Faltan .*50\.000/);
+  const pressed = [...el.querySelectorAll('button[aria-pressed=true]')].map(b => b.textContent.trim());
+  expect(pressed).toContain('Intereses');
+  expect(el.textContent).toContain('Último corte');
+  expect(el.textContent).not.toContain('Salario');
   act(() => root.unmount());
 });
