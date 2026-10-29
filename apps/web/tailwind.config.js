@@ -1,6 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 
 module.exports = {
+  // hover solo en dispositivos con puntero: en el celular un toque no deja el estilo "pegado"
+  future: { hoverOnlyWhenSupported: true },
   content: ['./src/**/*.{js,jsx,ts,tsx,html}',
   ],
   darkMode: 'selector',

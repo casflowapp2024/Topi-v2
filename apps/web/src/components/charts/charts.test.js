@@ -82,31 +82,27 @@ const click = (el, text) => {
 };
 
 describe.each([[3000000, M], [0, M], [3000000, M === 1 ? 12 : M - 1]])('presupuesto %s, mes %s', (budget, month) => {
-  test('inicio: las 4 pestañas y el diario del balance', () => {
+  test('inicio: las 4 pestañas', () => {
     const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
     const { el, root } = render(<MultiChartDash />, makeStore(budget, month));
     for (const tab of ['Flujo', 'Gastos', 'Proyección', 'Balance']) {
       click(el, tab);
       expect(el.querySelector('svg.recharts-surface')).not.toBeNull();
     }
-    click(el, 'Diario');
-    expect(el.querySelector('.recharts-area')).not.toBeNull();
     act(() => root.unmount());
     expect(errors.mock.calls.filter(c => !String(c[0]).includes('act('))).toEqual([]);
     errors.mockRestore();
   });
 
-  test('presupuestos: total, proyección y categoría dentro del total', () => {
-    let tab = 1;
+  test('presupuestos: categoría dentro del total y proyección', () => {
     const store = makeStore(budget, month);
-    const { el, root } = render(<BudDashDailySpent activeChartTab={tab} setActiveChartTab={(t) => { tab = t; }} />, store);
-    expect(el.querySelector('svg.recharts-surface')).not.toBeNull();
-    click(el, 'Proyección');
-    expect(el.querySelector('svg.recharts-surface')).not.toBeNull();
-    act(() => root.render(<Provider store={store}><BudDashDailySpent activeChartTab={2} setActiveChartTab={() => {}} /></Provider>));
-    click(el, 'Por mes');
+    const { el, root } = render(<BudDashDailySpent />, store);
     expect(el.textContent).toContain('Mercado');
     expect(el.textContent).toMatch(/del total/);
+    click(el, 'Proyección');
+    expect(el.querySelector('svg.recharts-surface')).not.toBeNull();
+    click(el, 'Por mes');
+    expect(el.querySelector('svg.recharts-surface')).not.toBeNull();
     act(() => root.unmount());
   });
 });

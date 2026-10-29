@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { connect } from 'react-redux';
-import ChartTabs, { Segmented } from '../../charts/ChartTabs';
+import ChartTabs from '../../charts/ChartTabs';
 import BalanceChart from '../../charts/BalanceChart';
 import FlowChart from '../../charts/FlowChart';
 import SpendVsBudgetChart from '../../charts/SpendVsBudgetChart';
@@ -17,7 +17,6 @@ const TABS = [
 
 function MultiChartDash({ history_dash }) {
   const [tab, setTab] = useState('balance');
-  const [granularity, setGranularity] = useState('monthly');
 
   return (
     <div className="h-[330px] sm:h-[320px] lg:h-[300px] flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow overflow-hidden transition-colors duration-300">
@@ -27,7 +26,7 @@ function MultiChartDash({ history_dash }) {
         {!history_dash ? (
           <SkeletonChart />
         ) : tab === 'balance' ? (
-          <BalanceChart granularity={granularity} />
+          <BalanceChart />
         ) : tab === 'flow' ? (
           <FlowChart />
         ) : tab === 'spend' ? (
@@ -37,12 +36,6 @@ function MultiChartDash({ history_dash }) {
         )}
       </div>
 
-      {tab === 'balance' && (
-        <div className="flex justify-center py-1.5 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-          <Segmented label="Periodo del balance" value={granularity} onChange={setGranularity}
-            options={[{ id: 'monthly', label: 'Mensual' }, { id: 'daily', label: 'Diario' }]} />
-        </div>
-      )}
     </div>
   );
 }

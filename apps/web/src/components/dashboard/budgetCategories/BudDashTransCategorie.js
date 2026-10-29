@@ -9,28 +9,17 @@ import { get_history_dash, get_history_category_by_month, get_expenses_report } 
 import { set_dash_category_activated } from '../../../redux/actions/reports';
 //componentes
 import { Emoji } from "emoji-picker-react";
-import { formatMoney, formatDate, findElmentById, deepEqual } from '../../helpers';
+import { formatMoney, formatDate, findElmentById, deepEqual, capitalizeWords } from '../../helpers';
 import Money from '../../ui/Money';
 import TransactionDetail from '../../transactions/TransactionDetail2'
 import { parseDatetimetoDateStrFormat } from '../../helpers';
 import CreateTransaction from '../../transactions/CreateTransaction';
-import { PencilSquareIcon, PlusIcon } from '@heroicons/react/24/outline';
-
-// A placeholder for your transaction icon component
-const TransactionIcon = ({ expense }) => (
-  <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex-shrink-0 mr-4 flex items-center justify-center transition-colors duration-300">
-    {/* You can add logic here to show different icons based on type */}
-    {expense ?
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#e11d48" class="size-5">
-        <path fill-rule="evenodd" d="M3.97 3.97a.75.75 0 0 1 1.06 0l13.72 13.72V8.25a.75.75 0 0 1 1.5 0V19.5a.75.75 0 0 1-.75.75H8.25a.75.75 0 0 1 0-1.5h9.44L3.97 5.03a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"></path>
-      </svg>
-      :
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#16a34a" class="size-5">
-        <path fill-rule="evenodd" d="M8.25 3.75H19.5a.75.75 0 0 1 .75.75v11.25a.75.75 0 0 1-1.5 0V6.31L5.03 20.03a.75.75 0 0 1-1.06-1.06L17.69 5.25H8.25a.75.75 0 0 1 0-1.5Z" clip-rule="evenodd"></path>
-      </svg>
-    }
-  </div>
-);
+import { PlusIcon } from '@heroicons/react/20/solid';
+import { ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
+import moment from 'moment';
+import 'moment/locale/es';
+import Button from '../../ui/Button';
+import EmptyState from '../../ui/EmptyState';
 
 const BudDashTransCategorie = ({
   //states
@@ -47,6 +36,7 @@ const BudDashTransCategorie = ({
   get_expenses_report,
   set_dash_category_activated,
   expenses_report,
+  active_report_tab,
   // Props passed from parent
 }) => {
   const groupedTransactions = useMemo(() => {
@@ -132,88 +122,90 @@ const BudDashTransCategorie = ({
     // Refetch data to ensure new transactions are shown
     const date_filter = `${current_Year}-${current_Month.toString().padStart(2, '0')}`
     get_history_dash(date_filter);
-    get_history_category_by_month(category_activated?.category_id, date_filter);
+    if (category_activated?.category_id) get_history_category_by_month(category_activated.category_id, date_filter);
     let dateString = `${current_Year}-${current_Month.toString().padStart(2, '0')}-01`
     get_expenses_report(dateString)
   }
 
 
+  const isIncome = active_report_tab !== 'Expenses';
+  const monthName = new Date(current_Year, current_Month - 1, 1).toLocaleString('es-CO', { month: 'long' });
+  const cat = category_activated;
+  const catAmount = cat ? Math.abs(Number(cat.amount ?? cat.value ?? cat.expenses ?? 0)) : 0;
+  const catBudget = cat ? Math.abs(Number(cat.budget || 0)) : 0;
+  const prettyDate = (d) => {
+    const m = moment(d, 'YYYY-MM-DD');
+    return m.isValid() ? capitalizeWords(m.locale('es').format('dddd D [de] MMMM')) : d;
+  };
+
   return (
-    <div className="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md transition-colors duration-300">
-
-      {category_activated && (
-        <>
-          <div className="flex items-center">
-            <div className="w-full">
-              <h2 className='flex flex-row justify-start items-center mb-2'>
-                {category_activated.emoji && category_activated.emoji !== "" && (
-                  <Emoji unified={category_activated.emoji.toLowerCase()} emojiStyle="apple" size={20} />
-                )}
-                <span className='pl-2 text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1'>{category_activated.name}</span>
+    <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-md transition-colors duration-300" aria-label="Movimientos">
+      <header className="px-4 pt-4 pb-3 flex items-start justify-between gap-3 border-b border-gray-100 dark:border-gray-700">
+        <div className="min-w-0">
+          {cat ? (
+            <>
+              <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
+                {cat.emoji && <Emoji unified={cat.emoji.toLowerCase()} emojiStyle="apple" size={18} />}
+                {capitalizeWords(cat.name)}
               </h2>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center flex-col">
-                  <p className="text-3xl font-bold text-gray-800 dark:text-gray-100">
-                    {formatMoney(category_activated.value || category_activated.expenses || 0)}
-                  </p>
-                  <span className='pl-1 text-[8px] xl:text-[10px] w-full text-left text-gray-400 dark:text-gray-500'>de {formatMoney(category_activated.budget)}</span>
-                </div>
+              <p className="text-sm text-ink-2 dark:text-gray-400">
+                <b className="text-gray-900 dark:text-gray-100 tabular-nums">{formatMoney(catAmount)}</b>
+                {catBudget > 0 && <> de {formatMoney(catBudget)}</>} en {monthName}
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{isIncome ? 'Ingresos' : 'Gastos'} de {monthName}</h2>
+              <p className="text-xs text-ink-2 dark:text-gray-400">Elige una categoría para ver solo sus movimientos</p>
+            </>
+          )}
+        </div>
+        <Button size="sm" icon={PlusIcon} onClick={handleOpenCreatePopUp} aria-label="Agregar transacción">
+          <span className="hidden sm:inline">Agregar</span>
+        </Button>
+      </header>
 
-                <button
-                  onClick={handleOpenCreatePopUp}
-                  className="flex gap-2 items-center justify-between px-1.5 p-1 bg-[#5266EB] hover:bg-indigo-600 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md group"
-                >
-                  <span className="text-[12px] font-semibold">Agregar Trx.</span>
-                  <div className="p-1 bg-white/20 rounded-lg group-hover:scale-110 transition-transform">
-                    <PlusIcon className="w-4 h-4 text-white" />
-                  </div>
-                </button>
-
-              </div>
-            </div>
+      <div className="px-2 py-2">
+        {category_transactions && category_transactions.length > 0 ? (
+          <div className="max-h-[300px] md:max-h-[380px] overflow-y-auto">
+            {groupedTransactions.sortedDates && groupedTransactions.sortedDates.map(date => (
+              <section key={date} aria-labelledby={`date-${date}`}>
+                <h3 id={`date-${date}`} className="sticky top-0 z-[1] px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-ink-2 dark:text-gray-400 bg-white/95 dark:bg-gray-800/95 backdrop-blur">
+                  {prettyDate(date)}
+                </h3>
+                <ul>
+                  {groupedTransactions.groups[date].map((tx) => {
+                    const transfer = !!tx.transfer_group_id;
+                    return (
+                      <li key={tx.id}>
+                        <button type="button" onClick={() => handleOpenTransDetail(tx.id)}
+                          className="w-full flex items-center gap-3 px-2 py-2.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 active:bg-gray-100 dark:active:bg-gray-700 transition-colors">
+                          <span className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
+                            {tx.category?.emoji ? <Emoji unified={tx.category.emoji.toLowerCase()} emojiStyle="apple" size={16} /> : null}
+                          </span>
+                          <span className="flex-1 min-w-0">
+                            <span className="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>
+                            <span className="block text-xs text-ink-2 dark:text-gray-400 truncate">
+                              {!cat && tx.category?.name ? `${capitalizeWords(tx.category.name)} · ` : ''}{tx.account?.name}{transfer ? ' · transferencia' : ''}
+                            </span>
+                          </span>
+                          <Money amount={tx.amount} currency={tx.currency} base={tx.amount_base}
+                            sign={transfer ? '' : tx.expense ? '−' : '+'}
+                            className={`text-sm font-semibold tabular-nums ${transfer ? 'text-gray-700 dark:text-gray-200' : tx.expense ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}`} />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ))}
           </div>
-
-
-          <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-3 transition-colors duration-300">
-            {category_transactions && category_transactions.length > 0 ?
-              <div className="transactions-list-container pr-2 max-h-[250px] md:max-h-[361.5px] md:min-h-[361.5px] overflow-y-auto">
-                {groupedTransactions.sortedDates && groupedTransactions.sortedDates.map(date => (
-                  <section key={date} className="date-group mb-4" aria-labelledby={`date-${date}`}>
-                    <h3 id={`date-${date}`} className="date-header text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2 sticky top-0 bg-white dark:bg-gray-800 py-1 transition-colors duration-300">
-                      {date}
-                    </h3>
-                    <ul className="transactions-list space-y-3">
-                      {groupedTransactions.groups[date].map((tx) => (
-                        <li key={tx.id} className="cursor-pointer transaction-item flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
-                          onClick={() => handleOpenTransDetail(tx.id)}
-                        >
-                          <div className="transaction-details flex items-center">
-                            <TransactionIcon expense={tx.expense} />
-                            <div>
-                              <p className="description font-medium text-gray-800 dark:text-gray-200">{tx.description}</p>
-                              <p className="status text-xs text-gray-500 dark:text-gray-400 capitalize">{tx.status}</p>
-                            </div>
-                          </div>
-                          <div className="transaction-amount text-right">
-                            <p className={`primary-amount font-semibold ${tx.expense ? 'text-gray-800 dark:text-gray-200' : 'text-green-600 dark:text-green-400'}`}><Money amount={tx.amount} currency={tx.currency} base={tx.amount_base} /></p>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                ))}
-              </div>
-              :
-              <p className='text-gray-500 dark:text-gray-400 pt-4 md:h-[362px] md:min-h-[362px]'>Aún no hay transacciones en este periodo.</p>
-            }
-
-          </div>
-
-
-        </>
-      )}
-
-
+        ) : (
+          <EmptyState compact icon={ArrowsRightLeftIcon}
+            title={cat ? `Sin movimientos de ${capitalizeWords(cat.name)}` : 'Sin movimientos este mes'}
+            description="Los que lleguen por correo aparecerán aquí; también puedes agregarlos." />
+        )}
+      </div>
 
       <TransactionDetail
         openTransDetail={openTransDetail}
@@ -235,7 +227,7 @@ const BudDashTransCategorie = ({
 
 
 
-    </div>
+    </section>
   );
 };
 
@@ -245,6 +237,7 @@ const mapStateToProps = state => ({
   current_Month: state.Reports.current_Month,
   current_Year: state.Reports.current_Year,
   expenses_report: state.Reports.expenses_report,
+  active_report_tab: state.UI.active_report_tab,
 
 })
 

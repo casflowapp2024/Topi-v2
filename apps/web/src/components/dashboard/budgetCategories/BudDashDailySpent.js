@@ -6,14 +6,15 @@ import BudgetBreakdownChart from '../../charts/BudgetBreakdownChart';
 import ProjectionChart from '../../charts/ProjectionChart';
 import { SkeletonChart } from '../../ui/Skeleton';
 import { capitalizeWords } from '../../helpers';
+import { set_dash_category_activated } from '../../../redux/actions/reports';
 
 // Gráfica de Presupuestos: una sola gráfica con el total del mes de fondo; al tocar una categoría
 // en la lista, su parte se llena dentro de cada barra. "Proyección" muestra cómo cerraría el mes.
-// activeChartTab: 2 = categoría resaltada (lo pone la lista), 1 = solo el total.
-function BudDashDailySpent({ history_dash, category_activated, active_report_tab, activeChartTab, setActiveChartTab }) {
+// La categoría resaltada es la elegida en la lista (category_activated); la ✕ vuelve al total.
+function BudDashDailySpent({ history_dash, category_activated, active_report_tab, set_dash_category_activated }) {
   const [view, setView] = useState('monthly');
   const isIncome = active_report_tab !== 'Expenses';
-  const highlight = activeChartTab === 2 && !!category_activated;
+  const highlight = !!category_activated;
   const showProjection = view === 'projection' && !isIncome;
 
   return (
@@ -23,14 +24,14 @@ function BudDashDailySpent({ history_dash, category_activated, active_report_tab
           {showProjection ? 'Proyección del mes' : isIncome ? 'Ingresos por mes' : 'Gasto por mes'}
         </h2>
         {!showProjection && (highlight ? (
-          <button type="button" onClick={() => setActiveChartTab && setActiveChartTab(1)}
+          <button type="button" onClick={() => set_dash_category_activated(null)}
             className="inline-flex items-center gap-1 max-w-[60%] h-7 pl-2.5 pr-1.5 rounded-full text-xs font-semibold bg-topi-50 text-topi-600 dark:bg-indigo-500/15 dark:text-indigo-300 hover:bg-topi-500/15 transition-colors"
             aria-label={`Quitar ${category_activated.name} y ver solo el total`}>
             <span className="truncate">{capitalizeWords(category_activated.name)}</span>
             <XMarkIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
           </button>
         ) : (
-          <span className="text-xs text-ink-2 dark:text-gray-400">Toca una categoría para verla en el total</span>
+          <span className="text-xs text-ink-2 dark:text-gray-400">Total del mes</span>
         ))}
       </div>
       <div className="flex-1 min-h-0 w-full">
@@ -52,4 +53,4 @@ const mapStateToProps = state => ({
   active_report_tab: state.UI.active_report_tab,
 });
 
-export default connect(mapStateToProps)(BudDashDailySpent);
+export default connect(mapStateToProps, { set_dash_category_activated })(BudDashDailySpent);

@@ -122,9 +122,11 @@ export default function Reports(state = initialState, action) {
                 income_report: incomeFull?.report ?? null,
                 expenses_report_full: expensesFull,
                 income_report_full: incomeFull,
-                category_activated: state.category_activated === null && Array.isArray(expensesFull?.report) && expensesFull?.report.length > 0
-                    ? expensesFull.report[0]
-                    : state.category_activated,
+                // Ninguna categoría elegida por defecto: la elige el usuario en Presupuestos.
+                // Si ya había una, se actualiza con los datos del mes nuevo.
+                category_activated: state.category_activated
+                    ? ([...(expensesFull?.report || []), ...(incomeFull?.report || [])].find(c => c.category_id === state.category_activated.category_id) || state.category_activated)
+                    : null,
             };
         case GET_EXPENSES_REPORT_FAIL:
             return {

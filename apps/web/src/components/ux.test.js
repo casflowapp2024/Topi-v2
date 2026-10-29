@@ -10,6 +10,9 @@ import AccountGroupSummary from './dashboard/productsAccounts/AccountGroupSummar
 import DashAccounts from './dashboard/general/DashAccounts';
 import TransactionFilterSheet from './transactions/TransactionFilterSheet';
 import CardReconcile from './dashboard/productsAccounts/CardReconcile';
+import BudgetOverview from './dashboard/budgetCategories/BudgetOverview';
+import BudDashCategorieList from './dashboard/budgetCategories/BudDashCategorieList';
+import { SET_DASH_CATEGORY_ACTIVATED } from '../redux/actions/types';
 
 jest.mock('axios', () => {
   const noop = { use() {} };
@@ -108,5 +111,44 @@ test('Ajustar saldo: propone registrar la diferencia como gasto en Intereses', (
   expect(pressed).toContain('Intereses');
   expect(el.textContent).toContain('Último corte');
   expect(el.textContent).not.toContain('Salario');
+  act(() => root.unmount());
+});
+
+const budgetState = (category = null) => ({
+  ...state,
+  UI: { active_report_tab: 'Expenses' },
+  Reports: {
+    ...state.Reports, current_Year: 2026, current_Month: 10, category_activated: category,
+    expenses_report: [
+      { category_id: 7, name: 'mercado', emoji: '1f6d2', value: -640000, budget: 700000, usage: 91 },
+      { category_id: 8, name: 'salidas', emoji: '1f389', value: -1300000, budget: 1000000, usage: 130 },
+    ],
+    income_report: [],
+    expenses_report_full: { value: -1940000, budget: -1700000, left: -240000 },
+    income_report_full: { value: 4000000, budget: 4000000, left: 0 },
+  },
+});
+
+test('Presupuestos: cabecera con Gastos/Ingresos y total del mes', () => {
+  const el = document.createElement('div'); document.body.appendChild(el); const root = createRoot(el);
+  act(() => root.render(<Provider store={createStore((s = budgetState()) => s, applyMiddleware(thunk))}><BudgetOverview /></Provider>));
+  expect([...el.querySelectorAll('[role=tab]')].map(t => t.textContent)).toEqual(['Gastos', 'Ingresos']);
+  expect(el.textContent).toContain('Gastado este mes');
+  expect(el.textContent).toMatch(/Te pasaste por/);
+  expect(el.textContent).toMatch(/ahorro esperado/);
+  act(() => root.unmount());
+});
+
+test('Presupuestos: ninguna categoría elegida al entrar; tocar elige y tocar otra vez quita', () => {
+  const reducer = (s = budgetState(), a) => (a.type === SET_DASH_CATEGORY_ACTIVATED ? { ...s, Reports: { ...s.Reports, category_activated: a.payload } } : s);
+  const store = createStore(reducer, applyMiddleware(thunk));
+  const el = document.createElement('div'); document.body.appendChild(el); const root = createRoot(el);
+  act(() => root.render(<Provider store={store}><BudDashCategorieList handleOpenEditCat={() => {}} setOpenCreateBox={() => {}} /></Provider>));
+  const rows = () => [...el.querySelectorAll('[role=button][aria-pressed]')];
+  expect(rows().filter(r => r.getAttribute('aria-pressed') === 'true')).toHaveLength(0);
+  act(() => rows()[0].dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  expect(store.getState().Reports.category_activated?.category_id).toBe(8); // ordenada por monto: salidas primero
+  act(() => rows()[0].dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  expect(store.getState().Reports.category_activated).toBeNull();
   act(() => root.unmount());
 });

@@ -8,9 +8,8 @@ import { get_savings_account, get_history_dash, get_history_category_by_month } 
 
 //components
 import { parseDatetimetoDateStrFormat } from '../../helpers';
-import BudDashTotalSpent from './BudDashTotalSpent';
+import BudgetOverview from './BudgetOverview';
 import BudDashCategorieList from './BudDashCategorieList';
-import BudDashBudgetSummary from './BudDashBudgetSummary';
 import BudDashTransCategorie from './BudDashTransCategorie';
 import BudDashDailySpent from "./BudDashDailySpent.js";
 import CreateCategory from "../../expensePlan/CreateCategory";
@@ -29,6 +28,7 @@ const AABudgetDashboard = ({
     get_history_category_by_month,
     //state
     category_activated,
+    active_report_tab,
     current_Month,
     current_Year,
 
@@ -57,10 +57,12 @@ const AABudgetDashboard = ({
         selectedCategories,
         iniDate,
         endDate,
+        expense,
     }) => {
 
         const params = [];
         if (selectedCategories && selectedCategories.length > 0) params.push(`categories=${selectedCategories}`);
+        if (expense === true || expense === false) params.push(`expense=${expense}`);
         if (iniDate) params.push(`init_date=${iniDate}`);
         if (endDate) params.push(`end_date=${endDate}`);
 
@@ -73,6 +75,8 @@ const AABudgetDashboard = ({
         const filterParams = buildTransactionParams(
             {
                 selectedCategories: category_activated ? [category_activated.category_id] : null,
+                // sin categoría elegida: los movimientos del mes del lado que se está viendo
+                expense: category_activated ? undefined : active_report_tab === 'Expenses',
                 iniDate: parseDatetimetoDateStrFormat(new Date(current_Year, current_Month - 1, 1), "YYYY-MM-DD HH:mm:ss Z"),
                 endDate: parseDatetimetoDateStrFormat(new Date(current_Year, current_Month, 0), "YYYY-MM-DD HH:mm:ss Z")
             }
@@ -80,7 +84,6 @@ const AABudgetDashboard = ({
         const transResponse = await get_user_transactions(0, 100, filterParams, "budgetCategory")
 
         if (transResponse === true) {
-            console.log("transResponse", transResponse);
             setLoadingTransactions(false)
         } else {
             setLoadingTransactions(false)
@@ -89,24 +92,17 @@ const AABudgetDashboard = ({
 
     useEffect(() => {
         handleGetTransactions()
-    }, [category_activated]);
-
-
-    useEffect(() => {
-        const date_filter = `${current_Year}-${current_Month.toString().padStart(2, '0')}`
-        get_history_dash(date_filter);
-    }, [current_Month, current_Year]);
+    }, [category_activated?.category_id, current_Month, current_Year, active_report_tab]); // eslint-disable-line react-hooks/exhaustive-deps
+    // history_dash lo pide Dashboard.jsx al cambiar de mes
 
     useEffect(() => {
         const date_filter = `${current_Year}-${current_Month.toString().padStart(2, '0')}`
         if (category_activated?.category_id != undefined) {
             get_history_category_by_month(category_activated.category_id, date_filter);
         }
-    }, [category_activated, current_Year]);
+    }, [category_activated?.category_id, current_Month, current_Year]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
-    // Chart Tab State
-    const [activeChartTab, setActiveChartTab] = useState(1);
 
     return (
         <div className="flex flex-col w-full">
@@ -117,31 +113,22 @@ const AABudgetDashboard = ({
                 y `order-*` define el orden; en PC (lg) vuelven a ser columnas.
             */}
             <div className="flex flex-col gap-2 lg:flex-row lg:gap-6 px-2 lg:px-0 pb-4 md:max-w-[560px] md:mx-auto lg:max-w-none lg:w-full">
-                {/* Total, resumen y lista de categorías */}
+                {/* Izquierda: Gastos | Ingresos con el total del mes, y la lista (manda en toda la vista) */}
                 <div className="contents lg:flex lg:flex-col lg:gap-6 lg:w-[380px] xl:w-[360px] lg:shrink-0">
                     <div className="order-1 lg:order-none">
-                        <BudDashTotalSpent />
+                        <BudgetOverview />
                     </div>
                     <div className="order-2 lg:order-none">
-                        <BudDashBudgetSummary
-                            setOpenCreateBox={setOpenCreateBox}
-                        />
-                    </div>
-                    <div className="order-3 lg:order-none">
                         <BudDashCategorieList
                             handleOpenEditCat={handleOpenEditCat}
                             setOpenCreateBox={setOpenCreateBox}
-                            onCategoryClick={() => setActiveChartTab(2)}
                         />
                     </div>
                 </div>
-                {/* Gráfica y movimientos de la categoría */}
+                {/* Derecha: la gráfica y los movimientos responden a la categoría elegida (o al total) */}
                 <div className="contents lg:flex lg:flex-col lg:gap-6 lg:flex-1 lg:min-w-0">
-                    <div className="order-5 lg:order-none">
-                        <BudDashDailySpent
-                            activeChartTab={activeChartTab}
-                            setActiveChartTab={setActiveChartTab}
-                        />
+                    <div className="order-3 lg:order-none">
+                        <BudDashDailySpent />
                     </div>
                     <div className="order-4 lg:order-none">
                         <BudDashTransCategorie />
@@ -170,6 +157,7 @@ const AABudgetDashboard = ({
 
 const mapStateToProps = state => ({
     category_activated: state.Reports.category_activated,
+    active_report_tab: state.UI.active_report_tab,
     current_Month: state.Reports.current_Month,
     current_Year: state.Reports.current_Year,
     user_categories: state.CashFlow.user_categories,
