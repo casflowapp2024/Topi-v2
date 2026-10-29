@@ -155,6 +155,7 @@ type ListTransactionsRequest struct {
 	Automated    *bool  `form:"automated" binding:"omitempty" example:"false"`
 	ShouldVerify *bool  `form:"should_verify" binding:"omitempty" example:"false"`
 	Checked      *bool  `form:"checked" binding:"omitempty" example:"false"`
+	Transfer     *bool  `form:"transfer" binding:"omitempty" example:"true"`
 	SortBy       string `form:"sort_by" binding:"omitempty,sort_by" example:"date"`
 	SortOrder    string `form:"sort_order" binding:"omitempty,sort_order" example:"desc"`
 }
@@ -453,6 +454,7 @@ func (r *ListTransactionsRequest) mapTransactionFilters(
 		Automated:    r.Automated,
 		ShouldVerify: r.ShouldVerify,
 		Checked:      r.Checked,
+		Transfer:     r.Transfer,
 		SortBy:       r.SortBy,
 		SortOrder:    r.SortOrder,
 	}

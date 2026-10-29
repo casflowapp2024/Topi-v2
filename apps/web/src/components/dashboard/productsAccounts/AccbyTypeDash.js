@@ -1,181 +1,104 @@
-
-import { useMemo } from 'react';
-import { useEffect, useState, useRef } from "react";
-//redux
-import { connect } from 'react-redux'
-import { update_transaction_local, update_transaction } from '../../../redux/actions/cashflow';
-import { get_user_transactions } from '../../../redux/actions/cashflow';
-import { get_history_dash, get_history_category_by_month } from '../../../redux/actions/reports';
+import { useEffect, useMemo } from 'react';
+import { connect } from 'react-redux';
 import { set_dash_account_activated } from '../../../redux/actions/reports';
-//componentes
-import { Emoji } from "emoji-picker-react";
-import { formatMoney, formatDate, findElmentById } from '../../helpers';
-import TransactionDetail from '../../transactions/TransactionDetail2'
-import { parseDatetimetoDateStrFormat } from '../../helpers';
-//ui
-import { CreditCardIcon, BanknotesIcon, PresentationChartLineIcon, DocumentCurrencyDollarIcon, ChevronDownIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { get_net_worth } from '../../../redux/actions/fx';
+import { PlusIcon, EllipsisHorizontalIcon } from '@heroicons/react/20/solid';
+import Chip from '../../ui/Chip';
+import AccountBalance from '../../ui/AccountBalance';
+import EmptyState from '../../ui/EmptyState';
+import { getBaseCurrency } from '../../helpers';
+import { ACCOUNT_GROUPS, accountsOfGroup } from './accountGroups';
 
-
+/**
+ * Mis cuentas: un selector por grupo (Efectivo, Tarjetas, Inversiones, Cerradas) y la lista de ese
+ * grupo con su saldo. Elegir una cuenta la abre en el panel de la derecha.
+ */
 const AccbyTypeDash = ({
-    //states
-    current_Month,
-    current_Year,
-    user_accounts,
-    account_activated,
-    //actions
-    update_transaction_local,
-    update_transaction,
-    get_user_transactions,
-    get_history_dash,
-    get_history_category_by_month,
-    set_dash_account_activated,
-    //new props
-    onOpenDetail,
-    onOpenCreate
-
+  user_accounts, account_activated, net_worth, group, onGroupChange,
+  set_dash_account_activated, get_net_worth, onOpenDetail, onOpenCreate,
 }) => {
+  useEffect(() => { get_net_worth(); }, [get_net_worth, user_accounts]);
+  const items = user_accounts?.items;
+  const nwById = useMemo(() => new Map((net_worth?.accounts || []).map(a => [a.account_id, a])), [net_worth]);
+  const baseCurrency = net_worth?.base_currency || getBaseCurrency();
 
-    //grouped accounts by type
-    const groupedAccounts = useMemo(() => {
-        if (!Array.isArray(user_accounts.items)) {
-            return {};
-        }
+  const groups = ACCOUNT_GROUPS.map(g => ({ ...g, accounts: accountsOfGroup(items, g.id) }))
+    .filter(g => g.accounts.length > 0 || g.id === group);
+  const current = groups.find(g => g.id === group) || groups[0];
+  const list = current?.accounts || [];
 
-        const groups = user_accounts.items.reduce((acc, account) => {
-            const typeKey = parseInt(account.type.id);
-            (acc[typeKey] = acc[typeKey] || []).push(account);
-            return acc;
-        }, {});
+  return (
+    <div className="p-4 sm:p-5 bg-white dark:bg-gray-800 rounded-xl shadow-md transition-colors duration-300">
+      <div className="flex justify-between items-center gap-2 mb-3">
+        <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Mis cuentas</h2>
+        <button type="button" onClick={onOpenCreate}
+          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl bg-topi-500 hover:bg-topi-600 text-white text-sm font-semibold shadow-sm transition-colors">
+          <PlusIcon className="w-4 h-4" aria-hidden="true" /> Agregar
+        </button>
+      </div>
 
-        // The Object.keys will be sorted chronologically by default for YYYY-MM-DD format,
-        // but we want descending order, so we reverse it.
-        const sortedAccounts = Object.keys(groups).sort();
+      {/* Selector de grupo */}
+      <div className="flex gap-2 overflow-x-auto hide-scrollbar -mx-4 px-4 sm:-mx-5 sm:px-5 pb-3" role="tablist" aria-label="Tipo de cuenta">
+        {groups.map(g => (
+          <Chip key={g.id} role="tab" aria-selected={g.id === current?.id} selected={g.id === current?.id}
+            icon={g.Icon} onClick={() => onGroupChange(g.id)}>
+            {g.label} <span className={g.id === current?.id ? 'text-white/80' : 'text-ink-2 dark:text-gray-400'}>{g.accounts.length}</span>
+          </Chip>
+        ))}
+      </div>
 
-        return { groups, sortedAccounts };
-    }, [user_accounts.items]);
-
-    const comps_by_type = {
-        1: {
-            name: "Cuentas de Ahorros",
-            color: "bg-blue-100 text-blue-800",
-            icon: <BanknotesIcon className="size-6 text-blue-600 dark:text-blue-400" />
-        },
-        2: {
-            name: "Cuentas Corrientes",
-            color: "bg-blue-100 text-blue-800",
-            icon: <DocumentCurrencyDollarIcon className="size-6 text-blue-600 dark:text-blue-400" />
-        },
-        3: {
-            name: "Cuentas de Inversión",
-            color: "bg-blue-100 text-blue-800",
-            icon: <PresentationChartLineIcon className="size-6 text-blue-600 dark:text-blue-400" />
-        },
-        4: {
-            name: "Tarjetas de Credito",
-            color: "bg-blue-100 text-blue-800",
-            icon: <CreditCardIcon className="size-6 text-blue-600 dark:text-blue-400" />
-        }
-    };
-
-
-    //transaction detail state
-
-    return (
-        <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md transition-colors duration-300">
-            <div className="px-1 flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Mis Cuentas</h2>
-
-                <button
-                    onClick={onOpenCreate}
-                    className="w-1/2 flex items-center justify-between px-3 p-1 bg-[#5266EB] hover:bg-indigo-600 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md group"
+      {!items ? (
+        <p className="text-sm text-ink-2 dark:text-gray-400">Cargando…</p>
+      ) : list.length === 0 ? (
+        <EmptyState compact icon={current?.Icon} title={`No tienes ${current?.title?.toLowerCase() || 'cuentas'}`}
+          description="Agrégala con el botón Agregar." />
+      ) : (
+        <ul className="flex flex-col gap-1 max-h-[300px] md:max-h-[340px] overflow-y-auto -mx-1 px-1" role="tabpanel">
+          {current.id === 'closed' && (
+            <li className="text-xs text-ink-2 dark:text-gray-400 px-2 pb-1">
+              Conservan su historia y siguen en tus reportes, pero no aparecen en el inicio ni para movimientos nuevos.
+            </li>
+          )}
+          {list.map(account => {
+            const active = account.id === account_activated?.id;
+            return (
+              <li key={account.id}>
+                <div
+                  role="button" tabIndex={0}
+                  onClick={() => set_dash_account_activated(account)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); set_dash_account_activated(account); } }}
+                  aria-current={active || undefined}
+                  className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 ${active
+                    ? 'bg-topi-50 dark:bg-indigo-500/15 ring-1 ring-topi-500/40'
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-700/60'}`}
                 >
-                    <span className="text-[12px] font-semibold">Agregar</span>
-                    <div className="p-1 bg-white/20 rounded-lg group-hover:scale-110 transition-transform">
-                        <PlusIcon className="w-4 h-4 text-white" />
-                    </div>
-                </button>
-                {/* <button
-                    onClick={onOpenCreate}
-                    className="p-2 rounded-xl hover:bg-[#5266EB] hover:text-white transition-all duration-200">
-                    <PlusIcon className="size-5" />
-                </button> */}
-            </div>
-
-            {user_accounts.items ? (
-
-                <>
-                    <div className="transactions-list-container h-[200px] md:h-[275px] overflow-y-auto hide-scrollbar pr-2">
-                        {groupedAccounts.sortedAccounts && groupedAccounts.sortedAccounts.map(type => (
-                            <section key={type} className="type-group mb-4" aria-labelledby={`type-${type}`}>
-                                <div className='flex flex-row justify-start items-center gap-2 mb-2'>
-                                    <div>
-                                        {comps_by_type[type].icon}
-                                    </div>
-                                    <h3 id={`type-${type}`} className="text-md font-semibold text-gray-600 dark:text-gray-300 sticky top-0 bg-white dark:bg-gray-800 transition-colors duration-300">
-                                        {comps_by_type[type].name}
-                                    </h3>
-                                </div>
-                                <ul className="transactions-list space-y-3">
-                                    {groupedAccounts.groups[type].map((account) => (
-                                        <li key={account.id}
-                                            className={`${account.id === account_activated?.id ? 'bg-[#5266EB] text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150'} cursor-pointer text-gray-900 dark:text-gray-100 transaction-item flex items-center justify-between p-2 rounded-lg `}
-                                            onClick={() => set_dash_account_activated(account)}
-                                        >
-
-                                            <div className="flex-1 min-w-0 ms-4">
-                                                <p className="text-sm font-medium  truncate dark:text-white">
-                                                    {account.name}
-                                                    {account.closed_at && <span className="ml-2 rounded-full bg-gray-200 dark:bg-gray-700 px-2 py-0.5 text-[10px] font-semibold uppercase text-gray-600 dark:text-gray-300">Cerrada</span>}
-                                                </p>
-                                                <p className="text-sm  truncate dark:text-gray-400">
-                                                    ****{account.last_four_digits}
-                                                </p>
-                                            </div>
-                                            <div className="flex flex-row items-center gap-3">
-                                                <div className="flex flex-col items-end text-sm font-semibold dark:text-white">
-                                                    <span className="text-right">{account.bank.name}</span>
-                                                </div>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onOpenDetail(account.id);
-                                                    }}
-                                                    className={`p-1 rounded-md transition-colors ${account.id === account_activated?.id ? 'hover:bg-blue-400 text-white' : 'hover:bg-gray-200 text-gray-500'}`}>
-                                                    <ChevronDownIcon className="size-4" />
-                                                </button>
-                                            </div>
-
-                                        </li>
-                                    ))}
-                                </ul>
-                            </section>
-                        ))}
-                    </div>
-
-                </>
-
-            ) : (
-                <p className='text-gray-500'>Cargando...</p>
-            )}
-
-        </div>
-    );
+                  <span className="flex-1 min-w-0">
+                    <span className={`block text-sm font-semibold truncate ${active ? 'text-topi-600 dark:text-indigo-200' : 'text-gray-900 dark:text-gray-100'}`}>{account.name}</span>
+                    <span className="block text-xs text-ink-2 dark:text-gray-400 truncate">
+                      {account.bank?.name}{account.last_four_digits ? ` · ••${account.last_four_digits}` : ''}{current.id === 'closed' ? ` · ${account.type?.name || ''}` : ''}
+                    </span>
+                  </span>
+                  <AccountBalance account={account} nw={nwById.get(account.id)} baseCurrency={baseCurrency} />
+                  <button type="button"
+                    onClick={(e) => { e.stopPropagation(); onOpenDetail(account.id); }}
+                    aria-label={`Ver y editar ${account.name}`}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 dark:hover:text-gray-100 transition-colors">
+                    <EllipsisHorizontalIcon className="w-5 h-5" aria-hidden="true" />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
 };
 
 const mapStateToProps = state => ({
-    user_accounts: state.CashFlow.user_accounts,
-    current_Month: state.Reports.current_Month,
-    current_Year: state.Reports.current_Year,
-    account_activated: state.Reports.account_activated,
+  user_accounts: state.CashFlow.user_accounts,
+  account_activated: state.Reports.account_activated,
+  net_worth: state.Fx.net_worth,
+});
 
-})
-
-export default connect(mapStateToProps, {
-    update_transaction_local,
-    update_transaction,
-    get_user_transactions,
-    get_history_dash,
-    get_history_category_by_month,
-    set_dash_account_activated
-
-})(AccbyTypeDash)
+export default connect(mapStateToProps, { set_dash_account_activated, get_net_worth })(AccbyTypeDash);

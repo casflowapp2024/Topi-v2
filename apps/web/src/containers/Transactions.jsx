@@ -14,7 +14,9 @@ import {
 import TransactionDetail from "../components/transactions/TransactionDetail2";
 import { formatMoney, formatDate, capitalizeWords, parseDatetimetoDateStrFormat, parseDatetoDatetimeBrow } from "../components/helpers";
 
-import FilterTransactions from "../components/transactions/FilterTransactions";
+import TransactionFilterSheet, { countPanelFilters } from "../components/transactions/TransactionFilterSheet";
+import Chip from "../components/ui/Chip";
+import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 import CreateTransaction from "../components/transactions/CreateTransaction";
 import TransferModal from "../components/transactions/TransferModal";
 import TransferCandidatesModal from "../components/transactions/TransferCandidatesModal";
@@ -25,10 +27,17 @@ import {
     PlusIcon, MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon,
     ArrowDownTrayIcon, ArrowUpTrayIcon, QueueListIcon, ListBulletIcon, ArrowsRightLeftIcon
 } from '@heroicons/react/20/solid'
-import { FunnelIcon, ExclamationTriangleIcon } from '@heroicons/react/20/solid'
+import { FunnelIcon, ExclamationTriangleIcon, ChevronDownIcon, Squares2X2Icon, SparklesIcon } from '@heroicons/react/20/solid'
 
 import { Emoji } from "emoji-picker-react";
-import { change_transactions_filter } from "../redux/actions/cashflow";
+import { change_transactions_filter, filtersFromState } from "../redux/actions/cashflow";
+
+const QUICK = [
+    { id: 'all', label: 'Todas', icon: Squares2X2Icon },
+    { id: 'verify', label: 'Por revisar', icon: ExclamationTriangleIcon },
+    { id: 'new', label: 'Nuevas', icon: SparklesIcon },
+    { id: 'transfer', label: 'Transferencias', icon: ArrowsRightLeftIcon },
+];
 
 const Transactions = ({
     get_user_transactions,
@@ -120,27 +129,29 @@ const Transactions = ({
         SetOpenCreatePopUp(false);
     }
 
-    //FILTER POPUP
-    const [openFilterPopUp, SetOpenFilterPopUp] = useState(false)
-    const handleOpenFilterPopUp = () => {
-        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-        document.body.style.paddingRight = '0px';
-        document.body.style.overflow = 'hidden';
-        SetOpenFilterPopUp(true);
+    //FILTROS
+    const [openFilterPopUp, setOpenFilterPopUp] = useState(false)
+    const panelFilters = countPanelFilters(trans_filters_activated)
+    const quickStatus = trans_filters_activated.shouldVerify ? 'verify'
+        : trans_filters_activated.checked === false ? 'new'
+            : trans_filters_activated.transfer === true ? 'transfer' : 'all'
+    const anyFilter = panelFilters > 0 || quickStatus !== 'all' || !!trans_filters_activated.keyword
+
+    // Aplica filtros sobre los actuales (patch con nombres de change_transactions_filter) y vuelve a la página 1
+    const applyFilters = async (patch) => {
+        const params = await change_transactions_filter(filtersFromState(trans_filters_activated, patch))
+        await get_user_transactions(0, default_limit, params)
+        setCurrentFrontendPage(1)
     }
-
-    const handleCloseFilterPopUp = () => {
-        document.body.style.paddingRight = '0px';
-        document.body.style.overflow = 'unset';
-        SetOpenFilterPopUp(false);
-    }
-
-    const [oneFilterActivated, setOneFilterActivated] = useState(false)
-
-    useEffect(() => {
-        console.log("onefilteractivatedValue", oneFilterActivated)
-
-    }, [oneFilterActivated]);
+    const applyQuick = (id) => applyFilters({
+        shouldVerify: id === 'verify' ? true : '',
+        checked: id === 'new' ? false : '',
+        transfer: id === 'transfer' ? true : '',
+    })
+    const clearAllFilters = () => applyFilters({
+        selectedCategories: [], selectedAccounts: [], iniDate: '', endDate: '', keyword: '',
+        expenseFilter: '', automated: '', shouldVerify: '', checked: '', transfer: '',
+    })
 
     //pagination
     const [currentFrontendPage, setCurrentFrontendPage] = useState(1);
@@ -203,22 +214,9 @@ const Transactions = ({
     //SEARCH BAR
 
     const handleSearch = async (e) => {
-        const updatedKeyword = e.target.value;
-
-        const filters = {
-            selectedCategories: trans_filters_activated.categorie_ids,
-            selectedAccounts: trans_filters_activated.accounts_ids,
-            iniDate: trans_filters_activated.iniDate,
-            endDate: trans_filters_activated.endDate,
-            keyword: updatedKeyword,
-            expenseFilter: trans_filters_activated.expence,
-            orderByFilter: trans_filters_activated.sortby,
-            automated: trans_filters_activated.automated,
-            shouldVerify: trans_filters_activated.shouldVerify,
-        };
-
-        const filters_done = await change_transactions_filter(filters);
-        const transResponse = await get_user_transactions(0, default_limit, filters_done);
+        const params = await change_transactions_filter(filtersFromState(trans_filters_activated, { keyword: e.target.value }));
+        await get_user_transactions(0, default_limit, params);
+        setCurrentFrontendPage(1);
     };
 
 
@@ -304,91 +302,101 @@ const Transactions = ({
                         <div className="top-0 rounded-2xl shadow-md bg-white dark:bg-gray-800 w-full transition-colors duration-300">
                             {/* Barra fija: buscar, crear, filtrar y encabezados quedan visibles al hacer scroll */}
                             <div className="sticky top-[53px] md:top-[62px] z-30 bg-white dark:bg-gray-800 rounded-t-2xl shadow-[0_1px_0_0_rgba(0,0,0,0.04)] transition-colors duration-300">
-                            {/* Top Buttoms */}
-                            <div className="p-3 md:p-4 flex flex-row justify-between gap-1">
-                                <div className="flex-1 min-w-0 md:flex-none md:w-2/3">
-                                    <div className="w-full px-3 md:px-4 py-2 rounded-2xl border border-[#e9e8ee] dark:border-gray-700 flex flex-row items-center justify-start bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
-                                        <MagnifyingGlassIcon className="w-5 h-5 mr-2 shrink-0 group-hover:text-[#5266EB]" />
+                            {/* Barra de herramientas: buscar, filtros y nuevo + filtros rápidos */}
+                            <div className="p-3 md:p-4 flex flex-col gap-2.5">
+                                <div className="flex items-center gap-2">
+                                    <label className="flex-1 min-w-0 h-10 px-3 md:px-4 rounded-2xl border border-gray-200 dark:border-gray-700 flex items-center gap-2 bg-gray-100 dark:bg-gray-900 focus-within:ring-2 focus-within:ring-topi-500 transition-colors">
+                                        <MagnifyingGlassIcon className="w-5 h-5 shrink-0 text-gray-400" aria-hidden="true" />
                                         <input
-                                            placeholder={`Buscar por Descripción`}
-                                            className="w-full bg-gray-100 dark:bg-gray-900 md:text-base text-xs dark:text-gray-100 outline-none"
+                                            type="search"
+                                            placeholder="Buscar por descripción"
+                                            aria-label="Buscar por descripción"
+                                            className="w-full min-w-0 bg-transparent text-sm md:text-base dark:text-gray-100 outline-none placeholder:text-gray-400"
                                             value={trans_filters_activated.keyword}
                                             onChange={(e) => handleSearch(e)}
-                                        >
-                                        </input>
-                                    </div>
-
+                                        />
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setOpenFilterPopUp(true)}
+                                        aria-label={panelFilters ? `Filtros (${panelFilters} activos)` : 'Filtros'}
+                                        className={`relative shrink-0 h-10 px-3 rounded-2xl border flex items-center gap-2 text-sm font-medium transition-colors ${panelFilters
+                                            ? 'border-topi-500 text-topi-600 dark:text-indigo-300 bg-topi-50 dark:bg-indigo-500/10'
+                                            : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                                    >
+                                        <FunnelIcon className="w-4 h-4" aria-hidden="true" />
+                                        <span className="hidden md:inline">Filtros</span>
+                                        {panelFilters > 0 && (
+                                            <span className="min-w-[20px] h-5 px-1 rounded-full bg-topi-500 text-white text-xs flex items-center justify-center">{panelFilters}</span>
+                                        )}
+                                    </button>
+                                    <Menu as="div" className="relative shrink-0">
+                                        <MenuButton className="h-10 px-3 md:px-4 rounded-2xl bg-topi-500 hover:bg-topi-600 text-white text-sm font-semibold flex items-center gap-1.5 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 focus-visible:ring-offset-2"
+                                            aria-label="Nuevo movimiento">
+                                            <PlusIcon className="w-5 h-5" aria-hidden="true" />
+                                            <span className="hidden md:inline">Nuevo</span>
+                                            <ChevronDownIcon className="hidden md:block w-4 h-4 opacity-80" aria-hidden="true" />
+                                        </MenuButton>
+                                        <MenuItems anchor={{ to: 'bottom end', gap: 6 }}
+                                            className="z-50 w-60 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1.5 shadow-xl focus:outline-none">
+                                            <MenuItem>
+                                                <button type="button" onClick={handleOpenCreatePopUp}
+                                                    className="w-full flex items-start gap-3 rounded-xl px-3 py-2 text-left data-[focus]:bg-gray-100 dark:data-[focus]:bg-gray-700">
+                                                    <PlusIcon className="w-5 h-5 mt-0.5 text-topi-500" aria-hidden="true" />
+                                                    <span className="flex flex-col">
+                                                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Gasto o ingreso</span>
+                                                        <span className="text-xs text-ink-2 dark:text-gray-400">Registrar un movimiento</span>
+                                                    </span>
+                                                </button>
+                                            </MenuItem>
+                                            <MenuItem>
+                                                <button type="button" onClick={() => setOpenTransfer(true)}
+                                                    className="w-full flex items-start gap-3 rounded-xl px-3 py-2 text-left data-[focus]:bg-gray-100 dark:data-[focus]:bg-gray-700">
+                                                    <ArrowsRightLeftIcon className="w-5 h-5 mt-0.5 text-slate-500" aria-hidden="true" />
+                                                    <span className="flex flex-col">
+                                                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Transferencia</span>
+                                                        <span className="text-xs text-ink-2 dark:text-gray-400">Entre tus cuentas, no cuenta como gasto</span>
+                                                    </span>
+                                                </button>
+                                            </MenuItem>
+                                        </MenuItems>
+                                    </Menu>
                                 </div>
-                                <div className="shrink-0 relative flex flex-row gap-1">
-                                    <button className="py-2 rounded-2xl px-2.5 sm:px-4 flex flex-row items-center border border-[#e9e8ee] dark:border-gray-700 hover:bg-slate-200 dark:hover:bg-gray-700 dark:text-gray-100 transition-colors duration-300"
-                                        onClick={handleOpenCreatePopUp}
-                                        aria-label="Crear transacción"
-                                    >
-                                        <PlusIcon className="w-4 h-4 sm:mr-2 group-hover:text-[#5266EB]" aria-hidden="true" />
-                                        <span className="sm:inline hidden md:text-base text-xs"> Crear </span>
 
-                                    </button>
-
-                                    <CreateTransaction
-                                        openCreatePopUp={openCreatePopUp}
-                                        SetOpenCreatePopUp={handleCloseCreatePopUp}
-                                        currentFrontendPage={currentFrontendPage}
-                                    />
-
-                                    <button className="py-2 rounded-2xl px-2.5 md:px-4 flex flex-row items-center border border-[#e9e8ee] dark:border-gray-700 hover:bg-slate-200 dark:hover:bg-gray-700 dark:text-gray-100 transition-colors duration-300"
-                                        onClick={() => setOpenTransfer(true)}
-                                        aria-label="Transferir entre cuentas"
-                                    >
-                                        <ArrowsRightLeftIcon className="w-4 h-4 md:mr-2" aria-hidden="true" />
-                                        <span className="md:inline hidden text-base"> Transferir </span>
-                                    </button>
-                                    <TransferModal open={openTransfer} onClose={() => { setOpenTransfer(false); loadTransferCandidates() }} />
-                                    {transferCandidates && transferCandidates.length > 0 &&
-                                        <button className="py-2 rounded-2xl px-2 md:px-3 flex flex-row items-center gap-1 border border-topi-500 text-topi-600 dark:text-indigo-300 hover:bg-topi-50 dark:hover:bg-gray-700 transition-colors duration-300"
+                                {/* Filtros rápidos (una fila que se desliza en móvil) */}
+                                <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar -mx-3 px-3 md:mx-0 md:px-0" role="group" aria-label="Filtros rápidos">
+                                    {QUICK.map(q => (
+                                        <Chip key={q.id} icon={q.icon} selected={quickStatus === q.id} onClick={() => applyQuick(q.id)}>{q.label}</Chip>
+                                    ))}
+                                    {transferCandidates && transferCandidates.length > 0 && (
+                                        <Chip tone="accent" icon={ArrowsRightLeftIcon} count={transferCandidates.length}
                                             onClick={() => { setOpenCandidates(true); loadTransferCandidates() }}
-                                            aria-label={`${transferCandidates.length} posibles transferencias por revisar`}
-                                            title="Posibles transferencias por revisar"
-                                        >
-                                            <span className="md:inline hidden text-base"> Posibles </span>
-                                            <span className="min-w-[20px] h-5 px-1 rounded-full bg-topi-500 text-white text-xs flex items-center justify-center">{transferCandidates.length}</span>
+                                            title="Parejas de salida y entrada entre tus cuentas que podrían ser una transferencia">
+                                            Posibles transferencias
+                                        </Chip>
+                                    )}
+                                    {anyFilter && (
+                                        <button type="button" onClick={clearAllFilters}
+                                            className="shrink-0 h-8 px-2 text-sm font-medium text-topi-600 dark:text-indigo-300 hover:underline">
+                                            Quitar filtros
                                         </button>
-                                    }
-                                    <TransferCandidatesModal open={openCandidates} onClose={() => setOpenCandidates(false)}
-                                        candidates={transferCandidates} setCandidates={setTransferCandidates} />
-                                    {openFilterPopUp ?
-                                        <div className="h-full">
-                                            <button className={`${oneFilterActivated ? "border-[#5266EB]" : "border-[#e9e8ee] dark:border-gray-700"} h-full py-2 px-2.5 md:px-4 flex flex-row items-center border rounded-2xl hover:bg-slate-200 dark:hover:bg-gray-700 dark:text-gray-100 transition-colors duration-300`}
-                                                onClick={handleCloseFilterPopUp}
-                                            >
-                                                <svg aria-hidden="true" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                                                {oneFilterActivated ?
-                                                    <span className="md:block hidden"> Filtrado</span> :
-                                                    <span className="md:block hidden"> Filtrar..</span>
-                                                }
-                                            </button>
-                                        </div>
-                                        :
-                                        <button className={`${oneFilterActivated ? "border-[#5266EB]" : "border-[#e9e8ee] dark:border-gray-700"} py-2 px-2.5 md:px-4 flex flex-row items-center border rounded-2xl hover:bg-slate-200 dark:hover:bg-gray-700 dark:text-gray-100 transition-colors duration-300`}
-                                            onClick={handleOpenFilterPopUp}
-                                            aria-label="Filtrar transacciones"
-                                        >
-                                            <FunnelIcon className='w-4 h-4 md:mr-1' />
-                                            {oneFilterActivated ?
-                                                <span className="md:block hidden"> Filtrado</span> :
-                                                <span className="md:block hidden"> Filtrar..</span>
-                                            }
-                                        </button>
-                                    }
-
-
-                                    <FilterTransactions
-                                        openFilterPopUp={openFilterPopUp}
-                                        SetOpenFilterPopUp={handleCloseFilterPopUp}
-                                        setCurrentFrontendPage={setCurrentFrontendPage}
-                                        setOneFilterActivated={setOneFilterActivated}
-                                    />
+                                    )}
                                 </div>
                             </div>
+
+                            <CreateTransaction
+                                openCreatePopUp={openCreatePopUp}
+                                SetOpenCreatePopUp={handleCloseCreatePopUp}
+                                currentFrontendPage={currentFrontendPage}
+                            />
+                            <TransferModal open={openTransfer} onClose={() => { setOpenTransfer(false); loadTransferCandidates() }} />
+                            <TransferCandidatesModal open={openCandidates} onClose={() => setOpenCandidates(false)}
+                                candidates={transferCandidates} setCandidates={setTransferCandidates} />
+                            <TransactionFilterSheet
+                                open={openFilterPopUp}
+                                onClose={() => setOpenFilterPopUp(false)}
+                                onApply={(draft) => { setOpenFilterPopUp(false); applyFilters(draft) }}
+                            />
 
                             {/* transactions table */}
                             <div className='bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-semibold mt-2 py-2 flex flex-row border-b dark:border-gray-700 transition-colors duration-300'>

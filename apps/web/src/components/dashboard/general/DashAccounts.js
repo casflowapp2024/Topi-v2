@@ -7,7 +7,7 @@ import { set_dash_account_activated } from '../../../redux/actions/reports';
 import { get_net_worth } from '../../../redux/actions/fx';
 import { fetch_credit_cards } from '../../../redux/actions/creditCards';
 //components
-import { formatMoney, getBaseCurrency } from '../../helpers';
+import { formatMoney, getBaseCurrency, accountClass, isOpenAccount } from '../../helpers';
 import Money from '../../ui/Money';
 import Card, { CardHeader } from '../../ui/Card';
 import Button from '../../ui/Button';
@@ -49,10 +49,11 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
       acc: items.get(nw.account_id) || { id: nw.account_id, name: nw.name, type: { id: nw.type_id } },
       nw,
       value: nw.base_value != null ? Number(nw.base_value) : null,
-    })).filter(r => !(r.acc.closed_at && Number(r.nw.balance) === 0)); // cerradas y en cero: ya no pesan
+    })).filter(r => isOpenAccount(r.acc)); // las cerradas no se muestran en el inicio (siguen en Cuentas)
     // Primero las de mayor valor en moneda base
     rows.sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
-    const savings = rows.reduce((sum, r) => sum + (r.value && r.value > 0 ? r.value : 0), 0);
+    // % de tu ahorro: solo cuentas de efectivo (una tarjeta con saldo a favor no es ahorro)
+    const savings = rows.reduce((sum, r) => sum + (accountClass(r.acc) === 'deposit' && r.value > 0 ? r.value : 0), 0);
     return { rows, savings };
   }, [user_accounts, net_worth]);
   const investmentsTotal = Number(net_worth?.investments_total || 0);
@@ -118,7 +119,8 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
           {visible.map(({ acc, nw, value }) => {
             const style = TYPE_STYLE[parseInt(acc.type?.id)] || TYPE_STYLE[1];
             const { Icon } = style;
-            const share = value && value > 0 && savings > 0 ? Math.round((value / savings) * 100) : null;
+            const cls = accountClass(acc);
+            const share = cls === 'deposit' && value > 0 && savings > 0 ? Math.round((value / savings) * 100) : null;
             const balance = Number(nw.balance);
             return (
               <li key={acc.id}>
@@ -142,13 +144,29 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
                     )}
                   </span>
                   <span className="flex flex-col items-end shrink-0">
-                    <Money
-                      amount={nw.balance}
-                      currency={nw.currency}
-                      base={nw.base_value}
-                      baseCurrency={baseCurrency}
-                      className={`text-sm font-bold tabular-nums ${balance < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-gray-900 dark:text-gray-100'}`}
-                    />
+                    {cls === 'credit' ? (
+                      /* Tarjeta: deuda (saldo negativo) o saldo a favor (pagaste de más), siempre con su palabra */
+                      <span className="flex flex-col items-end">
+                        <span className="text-[11px] font-medium text-ink-2 dark:text-gray-400">
+                          {balance < 0 ? 'Deuda' : balance > 0 ? 'Saldo a favor' : 'Sin deuda'}
+                        </span>
+                        <Money
+                          amount={Math.abs(balance)}
+                          currency={nw.currency}
+                          base={nw.base_value != null ? Math.abs(Number(nw.base_value)) : null}
+                          baseCurrency={baseCurrency}
+                          className={`text-sm font-bold tabular-nums ${balance < 0 ? 'text-money-out dark:text-money-out-dark' : balance > 0 ? 'text-money-in dark:text-money-in-dark' : 'text-gray-900 dark:text-gray-100'}`}
+                        />
+                      </span>
+                    ) : (
+                      <Money
+                        amount={nw.balance}
+                        currency={nw.currency}
+                        base={nw.base_value}
+                        baseCurrency={baseCurrency}
+                        className={`text-sm font-bold tabular-nums ${balance < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-gray-900 dark:text-gray-100'}`}
+                      />
+                    )}
                     {nw.market_gain != null && Number(nw.market_gain) !== 0 && (
                       <span className={`text-xs tabular-nums ${Number(nw.market_gain) < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}`}
                         title="Ganancia de la inversión: valor menos lo aportado">

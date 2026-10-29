@@ -99,6 +99,8 @@ const initialState = {
         sortby: "date",
         automated: "",
         shouldVerify: "",
+        checked: "",
+        transfer: "",
         params: ""
     },
     user_balances: null,

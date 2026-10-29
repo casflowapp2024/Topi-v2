@@ -570,11 +570,10 @@ const buildTransactionParams = ({
     expenseFilter,
     orderByFilter,
     automated,
-    shouldVerify
+    shouldVerify,
+    checked,
+    transfer
 }) => {
-
-    console.log("building params with, IniDate Received", iniDate)
-
     const params = [];
     if (selectedCategories && selectedCategories.length > 0) params.push(`categories=${converToComaSeparated(selectedCategories)}`);
     if (selectedAccounts && selectedAccounts.length > 0) params.push(`accounts=${converToComaSeparated(selectedAccounts)}`);
@@ -585,10 +584,29 @@ const buildTransactionParams = ({
     if (orderByFilter) params.push(`sort_by=${orderByFilter}`);
     if (automated) params.push(`automated=${automated}`);
     if (shouldVerify) params.push(`should_verify=${shouldVerify}`);
+    if ((checked === false) || (checked === true)) params.push(`checked=${checked}`);
+    if ((transfer === false) || (transfer === true)) params.push(`transfer=${transfer}`);
 
     return params.join("&");
 };
 
+
+// Filtros guardados en el store -> argumentos de change_transactions_filter. Con `patch` se cambian
+// solo algunos (p. ej. filtersFromState(f, { keyword: 'uber' })).
+export const filtersFromState = (f = {}, patch = {}) => ({
+    selectedCategories: f.categorie_ids || [],
+    selectedAccounts: f.accounts_ids || [],
+    iniDate: f.iniDate || "",
+    endDate: f.endDate || "",
+    keyword: f.keyword || "",
+    expenseFilter: f.expence ?? "",
+    orderByFilter: f.sortby || "date",
+    automated: f.automated || "",
+    shouldVerify: f.shouldVerify || "",
+    checked: f.checked ?? "",
+    transfer: f.transfer ?? "",
+    ...patch,
+});
 
 export const change_transactions_filter = (
     filters
@@ -607,6 +625,8 @@ export const change_transactions_filter = (
             sortby: filters.orderByFilter,
             automated: filters.automated,
             shouldVerify: filters.shouldVerify,
+            checked: filters.checked ?? "",
+            transfer: filters.transfer ?? "",
             params: params
         }
     });

@@ -341,6 +341,16 @@ func TestApplyTransactionsQueryFilters(t *testing.T) {
 			wantSQL: "WHERE t.expense = ? AND t.automated = ? AND t.should_verify = ? AND t.checked = ?",
 		},
 		{
+			name:    "should keep only transfers when transfer is true",
+			filters: TransactionFilters{Transfer: &trueVal},
+			wantSQL: "WHERE t.transfer_group_id IS NOT NULL",
+		},
+		{
+			name:    "should exclude transfers when transfer is false",
+			filters: TransactionFilters{Transfer: &falseVal},
+			wantSQL: "WHERE t.transfer_group_id IS NULL",
+		},
+		{
 			name: "should add order and limits when enabled",
 			filters: TransactionFilters{
 				SortBy:    "t.amount",

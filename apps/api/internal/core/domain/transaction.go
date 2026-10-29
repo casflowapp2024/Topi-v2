@@ -152,6 +152,7 @@ type TransactionFilters struct {
 	Automated    *bool
 	ShouldVerify *bool
 	Checked      *bool
+	Transfer     *bool // true: solo transferencias entre cuentas propias; false: sin ellas
 	SortBy       string
 	SortOrder    string
 }
@@ -200,6 +201,14 @@ func (f *TransactionFilters) ApplyTransactionsQueryFilters(
 
 	if f.Checked != nil {
 		query = query.Where(squirrel.Eq{"t.checked": f.Checked})
+	}
+
+	if f.Transfer != nil {
+		if *f.Transfer {
+			query = query.Where(squirrel.NotEq{"t.transfer_group_id": nil})
+		} else {
+			query = query.Where(squirrel.Eq{"t.transfer_group_id": nil})
+		}
 	}
 
 	if order {

@@ -13,14 +13,15 @@ import FxRateEditor from './FxRateEditor';
 import TransferLinkSection from './TransferLinkSection';
 import FormEditCreateTrans from './FormEditCreateTrans';
 import Alert from '../alert';
-import Alert2 from '../alert2';
-import { ThreeDots } from 'react-loader-spinner';
 
 /* This example requires Tailwind CSS v2.0+ */
 import {
     CheckIcon,
-    XMarkIcon
+    XMarkIcon,
+    TrashIcon,
+    PencilSquareIcon
 } from '@heroicons/react/20/solid'
+import Button from '../ui/Button';
 
 function TransactionDetail({
     //props
@@ -150,11 +151,11 @@ function TransactionDetail({
         if (deleteResponse === true) {
 
             refreshViews()
-            setAlert("Transaccion eliminada exitosamente", true, "", "", false)
-            setLoadingDelete(false)
+                        setLoadingDelete(false)
             setDeleteSuccess(true);
         } else {
-            setAlert('No se pudo elminar la transaccion, intenta de nuevo', false, 'text-white', 'bg-red-500', 5000)
+            setAlert('No se pudo eliminar la transacción. Intenta de nuevo.', false, 'text-white', 'bg-red-500', 5000)
+            setLoadingDelete(false)
         }
     }
 
@@ -324,12 +325,6 @@ function TransactionDetail({
 
     //GENERALES
 
-    useEffect(() => {
-        console.log("detailInfo Detail: ", detailInfo);
-    }, [detailInfo]);
-    useEffect(() => {
-        console.log("editCreateData Detail: ", editCreateData);
-    }, [editCreateData]);
 
     /* useEffect(() => {
         console.log("closing/opening Edit ", editCreateData); 
@@ -364,174 +359,98 @@ function TransactionDetail({
                         >
                             {/**/}
                             <DialogPanel className="relative transform overflow-visible rounded-3xl bg-white dark:bg-[#151C2C] text-left shadow-2xl transition-all w-full max-w-md">
-                                {/* TARJETA RESUMEN */}
-                                {detailInfo ?
-                                    <div className='overflow-visible rounded-3xl text-left'>
-                                        <div className="flex flex-col p-6 sm:p-8" >
-                                            {(openDeleteBox === false && openEditTrans === false) ?
+                                {detailInfo && (
+                                    <div className="relative p-6 sm:p-8">
+                                        {/* Cerrar (en todos los estados) */}
+                                        <button
+                                            type="button"
+                                            onClick={() => handleClosePopover()}
+                                            className="absolute top-4 right-4 rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500"
+                                            aria-label="Cerrar"
+                                        >
+                                            <XMarkIcon className="w-6 h-6" aria-hidden="true" />
+                                        </button>
 
-                                                /* DETALLE DE LA TRANSACCION INICIAL*/
-                                                <div className="z-40">
-                                                    {/* BOTON CERRAR */}
-                                                    <div className='absolute top-4 right-4'>
-                                                        <button
-                                                            type="button"
-                                                            onClick={e => setOpenTransDetail(false)}
-                                                            className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-white transition-colors focus:outline-none"
-                                                        >
-                                                            <XMarkIcon className="w-6 h-6" />
-                                                            <span className="sr-only">Cerrar modal</span>
-                                                        </button>
+                                        {deleteSuccess ? (
+                                            /* ELIMINADA */
+                                            <div className="flex flex-col items-center text-center gap-3 py-6" role="status">
+                                                <span className="w-14 h-14 rounded-full bg-status-ok-soft dark:bg-emerald-500/15 text-status-ok flex items-center justify-center">
+                                                    <CheckIcon className="w-8 h-8" aria-hidden="true" />
+                                                </span>
+                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Transacción eliminada</h3>
+                                                <p className="text-sm text-ink-2 dark:text-gray-400">Tus saldos y reportes ya se actualizaron.</p>
+                                                <Button variant="secondary" className="mt-2 min-w-[140px]" onClick={() => handleClosePopover()}>Cerrar</Button>
+                                            </div>
+                                        ) : openDeleteBox ? (
+                                            /* CONFIRMAR ELIMINACIÓN */
+                                            <div className="flex flex-col items-center text-center gap-3 pt-4">
+                                                <span className="w-14 h-14 rounded-full bg-status-crit-soft dark:bg-red-500/15 text-status-crit flex items-center justify-center">
+                                                    <TrashIcon className="w-7 h-7" aria-hidden="true" />
+                                                </span>
+                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">¿Eliminar esta transacción?</h3>
+                                                <div className="w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-4 py-3 flex items-center justify-between gap-3 text-left">
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{detailInfo.description}</p>
+                                                        <p className="text-xs text-ink-2 dark:text-gray-400 truncate">
+                                                            {formatDate(detailInfo.date)} · {detailInfo.account?.name}
+                                                        </p>
                                                     </div>
-                                                    {/* resumen */}
-                                                    <TransSumm detailInfo={detailInfo} />
-                                                    <FxRateEditor detailInfo={detailInfo} setDetailInfo={setDetailInfo} contextWindow={contextWindow} />
-                                                    <TransferLinkSection detailInfo={detailInfo} setDetailInfo={setDetailInfo} onChanged={refreshViews} />
-                                                    {/* botones */}
-                                                    <div className="flex flex-row justify-between items-center mt-6">
-                                                        <div class="flex items-center space-x-3 sm:space-x-4">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleOpenEditTransaction()}
-                                                                class="text-white inline-flex items-center bg-[#5266EB] hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                                                                <svg aria-hidden="true" class="mr-1 -ml-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"></path><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"></path></svg>
-                                                                Editar
-                                                            </button>
-                                                        </div>
-                                                        <button
-                                                            onClick={e => setOpenDeleteBox(true)}
-                                                            type="button" class="inline-flex items-center text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-900">
-                                                            <svg aria-hidden="true" class="w-5 h-5 mr-1.5 -ml-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
-                                                            Eliminar
-                                                        </button>
-                                                    </div>
-
+                                                    <span className={`shrink-0 text-sm font-bold tabular-nums ${detailInfo.transfer_group_id ? 'text-gray-700 dark:text-gray-200' : detailInfo.expense ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}`}>
+                                                        {detailInfo.transfer_group_id ? '' : detailInfo.expense ? '−' : '+'}{formatMoney(detailInfo.amount, detailInfo.currency)}
+                                                    </span>
                                                 </div>
-                                                :
-                                                <>
-                                                    {openEditTrans === true ?
-                                                        /* EDITAR TRANSACCION */
-                                                        <div className='w-full'>
-
-                                                            <FormEditCreateTrans
-                                                                editCreateData={editCreateData}
-                                                                onChangeCreate={onChangeCreate}
-                                                                user_categories={user_categories}
-                                                                user_accounts={user_accounts}
-                                                                date={date}
-                                                                setDate={setDate}
-                                                            />
-
-                                                            {/* botones */}
-                                                            <div class="flex flex-row justify-end items-center gap-2">
-                                                                <div class="flex items-center space-x-3 sm:space-x-4">
-
-                                                                    {loadingUpdate ?
-                                                                        <div className='w-[170px] text-white flex justify-center items-center bg-[#5266EB] hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800'>
-                                                                            <ThreeDots color="white" height="20" width="20" ariaLabel="loading" />
-                                                                        </div>
-                                                                        :
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={(e) => onSubmitUpdate(e)}
-                                                                            class="text-white inline-flex items-center bg-[#5266EB] hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                                                                            <>
-
-                                                                                {/*  <svg aria-hidden="true" class="mr-1 -ml-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"></path><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"></path></svg>
-                                             */}
-                                                                                <CheckIcon className='mr-1 -ml-1 w-5 h-5' />
-
-                                                                                Actualizar
-                                                                            </>
-                                                                        </button>
-                                                                    }
-                                                                </div>
-                                                                {loadingUpdate ?
-                                                                    <></>
-                                                                    :
-
-                                                                    <button
-                                                                        onClick={() => setOpenEditTrans(false)}
-                                                                        className='rounded-lg  w-10 shadow-sm shadow-zinc-400 h-10 flex justify-center items-center border border-zinc-700 hover:bg-zinc-300'>
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
-                                                                        </svg>
-                                                                    </button>
-                                                                }
-                                                            </div>
-
-
-
-                                                        </div>
-                                                        :
-
-                                                        /* ELIMINAR TRANSACCION */
-                                                        <div className='w-[284px]'>
-                                                            {deleteSuccess ?
-                                                                <Alert2 />
-                                                                :
-                                                                <div className='py-20 text-center col-span-3 text-xl flex justify-center font-medium h-[280px]'>
-                                                                    Estas seguro que quieres borras esta transacción?, Perderas la información definitivamente
-                                                                </div>
-
-                                                            }
-                                                            {/* BOTONES */}
-                                                            {deleteSuccess ?
-
-                                                                <div className="w-full justify-items-center items-center flex flex-row justify-around" >
-                                                                    <button
-                                                                        onClick={() => handleClosePopover()}
-                                                                        className='rounded-lg  w-10 shadow-sm shadow-zinc-400 h-10 flex justify-center items-center border border-zinc-700 hover:bg-zinc-300'>
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
-                                                                        </svg>
-                                                                    </button>
-                                                                </div>
-
-                                                                :
-                                                                <>
-                                                                    {loadingDelete ?
-                                                                        <div className="w-full justify-items-center items-center flex flex-row justify-around">
-                                                                            <ThreeDots color="gray" height="40" width="40" ariaLabel="loading" />
-                                                                        </div>
-                                                                        :
-                                                                        <div className="w-full justify-items-center items-center flex flex-row justify-around" >
-                                                                            <button
-                                                                                onClick={() => handleDeleteTransaction(detailInfo.id)}
-
-                                                                                className='px-2 rounded-md bg-zinc-600 text-zinc-300 shadow-sm shadow-zinc-300 h-12 flex justify-center items-center border border-zinc-700 hover:bg-red-400 transition-transform'>
-                                                                                Si, Eliminar!
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => setOpenDeleteBox(false)}
-                                                                                className='rounded-lg  w-10 shadow-sm shadow-zinc-400 h-10 flex justify-center items-center border border-zinc-700 hover:bg-zinc-300'>
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
-                                                                                </svg>
-                                                                            </button>
-                                                                        </div>
-                                                                    }
-                                                                </>
-                                                            }
-
-                                                        </div>
-
-                                                    }
-                                                </>
-                                            }
-                                        </div>
-                                        {deleteSuccess ?
-                                            <></>
-                                            :
-                                            <div className="overflow-hidden rounded-b-3xl">
+                                                <p className="text-sm text-ink-2 dark:text-gray-400">
+                                                    Se borra para siempre y deja de contar en tus saldos y presupuestos.
+                                                </p>
+                                                <div className="w-full flex flex-col-reverse sm:flex-row gap-2 pt-2">
+                                                    <Button variant="secondary" className="flex-1" onClick={() => setOpenDeleteBox(false)} disabled={loadingDelete}>
+                                                        Cancelar
+                                                    </Button>
+                                                    <Button variant="danger" className="flex-1" icon={TrashIcon} loading={loadingDelete}
+                                                        onClick={() => handleDeleteTransaction(detailInfo.id)}>
+                                                        Sí, eliminar
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ) : openEditTrans ? (
+                                            /* EDITAR */
+                                            <div className="w-full">
+                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pr-10">Editar transacción</h3>
+                                                <FormEditCreateTrans
+                                                    editCreateData={editCreateData}
+                                                    onChangeCreate={onChangeCreate}
+                                                    user_categories={user_categories}
+                                                    user_accounts={user_accounts}
+                                                    date={date}
+                                                    setDate={setDate}
+                                                />
+                                                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+                                                    <Button variant="secondary" onClick={() => setOpenEditTrans(false)} disabled={loadingUpdate}>Cancelar</Button>
+                                                    <Button icon={CheckIcon} loading={loadingUpdate} onClick={(e) => onSubmitUpdate(e)}>Guardar cambios</Button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            /* DETALLE */
+                                            <div>
+                                                <TransSumm detailInfo={detailInfo} />
+                                                <FxRateEditor detailInfo={detailInfo} setDetailInfo={setDetailInfo} contextWindow={contextWindow} />
+                                                <TransferLinkSection detailInfo={detailInfo} setDetailInfo={setDetailInfo} onChanged={refreshViews} />
+                                                <div className="flex flex-row justify-between items-center gap-2 mt-6">
+                                                    <Button variant="ghost" className="text-status-crit-text dark:text-red-400 hover:bg-status-crit-soft dark:hover:bg-red-500/10"
+                                                        icon={TrashIcon} onClick={() => setOpenDeleteBox(true)}>
+                                                        Eliminar
+                                                    </Button>
+                                                    <Button icon={PencilSquareIcon} onClick={() => handleOpenEditTransaction()}>Editar</Button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {!deleteSuccess && (
+                                            <div className="overflow-hidden rounded-2xl mt-3 empty:hidden">
                                                 <Alert />
                                             </div>
-                                        }
+                                        )}
                                     </div>
-
-                                    :
-                                    <></>
-                                }
+                                )}
                             </DialogPanel>
                         </TransitionChild>
                     </div>

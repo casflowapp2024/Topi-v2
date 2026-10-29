@@ -16,9 +16,11 @@ import AccSummaryCard from "./AccSummaryCard.js";
 import AccountDetail from "../../accounts/AccountDetail";
 import AccountCreate from "../../accounts/AccountCreate";
 import { PlusIcon, CreditCardIcon, DocumentCurrencyDollarIcon } from '@heroicons/react/20/solid'
-import { findElmentById, accountReportGroup, isInvestmentAccount, isCreditAccount } from "../../helpers.js";
+import { findElmentById, accountReportGroup, isInvestmentAccount, isCreditAccount, isOpenAccount } from "../../helpers.js";
 import CreditCardPanel from "./CreditCardPanel";
 import InvestmentValuationCard from "./InvestmentValuationCard";
+import AccountGroupSummary from "./AccountGroupSummary";
+import { groupOfAccount, accountsOfGroup } from "./accountGroups";
 //redux
 //import {  } from "../redux/actions/cashflow";
 
@@ -70,13 +72,27 @@ const AAAcountsDashboard = ({
         // Respeta la cuenta elegida antes (p. ej. desde "Mis cuentas" en el inicio)
         if (user_accounts.items && user_accounts.items.length > 0) {
             const stillExists = account_activated && user_accounts.items.some(acc => acc.id === account_activated.id);
-            if (!stillExists) set_dash_account_activated(user_accounts.items[0]);
+            if (!stillExists) {
+                // primero una cuenta abierta (las cerradas solo si no hay otra)
+                set_dash_account_activated(user_accounts.items.find(isOpenAccount) || user_accounts.items[0]);
+            }
         }
     }, [user_accounts]);
 
+    // Grupo elegido en "Mis cuentas" (Efectivo, Tarjetas, Inversiones, Cerradas). Sigue a la cuenta
+    // activa (p. ej. si llegas desde el inicio con una tarjeta) y al cambiarlo abre su primera cuenta.
+    const [group, setGroup] = useState(() => (account_activated ? groupOfAccount(account_activated) : 'deposit'));
+    useEffect(() => {
+        if (account_activated) setGroup(groupOfAccount(account_activated));
+    }, [account_activated?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    const handleGroupChange = (g) => {
+        setGroup(g);
+        const first = accountsOfGroup(user_accounts.items, g)[0];
+        if (first && groupOfAccount(account_activated) !== g) set_dash_account_activated(first);
+    };
+
 
     useEffect(() => {
-        console.log("AAAcountsDashboard - current_Month o current_Year o account_activated cambiaron")
         //al cargar el componente, si no hay cuenta activada, activar la primera cuenta de la list
         const ini_date_first = parseDatetimetoDateStrFormat(new Date(current_Year, current_Month - 1, 1), "YYYY-MM-DD");
         const end_date_first = parseDatetimetoDateStrFormat(new Date(current_Year, current_Month, 0), "YYYY-MM-DD")
@@ -124,6 +140,8 @@ const AAAcountsDashboard = ({
                     {user_accounts &&
                         <div className="order-1 lg:order-none">
                             <AccbyTypeDash
+                                group={group}
+                                onGroupChange={handleGroupChange}
                                 onOpenDetail={handleOpenAccDetail}
                                 onOpenCreate={() => setOpenCreateBox(true)}
                             />
@@ -135,6 +153,11 @@ const AAAcountsDashboard = ({
                 </div>
                 {/* Filtro, resumen e historial de la cuenta elegida */}
                 <div className="contents lg:flex lg:flex-col lg:gap-6 lg:flex-1 lg:min-w-0">
+                    {user_accounts?.items?.length > 0 &&
+                        <div className="order-2 lg:order-none">
+                            <AccountGroupSummary group={group} />
+                        </div>
+                    }
                     {user_accounts && account_activated &&
                         <div className="order-2 lg:order-none">
                             <AccPeriodFilter />

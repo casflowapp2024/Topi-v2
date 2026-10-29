@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { MagnifyingGlassMinusIcon, MagnifyingGlassPlusIcon } from '@heroicons/react/20/solid';
 import { connect } from 'react-redux';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Rectangle } from 'recharts';
 import ChartLegend from '../ui/ChartLegend';
@@ -41,6 +42,15 @@ const BudgetBreakdownChart = ({
     });
   }, [history_dash, history_category, catOk, isIncome, current_Year]);
 
+  // Zoom: con una categoría elegida el eje se ajusta a ella (y su presupuesto); las barras del
+  // total que no caben se recortan arriba y llevan una marca ▲. "Escala completa" lo deshace.
+  const [zoom, setZoom] = useState(true);
+  const catMax = data.reduce((mx, d) => Math.max(mx, d.cat), 0);
+  const totalMax = data.reduce((mx, d) => Math.max(mx, d.total), 0);
+  const zoomMax = niceMax(catMax * 1.35, catBudget);
+  const zoomed = catOk && zoom && zoomMax < totalMax;
+  const yMax = zoomed ? zoomMax : niceMax(totalMax, totalBudget, catBudget);
+
   const last = data[data.length - 1];
   const month = last?.longLabel.split(' ')[0];
   let lead = null;
@@ -82,16 +92,26 @@ const BudgetBreakdownChart = ({
           catOk ? { type: 'bar', color, label: catName } : null,
           catOk ? { type: 'bar', color, faded: true, label: 'Resto' } : null,
           catOk && catBudget > 0 ? { type: 'line', color, label: `Presup. ${catName}` } : null,
-          totalBudget > 0 ? { type: 'line', label: 'Presup. total' } : null,
+          totalBudget > 0 && totalBudget <= yMax ? { type: 'line', label: 'Presup. total' } : null,
         ]}
         className="pt-2"
       />
+      {catOk && (zoomMax < totalMax) && (
+        <div className="flex justify-end px-3 -mb-1">
+          <button type="button" onClick={() => setZoom(z => !z)}
+            className="inline-flex items-center gap-1 h-6 px-2 rounded-lg text-xs font-medium text-topi-600 dark:text-indigo-300 hover:bg-topi-50 dark:hover:bg-gray-700">
+            {zoom
+              ? <><MagnifyingGlassMinusIcon className="w-4 h-4" aria-hidden="true" />Escala completa</>
+              : <><MagnifyingGlassPlusIcon className="w-4 h-4" aria-hidden="true" />Acercar a {catName}</>}
+          </button>
+        </div>
+      )}
       <div className="flex-1 min-h-0">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={chartMargin}>
             <CartesianGrid vertical={false} />
             <XAxis dataKey="label" {...xAxisProps} />
-            <YAxis {...yAxisProps} tickCount={4} domain={[0, (dataMax) => niceMax(dataMax, totalBudget, catBudget)]} tickFormatter={(v) => formatMoneyCompact(v)} />
+            <YAxis {...yAxisProps} tickCount={4} domain={[0, yMax]} allowDataOverflow tickFormatter={(v) => formatMoneyCompact(v)} />
             <Tooltip content={tooltip} cursor={{ fill: c.neutral, fillOpacity: 0.08 }} />
             {totalBudget > 0 && (
               <ReferenceLine y={totalBudget} className="topi-budget-line" stroke={c.neutral} strokeWidth={1.5} strokeDasharray="6 4" />
@@ -103,7 +123,10 @@ const BudgetBreakdownChart = ({
             <Bar dataKey={catOk ? 'cat' : 'total'} stackId="b" fill={color} maxBarSize={28} isAnimationActive={false}
               shape={(props) => <Rectangle {...props} radius={catOk && props.payload.rest > 0 ? [0, 0, 0, 0] : [4, 4, 0, 0]} />} />
             {catOk && (
-              <Bar dataKey="rest" stackId="b" fill={color} fillOpacity={0.28} radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />
+              <Bar dataKey="rest" stackId="b" fill={color} fillOpacity={zoomed ? 0.18 : 0.28} radius={zoomed ? [0, 0, 0, 0] : [4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false}
+                label={({ x, width, index }) => (zoomed && data[index]?.total > yMax
+                  ? <text x={x + width / 2} y={chartMargin.top + 9} textAnchor="middle" fontSize={10} fill={c.neutral}>▲</text>
+                  : null)} />
             )}
           </BarChart>
         </ResponsiveContainer>

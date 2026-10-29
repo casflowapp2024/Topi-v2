@@ -3,6 +3,7 @@ import { connect } from 'react-redux';
 import moment from 'moment-timezone';
 import { CreditCardIcon, ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/20/solid';
 import { setAlert } from '../../../redux/actions/alert';
+import { get_net_worth } from '../../../redux/actions/fx';
 import { fetch_credit_cards, save_credit_card } from '../../../redux/actions/creditCards';
 import InputMoneyInt2Decs from '../../InputMoneyInt2Decs';
 import Button from '../../ui/Button';
@@ -23,7 +24,7 @@ const Box = ({ label, children, hint, className = '' }) => (
 // Resumen de una tarjeta de crédito (reemplaza al resumen de la cuenta): deuda, cupo disponible,
 // el último corte con lo que falta pagar y la fecha límite, y lo comprado en el periodo elegido.
 // Los pagos son transferencias desde otra cuenta: no cuentan como ingreso.
-const CreditCardPanel = ({ account, data, setAlert }) => {
+const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth }) => {
     const currency = account?.currency || 'COP';
     const [card, setCard] = useState(null);       // estado de hoy (null = cargando)
     const [form, setForm] = useState(null);       // null = cerrado
@@ -36,6 +37,8 @@ const CreditCardPanel = ({ account, data, setAlert }) => {
     }, [account?.id]);
 
     useEffect(() => { setForm(null); setCard(null); load(); }, [load]);
+    // El saldo de la cuenta (para mostrar un saldo a favor) sale del patrimonio de hoy
+    useEffect(() => { get_net_worth(); }, [get_net_worth, data]);
     // el saldo cambia con cada movimiento del periodo: se recalcula cuando cambia el resumen
     useEffect(() => { load(); }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -69,6 +72,8 @@ const CreditCardPanel = ({ account, data, setAlert }) => {
     };
 
     const debt = Number(card?.debt ?? 0);
+    const nwBalance = Number((net_worth?.accounts || []).find(a => a.account_id === account.id)?.balance ?? 0);
+    const inFavor = debt === 0 && nwBalance > 0 ? nwBalance : 0; // pagaste más de lo que debías
     const limit = card?.credit_limit != null ? Number(card.credit_limit) : null;
     const used = limit ? Math.min(100, Math.round((debt / limit) * 100)) : null;
     const pending = card?.pending_statement != null ? Number(card.pending_statement) : null;
@@ -124,9 +129,15 @@ const CreditCardPanel = ({ account, data, setAlert }) => {
             ) : (
                 <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
-                        <Box label="Deuda hoy">
-                            <span className={debt > 0 ? 'text-money-out dark:text-money-out-dark' : 'text-gray-900 dark:text-white'}>{formatMoney(debt, currency)}</span>
-                        </Box>
+                        {inFavor > 0 ? (
+                            <Box label="Saldo a favor" hint="Pagaste más de lo que debías: se descuenta de tus próximas compras.">
+                                <span className="text-money-in dark:text-money-in-dark">{formatMoney(inFavor, currency)}</span>
+                            </Box>
+                        ) : (
+                            <Box label="Deuda hoy" hint={debt === 0 ? 'No debes nada en esta tarjeta.' : undefined}>
+                                <span className={debt > 0 ? 'text-money-out dark:text-money-out-dark' : 'text-gray-900 dark:text-white'}>{formatMoney(debt, currency)}</span>
+                            </Box>
+                        )}
                         <Box label="Disponible" hint={limit != null ? `De un cupo de ${formatMoney(limit, currency)}` : 'Configura el cupo para verlo'}>
                             <span className="text-gray-900 dark:text-white">{card.available != null ? formatMoney(card.available, currency) : '—'}</span>
                             {used !== null && (
@@ -181,4 +192,4 @@ const CreditCardPanel = ({ account, data, setAlert }) => {
     );
 };
 
-export default connect(null, { setAlert })(CreditCardPanel);
+export default connect(state => ({ net_worth: state.Fx.net_worth }), { setAlert, get_net_worth })(CreditCardPanel);
