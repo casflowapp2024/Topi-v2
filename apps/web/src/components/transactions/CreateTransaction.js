@@ -8,7 +8,7 @@ import {
 } from '../../redux/actions/cashflow';
 import { setAlert } from '../../redux/actions/alert';
 //components
-import { formatDate, formatMoney, formatMoneyCompact, formatedCurrToNumber, findElmentById, parseDatetimetoDateStrFormat, isOpenAccount } from '../helpers';
+import { formatDate, formatMoney, formatMoneyCompact, formatedCurrToNumber, findElmentById, parseDatetimetoDateStrFormat, isOpenAccount, isCreditAccount } from '../helpers';
 import 'react-datepicker/dist/react-datepicker.css'
 import { ThreeDots } from 'react-loader-spinner';
 import FormEditCreateTrans from './FormEditCreateTrans';
@@ -57,6 +57,7 @@ function CreateTransaction({
                 category_id: initialCategoryId || (user_categories?.items?.length > 0 ? user_categories.items[0].id : 0),
                 account_id: initialAccountId || ((user_accounts?.items || []).find(isOpenAccount)?.id ?? 0),
                 amount: "$0",
+                installments: '',
             }));
         }
     }, [openCreatePopUp, initialCategoryId, initialAccountId]);
@@ -125,7 +126,10 @@ function CreateTransaction({
             createTransData.description,
             createTransData.expense,
             parseFloat(formatedCurrToNumber(createTransData.amount)),
-            date)
+            date,
+            // cuotas solo en gastos con tarjeta
+            createTransData.expense && isCreditAccount(findElmentById(user_accounts?.items || [], parseInt(createTransData.account_id)))
+                ? createTransData.installments : undefined)
 
         if (createResponse === true) {
 
@@ -138,6 +142,7 @@ function CreateTransaction({
                     description: "",
                     expense: true,
                     amount: "$0",
+                    installments: '',
                 }),
                 300)
 

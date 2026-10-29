@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
+import moment from 'moment-timezone';
 import { Link, useNavigate } from 'react-router-dom';
 //redux
 import { connect } from 'react-redux';
 import { set_dash_account_activated } from '../../../redux/actions/reports';
 import { get_net_worth } from '../../../redux/actions/fx';
+import { fetch_credit_cards } from '../../../redux/actions/creditCards';
 //components
 import { formatMoney, getBaseCurrency } from '../../helpers';
 import Money from '../../ui/Money';
@@ -12,7 +14,13 @@ import Button from '../../ui/Button';
 import EmptyState from '../../ui/EmptyState';
 import {
   BanknotesIcon, BuildingLibraryIcon, ArrowTrendingUpIcon, CreditCardIcon, ChevronRightIcon, PlusIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/20/solid';
+
+// Aviso de pago: tarjetas con saldo del corte por pagar y fecha límite en los próximos 7 días (o vencida)
+const DUE_SOON_DAYS = 7;
+const dueSoon = (cards) => (cards || []).filter(c => Number(c.pending_statement) > 0 && c.due_date
+  && moment(c.due_date).diff(moment().startOf('day'), 'days') <= DUE_SOON_DAYS);
 
 // Tipos de cuenta (mismos ids que AccbyTypeDash)
 const TYPE_STYLE = {
@@ -30,6 +38,9 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => { get_net_worth(); }, [get_net_worth, user_accounts]);
+  const [cards, setCards] = useState([]);
+  useEffect(() => { fetch_credit_cards().then(list => setCards(list || [])); }, [user_accounts]);
+  const dueCards = dueSoon(cards);
 
   const baseCurrency = net_worth?.base_currency || getBaseCurrency();
   const { rows, savings } = useMemo(() => {
@@ -77,6 +88,23 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
           </Link>
         }
       />
+
+      {dueCards.length > 0 && (
+        <ul className="mt-3 space-y-1" aria-label="Pagos de tarjeta próximos">
+          {dueCards.map(c => {
+            const overdue = moment(c.due_date).isBefore(moment().startOf('day'));
+            return (
+              <li key={c.account_id} className={`flex gap-2 rounded-xl px-3 py-2 text-sm ${overdue ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'}`}>
+                <ExclamationTriangleIcon className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+                <span>
+                  {c.name}: {overdue ? 'quedó pendiente' : 'paga'} <b>{formatMoney(c.pending_statement, c.currency)}</b>
+                  {overdue ? ` (la fecha límite fue el ${moment(c.due_date).format('DD-MM')})` : ` antes del ${moment(c.due_date).format('DD-MM')}`}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       {rows.length === 0 ? (
         <EmptyState

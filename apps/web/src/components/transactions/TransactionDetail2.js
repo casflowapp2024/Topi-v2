@@ -7,7 +7,7 @@ import { get_user_categories, create_category } from '../../redux/actions/cashfl
 import { get_accounts_status_by_period, get_history_accounts_by_month, get_history_dash, get_history_category_by_month, get_expenses_report } from '../../redux/actions/reports';
 import { setAlert } from '../../redux/actions/alert';
 //components
-import { findElmentNameById, formatDate, formatMoney, formatedCurrToNumber, findElmentById, parseDatetimetoDateStrFormat, formatToDateFilters, accountReportGroup } from '../helpers';
+import { findElmentNameById, formatDate, formatMoney, formatedCurrToNumber, findElmentById, parseDatetimetoDateStrFormat, formatToDateFilters, accountReportGroup, isCreditAccount } from '../helpers';
 import TransSumm from './TransSumm';
 import FxRateEditor from './FxRateEditor';
 import TransferLinkSection from './TransferLinkSection';
@@ -166,6 +166,7 @@ function TransactionDetail({
         description: detailInfo.description,
         expense: detailInfo.expense,
         amount: detailInfo.amount,
+        installments: detailInfo.installments ?? '',
     } : null)
 
     const [date, setDate] = useState(detailInfo ? detailInfo.date : null)
@@ -181,6 +182,7 @@ function TransactionDetail({
                 description: detailInfo.description,
                 expense: detailInfo.expense,
                 amount: detailInfo.amount,
+                installments: detailInfo.installments ?? '',
             }
         )
         setDate(detailInfo.date)
@@ -232,7 +234,13 @@ function TransactionDetail({
             editCreateData.description,
             editCreateData.expense,
             parseFloat(formatedCurrToNumber(editCreateData.amount)),
-            date
+            date,
+            undefined,
+            undefined,
+            undefined,
+            // cuotas solo en gastos con tarjeta; en otro caso se quitan
+            editCreateData.expense && isCreditAccount(findElmentById(user_accounts.items, parseInt(editCreateData.account_id)))
+                ? (Number(editCreateData.installments) || 0) : 0
         )
 
         console.log("updateResponse: ", updateResponse);
@@ -254,7 +262,8 @@ function TransactionDetail({
                     description: editCreateData.description,
                     expense: editCreateData.expense,
                     amount: parseFloat(formatedCurrToNumber(editCreateData.amount)),
-                    date: date
+                    date: date,
+                    installments: Number(editCreateData.installments) > 1 ? Number(editCreateData.installments) : null
                 })
             update_transaction_local(detailInfo.id, {
                 category: {
@@ -297,6 +306,7 @@ function TransactionDetail({
             description: detailInfo.description,
             expense: detailInfo.expense,
             amount: detailInfo.amount,
+            installments: detailInfo.installments ?? '',
         } : null)
     }, [detailInfo])
 

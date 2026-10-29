@@ -16,7 +16,8 @@ import AccSummaryCard from "./AccSummaryCard.js";
 import AccountDetail from "../../accounts/AccountDetail";
 import AccountCreate from "../../accounts/AccountCreate";
 import { PlusIcon, CreditCardIcon, DocumentCurrencyDollarIcon } from '@heroicons/react/20/solid'
-import { findElmentById, accountReportGroup, isInvestmentAccount } from "../../helpers.js";
+import { findElmentById, accountReportGroup, isInvestmentAccount, isCreditAccount } from "../../helpers.js";
+import CreditCardPanel from "./CreditCardPanel";
 import InvestmentValuationCard from "./InvestmentValuationCard";
 //redux
 //import {  } from "../redux/actions/cashflow";
@@ -139,8 +140,8 @@ const AAAcountsDashboard = ({
                             <AccPeriodFilter />
                         </div>
                     }
-                    {/* las inversiones tienen su propio resumen: valor, aportes y ganancia */}
-                    {account_activated && !isInvestmentAccount(account_activated) &&
+                    {/* inversiones y tarjetas tienen su propio resumen */}
+                    {account_activated && !isInvestmentAccount(account_activated) && !isCreditAccount(account_activated) &&
                         <div className='order-3 lg:order-none p-4 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-xl shadow-md'>
                             <AccSummaryCard acc={account_activated} data={account_activated_stats} />
                         </div>
@@ -148,6 +149,11 @@ const AAAcountsDashboard = ({
                     {account_activated && isInvestmentAccount(account_activated) &&
                         <div className="order-3 lg:order-none">
                             <InvestmentValuationCard account={account_activated} />
+                        </div>
+                    }
+                    {account_activated && isCreditAccount(account_activated) &&
+                        <div className="order-3 lg:order-none">
+                            <CreditCardPanel account={account_activated} data={account_activated_stats} />
                         </div>
                     }
                     <div className="order-4 lg:order-none h-[260px] md:h-[364px] lg:h-[360px] p-4 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-xl shadow-md flex flex-col">

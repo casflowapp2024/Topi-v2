@@ -509,7 +509,9 @@ export const create_transaction = (
     description,
     expense,
     amount,
-    date) => async dispatch => {
+    date,
+    installments // opcional: compra con tarjeta a N cuotas
+) => async dispatch => {
 
         const config = {
             headers: {
@@ -524,7 +526,8 @@ export const create_transaction = (
             description,
             expense,
             amount,
-            date: date
+            date: date,
+            ...(Number(installments) > 1 ? { installments: Number(installments) } : {}),
         });
 
         try {
@@ -704,7 +707,8 @@ export const update_transaction = (
     date,
     checked,
     should_verify,
-    fx_rate // opcional: tasa manual hacia la moneda base (string decimal)
+    fx_rate, // opcional: tasa manual hacia la moneda base (string decimal)
+    installments // opcional: cuotas; undefined las deja, 0 las quita
 ) => async dispatch => {
 
     const config = {
@@ -725,6 +729,7 @@ export const update_transaction = (
         "checked": true,
         "should_verify": false,
         ...(fx_rate ? { "fx_rate": String(fx_rate) } : {}),
+        ...(installments !== undefined && installments !== null ? { "installments": Number(installments) || 0 } : {}),
     });
 
     console.log("updating transaction")

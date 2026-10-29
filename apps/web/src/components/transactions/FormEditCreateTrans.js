@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from 'react'
-import { formatDate, formatMoney, getBaseCurrency, parseDatetimetoDateStrFormat, parseDatetoDatetimeBrow, isOpenAccount } from "../../components/helpers";
+import { formatDate, formatMoney, getBaseCurrency, parseDatetimetoDateStrFormat, parseDatetoDatetimeBrow, isOpenAccount, isCreditAccount } from "../../components/helpers";
 
 import InputMoneyInt2Decs from '../InputMoneyInt2Decs';
 import { SingleDateSelector } from '../ui/SingleDateSelector.tsx';
@@ -109,6 +109,27 @@ const FormEditCreateTrans = ({
                                 <span class="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">Ingreso</span>
                             </label>
                         </div>
+                        {/* cuotas: compra con tarjeta diferida (informativo; el gasto es la compra completa) */}
+                        {editCreateData.expense && isCreditAccount((user_accounts.items || []).find(a => String(a.id) === String(editCreateData.account_id))) && (
+                            <div className="sm:col-span-2">
+                                <label htmlFor="installments" className="block mb-0.5 md:mb-2 text-sm font-medium text-gray-900 dark:text-white">Cuotas (opcional)</label>
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    min="1"
+                                    max="120"
+                                    name="installments"
+                                    id="installments"
+                                    value={editCreateData.installments ?? ''}
+                                    onChange={e => onChangeCreate(e)}
+                                    placeholder="1"
+                                    aria-describedby="installments-help"
+                                    className="bg-gray-50 p-2 py-1 md:py-2 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full sm:w-32 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                                <p id="installments-help" className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    El gasto cuenta completo hoy; las cuotas sirven para saber qué te cobrará el banco cada mes.
+                                </p>
+                            </div>
+                        )}
                         {/* date*/}
                         <div className="sm:col-span-2">
                             <label for="date" class="block mb-0.5 md:mb-2 text-sm font-medium text-gray-900 dark:text-white">Fecha</label>
