@@ -8,14 +8,15 @@ import { get_net_worth } from '../../../redux/actions/fx';
 import { formatMoney, getBaseCurrency } from '../../helpers';
 import { ACCOUNT_GROUPS, ALL_GROUP, accountsOfGroup } from './accountGroups';
 
-// Selector de tipo + Agregar, debajo del total (en móvil la fila se desliza)
+// Selector de tipo + Agregar (en móvil la fila se desliza)
 const TypeChips = ({ items, group, onChange, onCreate }) => {
   const groups = ACCOUNT_GROUPS.filter(g => g.id !== 'closed').map(g => ({ ...g, count: accountsOfGroup(items, g.id).length }))
     .filter(g => g.count > 0 || g.id === group);
   const closed = accountsOfGroup(items, 'closed').length;
   return (
-    <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2">
-      <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto hide-scrollbar" role="tablist" aria-label="Tipo de cuenta">
+    // Móvil: una fila debajo del total. PC: a la derecha del total, "Agregar cuenta" arriba y los tipos debajo
+    <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2 lg:mt-0 lg:pt-0 lg:border-0 lg:flex-col-reverse lg:items-end lg:min-w-0 lg:max-w-[62%]">
+      <div className="flex-1 min-w-0 lg:flex-none lg:max-w-full flex items-center gap-2 overflow-x-auto hide-scrollbar" role="tablist" aria-label="Tipo de cuenta">
         {[{ ...ALL_GROUP, count: items.filter(a => !a.closed_at).length }, ...groups].map(g => (
           <Chip key={g.id} role="tab" aria-selected={g.id === group} selected={g.id === group} icon={g.Icon} onClick={() => onChange(g.id)}>
             {g.label} <span className={g.id === group ? 'text-white/80' : 'text-ink-2 dark:text-gray-400'}>{g.count}</span>
@@ -74,11 +75,16 @@ const AccountGroupCard = ({ group, onGroupChange, onCreate, user_accounts, net_w
     const debt = Math.abs(tiles.find(t => t.id === 'credit')?.total < 0 ? tiles.find(t => t.id === 'credit').total : 0);
     return (
       <section className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-md" aria-label="Patrimonio">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-2 dark:text-gray-400">Patrimonio · hoy</span>
-        <p className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-3xl font-extrabold tabular-nums text-gray-900 dark:text-gray-100">{net_worth ? formatMoney(net_worth.total, base) : '—'}</span>
-          <span className="text-sm text-ink-2 dark:text-gray-400">lo que tienes menos lo que debes</span>
-        </p>
+        <div className="lg:flex lg:items-start lg:justify-between lg:gap-6">
+          <div className="min-w-0">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-2 dark:text-gray-400">Patrimonio · hoy</span>
+            <p className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-3xl font-extrabold tabular-nums text-gray-900 dark:text-gray-100">{net_worth ? formatMoney(net_worth.total, base) : '—'}</span>
+              <span className="text-sm text-ink-2 dark:text-gray-400">lo que tienes menos lo que debes</span>
+            </p>
+          </div>
+          <TypeChips items={items} group={group} onChange={onGroupChange} onCreate={onCreate} />
+        </div>
         {/* barra: cuánto es efectivo, cuánto inversiones y cuánto se va en deudas */}
         {assets > 0 && (
           <div className="mt-3 flex h-2.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700" aria-hidden="true">
@@ -88,7 +94,6 @@ const AccountGroupCard = ({ group, onGroupChange, onCreate, user_accounts, net_w
             {debt > 0 && <span className="bg-data-gasto" style={{ width: `${(debt / (assets + debt)) * 100}%` }} />}
           </div>
         )}
-        <TypeChips items={items} group={group} onChange={onGroupChange} onCreate={onCreate} />
         <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
           {tiles.map(t => (
             <button key={t.id} type="button" onClick={() => onGroupChange(t.id)}
@@ -144,20 +149,23 @@ const AccountGroupCard = ({ group, onGroupChange, onCreate, user_accounts, net_w
 
   return (
     <section className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-md" aria-label={meta.title}>
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+      <div className="lg:flex lg:items-start lg:justify-between lg:gap-6">
+      <div className="flex flex-col gap-3 min-w-0">
         <div className="min-w-0">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-2 dark:text-gray-400">{headline.label}{group !== 'closed' ? ` · ${accs.length} ${accs.length === 1 ? 'cuenta' : 'cuentas'}` : ''}</span>
           <p className={`text-3xl font-extrabold tabular-nums ${headline.tone === 'out' ? 'text-money-out dark:text-money-out-dark' : 'text-gray-900 dark:text-gray-100'}`}>{headline.value}</p>
         </div>
-        <div className="flex flex-wrap gap-x-6 gap-y-2">
-          {stats.filter(Boolean).map(s => <Stat key={s.label} {...s} />)}
-        </div>
+        {stats.some(Boolean) && (
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
+            {stats.filter(Boolean).map(s => <Stat key={s.label} {...s} />)}
+          </div>
+        )}
+        {group === 'closed' && (
+          <p className="text-xs text-ink-2 dark:text-gray-400">Conservan su historia y siguen en tus reportes, pero no aparecen en el inicio ni para movimientos nuevos.</p>
+        )}
       </div>
-      {group === 'closed' && (
-        <p className="mt-2 text-xs text-ink-2 dark:text-gray-400">Conservan su historia y siguen en tus reportes, pero no aparecen en el inicio ni para movimientos nuevos.</p>
-      )}
-
       <TypeChips items={items} group={group} onChange={onGroupChange} onCreate={onCreate} />
+      </div>
     </section>
   );
 };

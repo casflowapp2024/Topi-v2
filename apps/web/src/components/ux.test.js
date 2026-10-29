@@ -28,6 +28,7 @@ jest.mock('react-router-dom', () => ({
 }), { virtual: true });
 // react-day-picker trae date-fns en ESM (jest de CRA no lo transforma); el selector de rango no se prueba aquí
 jest.mock('./ui/RangeDateSelector.tsx', () => ({ RangeDateSelector: () => null }));
+jest.mock('./ui/DatePicker.tsx', () => ({ DatePicker: () => null }));
 global.IS_REACT_ACT_ENVIRONMENT = true;
 global.ResizeObserver = global.ResizeObserver || class { observe() {} unobserve() {} disconnect() {} };
 
@@ -81,6 +82,7 @@ test('Cuentas: pasar entre las cuentas del grupo con las flechas', () => {
   act(() => root.render(<Provider store={st}><AccountSwitcher group="deposit" onEdit={() => {}} /></Provider>));
   expect(el.textContent).toContain('Nómina');
   expect(el.textContent).toContain('1 de 2');
+  expect(el.textContent).toMatch(/En el periodo.*Entró.*Salió.*Saldo al final/);
   const next = el.querySelector('[aria-label="Cuenta siguiente"]');
   act(() => next.dispatchEvent(new MouseEvent('click', { bubbles: true })));
   expect(st.getState().Reports.account_activated.name).toBe('Bolsillo');

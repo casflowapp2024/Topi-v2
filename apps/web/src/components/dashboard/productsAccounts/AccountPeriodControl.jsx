@@ -4,7 +4,7 @@ import moment from 'moment';
 import 'moment/locale/es';
 import { set_init_date_account_activated, set_end_date_account_activated } from '../../../redux/actions/reports';
 import { fetch_credit_cards } from '../../../redux/actions/creditCards';
-import { RangeDateSelector } from '../../ui/RangeDateSelector.tsx';
+import RangePill from '../../ui/RangePill';
 import PeriodSelector from '../../navigation/PeriodSelector';
 import Chip from '../../ui/Chip';
 import { Segmented } from '../../charts/ChartTabs';
@@ -71,9 +71,6 @@ const AccountPeriodControl = ({
     ...(credit && cycles ? [{ id: 'cycle', label: 'Corte' }] : []),
     { id: 'range', label: 'Rango' },
   ];
-  const range = iniDate_account_dash
-    ? { from: moment(iniDate_account_dash, DAY).toDate(), to: endDate_account_dash ? moment(endDate_account_dash, DAY).toDate() : undefined }
-    : undefined;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -90,15 +87,14 @@ const AccountPeriodControl = ({
         </div>
       )}
       {mode === 'range' && (
-        <div className="min-w-[240px]">
-          <RangeDateSelector
-            value={range}
-            onChange={(r) => {
-              if (r?.from) set_init_date_account_activated(moment(r.from).format(DAY));
-              if (r?.to) set_end_date_account_activated(moment(r.to).format(DAY));
-            }}
-          />
-        </div>
+        <RangePill
+          from={iniDate_account_dash}
+          to={endDate_account_dash}
+          onChange={(from, to) => {
+            if (from) set_init_date_account_activated(from);
+            if (to) set_end_date_account_activated(to);
+          }}
+        />
       )}
       {credit && !cycles && card && (
         <span className="text-xs text-ink-2 dark:text-gray-400">Configura el día de corte para ver por ciclo de facturación.</span>

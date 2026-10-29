@@ -5,17 +5,53 @@ import { ChevronLeftIcon, ChevronRightIcon, ChevronUpDownIcon, PencilSquareIcon,
 import { set_dash_account_activated } from '../../../redux/actions/reports';
 import AccountBalance from '../../ui/AccountBalance';
 import Button from '../../ui/Button';
-import { getBaseCurrency } from '../../helpers';
+import { getBaseCurrency, accountClass, formatMoney } from '../../helpers';
 import { ACCOUNT_GROUPS, accountsOfGroup } from './accountGroups';
 
 /**
- * Encabezado del detalle con la cuenta que estás viendo y cómo pasar a las otras del grupo:
- *  - flechas ‹ › (y las teclas ← → con el foco en esa fila)
+ * La cuenta que estás viendo: a la izquierda quién es y el periodo; a la derecha lo que pasó en ese
+ * periodo (según su tipo). Para pasar a las otras cuentas del grupo:
+ *  - rieles ‹ › a los lados, de toda la altura (y las teclas ← →)
  *  - deslizar a los lados en el celular
  *  - tocar el nombre abre la lista del grupo con sus saldos (rápido si hay muchas cuentas)
  *  - puntos que dicen cuántas hay y en cuál estás
  */
-const AccountSwitcher = ({ group, account_activated, user_accounts, net_worth, set_dash_account_activated, onEdit, children }) => {
+// Cifras del periodo según el tipo de cuenta (data = /analysis/accounts-report de la cuenta)
+const periodKpis = (cls, data) => {
+  const inc = Math.abs(Number(data?.income?.value ?? 0));
+  const exp = Math.abs(Number(data?.expenses?.value ?? 0));
+  const bal = Number(data?.balance?.value ?? 0);
+  if (cls === 'credit') {
+    return {
+      rows: [
+        { label: 'Compras y cargos', value: formatMoney(exp), tone: 'out' },
+        { label: 'Pagos', value: formatMoney(inc), tone: 'in' },
+        { label: 'Deuda al final', value: formatMoney(Math.abs(bal)), tone: bal < 0 ? 'out' : undefined },
+      ],
+      note: inc >= exp ? 'Pagaste lo que compraste en el periodo.' : `Quedaron ${formatMoney(exp - inc)} de compras sin pagar en el periodo.`,
+    };
+  }
+  if (cls === 'investment') {
+    return {
+      rows: [
+        { label: 'Aportes', value: formatMoney(inc), tone: 'in' },
+        { label: 'Retiros', value: formatMoney(exp), tone: 'out' },
+        { label: 'Valor al final', value: formatMoney(bal) },
+      ],
+    };
+  }
+  const net = inc - exp;
+  return {
+    rows: [
+      { label: 'Entró', value: formatMoney(inc), tone: 'in' },
+      { label: 'Salió', value: formatMoney(exp), tone: 'out' },
+      { label: 'Saldo al final', value: formatMoney(bal), tone: bal < 0 ? 'out' : undefined },
+    ],
+    note: `${net >= 0 ? 'Entró' : 'Salió'} ${formatMoney(Math.abs(net))} más de lo que ${net >= 0 ? 'salió' : 'entró'}.`,
+  };
+};
+
+const AccountSwitcher = ({ group, account_activated, account_activated_stats, user_accounts, net_worth, set_dash_account_activated, onEdit, children }) => {
   const accounts = useMemo(() => accountsOfGroup(user_accounts?.items, group), [user_accounts, group]);
   const idx = Math.max(0, accounts.findIndex(a => a.id === account_activated?.id));
   const nwById = useMemo(() => new Map((net_worth?.accounts || []).map(a => [a.account_id, a])), [net_worth]);
@@ -34,7 +70,11 @@ const AccountSwitcher = ({ group, account_activated, user_accounts, net_worth, s
 
   // Deslizar en el celular
   const touch = useRef(null);
-  const onTouchStart = (e) => { touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; };
+  const onTouchStart = (e) => {
+    // No en los controles del periodo (interruptores, calendario) ni en la lista abierta
+    if (e.target.closest?.('[data-no-swipe], [role="radiogroup"], [role="menu"], input')) { touch.current = null; return; }
+    touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
   const onTouchEnd = (e) => {
     if (!touch.current) return;
     const dx = e.changedTouches[0].clientX - touch.current.x;
@@ -44,84 +84,108 @@ const AccountSwitcher = ({ group, account_activated, user_accounts, net_worth, s
   };
 
   if (!account_activated) return null;
-  const arrow = 'w-9 h-9 shrink-0 rounded-xl flex items-center justify-center border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-topi-500 disabled:opacity-30 disabled:pointer-events-none transition-colors';
+  const cls = accountClass(account_activated);
+  const kpis = periodKpis(cls, account_activated_stats);
+  const rail = 'shrink-0 w-9 sm:w-10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-topi-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-25 disabled:pointer-events-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-topi-500';
 
   return (
     <section
-      className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-md flex flex-col gap-3 overflow-hidden"
+      className="relative flex items-stretch bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden"
       aria-label="Cuenta que estás viendo"
+      onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
     >
-      {/* ← → solo en esta fila (no en el calendario ni en los controles del periodo) */}
-      <div className="flex items-center gap-2" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
-        onKeyDown={(e) => { if (e.target.closest?.('[role="menu"]')) return; if (e.key === 'ArrowRight') go(1); if (e.key === 'ArrowLeft') go(-1); }}>
-        <button type="button" className={arrow} onClick={() => go(-1)} disabled={!many} aria-label="Cuenta anterior">
-          <ChevronLeftIcon className="w-5 h-5" aria-hidden="true" />
-        </button>
+      {/* Rieles laterales: toda la altura de la tarjeta para pasar a la cuenta anterior / siguiente */}
+      <button type="button" className={`${rail} border-r border-gray-100 dark:border-gray-700`} onClick={() => go(-1)} disabled={!many} aria-label="Cuenta anterior">
+        <ChevronLeftIcon className="w-5 h-5" aria-hidden="true" />
+      </button>
 
-        <div className={`flex-1 min-w-0 flex items-center gap-3 transition-all duration-200 motion-reduce:transition-none ${dir > 0 ? 'translate-x-2 opacity-70' : dir < 0 ? '-translate-x-2 opacity-70' : ''}`}>
-          {meta && <span className={`hidden sm:flex w-10 h-10 rounded-xl items-center justify-center shrink-0 ${meta.tint}`}><meta.Icon className="w-5 h-5" aria-hidden="true" /></span>}
-          <Menu as="div" className="relative min-w-0 flex-1">
-            <MenuButton className="group max-w-full flex items-center gap-1 text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500" aria-label={`${account_activated.name}. Elegir otra cuenta`}>
-              <span className="min-w-0">
-                <span className="flex items-center gap-1">
-                  <span className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">{account_activated.name}</span>
-                  {many && <ChevronUpDownIcon className="w-4 h-4 shrink-0 text-gray-400 group-hover:text-topi-500" aria-hidden="true" />}
-                </span>
-                <span className="block text-xs text-ink-2 dark:text-gray-400 truncate">
-                  {account_activated.bank?.name}{account_activated.last_four_digits ? ` · ••${account_activated.last_four_digits}` : ''} · {account_activated.currency || 'COP'}
-                  {many ? ` · ${idx + 1} de ${accounts.length}` : ''}
-                </span>
-              </span>
-            </MenuButton>
-            {many && (
-              <MenuItems anchor={{ to: 'bottom start', gap: 6 }}
-                className="z-50 w-[min(22rem,calc(100vw-2rem))] max-h-80 overflow-y-auto rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1.5 shadow-xl focus:outline-none">
-                {accounts.map(a => (
-                  <MenuItem key={a.id}>
-                    <button type="button" onClick={() => set_dash_account_activated(a)}
-                      className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-left data-[focus]:bg-gray-100 dark:data-[focus]:bg-gray-700">
-                      <span className="w-4 shrink-0">{a.id === account_activated.id && <CheckIcon className="w-4 h-4 text-topi-500" aria-hidden="true" />}</span>
-                      <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{a.name}</span>
-                        <span className="block text-xs text-ink-2 dark:text-gray-400 truncate">{a.bank?.name}{a.last_four_digits ? ` · ••${a.last_four_digits}` : ''}</span>
-                      </span>
-                      <AccountBalance account={a} nw={nwById.get(a.id)} baseCurrency={base} />
-                    </button>
-                  </MenuItem>
+      <div className={`flex-1 min-w-0 grid grid-cols-1 lg:grid-cols-2 transition-all duration-200 motion-reduce:transition-none ${dir > 0 ? 'translate-x-1 opacity-70' : dir < 0 ? '-translate-x-1 opacity-70' : ''}`}>
+        {/* Izquierda: qué cuenta es y de qué periodo */}
+        <div className="p-4 flex flex-col gap-3 min-w-0"
+          onKeyDown={(e) => { if (e.target.closest?.('[role="menu"]')) return; if (e.key === 'ArrowRight') go(1); if (e.key === 'ArrowLeft') go(-1); }}>
+          <div className="flex items-center justify-between gap-2">
+            {many && accounts.length <= 12 ? (
+              <span className="flex items-center gap-1.5" aria-hidden="true">
+                {accounts.map((a, i) => (
+                  <span key={a.id} className={`h-1.5 rounded-full transition-all ${i === idx ? 'w-4 bg-topi-500' : 'w-1.5 bg-gray-300 dark:bg-gray-600'}`} />
                 ))}
-              </MenuItems>
-            )}
-          </Menu>
-          <span className="hidden sm:block shrink-0"><AccountBalance account={account_activated} nw={nwById.get(account_activated.id)} baseCurrency={base} size="lg" /></span>
+              </span>
+            ) : <span />}
+            <Button size="sm" variant="secondary" icon={PencilSquareIcon} onClick={() => onEdit(account_activated.id)}>
+              <span className="hidden sm:inline">Editar</span>
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-3 min-w-0">
+            {meta && <span className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${meta.tint}`}><meta.Icon className="w-5 h-5" aria-hidden="true" /></span>}
+            <Menu as="div" className="relative min-w-0 flex-1">
+              <MenuButton className="group max-w-full flex items-center gap-1 text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500" aria-label={`${account_activated.name}. Elegir otra cuenta`}>
+                <span className="min-w-0">
+                  <span className="flex items-center gap-1">
+                    <span className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">{account_activated.name}</span>
+                    {many && <ChevronUpDownIcon className="w-4 h-4 shrink-0 text-gray-400 group-hover:text-topi-500" aria-hidden="true" />}
+                  </span>
+                  <span className="block text-xs text-ink-2 dark:text-gray-400 truncate">
+                    {account_activated.bank?.name}{account_activated.last_four_digits ? ` · ••${account_activated.last_four_digits}` : ''} · {account_activated.currency || 'COP'}
+                    {many ? ` · ${idx + 1} de ${accounts.length}` : ''}
+                  </span>
+                </span>
+              </MenuButton>
+              {many && (
+                <MenuItems anchor={{ to: 'bottom start', gap: 6 }}
+                  className="z-50 w-[min(22rem,calc(100vw-2rem))] max-h-80 overflow-y-auto rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1.5 shadow-xl focus:outline-none">
+                  {accounts.map(a => (
+                    <MenuItem key={a.id}>
+                      <button type="button" onClick={() => set_dash_account_activated(a)}
+                        className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-left data-[focus]:bg-gray-100 dark:data-[focus]:bg-gray-700">
+                        <span className="w-4 shrink-0">{a.id === account_activated.id && <CheckIcon className="w-4 h-4 text-topi-500" aria-hidden="true" />}</span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{a.name}</span>
+                          <span className="block text-xs text-ink-2 dark:text-gray-400 truncate">{a.bank?.name}{a.last_four_digits ? ` · ••${a.last_four_digits}` : ''}</span>
+                        </span>
+                        <AccountBalance account={a} nw={nwById.get(a.id)} baseCurrency={base} />
+                      </button>
+                    </MenuItem>
+                  ))}
+                </MenuItems>
+              )}
+            </Menu>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-ink-2 dark:text-gray-400">
+            <span>Hoy:</span><AccountBalance account={account_activated} nw={nwById.get(account_activated.id)} baseCurrency={base} />
+          </div>
+
+          <div data-no-swipe>{children}</div>
         </div>
 
-        <button type="button" className={arrow} onClick={() => go(1)} disabled={!many} aria-label="Cuenta siguiente">
-          <ChevronRightIcon className="w-5 h-5" aria-hidden="true" />
-        </button>
-      </div>
-
-      {/* En móvil el saldo va en su propia fila; los puntos dicen cuántas cuentas hay */}
-      <div className="flex items-center justify-between gap-2">
-        <span className="sm:hidden"><AccountBalance account={account_activated} nw={nwById.get(account_activated.id)} baseCurrency={base} size="lg" /></span>
-        {many && accounts.length <= 12 && (
-          <span className="flex items-center gap-1.5 sm:mx-auto" aria-hidden="true">
-            {accounts.map((a, i) => (
-              <span key={a.id} className={`h-1.5 rounded-full transition-all ${i === idx ? 'w-4 bg-topi-500' : 'w-1.5 bg-gray-300 dark:bg-gray-600'}`} />
+        {/* Derecha: lo que pasó en el periodo elegido */}
+        <div className="p-4 pt-0 lg:pt-4 lg:border-l border-gray-100 dark:border-gray-700 flex flex-col justify-center min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-2 dark:text-gray-400 mb-1">En el periodo</p>
+          <dl className="divide-y divide-gray-100 dark:divide-gray-700">
+            {kpis.rows.map(k => (
+              <div key={k.label} className="flex items-baseline justify-between gap-3 py-2">
+                <dt className="text-sm text-ink-2 dark:text-gray-400">{k.label}</dt>
+                <dd className={`text-lg font-bold tabular-nums truncate ${k.tone === 'in' ? 'text-money-in dark:text-money-in-dark' : k.tone === 'out' ? 'text-money-out dark:text-money-out-dark' : 'text-gray-900 dark:text-gray-100'}`}>
+                  {account_activated_stats ? k.value : '—'}
+                </dd>
+              </div>
             ))}
-          </span>
-        )}
-        <Button size="sm" variant="secondary" icon={PencilSquareIcon} onClick={() => onEdit(account_activated.id)}>
-          <span className="hidden sm:inline">Editar</span>
-        </Button>
+          </dl>
+          {account_activated_stats && kpis.note && <p className="mt-1 text-xs text-ink-2 dark:text-gray-400">{kpis.note}</p>}
+        </div>
       </div>
 
-      {children}
+      <button type="button" className={`${rail} border-l border-gray-100 dark:border-gray-700`} onClick={() => go(1)} disabled={!many} aria-label="Cuenta siguiente">
+        <ChevronRightIcon className="w-5 h-5" aria-hidden="true" />
+      </button>
     </section>
   );
 };
 
 const mapStateToProps = state => ({
   account_activated: state.Reports.account_activated,
+  account_activated_stats: state.Reports.account_activated_stats,
   user_accounts: state.CashFlow.user_accounts,
   net_worth: state.Fx.net_worth,
 });

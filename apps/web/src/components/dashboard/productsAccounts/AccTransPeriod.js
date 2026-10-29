@@ -15,7 +15,6 @@ import { set_init_date_account_activated, set_end_date_account_activated } from 
 import { set_dash_account_activated, get_accounts_status_by_period, get_history_accounts_by_month } from '../../../redux/actions/reports';
 
 //componentes
-import AccSummaryCard from './AccSummaryCard';
 import { formatMoney, formatDate, findElmentById, formatToDateFilters, deepEqual } from '../../helpers';
 import { parseDatetimetoDateStrFormat, accountReportGroup } from '../../helpers';
 import TransactionDetail from '../../transactions/TransactionDetail2'

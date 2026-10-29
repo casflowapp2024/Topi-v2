@@ -3,7 +3,6 @@ import { connect } from 'react-redux';
 import { set_dash_account_activated, get_accounts_status_by_period, get_history_accounts_by_month } from "../../../redux/actions/reports.js";
 import AccChartHistory from "./AccChartHistory.js";
 import AccTransPeriod from "./AccTransPeriod.js";
-import AccSummaryCard from "./AccSummaryCard.js";
 import AccountDetail from "../../accounts/AccountDetail";
 import AccountCreate from "../../accounts/AccountCreate";
 import CreditCardPanel from "./CreditCardPanel";
@@ -96,9 +95,7 @@ const AAAcountsDashboard = ({
                                     <CreditCardPanel account={account_activated} data={account_activated_stats} />
                                 ) : cls === 'investment' ? (
                                     <InvestmentValuationCard account={account_activated} />
-                                ) : (
-                                    <AccSummaryCard acc={account_activated} data={account_activated_stats} />
-                                )}
+                                ) : null /* efectivo: sus cifras del periodo van en el encabezado de la cuenta */}
                                 <section className="h-[280px] md:h-[320px] p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-md flex flex-col" aria-label={chartTitle}>
                                     <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{chartTitle} <span className="font-normal text-ink-2 dark:text-gray-400">· {chartHint}</span></h3>
                                     {history_accounts_by_month && (
