@@ -305,10 +305,10 @@ const Transactions = ({
                             {/* Barra fija: buscar, crear, filtrar y encabezados quedan visibles al hacer scroll */}
                             <div className="sticky top-[53px] md:top-[62px] z-30 bg-white dark:bg-gray-800 rounded-t-2xl shadow-[0_1px_0_0_rgba(0,0,0,0.04)] transition-colors duration-300">
                             {/* Top Buttoms */}
-                            <div className="p-4 flex flex-row justify-between gap-1">
-                                <div className="w-3/5 md:w-2/3">
-                                    <div className="w-full px-4 py-2 rounded-2xl border border-[#e9e8ee] dark:border-gray-700 flex flex-row items-center justify-start bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
-                                        <MagnifyingGlassIcon className="w-5 h-5 mr-2 group-hover:text-[#5266EB]" />
+                            <div className="p-3 md:p-4 flex flex-row justify-between gap-1">
+                                <div className="flex-1 min-w-0 md:flex-none md:w-2/3">
+                                    <div className="w-full px-3 md:px-4 py-2 rounded-2xl border border-[#e9e8ee] dark:border-gray-700 flex flex-row items-center justify-start bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
+                                        <MagnifyingGlassIcon className="w-5 h-5 mr-2 shrink-0 group-hover:text-[#5266EB]" />
                                         <input
                                             placeholder={`Buscar por Descripción`}
                                             className="w-full bg-gray-100 dark:bg-gray-900 md:text-base text-xs dark:text-gray-100 outline-none"
@@ -319,12 +319,13 @@ const Transactions = ({
                                     </div>
 
                                 </div>
-                                <div className="w-2/5 md:w-auto relative flex flex-row gap-1">
-                                    <button className="py-2 rounded-2xl px-4 flex flex-row items-center border border-[#e9e8ee] dark:border-gray-700 hover:bg-slate-200 dark:hover:bg-gray-700 dark:text-gray-100 transition-colors duration-300"
+                                <div className="shrink-0 relative flex flex-row gap-1">
+                                    <button className="py-2 rounded-2xl px-2.5 sm:px-4 flex flex-row items-center border border-[#e9e8ee] dark:border-gray-700 hover:bg-slate-200 dark:hover:bg-gray-700 dark:text-gray-100 transition-colors duration-300"
                                         onClick={handleOpenCreatePopUp}
+                                        aria-label="Crear transacción"
                                     >
-                                        <PlusIcon className="w-4 h-4 mr-2 group-hover:text-[#5266EB]" />
-                                        <span className="md:text-base text-xs"> Crear </span>
+                                        <PlusIcon className="w-4 h-4 sm:mr-2 group-hover:text-[#5266EB]" aria-hidden="true" />
+                                        <span className="sm:inline hidden md:text-base text-xs"> Crear </span>
 
                                     </button>
 
@@ -334,7 +335,7 @@ const Transactions = ({
                                         currentFrontendPage={currentFrontendPage}
                                     />
 
-                                    <button className="py-2 rounded-2xl px-4 flex flex-row items-center border border-[#e9e8ee] dark:border-gray-700 hover:bg-slate-200 dark:hover:bg-gray-700 dark:text-gray-100 transition-colors duration-300"
+                                    <button className="py-2 rounded-2xl px-2.5 md:px-4 flex flex-row items-center border border-[#e9e8ee] dark:border-gray-700 hover:bg-slate-200 dark:hover:bg-gray-700 dark:text-gray-100 transition-colors duration-300"
                                         onClick={() => setOpenTransfer(true)}
                                         aria-label="Transferir entre cuentas"
                                     >
@@ -343,7 +344,7 @@ const Transactions = ({
                                     </button>
                                     <TransferModal open={openTransfer} onClose={() => { setOpenTransfer(false); loadTransferCandidates() }} />
                                     {transferCandidates && transferCandidates.length > 0 &&
-                                        <button className="py-2 rounded-2xl px-3 flex flex-row items-center gap-1 border border-topi-500 text-topi-600 dark:text-indigo-300 hover:bg-topi-50 dark:hover:bg-gray-700 transition-colors duration-300"
+                                        <button className="py-2 rounded-2xl px-2 md:px-3 flex flex-row items-center gap-1 border border-topi-500 text-topi-600 dark:text-indigo-300 hover:bg-topi-50 dark:hover:bg-gray-700 transition-colors duration-300"
                                             onClick={() => { setOpenCandidates(true); loadTransferCandidates() }}
                                             aria-label={`${transferCandidates.length} posibles transferencias por revisar`}
                                             title="Posibles transferencias por revisar"
@@ -356,7 +357,7 @@ const Transactions = ({
                                         candidates={transferCandidates} setCandidates={setTransferCandidates} />
                                     {openFilterPopUp ?
                                         <div className="h-full">
-                                            <button className={`${oneFilterActivated ? "border-[#5266EB]" : "border-[#e9e8ee] dark:border-gray-700"} h-full py-2 px-4 flex flex-row items-center border rounded-2xl hover:bg-slate-200 dark:hover:bg-gray-700 dark:text-gray-100 transition-colors duration-300`}
+                                            <button className={`${oneFilterActivated ? "border-[#5266EB]" : "border-[#e9e8ee] dark:border-gray-700"} h-full py-2 px-2.5 md:px-4 flex flex-row items-center border rounded-2xl hover:bg-slate-200 dark:hover:bg-gray-700 dark:text-gray-100 transition-colors duration-300`}
                                                 onClick={handleCloseFilterPopUp}
                                             >
                                                 <svg aria-hidden="true" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
@@ -367,8 +368,9 @@ const Transactions = ({
                                             </button>
                                         </div>
                                         :
-                                        <button className={`${oneFilterActivated ? "border-[#5266EB]" : "border-[#e9e8ee] dark:border-gray-700"} py-2 px-4 flex flex-row items-center border rounded-2xl hover:bg-slate-200 dark:hover:bg-gray-700 dark:text-gray-100 transition-colors duration-300`}
+                                        <button className={`${oneFilterActivated ? "border-[#5266EB]" : "border-[#e9e8ee] dark:border-gray-700"} py-2 px-2.5 md:px-4 flex flex-row items-center border rounded-2xl hover:bg-slate-200 dark:hover:bg-gray-700 dark:text-gray-100 transition-colors duration-300`}
                                             onClick={handleOpenFilterPopUp}
+                                            aria-label="Filtrar transacciones"
                                         >
                                             <FunnelIcon className='w-4 h-4 md:mr-1' />
                                             {oneFilterActivated ?
