@@ -80,3 +80,14 @@ export const isCurrentMonth = (year, month) => {
   return now.getFullYear() === Number(year) && now.getMonth() + 1 === Number(month);
 };
 export const daysInMonth = (year, month) => new Date(year, month, 0).getDate();
+
+// Tope "redondo" del eje Y para que quepa `value` (p. ej. el presupuesto) con 3 tramos limpios
+// (0, 2 M, 4 M, 6 M). Se usa como domain={[0, (dataMax) => niceMax(dataMax, budget)]}.
+export const niceMax = (...values) => {
+  const max = Math.max(0, ...values.map(Number).filter(Number.isFinite)) * 1.04;
+  if (max <= 0) return 1;
+  const raw = max / 3;
+  const pow = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * pow).find(s => s >= raw);
+  return step * 3;
+};

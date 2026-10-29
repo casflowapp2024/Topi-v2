@@ -1,6 +1,6 @@
 // Leyenda compacta para las gráficas. Va fuera del área de dibujo, así nunca se
 // superpone con barras ni ejes.
-//   items: [{ type: 'bar' | 'line', color, label, value }]
+//   items: [{ type: 'bar' | 'line' (presupuesto, punteada) | 'solid' | 'dot', color, label, value, faded }]
 //   lead:  { label, value, negative, tone } -> titular a la izquierda (tone: ok | warn | crit | neg)
 const LEAD_TONE = {
   default: 'text-gray-900 dark:text-gray-100',
@@ -23,7 +23,15 @@ const ChartLegend = ({ items = [], lead = null, className = '' }) => (
     <span className="inline-flex flex-wrap items-center justify-end gap-x-4 gap-y-1">
       {items.filter(Boolean).map((it) => (
         <span key={it.label} className="inline-flex items-center gap-1.5 whitespace-nowrap">
-          {it.type === 'line' ? (
+          {it.type === 'solid' ? (
+            <svg width="18" height="6" aria-hidden="true" className="shrink-0">
+              <line x1="0" y1="3" x2="18" y2="3" strokeWidth="2.5" strokeLinecap="round" stroke={it.color} />
+            </svg>
+          ) : it.type === 'line' && it.color ? (
+            <svg width="18" height="6" aria-hidden="true" className="shrink-0">
+              <line x1="0" y1="3" x2="18" y2="3" strokeWidth="2" strokeDasharray="4 3" stroke={it.color} />
+            </svg>
+          ) : it.type === 'line' ? (
             <svg width="18" height="6" aria-hidden="true" className="shrink-0">
               <line x1="0" y1="3" x2="18" y2="3" strokeWidth="2" strokeDasharray="4 3" className="topi-budget-swatch" />
             </svg>

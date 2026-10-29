@@ -7,6 +7,7 @@ import { formatMoney, formatMoneyCompact } from '../helpers';
 import {
   useChartColors, xAxisProps, yAxisProps, chartMargin, monthlyRows, metricValue, isCurrentMonth, daysInMonth,
 } from './chartTheme';
+import { niceMax } from './chartTheme';
 
 // Gastos por mes contra el presupuesto. En el mes en curso dibuja la proyección al cierre
 // (gasto ÷ días transcurridos × días del mes) y marca con ▲ los meses que se pasaron.
@@ -94,10 +95,10 @@ const SpendVsBudgetChart = ({ source = 'total', history_dash, history_category, 
           <BarChart data={data} margin={{ ...chartMargin, top: 22 }}>
             <CartesianGrid vertical={false} />
             <XAxis dataKey="label" {...xAxisProps} />
-            <YAxis {...yAxisProps} tickFormatter={(v) => formatMoneyCompact(v)} />
+            <YAxis {...yAxisProps} tickCount={4} domain={[0, (dataMax) => niceMax(dataMax, budget)]} tickFormatter={(v) => formatMoneyCompact(v)} />
             <Tooltip content={tooltip} cursor={{ fill: c.neutral, fillOpacity: 0.08 }} />
             {budget > 0 && (
-              <ReferenceLine y={budget} className="topi-budget-line" stroke={c.neutral} strokeWidth={1.5} strokeDasharray="6 4" ifOverflow="extendDomain" />
+              <ReferenceLine y={budget} className="topi-budget-line" stroke={c.neutral} strokeWidth={1.5} strokeDasharray="6 4" />
             )}
             <Bar dataKey="spent" stackId="s" fill={c.gasto} maxBarSize={28} isAnimationActive={false}
               shape={(props) => <Rectangle {...props} radius={props.payload.projExtra > 0 ? [0, 0, 0, 0] : [4, 4, 0, 0]} />}

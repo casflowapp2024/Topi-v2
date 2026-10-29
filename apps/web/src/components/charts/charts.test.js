@@ -56,10 +56,12 @@ const historyDash = (budget) => ({
 });
 
 const makeStore = (budget, month = M) => createStore(() => ({
+  UI: { active_report_tab: 'Expenses' },
   Reports: {
     history_dash: historyDash(budget),
     history_category: { budget: -500000, monthly: { expense: months.map(() => metric(-600000)), year: months.map(x => x.y), month: months.map(x => x.m) } },
-    category_activated: { name: 'mercado' },
+    category_activated: { category_id: 7, name: 'mercado' },
+    expenses_report: [{ category_id: 7, name: 'mercado' }], income_report: [],
     current_Year: Y, current_Month: month,
     account_activated: { id: 1, currency: 'USD', type: { id: 4 } },
     history_accounts_by_month: { monthly: { balance: months.map(() => metric(-1200)), year: months.map(x => x.y), month: months.map(x => x.m) } },
@@ -83,7 +85,7 @@ describe.each([[3000000, M], [0, M], [3000000, M === 1 ? 12 : M - 1]])('presupue
   test('inicio: las 4 pestañas y el diario del balance', () => {
     const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
     const { el, root } = render(<MultiChartDash />, makeStore(budget, month));
-    for (const tab of ['Flujo', 'Gastos', 'Ritmo', 'Balance']) {
+    for (const tab of ['Flujo', 'Gastos', 'Proyección', 'Balance']) {
       click(el, tab);
       expect(el.querySelector('svg.recharts-surface')).not.toBeNull();
     }
@@ -94,15 +96,17 @@ describe.each([[3000000, M], [0, M], [3000000, M === 1 ? 12 : M - 1]])('presupue
     errors.mockRestore();
   });
 
-  test('presupuestos: total, ritmo y categoría', () => {
+  test('presupuestos: total, proyección y categoría dentro del total', () => {
     let tab = 1;
     const store = makeStore(budget, month);
     const { el, root } = render(<BudDashDailySpent activeChartTab={tab} setActiveChartTab={(t) => { tab = t; }} />, store);
     expect(el.querySelector('svg.recharts-surface')).not.toBeNull();
-    click(el, 'Ritmo del mes');
+    click(el, 'Proyección');
     expect(el.querySelector('svg.recharts-surface')).not.toBeNull();
     act(() => root.render(<Provider store={store}><BudDashDailySpent activeChartTab={2} setActiveChartTab={() => {}} /></Provider>));
+    click(el, 'Por mes');
     expect(el.textContent).toContain('Mercado');
+    expect(el.textContent).toMatch(/del total/);
     act(() => root.unmount());
   });
 });

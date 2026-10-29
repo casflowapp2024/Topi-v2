@@ -4,7 +4,7 @@ import ChartTabs, { Segmented } from '../../charts/ChartTabs';
 import BalanceChart from '../../charts/BalanceChart';
 import FlowChart from '../../charts/FlowChart';
 import SpendVsBudgetChart from '../../charts/SpendVsBudgetChart';
-import PaceChart from '../../charts/PaceChart';
+import ProjectionChart from '../../charts/ProjectionChart';
 import { SkeletonChart } from '../../ui/Skeleton';
 
 // Gráfica del inicio. Los datos (history_dash) los pide Dashboard.jsx al cambiar de mes.
@@ -12,7 +12,7 @@ const TABS = [
   { id: 'balance', label: 'Balance', hint: 'Saldo en tus cuentas de efectivo' },
   { id: 'flow', label: 'Flujo', hint: 'Ingresos, gastos y ahorro neto por mes' },
   { id: 'spend', label: 'Gastos', hint: 'Gastos contra el presupuesto, con proyección del mes' },
-  { id: 'pace', label: 'Ritmo', hint: 'Gasto acumulado del mes contra el ritmo ideal' },
+  { id: 'projection', label: 'Proyección', hint: 'Cómo cerraría el mes si sigues gastando al mismo ritmo' },
 ];
 
 function MultiChartDash({ history_dash }) {
@@ -33,7 +33,7 @@ function MultiChartDash({ history_dash }) {
         ) : tab === 'spend' ? (
           <SpendVsBudgetChart source="total" />
         ) : (
-          <PaceChart />
+          <ProjectionChart />
         )}
       </div>
 

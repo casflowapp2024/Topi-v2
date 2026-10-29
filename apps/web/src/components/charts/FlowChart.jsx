@@ -7,7 +7,7 @@ import { formatMoney, formatMoneyCompact } from '../helpers';
 import { useChartColors, xAxisProps, yAxisProps, chartMargin, monthlyRows, metricValue } from './chartTheme';
 
 // Flujo del mes: ingresos hacia arriba, gastos hacia abajo, en el mismo eje, y el ahorro neto
-// (ingresos − gastos) como punto. Las transferencias y valoraciones no entran (las excluye la API).
+// (ingresos − gastos) como línea. Las transferencias y valoraciones no entran (las excluye la API).
 const FlowChart = ({ history_dash, current_Year }) => {
   const c = useChartColors();
 
@@ -50,7 +50,7 @@ const FlowChart = ({ history_dash, current_Year }) => {
         items={[
           { type: 'bar', color: c.ingreso, label: 'Ingresos' },
           { type: 'bar', color: c.gasto, label: 'Gastos' },
-          { type: 'dot', color: c.ahorro, label: 'Ahorro neto' },
+          { type: 'solid', color: c.ahorro, label: 'Ahorro neto' },
         ]}
         className="pt-2"
       />
@@ -64,9 +64,9 @@ const FlowChart = ({ history_dash, current_Year }) => {
             <ReferenceLine y={0} stroke={c.neutral} strokeOpacity={0.5} />
             <Bar dataKey="income" stackId="flow" fill={c.ingreso} radius={[4, 4, 0, 0]} maxBarSize={26} isAnimationActive={false} />
             <Bar dataKey="expense" stackId="flow" fill={c.gasto} radius={[4, 4, 0, 0]} maxBarSize={26} isAnimationActive={false} />
-            <Line dataKey="net" stroke="none" isAnimationActive={false} legendType="circle"
-              dot={{ r: 4.5, fill: c.ahorro, stroke: c.surface, strokeWidth: 2 }}
-              activeDot={{ r: 6, fill: c.ahorro, stroke: c.surface, strokeWidth: 2 }} />
+            <Line dataKey="net" type="monotone" stroke={c.ahorro} strokeWidth={2.5} isAnimationActive={false}
+              dot={{ r: 3, fill: c.ahorro, stroke: c.surface, strokeWidth: 1.5 }}
+              activeDot={{ r: 5.5, fill: c.ahorro, stroke: c.surface, strokeWidth: 2 }} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
