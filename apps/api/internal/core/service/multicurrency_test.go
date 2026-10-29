@@ -158,13 +158,17 @@ func TestNetWorth_Summarize(t *testing.T) {
 		{Currency: "EUR", BaseValue: nil, UnrealizedGain: nil},
 		{Currency: "USD", BaseValue: d("-41000"), UnrealizedGain: d("-1000")}, // tarjeta
 		// fondo en USD: 2 US$ de ganancia de mercado a 4100 = 8200; el resto (1800) es cambiaria
-		{Currency: "USD", BaseValue: d("410000"), UnrealizedGain: d("10000"), MarketGain: d("2"), Rate: d("4100")},
+		{Currency: "USD", BaseValue: d("410000"), UnrealizedGain: d("10000"), MarketGain: d("2"), Rate: d("4100"), TypeID: 3},
 	}}
+	n.Accounts[3].TypeID = 4
 	n.Summarize()
 	assert.Equal(t, "1779000", n.Total.String())
 	assert.Equal(t, "19000", n.UnrealizedGain.String())
 	assert.Equal(t, "8200", n.MarketGain.String())
 	assert.Equal(t, "10800", n.FxGain.String())
+	assert.Equal(t, "1410000", n.CashTotal.String())
+	assert.Equal(t, "410000", n.InvestmentsTotal.String())
+	assert.Equal(t, "-41000", n.CreditTotal.String())
 	require.NotNil(t, n.Accounts[4].FxGain)
 	assert.Equal(t, "1800", n.Accounts[4].FxGain.String(), "por cuenta: la parte cambiaria")
 	assert.Equal(t, "10000", n.Accounts[1].FxGain.String())

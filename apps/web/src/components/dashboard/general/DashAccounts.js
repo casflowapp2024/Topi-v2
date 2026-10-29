@@ -24,7 +24,7 @@ const TYPE_STYLE = {
 const MAX_VISIBLE = 6;
 
 // Patrimonio de hoy (GET /analysis/net-worth): saldo nativo de cada cuenta, su valor en la moneda
-// base con la tasa de hoy y la ganancia o pérdida cambiaria no realizada.
+// base con la tasa de hoy, y el total separado en efectivo (cuentas) e inversiones.
 const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_account_activated }) => {
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
@@ -44,9 +44,7 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
     const savings = rows.reduce((sum, r) => sum + (r.value && r.value > 0 ? r.value : 0), 0);
     return { rows, savings };
   }, [user_accounts, net_worth]);
-  // ganancia no realizada: de las inversiones (valoraciones) y cambiaria (tasas)
-  const marketGain = Number(net_worth?.market_gain || 0);
-  const fxGain = Number(net_worth?.fx_gain ?? net_worth?.unrealized_gain ?? 0);
+  const investmentsTotal = Number(net_worth?.investments_total || 0);
 
   const openAccount = (acc) => {
     set_dash_account_activated(acc);
@@ -65,15 +63,11 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
           <span className="flex flex-col">
             <span>Patrimonio hoy: <b className="text-gray-900 dark:text-gray-100 tabular-nums">{formatMoney(net_worth.total, baseCurrency)}</b>
               {net_worth.missing_rates && <span title="Alguna cuenta aún no tiene tasa de cambio"> *</span>}</span>
-            {marketGain !== 0 && (
-              <span className={marketGain < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}>
-                {marketGain < 0 ? 'Pérdida' : 'Ganancia'} de tus inversiones: {formatMoney(Math.abs(marketGain), baseCurrency)}
-              </span>
+            {net_worth.cash_total != null && (
+              <span>Efectivo en cuentas: <span className="tabular-nums">{formatMoney(net_worth.cash_total, baseCurrency)}</span></span>
             )}
-            {fxGain !== 0 && (
-              <span className={fxGain < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}>
-                {fxGain < 0 ? 'Pérdida' : 'Ganancia'} cambiaria no realizada: {formatMoney(Math.abs(fxGain), baseCurrency)}
-              </span>
+            {investmentsTotal !== 0 && (
+              <span>Inversiones: <span className="tabular-nums">{formatMoney(net_worth.investments_total, baseCurrency)}</span></span>
             )}
           </span>
         )}

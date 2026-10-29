@@ -128,10 +128,14 @@ type netWorthResponse struct {
 	Total          string `json:"total" example:"12500000"`
 	UnrealizedGain string `json:"unrealized_gain" example:"139944.21"`
 	// UnrealizedGain = MarketGain (investment valuations) + FxGain (exchange rates)
-	MarketGain   string                    `json:"market_gain" example:"100000"`
-	FxGain       string                    `json:"fx_gain" example:"39944.21"`
-	MissingRates bool                      `json:"missing_rates" example:"false"`
-	Accounts     []netWorthAccountResponse `json:"accounts"`
+	MarketGain string `json:"market_gain" example:"100000"`
+	FxGain     string `json:"fx_gain" example:"39944.21"`
+	// total split by account class
+	CashTotal        string                    `json:"cash_total" example:"8000000"`
+	InvestmentsTotal string                    `json:"investments_total" example:"4500000"`
+	CreditTotal      string                    `json:"credit_total" example:"-500000"`
+	MissingRates     bool                      `json:"missing_rates" example:"false"`
+	Accounts         []netWorthAccountResponse `json:"accounts"`
 }
 
 // GetNetWorth godoc
@@ -156,14 +160,17 @@ func (fh *FxHandler) GetNetWorth(ctx *gin.Context) {
 		return
 	}
 	rsp := netWorthResponse{
-		BaseCurrency:   netWorth.BaseCurrency,
-		Date:           netWorth.Date.Format("2006-01-02"),
-		Total:          netWorth.Total.String(),
-		UnrealizedGain: netWorth.UnrealizedGain.String(),
-		MarketGain:     netWorth.MarketGain.String(),
-		FxGain:         netWorth.FxGain.String(),
-		MissingRates:   netWorth.MissingRates,
-		Accounts:       make([]netWorthAccountResponse, 0, len(netWorth.Accounts)),
+		BaseCurrency:     netWorth.BaseCurrency,
+		Date:             netWorth.Date.Format("2006-01-02"),
+		Total:            netWorth.Total.String(),
+		UnrealizedGain:   netWorth.UnrealizedGain.String(),
+		MarketGain:       netWorth.MarketGain.String(),
+		FxGain:           netWorth.FxGain.String(),
+		CashTotal:        netWorth.CashTotal.String(),
+		InvestmentsTotal: netWorth.InvestmentsTotal.String(),
+		CreditTotal:      netWorth.CreditTotal.String(),
+		MissingRates:     netWorth.MissingRates,
+		Accounts:         make([]netWorthAccountResponse, 0, len(netWorth.Accounts)),
 	}
 	for _, a := range netWorth.Accounts {
 		rsp.Accounts = append(rsp.Accounts, netWorthAccountResponse{

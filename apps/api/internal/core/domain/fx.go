@@ -67,15 +67,21 @@ type NetWorth struct {
 	UnrealizedGain decimal.Decimal // sum of the UnrealizedGain that are known
 	// UnrealizedGain split: MarketGain (valuations of investments, at today's rate) and FxGain
 	// (exchange rate movements: the rest)
-	MarketGain   decimal.Decimal
-	FxGain       decimal.Decimal
-	MissingRates bool // some account could not be valued
+	MarketGain decimal.Decimal
+	FxGain     decimal.Decimal
+	// Total split by account class (BaseValue that are known): deposits (cash in accounts),
+	// investments and credit (cards: usually negative)
+	CashTotal        decimal.Decimal
+	InvestmentsTotal decimal.Decimal
+	CreditTotal      decimal.Decimal
+	MissingRates     bool // some account could not be valued
 }
 
 // Summarize fills Total, UnrealizedGain and MissingRates from Accounts
 func (n *NetWorth) Summarize() {
 	n.Total, n.UnrealizedGain, n.MissingRates = decimal.Zero, decimal.Zero, false
 	n.MarketGain = decimal.Zero
+	n.CashTotal, n.InvestmentsTotal, n.CreditTotal = decimal.Zero, decimal.Zero, decimal.Zero
 	for i := range n.Accounts {
 		a := &n.Accounts[i]
 		if a.UnrealizedGain != nil {
@@ -91,6 +97,14 @@ func (n *NetWorth) Summarize() {
 			n.MissingRates = true
 		} else {
 			n.Total = n.Total.Add(*a.BaseValue)
+			switch AccountClassOf(a.TypeID) {
+			case AccountClassInvestment:
+				n.InvestmentsTotal = n.InvestmentsTotal.Add(*a.BaseValue)
+			case AccountClassCredit:
+				n.CreditTotal = n.CreditTotal.Add(*a.BaseValue)
+			default:
+				n.CashTotal = n.CashTotal.Add(*a.BaseValue)
+			}
 		}
 		if a.UnrealizedGain != nil {
 			n.UnrealizedGain = n.UnrealizedGain.Add(*a.UnrealizedGain)

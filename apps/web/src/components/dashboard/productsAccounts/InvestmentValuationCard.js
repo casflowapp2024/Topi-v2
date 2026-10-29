@@ -37,8 +37,6 @@ const InvestmentValuationCard = ({ account, iniDate, endDate, current_Month, cur
     const currency = account?.currency || 'COP';
     const base = net_worth?.base_currency || getBaseCurrency();
     const foreign = currency !== base;
-    // diferencia cambiaria de hoy: lo aportado se registró en la moneda base a la tasa de cada fecha
-    const fxGain = Number(net_worth?.accounts?.find(a => a.account_id === account?.id)?.fx_gain ?? 0);
     const [performance, setPerformance] = useState(null);
     const [valuations, setValuations] = useState(null);
     const [showAll, setShowAll] = useState(false);
@@ -163,14 +161,6 @@ const InvestmentValuationCard = ({ account, iniDate, endDate, current_Month, cur
                     <Stat label="Ganancia total" hint={`Aportado: ${formatMoney(performance.contributions_total, currency)}`}>
                         <span className={signClass(totalGain)}>{signed(totalGain, currency)}</span>
                     </Stat>
-                    {foreign && fxGain !== 0 && (
-                        <div className="col-span-2">
-                            <Stat label={`Diferencia cambiaria (en ${base}, hoy)`}
-                                hint={`Lo aportado se registró en ${base} a la tasa de cada fecha; a la tasa de hoy vale ${fxGain < 0 ? 'menos' : 'más'}. No es ingreso ni gasto: se ve en tu patrimonio.`}>
-                                <span className={signClass(fxGain)}>{signed(fxGain, base)}</span>
-                            </Stat>
-                        </div>
-                    )}
                 </div>
             )}
 
