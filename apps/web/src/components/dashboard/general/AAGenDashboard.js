@@ -11,8 +11,6 @@ import HomePaceCard from './HomePaceCard';
 import HomeFlowCard from './HomeFlowCard';
 import HomeNetWorthCard from './HomeNetWorthCard';
 import ReviewInbox from './ReviewInbox';
-import Card from '../../ui/Card';
-import PeriodSelector from '../../navigation/PeriodSelector';
 
 const AAGenDashboard = ({
     current_Month,
@@ -45,15 +43,8 @@ const AAGenDashboard = ({
                 <div className="order-2 lg:order-none min-w-0">
                     <HomeFlowCard loading={loadingReport} />
                 </div>
-                <div className="contents lg:flex lg:flex-col lg:gap-3 lg:min-w-0">
-                    {/* En móvil el periodo vive en la barra superior */}
-                    <Card padding="sm" className="hidden lg:flex items-center justify-between gap-2">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Mes</span>
-                        <PeriodSelector />
-                    </Card>
-                    <div className="order-3 lg:order-none lg:flex-1 lg:min-h-0">
-                        <ReviewInbox />
-                    </div>
+                <div className="order-3 lg:order-none min-w-0">
+                    <ReviewInbox />
                 </div>
                 <div className="contents lg:col-span-2 lg:flex lg:flex-col lg:gap-6 lg:min-w-0">
                     <div className="order-4 lg:order-none">

@@ -143,16 +143,17 @@ isCreditAccount, isInvestmentAccount) · transfers actions · `TransferLinkSecti
 Reemplazan las secciones A, B y C en lo que se contradiga. Layout de PC:
 
 ```
-[ Ritmo (más ancha, sin título) ][ Flujo (angosta) ][ Mes                ]
-[                               ][                 ][ Por revisar (uno)  ]
+[ Marca ]            [ General · Presupuestos · Cuentas · Transacciones ]            [ tema · ajustes · mes ]
+
+[ Ritmo (más ancha, sin título) ][ Flujo (angosta) ][ Por revisar (dos)  ]
 [ Patrimonio: franja alargada                      ][ Presupuestos       ]
 [ MultiChartDash (300 px)                          ][                    ]
 [ DashAccounts                                                           ]
 ```
 
-- Móvil: Ritmo, Flujo contraído, Por revisar, Patrimonio, gráficas, Presupuestos, Mis cuentas. El mes sigue en la barra superior.
+- Móvil: Ritmo, Flujo contraído, Por revisar, Patrimonio, gráficas, Presupuestos, Mis cuentas. El mes está en la barra superior en todos los tamaños; ya no se repite en Inicio ni en Presupuestos.
 - Patrimonio no se fusiona con Balance: esa gráfica es el efectivo del mes elegido y Patrimonio es el total de hoy.
-- "Por revisar" muestra un ítem a la vez, con puntos y "Siguiente" para saltarlo; al resolverlo sale el siguiente.
+- "Por revisar" muestra un ítem en móvil y dos en PC, con puntos y "Siguiente" para saltarlo; al resolverlo sale el siguiente.
 - El contador solo cuenta lo que hay que resolver. Sin pendientes dice "Todo al día" y recuerda el pago de tarjeta
   más cercano, si lo hay. No es una bandeja de notificaciones.
 - "Ahorro neto" pasa a "Ahorro". "Mis cuentas" ya no repite el patrimonio y sus tarjetas tienen un mismo alto.

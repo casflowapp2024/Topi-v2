@@ -79,7 +79,8 @@ const TxSummary = ({ tx, onOpen }) => (
 /**
  * Bandeja "Por revisar": la acción principal del inicio. Reúne lo que el worker no pudo resolver
  * solo: transacciones por confirmar, pagos de tarjeta sin la cuenta de origen, posibles
- * transferencias y tarjetas con pagos de más. Muestra uno a la vez: al resolverlo sale el siguiente.
+ * transferencias y tarjetas con pagos de más. Muestra uno en móvil y dos en PC: al resolver uno sale
+ * el siguiente.
  * El contador solo cuenta lo que hay que resolver: el aviso de pago aparece cuando ya no queda nada.
  */
 const ReviewInbox = ({
@@ -217,6 +218,7 @@ const ReviewInbox = ({
     cards.map(row => ({ kind: 'card', key: `card:${row.acc.id}`, ...row })),
   ]);
   const current = queue.length ? queue[position % queue.length] : null;
+  const following = queue.length > 1 ? queue[(position + 1) % queue.length] : null;
 
   const renderItem = (item) => {
     const off = leaving.has(item.key);
@@ -298,8 +300,11 @@ const ReviewInbox = ({
       ) : current ? (
         <>
           {renderItem(current)}
+          {following && (
+            <div className="hidden lg:block mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">{renderItem(following)}</div>
+          )}
           {queue.length > 1 && (
-            <div className="mt-auto pt-3 flex items-center justify-between gap-2">
+            <div className={`mt-auto pt-3 items-center justify-between gap-2 ${queue.length > 2 ? 'flex' : 'flex lg:hidden'}`}>
               <span className="flex items-center gap-1.5" aria-hidden="true">
                 {Array.from({ length: Math.min(queue.length, MAX_DOTS) }).map((_, i) => (
                   <span key={i} className={`w-1.5 h-1.5 rounded-full ${i === Math.min(position % queue.length, MAX_DOTS - 1) ? 'bg-topi-500' : 'bg-gray-300 dark:bg-gray-600'}`} />

@@ -84,18 +84,19 @@ test('La cola toma un ítem de cada tipo antes de repetir', () => {
   expect(buildQueue([[1, 2, 3], ['a'], [], ['x', 'y']])).toEqual([1, 'a', 'x', 2, 'y', 3]);
 });
 
-test('Muestra uno a la vez y Siguiente recorre los 4 tipos', async () => {
+test('Muestra el actual y, solo en PC, el siguiente; Siguiente recorre los 4 tipos', async () => {
   api([tx(1), payment], [pair]);
   const { el, root } = await mount(state());
   const next = () => click(el.querySelector('[aria-label="Ver el siguiente por revisar"]'));
   expect(title(el)).toBe('Por revisar · 4');
   expect(button(el, 'Mercado')).toBeTruthy();                 // categoría sugerida, un toque
   expect(button(el, 'Otra…')).toBeTruthy();
-  expect(button(el, '¿De qué cuenta salió?')).toBeFalsy();    // solo se ve el primero
+  expect(button(el, '¿De qué cuenta salió?').closest('.hidden.lg\\:block')).not.toBeNull();
+  expect(button(el, 'Unir como transferencia')).toBeFalsy();  // el resto espera su turno
   await next();
-  expect(button(el, '¿De qué cuenta salió?')).toBeTruthy();
+  expect(button(el, '¿De qué cuenta salió?').closest('.hidden.lg\\:block')).toBeNull();
   await next();
-  expect(button(el, 'Unir como transferencia')).toBeTruthy();
+  expect(button(el, 'Unir como transferencia').closest('.hidden.lg\\:block')).toBeNull();
   await next();
   expect(el.textContent).toContain('Pagado de más en Visa');
   expect(el.textContent).not.toContain('Vieja');               // las cerradas no se revisan

@@ -23,7 +23,6 @@ import {
   BanknotesIcon,
   CreditCardIcon,
   ArrowsRightLeftIcon,
-  UserIcon,
   SunIcon,
   MoonIcon,
   Cog6ToothIcon
@@ -206,33 +205,32 @@ const Layout = ({
             <div className='flex flex-col w-full relative pb-20 lg:pb-0'>
               <div className="w-full text-gray-700 dark:text-gray-300 flex flex-col items-center bg-gray-100 dark:bg-[#0B0F19] relative transition-colors duration-300">
                 <div className="fixed top-0 left-0 right-0 z-40 flex justify-center bg-gray-100/80 dark:bg-[#0B0F19]/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50 transition-colors duration-300">
-                  <div className="px-2 py-2 md:py-3 gap-2 flex flex-row justify-between items-center w-full lg:w-[806px] xl:w-[930px]">
-                    {/* Barra superior (versión mobile - logo/título) */}
-                    <div className='flex lg:hidden items-center gap-2'>
+                  <div className="px-2 py-2 md:py-3 gap-2 flex flex-row justify-between items-center w-full lg:grid lg:grid-cols-[1fr_auto_1fr] lg:px-4 lg:max-w-[1200px]">
+                    <div className='flex items-center gap-2'>
                       <div className="w-8 h-8 rounded-xl bg-[#5266EB]/10 flex items-center justify-center">
                         <Cflogo className="w-5 h-5" />
                       </div>
                       <span className="hidden min-[380px]:inline font-bold text-[#5266EB] text-lg">Topi</span>
                     </div>
                     <div className='gap-2 hidden lg:flex flex-row'>
-                      <Link to="/dashboard" className={`${activeTab === 'general' ? "bg-[#5266EB] text-white shadow-lg border-[#5266EB]" : "text-gray-400 bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm"} cursor-pointer px-4 py-2 border border-gray-200 rounded-2xl flex items-center gap-2 text-sm transition-colors duration-300`}>
+                      <Link to="/dashboard" className={`${activeTab === 'general' ? "bg-[#5266EB] text-white shadow-lg border-[#5266EB]" : "text-gray-400 bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm"} cursor-pointer px-3 xl:px-4 py-2 border border-gray-200 rounded-2xl flex items-center gap-2 text-sm transition-colors duration-300`}>
                         <HomeIcon className="w-5 h-5" />
                         General
                       </Link>
-                      <Link to="/dashboard/budgets" className={`${activeTab === 'budgets' ? "bg-[#5266EB] text-white shadow-lg border-[#5266EB]" : "text-gray-400 bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm"} cursor-pointer px-4 py-2 border border-gray-200 rounded-2xl flex items-center gap-2 text-sm transition-colors duration-300`}>
+                      <Link to="/dashboard/budgets" className={`${activeTab === 'budgets' ? "bg-[#5266EB] text-white shadow-lg border-[#5266EB]" : "text-gray-400 bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm"} cursor-pointer px-3 xl:px-4 py-2 border border-gray-200 rounded-2xl flex items-center gap-2 text-sm transition-colors duration-300`}>
                         <BanknotesIcon className="w-5 h-5" />
                         Presupuestos
                       </Link>
-                      <Link to="/dashboard/accounts" className={`${activeTab === 'accounts' ? "bg-[#5266EB] text-white shadow-lg border-[#5266EB]" : "text-gray-400 bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm"} cursor-pointer px-4 py-2 border border-gray-200 rounded-2xl flex items-center gap-2 text-sm transition-colors duration-300`}>
+                      <Link to="/dashboard/accounts" className={`${activeTab === 'accounts' ? "bg-[#5266EB] text-white shadow-lg border-[#5266EB]" : "text-gray-400 bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm"} cursor-pointer px-3 xl:px-4 py-2 border border-gray-200 rounded-2xl flex items-center gap-2 text-sm transition-colors duration-300`}>
                         <CreditCardIcon className="w-5 h-5" />
                         Cuentas
                       </Link>
-                      <Link to="/dashboard/transactions" className={`${activeTab === 'transactions' ? "bg-[#5266EB] text-white shadow-lg border-[#5266EB]" : "text-gray-400 bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm"} cursor-pointer px-4 py-2 border border-gray-200 rounded-2xl flex items-center gap-2 text-sm transition-colors duration-300`}>
+                      <Link to="/dashboard/transactions" className={`${activeTab === 'transactions' ? "bg-[#5266EB] text-white shadow-lg border-[#5266EB]" : "text-gray-400 bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm"} cursor-pointer px-3 xl:px-4 py-2 border border-gray-200 rounded-2xl flex items-center gap-2 text-sm transition-colors duration-300`}>
                         <ArrowsRightLeftIcon className="w-5 h-5" />
                         Transacciones
                       </Link>
                     </div>
-                    <div className='flex flex-row items-center gap-2'>
+                    <div className='flex flex-row items-center justify-end gap-2'>
                       <button
                         type="button"
                         onClick={() => toggle_dark_mode()}
@@ -244,28 +242,16 @@ const Layout = ({
                           ? <SunIcon className="w-5 h-5 transition-transform duration-300 rotate-0 motion-reduce:transition-none" aria-hidden="true" />
                           : <MoonIcon className="w-5 h-5 transition-transform duration-300 motion-reduce:transition-none" aria-hidden="true" />}
                       </button>
-                      {/* Móvil: botón de ajustes compacto + selector de periodo */}
                       <button
                         type="button"
                         onClick={() => open_settings_modal('profile')}
                         aria-label="Abrir ajustes y perfil"
                         title="Ajustes"
-                        className="lg:hidden w-9 h-9 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-topi-500 active:scale-95 transition-all"
+                        className="w-9 h-9 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-topi-500 active:scale-95 transition-all"
                       >
                         <Cog6ToothIcon className="w-5 h-5" aria-hidden="true" />
                       </button>
-                      {showPeriod && <PeriodSelector compact className="lg:hidden" />}
-                      <button
-                        onClick={() => open_settings_modal('profile')}
-                        aria-label="Abrir ajustes y perfil"
-                        className="hidden lg:flex p-1 px-3 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 items-center gap-2 text-gray-700 dark:text-gray-200 transition-all font-semibold"
-                      >
-                        <span className="text-xs">{user?.name || 'Usuario'}</span>
-                        <div className="w-7 h-7 rounded-full bg-[#5266EB]/10 flex items-center justify-center">
-                          <Cflogo className='hidden md:block w-5 h-5' />
-                          <UserIcon className="md:hidden text-[#5266EB] w-5 h-5" />
-                        </div>
-                      </button>
+                      {showPeriod && <PeriodSelector compact />}
                     </div>
                   </div>
                 </div>

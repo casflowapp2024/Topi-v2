@@ -63,7 +63,7 @@ const HomeFlowCard = ({ income, expenses, history_dash, current_Month, current_Y
         <div className="flex flex-col gap-3"><Skeleton className="h-5 w-full" /><Skeleton className="h-5 w-full" /><Skeleton className="h-5 w-full" /></div>
       ) : (
         <>
-          <div className="flex flex-col gap-1.5 lg:flex-1 lg:justify-between lg:gap-3" aria-busy={loading}>
+          <div className="flex flex-col gap-1.5 lg:flex-1 lg:justify-center lg:gap-3" aria-busy={loading}>
             <Figure label="Ingresos" color={c.ingreso} value={formatMoney(inValue)} percentage={income.vs_past_month} upIsGood loading={loading} />
             <Figure label="Gastos" color={c.gasto} value={formatMoney(outValue)} percentage={expenses.vs_past_month} upIsGood={false} loading={loading} />
             <Figure label="Ahorro" color={c.ahorro} value={formatMoney(savings?.value)} percentage={savings?.percentage} upIsGood loading={loading} />
