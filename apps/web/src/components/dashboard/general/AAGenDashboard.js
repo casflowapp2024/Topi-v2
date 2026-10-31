@@ -10,6 +10,7 @@ import MultiChartDash from './MultiChartDash';
 import HomePaceCard from './HomePaceCard';
 import HomeFlowCard from './HomeFlowCard';
 import HomeNetWorthCard from './HomeNetWorthCard';
+import ReviewInbox from './ReviewInbox';
 import PeriodSelector from '../../navigation/PeriodSelector';
 
 const AAGenDashboard = ({
@@ -57,6 +58,9 @@ const AAGenDashboard = ({
                     <MultiChartDash />
                 </div>
                 <div className="contents lg:flex lg:flex-col lg:gap-6 lg:w-[320px] xl:w-[300px] lg:shrink-0">
+                    <div className="order-4 lg:order-none">
+                        <ReviewInbox />
+                    </div>
                     <div className="order-5 lg:order-none">
                         <DashPlan />
                     </div>

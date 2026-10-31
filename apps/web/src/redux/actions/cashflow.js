@@ -717,6 +717,24 @@ export const get_user_transactions = (
 }
 
 
+// Lo que espera revisión: la API une should_verify y needs_counterpart en ese filtro.
+// Devuelve { items, total }; null si falló.
+export const fetch_review_transactions = async (limit = 10) => {
+    const config = {
+        headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+    };
+    try {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/transactions/list?skip=0&limit=${limit}&should_verify=true`, config);
+        if (res.status !== 200) return null;
+        return { items: res.data.data.transactions || [], total: res.data.data.meta.total };
+    } catch (err) {
+        return null;
+    }
+};
+
 export const update_transaction = (
     tran_id,
     category_id,

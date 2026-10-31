@@ -1,0 +1,323 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { connect } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { Emoji } from 'emoji-picker-react';
+import {
+  ArrowRightIcon, ArrowsRightLeftIcon, CheckIcon, CreditCardIcon, ExclamationTriangleIcon,
+} from '@heroicons/react/20/solid';
+import { CheckCircleIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+//redux
+import {
+  change_transactions_filter, create_category, fetch_review_transactions, filtersFromState,
+  get_user_categories, update_transaction,
+} from '../../../redux/actions/cashflow';
+import { get_expenses_report, get_financial_report, get_history_dash } from '../../../redux/actions/reports';
+import { get_net_worth } from '../../../redux/actions/fx';
+import { setAlert } from '../../../redux/actions/alert';
+import { dismiss_transfer_candidate, fetch_transfer_candidates, link_transfer } from '../../../redux/actions/transfers';
+//components
+import Button from '../../ui/Button';
+import Card, { CardHeader } from '../../ui/Card';
+import EmptyState from '../../ui/EmptyState';
+import Money from '../../ui/Money';
+import Sheet from '../../ui/Sheet';
+import { SkeletonRows } from '../../ui/Skeleton';
+import CardReconcile from '../productsAccounts/CardReconcile';
+import DropDownCat from '../../transactions/DropDownCat';
+import TransactionDetail from '../../transactions/TransactionDetail2';
+import TransferLinkSection from '../../transactions/TransferLinkSection';
+import { capitalizeWords, findElmentById, formatMoney, getBaseCurrency, isCreditAccount, isOpenAccount } from '../../helpers';
+
+const MAX_VISIBLE = 5;
+const PAGE = 10;
+const LEAVE_MS = 200;
+
+// Hasta `max` ítems tomando uno de cada grupo por vuelta: ningún tipo se queda sin aparecer
+export const pickVisible = (groups, max) => {
+  const out = [];
+  for (let i = 0; out.length < max && groups.some(g => i < g.length); i += 1) {
+    groups.forEach(g => { if (i < g.length && out.length < max) out.push(g[i]); });
+  }
+  return out;
+};
+
+// Al ligar una pareja, las otras con alguna de sus transacciones dejan de ser posibles
+const pairKey = (c) => `${c.out_transaction_id}-${c.in_transaction_id}`;
+const sharesLeg = (a, b) => [a.out_transaction_id, a.in_transaction_id].some(id => id === b.out_transaction_id || id === b.in_transaction_id);
+
+const Row = ({ leaving, children }) => (
+  <li className={`py-2.5 flex flex-col gap-2 transition-opacity duration-200 motion-reduce:transition-none ${leaving ? 'opacity-0' : ''}`}>
+    {children}
+  </li>
+);
+
+const TxSummary = ({ tx, onOpen }) => (
+  <button type="button" onClick={onOpen} className="w-full flex items-start gap-2 text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500">
+    <span className="w-5 h-5 shrink-0 flex items-center justify-center">
+      {tx.category?.emoji && <Emoji unified={tx.category.emoji.toLowerCase()} emojiStyle="apple" size={16} />}
+    </span>
+    <span className="flex-1 min-w-0 flex flex-col">
+      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>
+      <span className="text-xs text-ink-2 dark:text-gray-400 truncate">{capitalizeWords(tx.category?.name)} · {tx.account?.name}</span>
+    </span>
+    <Money amount={tx.amount} currency={tx.currency} base={tx.amount_base} sign={tx.expense ? '-' : '+'}
+      className={`text-sm font-semibold tabular-nums ${tx.expense ? 'text-gray-900 dark:text-gray-100' : 'text-money-in dark:text-money-in-dark'}`} />
+  </button>
+);
+
+/**
+ * Bandeja "Por revisar": la acción principal del inicio. Reúne lo que el worker no pudo resolver
+ * solo: transacciones por confirmar, pagos de tarjeta sin la cuenta de origen, posibles
+ * transferencias y tarjetas con pagos de más. Cada ítem se resuelve aquí mismo, sin salir del inicio.
+ */
+const ReviewInbox = ({
+  user_categories, user_accounts, net_worth, first_steps, trans_filters_activated, current_Month, current_Year,
+  update_transaction, create_category, get_user_categories, change_transactions_filter, setAlert,
+  get_financial_report, get_history_dash, get_expenses_report, get_net_worth,
+}) => {
+  const navigate = useNavigate();
+  const [txs, setTxs] = useState(null);         // null = cargando
+  const [txTotal, setTxTotal] = useState(0);
+  const [candidates, setCandidates] = useState(null);
+  const [failed, setFailed] = useState(false);
+  const [leaving, setLeaving] = useState(() => new Set());
+  const [busy, setBusy] = useState(null);       // id del ítem en curso
+  const [picking, setPicking] = useState(null); // transacción con "Otra…" abierto
+  const [sheet, setSheet] = useState(null);     // { pay: tx } | { card: fila de tarjeta }
+  const [detail, setDetail] = useState(null);
+
+  const load = useCallback(async () => {
+    const [review, pairs] = await Promise.all([fetch_review_transactions(PAGE), fetch_transfer_candidates()]);
+    setFailed(review === null || pairs === null);
+    setTxs(review?.items || []);
+    setTxTotal(review?.total || 0);
+    setCandidates(pairs || []);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  // Tarjetas con saldo a favor: cargos pagados pero sin registrar. Con día de corte el patrimonio
+  // las valora por su deuda estimada (nunca positiva), así que aquí solo salen las que no tienen.
+  const cards = useMemo(() => {
+    const items = new Map((user_accounts?.items || []).map(a => [a.id, a]));
+    return (net_worth?.accounts || [])
+      .map(nw => ({ nw, acc: items.get(nw.account_id) }))
+      .filter(({ nw, acc }) => acc && isOpenAccount(acc) && isCreditAccount(acc) && Number(nw.balance) > 0);
+  }, [user_accounts, net_worth]);
+
+  const refreshReports = () => {
+    const month = String(current_Month).padStart(2, '0');
+    get_financial_report(current_Month, current_Year);
+    get_history_dash(`${current_Year}-${month}`);
+    get_expenses_report(`${current_Year}-${month}-01`);
+    get_net_worth();
+  };
+
+  // Atenúa el ítem y lo saca cuando termina la transición; ahí baja el contador
+  const leave = (key, remove) => {
+    setLeaving(s => new Set(s).add(key));
+    setTimeout(() => {
+      remove();
+      setLeaving(s => { const next = new Set(s); next.delete(key); return next; });
+    }, LEAVE_MS);
+  };
+  const removeTx = (tx) => leave(`tx:${tx.id}`, () => {
+    setTxs(list => list.filter(t => t.id !== tx.id));
+    setTxTotal(n => n - 1);
+  });
+  // Quedan más en la API que aquí: se trae la siguiente tanda
+  useEffect(() => {
+    if (txs && txs.length < MAX_VISIBLE && txTotal > txs.length) load();
+  }, [txs, txTotal, load]);
+
+  const confirm = async (tx, categoryId = tx.category?.id) => {
+    setBusy(`tx:${tx.id}`);
+    const ok = await update_transaction(tx.id, categoryId, tx.account?.id, tx.description, tx.expense, tx.amount, tx.date, true);
+    setBusy(null);
+    if (ok !== true) {
+      setAlert('No se pudo guardar, intenta de nuevo.', false, 'text-white', 'bg-red-500', 4000);
+      return;
+    }
+    setPicking(null);
+    removeTx(tx);
+    if (categoryId !== tx.category?.id) refreshReports();
+  };
+
+  // Las categorías recomendadas aún no existen (id negativo): se crean al elegirlas
+  const chooseCategory = async (tx, value) => {
+    let categoryId = Number(value);
+    if (categoryId < 0) {
+      setBusy(`tx:${tx.id}`);
+      const chosen = findElmentById(user_categories.items, categoryId);
+      const created = await create_category(chosen.name, 0, chosen.emoji);
+      setBusy(null);
+      if (!created.res) {
+        setAlert('No se pudo crear la categoría, intenta de nuevo.', false, 'text-white', 'bg-red-500', 4000);
+        return;
+      }
+      categoryId = created.id;
+      get_user_categories(0, 50);
+    }
+    confirm(tx, categoryId);
+  };
+
+  const linkPair = async (c) => {
+    setBusy(pairKey(c));
+    const result = await link_transfer(c.out_transaction_id, { counterpartTransactionId: c.in_transaction_id });
+    setBusy(null);
+    if (!result.ok) {
+      setAlert('No se pudo unir, intenta de nuevo.', false, 'text-white', 'bg-red-500', 4000);
+      return;
+    }
+    leave(pairKey(c), () => setCandidates(list => list.filter(x => !sharesLeg(x, c))));
+    refreshReports();
+  };
+
+  const dismissPair = async (c) => {
+    setBusy(pairKey(c));
+    const result = await dismiss_transfer_candidate(c.out_transaction_id, c.in_transaction_id);
+    setBusy(null);
+    if (!result.ok) {
+      setAlert('No se pudo descartar, intenta de nuevo.', false, 'text-white', 'bg-red-500', 4000);
+      return;
+    }
+    leave(pairKey(c), () => setCandidates(list => list.filter(x => pairKey(x) !== pairKey(c))));
+  };
+
+  const seeAll = async () => {
+    await change_transactions_filter(filtersFromState(trans_filters_activated, { shouldVerify: true, checked: '', transfer: '' }));
+    navigate('/dashboard/transactions');
+  };
+
+  const loading = txs === null || candidates === null;
+  const total = (txTotal || 0) + (candidates?.length || 0) + cards.length;
+  const accountName = (id) => (user_accounts?.items || []).find(a => a.id === id)?.name || 'Cuenta';
+
+  const visible = loading ? [] : pickVisible([
+    (txs || []).filter(t => !t.needs_counterpart).map(tx => ({ kind: 'verify', key: `tx:${tx.id}`, tx })),
+    (txs || []).filter(t => t.needs_counterpart).map(tx => ({ kind: 'payment', key: `tx:${tx.id}`, tx })),
+    (candidates || []).map(c => ({ kind: 'pair', key: pairKey(c), c })),
+    cards.map(row => ({ kind: 'card', key: `card:${row.acc.id}`, ...row })),
+  ], MAX_VISIBLE);
+
+  const renderItem = (item) => {
+    const off = leaving.has(item.key);
+    const isBusy = busy === item.key;
+    if (item.kind === 'verify') {
+      const { tx } = item;
+      const name = capitalizeWords(tx.category?.name);
+      return (
+        <Row key={item.key} leaving={off}>
+          <TxSummary tx={tx} onOpen={() => setDetail(tx)} />
+          {picking === tx.id ? (
+            <DropDownCat options={user_categories.items} selected={tx.category?.id} placeholder="Elige una categoría"
+              onChange={e => chooseCategory(tx, e.target.value)} />
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button size="sm" icon={CheckIcon} loading={isBusy} disabled={busy !== null || !tx.category?.id} onClick={() => confirm(tx)}
+                aria-label={`Confirmar categoría ${name}`} className="flex-1 min-w-0">
+                <span className="truncate">{name}</span>
+              </Button>
+              <Button size="sm" variant="ghost" disabled={busy !== null || !user_categories?.items?.length} onClick={() => setPicking(tx.id)}>Otra…</Button>
+            </div>
+          )}
+        </Row>
+      );
+    }
+    if (item.kind === 'payment') {
+      const { tx } = item;
+      return (
+        <Row key={item.key} leaving={off}>
+          <TxSummary tx={tx} onOpen={() => setSheet({ pay: tx })} />
+          <Button size="sm" variant="secondary" icon={CreditCardIcon} onClick={() => setSheet({ pay: tx })}>¿De qué cuenta salió?</Button>
+        </Row>
+      );
+    }
+    if (item.kind === 'pair') {
+      const { c } = item;
+      return (
+        <Row key={item.key} leaving={off}>
+          <div className="flex items-center gap-2 text-xs text-ink-2 dark:text-gray-400 min-w-0">
+            <span className="min-w-0 flex-1 flex flex-col">
+              <span className="text-sm font-medium tabular-nums text-gray-900 dark:text-gray-100">{formatMoney(c.out_amount, c.out_currency)}</span>
+              <span className="truncate">{accountName(c.out_account_id)}</span>
+            </span>
+            <ArrowRightIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 flex-1 flex flex-col">
+              <span className="text-sm font-medium tabular-nums text-gray-900 dark:text-gray-100">{formatMoney(c.in_amount, c.in_currency)}</span>
+              <span className="truncate">{accountName(c.in_account_id)}</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="secondary" icon={ArrowsRightLeftIcon} loading={isBusy} disabled={busy !== null} onClick={() => linkPair(c)} className="flex-1 min-w-0">
+              <span className="truncate">Unir como transferencia</span>
+            </Button>
+            <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => dismissPair(c)}>No es</Button>
+          </div>
+        </Row>
+      );
+    }
+    const { acc, nw } = item;
+    return (
+      <Row key={item.key} leaving={off}>
+        <div className="flex gap-2 text-sm text-gray-800 dark:text-gray-100">
+          <ExclamationTriangleIcon className="w-4 h-4 shrink-0 mt-0.5 text-status-warn-text dark:text-amber-300" aria-hidden="true" />
+          <span className="min-w-0"><b>Pagado de más</b> en {acc.name}: <span className="tabular-nums">{formatMoney(nw.balance, nw.currency)}</span></span>
+        </div>
+        <Button size="sm" variant="secondary" onClick={() => setSheet({ card: item })}>Ajustar con el banco</Button>
+      </Row>
+    );
+  };
+
+  return (
+    <Card aria-label="Por revisar">
+      <CardHeader className="!mb-0" title={total > 0 ? `Por revisar · ${total}` : 'Por revisar'}
+        action={total > visible.length && (
+          <button type="button" onClick={seeAll} className="shrink-0 text-xs font-medium text-topi-600 dark:text-indigo-300 hover:underline">Ver todo</button>
+        )} />
+      {loading ? (
+        <SkeletonRows rows={3} />
+      ) : total > 0 ? (
+        <ul className="divide-y divide-gray-100 dark:divide-gray-700">{visible.map(renderItem)}</ul>
+      ) : failed ? (
+        <EmptyState compact icon={ExclamationTriangleIcon} title="No pudimos revisar tus movimientos"
+          action={<Button size="sm" variant="secondary" onClick={load}>Reintentar</Button>} />
+      ) : first_steps?.retrieved_email && !first_steps?.email ? (
+        <EmptyState compact icon={EnvelopeIcon} title="Conecta tu correo" description="Tus movimientos llegan solos y aquí solo confirmas lo que haga falta."
+          action={<Button size="sm" onClick={() => navigate('/dashboard/connect-email')}>Conectar correo</Button>} />
+      ) : (
+        <EmptyState compact icon={CheckCircleIcon} title="Todo al día" description="Cuando llegue algo por confirmar, lo verás aquí." />
+      )}
+
+      <Sheet open={Boolean(sheet)} onClose={() => setSheet(null)} title={sheet?.card ? 'Ajustar con el banco' : 'Pago de tarjeta'}
+        description={sheet?.pay?.description || sheet?.card?.acc?.name}>
+        {sheet?.pay && (
+          <TransferLinkSection detailInfo={sheet.pay} setDetailInfo={(tx) => setSheet({ pay: tx })}
+            onChanged={() => { removeTx(sheet.pay); setSheet(null); refreshReports(); }} />
+        )}
+        {sheet?.card && (
+          <CardReconcile account={sheet.card.acc} balance={sheet.card.nw.balance} onCancel={() => setSheet(null)}
+            onDone={() => { setSheet(null); refreshReports(); }} />
+        )}
+      </Sheet>
+
+      {/* El detalle no confirma solo: abrirlo es mirar. Editar sí la marca como revisada. */}
+      <TransactionDetail openTransDetail={Boolean(detail)} setOpenTransDetail={() => { setDetail(null); load(); }}
+        detailInfo={detail} setDetailInfo={setDetail} currentFrontendPage={1} contextWindow="dash" />
+    </Card>
+  );
+};
+
+const mapStateToProps = state => ({
+  user_categories: state.CashFlow.user_categories,
+  user_accounts: state.CashFlow.user_accounts,
+  first_steps: state.CashFlow.first_steps,
+  trans_filters_activated: state.CashFlow.trans_filters_activated,
+  net_worth: state.Fx.net_worth,
+  current_Month: state.Reports.current_Month,
+  current_Year: state.Reports.current_Year,
+});
+
+export default connect(mapStateToProps, {
+  update_transaction, create_category, get_user_categories, change_transactions_filter, setAlert,
+  get_financial_report, get_history_dash, get_expenses_report, get_net_worth,
+})(ReviewInbox);
