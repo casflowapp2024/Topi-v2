@@ -74,6 +74,15 @@ test('Ritmo: mes en curso con presupuesto', () => {
   act(() => root.unmount());
 });
 
+test('Ritmo: lo movido a inversiones usa el presupuesto aunque no sea gasto', () => {
+  const dash = history(1000000, 100000);
+  dash.daily.mtd_budget = dash.daily.mtd_expense.map(v => v - 500000);
+  const expected = getDailyAllowance(1000000, 600000, Y, M);
+  const { el, root } = render(<HomePaceCard />, reports({ history_dash: dash }));
+  expect(el.textContent).toContain(`Quedan ${formatMoney(expected.left)}`);
+  act(() => root.unmount());
+});
+
 test('Ritmo: mes pasado sin "hoy puedes"', () => {
   const y = prev.getFullYear();
   const m = prev.getMonth() + 1;

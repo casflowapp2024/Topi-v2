@@ -6,6 +6,7 @@ import (
 	"cash-flow/internal/adapter/storage/postgres/repository"
 	"cash-flow/internal/core/domain"
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -228,6 +229,95 @@ func TestTransfersOutOfFlows(t *testing.T) {
 	require.NotNil(t, usdLink.Counterpart.AmountBase)
 	assert.True(t, usdLink.Counterpart.AmountBase.Equal(d("80000")))
 	noDrift()
+}
+
+// TestBudgetsCountOnlyInvestmentTransfers: entre cuentas propias o pagando una tarjeta no se gasta
+// nada, aunque las patas tengan categorías distintas; mover dinero a una inversión sí usa el
+// presupuesto, sin ser gasto. El total por categorías cuadra con las series del análisis.
+func TestBudgetsCountOnlyInvestmentTransfers(t *testing.T) {
+	ctx := context.Background()
+	db := integrationDB(t)
+	userID := "it-bud-" + uuid.NewString()
+	t.Cleanup(func() {
+		_, _ = db.Exec(ctx, "DELETE FROM transactions WHERE user_id = $1", userID)
+		for _, table := range []string{"accounts", "categories", "banks", "user_extra"} {
+			_, _ = db.Exec(ctx, "DELETE FROM "+table+" WHERE user_id = $1", userID)
+		}
+	})
+	id := func(sql string, args ...any) uint64 {
+		t.Helper()
+		var out uint64
+		require.NoError(t, db.QueryRow(ctx, sql, args...).Scan(&out))
+		return out
+	}
+	_, err := db.Exec(ctx, "INSERT INTO user_extra (user_id, utc_offset, whatsapp) VALUES ($1, 'America/Bogota', '')", userID)
+	require.NoError(t, err)
+	bank := id("INSERT INTO banks (user_id, name, email) VALUES ($1, 'Banco IT', 'it@banco.test') RETURNING id", userID)
+	category := func(name string) uint64 {
+		return id("INSERT INTO categories (user_id, name, budget, emoji) VALUES ($1, $2, 1000000, '') RETURNING id", userID, name)
+	}
+	investing, moves, cards, market := category("Inversiones Mov"), category("Movs Cuentas"), category("Pago tarjetas"), category("Mercado")
+	account := func(name, digits string, typeID int) uint64 {
+		return id(`INSERT INTO accounts (user_id, name, last_four_digits, bank_id, type_id, initial_balance, currency, created_at)
+			VALUES ($1, $2, $3, $4, $5, 0, 'COP', '2026-07-01 12:00:00-05') RETURNING id`, userID, name, digits, bank, typeID)
+	}
+	savings, pocket, broker, card := account("Ahorros IT", "0001", 1), account("Bolsillo IT", "0002", 1), account("Broker IT", "0003", 3), account("Tarjeta IT", "0004", 4)
+	tx := func(accountID, categoryID uint64, expense bool, amount, at string) uint64 {
+		return id(`INSERT INTO transactions (user_id, category_id, account_id, description, expense, amount, date)
+			VALUES ($1, $2, $3, 'IT', $4, $5, $6) RETURNING id`, userID, categoryID, accountID, expense, amount, at)
+	}
+	transactions := repository.NewTransactionRepository(db)
+	link := func(a, b uint64) {
+		t.Helper()
+		require.NoError(t, transactions.LinkTransactions(ctx, &domain.TransferLink{UserID: userID, TransactionID: a, CounterpartTransactionID: b}))
+	}
+
+	tx(savings, market, true, "100000", "2026-08-05 10:00:00-05")
+	// a la inversión: usa el presupuesto; el rescate lo devuelve
+	link(tx(savings, investing, true, "500000", "2026-08-06 10:00:00-05"), tx(broker, investing, false, "500000", "2026-08-06 10:01:00-05"))
+	link(tx(broker, investing, true, "50000", "2026-08-07 10:00:00-05"), tx(savings, investing, false, "50000", "2026-08-07 10:01:00-05"))
+	// entre cuentas propias con categorías distintas y pago de tarjeta: no usan ningún presupuesto
+	link(tx(savings, moves, true, "700000", "2026-08-08 10:00:00-05"), tx(pocket, market, false, "700000", "2026-08-08 10:01:00-05"))
+	link(tx(savings, cards, true, "300000", "2026-08-09 10:00:00-05"), tx(card, cards, false, "300000", "2026-08-09 10:01:00-05"))
+	// pago por correo sin su otra pata: tampoco
+	pending := tx(card, cards, false, "90000", "2026-08-10 10:00:00-05")
+	_, err = db.Exec(ctx, "UPDATE transactions SET needs_counterpart = true WHERE id = $1", pending)
+	require.NoError(t, err)
+	// un mes después sigue contando en su mes
+	link(tx(savings, investing, true, "20000", "2026-09-02 10:00:00-05"), tx(broker, investing, false, "20000", "2026-09-02 10:01:00-05"))
+
+	analysis := repository.NewAnalysisRepository(db)
+	august := time.Date(2026, 8, 15, 0, 0, 0, 0, time.UTC)
+	report, err := analysis.GetCategoriesReport(ctx, userID, august)
+	require.NoError(t, err)
+	spent := map[uint64]float64{}
+	total := 0.0
+	for _, m := range report.Expenses.Report {
+		spent[m.CategoryID] = m.Value
+		total += m.Value
+	}
+	assert.InDelta(t, -450000, spent[investing], 0.001)
+	assert.InDelta(t, -100000, spent[market], 0.001)
+	assert.InDelta(t, 0, spent[moves], 0.001)
+	assert.InDelta(t, 0, spent[cards], 0.001)
+
+	history, err := analysis.GetCategoryAnalysis(ctx, userID, moves, time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC))
+	require.NoError(t, err)
+	assert.Empty(t, history.Monthly, "la categoría de traslados no tiene gasto")
+
+	fr := &domain.FinancialResolver{UserID: userID, Start: time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC), End: august, Rsp: &domain.FinancialAnalysis{}, Mu: &sync.Mutex{}, Wg: &sync.WaitGroup{}}
+	fr.Wg.Add(2)
+	analysis.GetDailyAnalysis(ctx, fr)
+	analysis.GetMonthlyAnalysis(ctx, fr)
+	require.NoError(t, fr.DailyErr)
+	require.NoError(t, fr.MonthlyErr)
+	daily := fr.Rsp.Daily
+	require.NotEmpty(t, daily.MTDBudget)
+	last := len(daily.MTDBudget) - 1
+	assert.InDelta(t, -100000, daily.MTDExpense[last], 0.001, "los flujos no ven la inversión")
+	assert.InDelta(t, total, daily.MTDBudget[last], 0.001, "la serie cuadra con el total por categorías")
+	require.Len(t, fr.Rsp.Monthly.BudgetSpent, len(fr.Rsp.Monthly.Month))
+	assert.InDelta(t, total, fr.Rsp.Monthly.BudgetSpent[len(fr.Rsp.Monthly.BudgetSpent)-1], 0.001)
 }
 
 func mustCandidates(t *testing.T, r *repository.TransactionRepository, userID string) []domain.TransferCandidate {

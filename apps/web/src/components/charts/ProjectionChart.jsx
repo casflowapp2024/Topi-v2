@@ -19,7 +19,8 @@ const ProjectionChart = ({ history_dash, current_Year, current_Month, compact = 
     const daily = history_dash?.daily;
     if (!daily) return null;
     const total = daysInMonth(current_Year, current_Month);
-    const cum = daily.mtd_expense || [];
+    // lo usado del presupuesto: la serie con la que se compara la línea de presupuesto
+    const cum = daily.mtd_budget || daily.mtd_expense || [];
     const idxByKey = new Map((daily.date || []).map((d, i) => [d, i]));
     const byDay = new Map(dailyRows(daily)
       .filter(r => r.date.getMonth() + 1 === Number(current_Month))

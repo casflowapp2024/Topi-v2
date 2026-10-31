@@ -322,6 +322,7 @@ type FinancialAnalysisDaily struct {
 	Expense         []float64
 	MTDIncome       []float64
 	MTDExpense      []float64
+	MTDBudget       []float64 // MTDExpense plus what the budgets moved to investments: comparable with the budget
 	MTDSavings      []float64
 	RSavingsBalance []float64
 	RCreditsBalance []float64
@@ -332,6 +333,7 @@ type FinancialAnalysisDaily struct {
 type FinancialAnalysisMonthly struct {
 	Income          []MonthlyMetrics
 	Expense         []MonthlyMetrics
+	BudgetSpent     []float64 // Expense plus what the budgets moved to investments, by month
 	Savings         []MonthlyMetrics
 	RSavingsBalance []MonthlyMetrics
 	RCreditsBalance []MonthlyMetrics

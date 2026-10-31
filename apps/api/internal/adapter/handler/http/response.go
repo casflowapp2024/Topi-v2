@@ -894,6 +894,7 @@ type DailyAnalysisResponse struct {
 	Expense         []float64 `json:"expense"`
 	MTDIncome       []float64 `json:"mtd_income"`
 	MTDExpense      []float64 `json:"mtd_expense"`
+	MTDBudget       []float64 `json:"mtd_budget"`
 	MTDSavings      []float64 `json:"mtd_savings"`
 	RSavingsBalance []float64 `json:"running_savings_balance"`
 	RCreditsBalance []float64 `json:"running_credits_balance"`
@@ -904,6 +905,7 @@ type DailyAnalysisResponse struct {
 type MonthlyAnalysisResponse struct {
 	Income          []MonthlyAnalysisMetrics `json:"income"`
 	Expense         []MonthlyAnalysisMetrics `json:"expense"`
+	BudgetSpent     []float64                `json:"budget_spent"`
 	Savings         []MonthlyAnalysisMetrics `json:"savings"`
 	RSavingsBalance []MonthlyAnalysisMetrics `json:"running_savings_balance"`
 	RCreditsBalance []MonthlyAnalysisMetrics `json:"running_credits_balance"`
@@ -977,6 +979,7 @@ func newFinancialAnalysisResponse(analysis *domain.FinancialAnalysis) FinancialA
 			Expense:         analysis.Daily.Expense,
 			MTDIncome:       analysis.Daily.MTDIncome,
 			MTDExpense:      analysis.Daily.MTDExpense,
+			MTDBudget:       analysis.Daily.MTDBudget,
 			MTDSavings:      analysis.Daily.MTDSavings,
 			RSavingsBalance: analysis.Daily.RSavingsBalance,
 			RCreditsBalance: analysis.Daily.RCreditsBalance,
@@ -986,6 +989,7 @@ func newFinancialAnalysisResponse(analysis *domain.FinancialAnalysis) FinancialA
 		Monthly: MonthlyAnalysisResponse{
 			Income:          income,
 			Expense:         expense,
+			BudgetSpent:     analysis.Monthly.BudgetSpent,
 			Savings:         savings,
 			RSavingsBalance: rSavings,
 			RCreditsBalance: rCredits,

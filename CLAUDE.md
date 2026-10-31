@@ -63,8 +63,10 @@ plan/         plan de migración
 - Multimoneda: la moneda la fija la cuenta (`accounts.currency`); los reportes de flujos suman `amount_base`.
   Montos y tasas nuevos viajan como string decimal (shopspring/decimal en Go); no los sumes en float en el front.
 - Transferencias: `transactions.transfer_group_id` liga las dos patas. No cuentan en los totales de ingresos,
-  gastos y ahorro (`flowAmountCalc`, columnas `transfer_*` de `daily_account_totals`), pero sí en saldos y en
-  reportes por categoría/presupuestos (conservan la categoría del usuario). Plan: `plan/10-tipos-de-cuenta.md`.
+  gastos y ahorro (`flowAmountCalc`, columnas `transfer_*` de `daily_account_totals`), pero sí en saldos. En
+  presupuestos (`countsInBudget`) solo cuentan si la otra pata está en una cuenta de inversión; entre cuentas
+  propias o pagando una tarjeta, no. `mtd_budget` y `budget_spent` son lo comparable con el presupuesto: flujos
+  más lo movido a inversiones. Plan: `plan/10-tipos-de-cuenta.md`.
 - Clases de cuenta (`account_types.class`: deposit | investment | credit). En el front, `accountClass` /
   `isCreditAccount` / `isInvestmentAccount` de `helpers.js`; no compares `type_id`. Inversiones: su saldo es la
   última valoración (`account_valuations`) + movimientos posteriores; los reportes de saldos suman

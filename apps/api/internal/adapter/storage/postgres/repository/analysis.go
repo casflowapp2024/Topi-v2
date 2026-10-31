@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -34,6 +35,18 @@ func NewAnalysisRepository(db *postgres.DB) *AnalysisRepository {
 // Reports by category keep counting transfer legs: the user's category still applies to budgets.
 const flowAmountCalc = "case when t.transfer_group_id is not null or t.needs_counterpart then 0 " +
 	"when t.expense is false then t.amount_base else -t.amount_base end"
+
+// otherLegInInvestment is true when the transfer leg t has its other leg in an investment account.
+const otherLegInInvestment = `exists (
+	select 1 from transactions o
+	join accounts oa on oa.id = o.account_id
+	join account_types oat on oat.id = oa.type_id
+	where o.transfer_group_id = t.transfer_group_id and o.id <> t.id and oat.class = 'investment')`
+
+// countsInBudget is the rule of the reports by category: a transfer only uses a budget when it moves
+// money to or from an investment account. Between the user's own cash accounts, or paying a card,
+// nothing was spent, even if the two legs have different categories.
+const countsInBudget = "not t.needs_counterpart and (t.transfer_group_id is null or " + otherLegInInvestment + ")"
 
 // GetFinancialSummary retrieves a financial summary for a user, including income and expenses
 // grouped by month. The summary includes data for the specified time range, with
@@ -378,6 +391,7 @@ func (ar *AnalysisRepository) GetCategoriesReport(
 		Where(sq.Expr(filterMonthExpr+" = "+requestedMonthExpr, filter)).
 		Where(sq.Expr(filterYearExpr+" = "+requestedYearExpr, filter)).
 		Where(sq.Eq{"a.type_id": enums.SavingAndCreditTypes}).
+		Where(countsInBudget).
 		GroupBy("t.category_id")
 
 	subquerySQL, subqueryArgs, err := transactionSubquery.PlaceholderFormat(sq.Question).ToSql()
@@ -446,6 +460,40 @@ func (ar *AnalysisRepository) GetCategoriesReport(
 	return report, nil
 }
 
+// investmentMoves is what the expense categories used of their budgets moving money to investment
+// accounts (negative) or back (positive), by day, in the months from start to end. analysis_daily
+// leaves transfers out of the flows, so this is what separates a flow from the use of a budget.
+func (ar *AnalysisRepository) investmentMoves(ctx context.Context, userID string, start, end time.Time) (map[string]float64, error) {
+	rows, err := ar.db.Query(ctx, `
+		SELECT to_char(x.day, 'YYYY-MM-DD'), sum(x.amount)::float8
+		FROM (
+			SELECT (t.date AT TIME ZONE user_timezone($1))::date AS day,
+			       CASE WHEN t.expense THEN -t.amount_base ELSE t.amount_base END AS amount
+			FROM transactions t
+			JOIN accounts a ON a.id = t.account_id
+			JOIN account_types at ON at.id = a.type_id AND at.class <> 'investment'
+			JOIN categories c ON c.id = t.category_id AND c.income IS FALSE
+			WHERE t.user_id = $1 AND t.transfer_group_id IS NOT NULL AND `+otherLegInInvestment+`
+		) x
+		WHERE x.day >= date_trunc('month', $2::date) AND x.day < date_trunc('month', $3::date) + INTERVAL '1 month'
+		GROUP BY 1`, userID, start, end)
+	if err != nil {
+		return nil, mappers.MapPostgresErrorCode(err)
+	}
+	defer rows.Close()
+
+	moves := make(map[string]float64)
+	for rows.Next() {
+		var day string
+		var amount float64
+		if err := rows.Scan(&day, &amount); err != nil {
+			return nil, err
+		}
+		moves[day] = amount
+	}
+	return moves, rows.Err()
+}
+
 // GetDailyAnalysis queries the daily analysis (analysis_daily) for the month of fr.End
 func (ar *AnalysisRepository) GetDailyAnalysis(ctx context.Context, fr *domain.FinancialResolver) {
 	defer fr.Wg.Done()
@@ -500,6 +548,17 @@ func (ar *AnalysisRepository) GetDailyAnalysis(ctx context.Context, fr *domain.F
 		out.RCreditsBalance = append(out.RCreditsBalance, runCredits)
 		out.Date = append(out.Date, date.Format("2006-01-02"))
 		out.UpdatedAt = updatedAt
+	}
+
+	moves, err := ar.investmentMoves(ctx, fr.UserID, fr.End, fr.End)
+	if err != nil {
+		fr.DailyErr = err
+		return
+	}
+	moved := 0.0
+	for i, day := range out.Date {
+		moved += moves[day]
+		out.MTDBudget = append(out.MTDBudget, utils.Round(out.MTDExpense[i]+moved, 2))
 	}
 
 	defer fr.Mu.Unlock()
@@ -586,6 +645,20 @@ func (ar *AnalysisRepository) GetMonthlyAnalysis(ctx context.Context, fr *domain
 		out.UpdatedAt = updatedAt
 	}
 
+	moves, err := ar.investmentMoves(ctx, fr.UserID, fr.Start, fr.End)
+	if err != nil {
+		fr.MonthlyErr = err
+		return
+	}
+	movedByMonth := make(map[string]float64)
+	for day, amount := range moves {
+		movedByMonth[day[:7]] += amount
+	}
+	for i, year := range out.Year {
+		key := fmt.Sprintf("%04d-%02d", year, out.Month[i])
+		out.BudgetSpent = append(out.BudgetSpent, utils.Round(math.Min(out.Expense[i].Value+movedByMonth[key], 0), 2))
+	}
+
 	defer fr.Mu.Unlock()
 	fr.Mu.Lock()
 	fr.Rsp.Monthly = out
@@ -632,6 +705,7 @@ func (ar *AnalysisRepository) GetCategoryAnalysis(
 		LeftJoin(enums.CategoryTableName + " as c on t.category_id = c.id").
 		Where(sq.Eq{"t.user_id": userID}).
 		Where(sq.Eq{"a.type_id": enums.SavingAndCreditTypes}).
+		Where(countsInBudget).
 		Where(sq.Eq{"t.category_id": categoryID}).
 		Where(sq.Expr(convertedDate+" >= ?::date", start)).
 		Where(sq.Expr(convertedDate+" < ?::date", end)).

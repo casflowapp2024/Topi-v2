@@ -158,10 +158,13 @@ Reemplazan las secciones A, B y C en lo que se contradiga. Layout de PC:
   más cercano, si lo hay. No es una bandeja de notificaciones.
 - "Ahorro neto" pasa a "Ahorro". "Mis cuentas" ya no repite el patrimonio y sus tarjetas tienen un mismo alto.
 
-## Pendientes tras la implementación
+## Presupuestos y transferencias (31-oct)
 
-- **Presupuesto con categorías de traslado:** `expense_budget` suma todas las categorías de gasto. Si una
-  categoría con presupuesto solo recibe transferencias (p. ej. "Tarjetas"), su presupuesto infla "Hoy
-  puedes gastar", porque lo gastado sí las excluye. En la copia del dump, 4 de 19 usuarios con presupuesto
-  tienen categorías de ese estilo por nombre (1 %, 14 %, 34 % y 74 % de su total). Corregirlo pide
-  decidir el criterio y tocar la API.
+- Una transferencia ligada solo cuenta en un presupuesto si la otra pata está en una cuenta de inversión. Entre
+  cuentas propias o pagando una tarjeta no cuenta, aunque las patas tengan categorías distintas.
+- "Hoy puedes gastar" y la línea de presupuesto usan lo mismo que suma Presupuestos: `mtd_budget` y `budget_spent`.
+- Sin tipo de categoría ni categoría oculta: la clase de la cuenta ya da esa información.
+- Límites conocidos: lo presupuestado para invertir cuenta como disponible hasta que se hace la transferencia, y
+  una categoría con presupuesto que solo recibe pagos de tarjeta sigue sumando al total hasta que el usuario
+  lo mueva. Las parejas sin unir cuentan hasta que se unan.
+- Siguiente bloque: excedente del pago de tarjeta en la categoría "Cargos de Tarjeta". Después, cuotas.

@@ -17,21 +17,22 @@ const Headline = ({ label, value }) => (
 // Sin presupuestos: a este ritmo, ¿cierras por encima o por debajo del mes anterior?
 const vsLastMonth = (spent, history_dash, year, month) => {
   const prev = new Date(year, month - 2, 1);
-  const last = Math.abs(metricValue(monthlyMetricAt(history_dash?.monthly, 'expense', prev.getFullYear(), prev.getMonth() + 1)));
+  const at = (key) => monthlyMetricAt(history_dash?.monthly, key, prev.getFullYear(), prev.getMonth() + 1);
+  const last = Math.abs(metricValue(at('budget_spent') ?? at('expense')));
   if (!isCurrentMonth(year, month)) return last > 0 ? { text: `El mes anterior gastaste ${formatMoney(last)}` } : null;
   const projected = (spent / new Date().getDate()) * daysInMonth(year, month);
   return { text: `A este ritmo cerrarías en ${formatMoney(projected)}${last > 0 ? ` · el mes anterior, ${formatMoney(last)}` : ''}` };
 };
 
 /**
- * Primera tarjeta del inicio: ¿cómo voy este mes? Lo gastado y el presupuesto salen del análisis
- * financiero (history_dash), que no cuenta transferencias; el reporte por categorías sí las cuenta.
+ * Primera tarjeta del inicio: ¿cómo voy este mes? Lo usado (mtd_budget) es lo mismo que suma
+ * Presupuestos: los gastos más lo movido a inversiones, que sale del dinero disponible sin ser gasto.
  */
 const HomePaceCard = ({ history_dash, current_Month, current_Year, loading }) => {
   const year = Number(current_Year);
   const month = Number(current_Month);
   const budget = Math.abs(Number(history_dash?.expense_budget) || 0);
-  const mtd = history_dash?.daily?.mtd_expense || [];
+  const mtd = history_dash?.daily?.mtd_budget || history_dash?.daily?.mtd_expense || [];
   const spent = Math.abs(Number(mtd[mtd.length - 1]) || 0);
   const allowance = getDailyAllowance(budget, spent, year, month);
   const future = new Date(year, month - 1, 1) > new Date();

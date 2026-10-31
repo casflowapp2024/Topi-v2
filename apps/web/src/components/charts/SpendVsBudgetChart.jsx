@@ -21,7 +21,7 @@ const SpendVsBudgetChart = ({ source = 'total', history_dash, history_category, 
     if (!series) return [];
     const today = new Date();
     return monthlyRows(series, current_Year).map((r, i) => {
-      const spent = Math.abs(metricValue(series.expense?.[i]));
+      const spent = Math.abs(metricValue(series.budget_spent?.[i] ?? series.expense?.[i]));
       const current = isCurrentMonth(r.year, r.month);
       const elapsed = today.getDate();
       const projected = current && elapsed > 0 ? (spent / elapsed) * daysInMonth(r.year, r.month) : null;
