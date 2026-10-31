@@ -76,7 +76,7 @@ const initialState = {
         skip: null,
         limit: null,
         news: null,
-        default_limit: 10,
+        default_limit: 30,
         read_email_onboarding: null
     },
 

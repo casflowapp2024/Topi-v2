@@ -12,24 +12,31 @@ import {
 //components
 //import Layout from "../hocs/Layout"
 import TransactionDetail from "../components/transactions/TransactionDetail2";
-import { formatMoney, formatDate, capitalizeWords, parseDatetimetoDateStrFormat, parseDatetoDatetimeBrow } from "../components/helpers";
+import { formatMoney, formatDate, capitalizeWords } from "../components/helpers";
+import { groupByDay, dayLabel, dayNet, isNeutral } from "../components/transactions/transactionDays";
 
 import TransactionFilterSheet, { countPanelFilters } from "../components/transactions/TransactionFilterSheet";
 import Chip from "../components/ui/Chip";
+import Button from "../components/ui/Button";
+import EmptyState from "../components/ui/EmptyState";
+import Money from "../components/ui/Money";
+import { SkeletonRows } from "../components/ui/Skeleton";
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 import CreateTransaction from "../components/transactions/CreateTransaction";
 import TransferModal from "../components/transactions/TransferModal";
 import TransferCandidatesModal from "../components/transactions/TransferCandidatesModal";
 import { fetch_transfer_candidates } from "../redux/actions/transfers";
-import FormatMoneyShowDecs from "../components/FormatMoneyShowDecs";
 //icons
 import {
     PlusIcon, MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon,
-    ArrowDownTrayIcon, ArrowUpTrayIcon, QueueListIcon, ListBulletIcon, ArrowsRightLeftIcon
+    ArrowDownTrayIcon, ArrowsRightLeftIcon
 } from '@heroicons/react/20/solid'
 import { FunnelIcon, ExclamationTriangleIcon, ChevronDownIcon, Squares2X2Icon, SparklesIcon } from '@heroicons/react/20/solid'
 
+import { EnvelopeIcon } from '@heroicons/react/24/outline'
+
 import { Emoji } from "emoji-picker-react";
+import { Link } from "react-router-dom";
 import { change_transactions_filter, filtersFromState } from "../redux/actions/cashflow";
 
 const QUICK = [
@@ -38,6 +45,43 @@ const QUICK = [
     { id: 'new', label: 'Nuevas', icon: SparklesIcon },
     { id: 'transfer', label: 'Transferencias', icon: ArrowsRightLeftIcon },
 ];
+
+// Fila de un movimiento. Las transferencias van neutrales: ícono ↔ y monto sin signo ni color de flujo.
+const TransactionRow = ({ tx, onOpen }) => {
+    const neutral = isNeutral(tx);
+    return (
+        <li>
+            <button type="button" onClick={() => onOpen(tx.id)}
+                className="w-full px-3 md:px-4 py-2 flex items-center gap-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-topi-500 transition-colors duration-150">
+                <span className="w-6 h-6 shrink-0 flex items-center justify-center">
+                    {tx.transfer_group_id ? (
+                        <span title="Transferencia entre tus cuentas" className="text-data-transfer dark:text-slate-300"><ArrowsRightLeftIcon className="w-5 h-5" aria-hidden="true" /><span className="sr-only">Transferencia</span></span>
+                    ) : tx.category?.emoji ? (
+                        <Emoji unified={tx.category.emoji.toLowerCase()} emojiStyle="apple" size={20} />
+                    ) : null}
+                </span>
+                <span className="flex-1 min-w-0 flex flex-col">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>
+                    <span className="text-xs text-ink-2 dark:text-gray-400 truncate">{capitalizeWords(tx.category?.name)} · {tx.account?.name}</span>
+                </span>
+                <span className="shrink-0 flex items-center gap-1.5">
+                    <Money amount={tx.amount} currency={tx.currency} base={tx.amount_base}
+                        sign={neutral ? '' : tx.expense ? '-' : '+'}
+                        className={`text-sm font-semibold tabular-nums ${neutral ? 'text-data-transfer dark:text-slate-300' : tx.expense ? 'text-gray-900 dark:text-gray-100' : 'text-money-in dark:text-money-in-dark'}`} />
+                    <span className="w-4 flex justify-center">
+                        {tx.needs_counterpart ? (
+                            <span title="Falta elegir la cuenta con que pagaste" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Falta elegir la cuenta con que pagaste</span></span>
+                        ) : tx.should_verify === true ? (
+                            <span title="Por revisar" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Por revisar</span></span>
+                        ) : tx.checked === false ? (
+                            <span title="Nuevo" className="inline-flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-topi-500" aria-hidden="true" /><span className="sr-only">Nuevo</span></span>
+                        ) : null}
+                    </span>
+                </span>
+            </button>
+        </li>
+    );
+};
 
 const Transactions = ({
     get_user_transactions,
@@ -160,7 +204,6 @@ const Transactions = ({
     const [currentFrontendPage, setCurrentFrontendPage] = useState(1);
     const [firstOfBatch, setFirstOfBatch] = useState(1)
     const [lastOfBatch, setLastOfBatch] = useState(1)
-    const [displayItems, setDisplayItems] = useState([])
     const [loadingNextPage, setLoadingNextPage] = useState(false)
 
 
@@ -168,8 +211,6 @@ const Transactions = ({
     useEffect(() => {
         if (user_transactions.items && user_transactions.items.length > 0) {
 
-
-            setDisplayItems(user_transactions.items)
             setFirstOfBatch(currentFrontendPage * default_limit - (default_limit - 1))
             setLastOfBatch(user_transactions.total < currentFrontendPage * default_limit ? user_transactions.total : currentFrontendPage * default_limit)
         }
@@ -273,27 +314,7 @@ const Transactions = ({
 
     //transactions by date
 
-    const groupedTransactions = useMemo(() => {
-        if (!Array.isArray(user_transactions.items)) {
-            return {};
-        }
-
-        const groups = user_transactions.items.reduce((acc, tx) => {
-            const dateKey = tx.date.split(' ')[0];
-            (acc[dateKey] = acc[dateKey] || []).push(tx);
-            return acc;
-        }, {});
-
-        // The Object.keys will be sorted chronologically by default for YYYY-MM-DD format,
-        // but we want descending order, so we reverse it.
-        const sortedDates = Object.keys(groups).sort().reverse();
-
-        return { groups, sortedDates };
-    }, [user_transactions.items ? user_transactions.items.length : 0, user_transactions]);
-
-    const [vizTxByDate, setVizTxbyDate] = useState(true)
-
-
+    const days = useMemo(() => groupByDay(user_transactions.items), [user_transactions.items]);
 
     return (
         <>
@@ -402,221 +423,40 @@ const Transactions = ({
                                 onApply={(draft) => { setOpenFilterPopUp(false); applyFilters(draft) }}
                             />
 
-                            {/* transactions table */}
-                            <div className='bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-semibold mt-2 py-2 flex flex-row border-b dark:border-gray-700 transition-colors duration-300'>
-
-                                <div className="min-w-[30%] md:min-w-[130px] lg:min-w-[150px] xl:min-w-[150px]">
-                                    <div className="pl-[30px] md:pl-[35px] text-sm md:text-base">Monto</div>
-                                </div>
-                                <div className="min-w-[1%] md:min-w-[4px] lg:min-w-[10px] xl:min-w-[12px]"></div>
-                                <div className="min-w-[40%] md:min-w-[184px] lg:min-w-[240px] xl:min-w-[290px] text-sm md:text-base ">Descripción</div>
-                                <div className="min-w-[1%] md:min-w-[4px] lg:min-w-[10px] xl:min-w-[12px]"></div>
-                                <div className="min-w-[18%] md:min-w-[116px] lg:min-w-[136px] xl:min-w-[152px] text-sm md:text-base ">Categoría</div>
-                                <div className="w-[0px] lg:min-w-[0px] xl:min-w-[12px]"></div>
-                                {vizTxByDate === false ?
-                                    <>
-                                        <div className="min-w-[90px] hidden xl:block">Fecha</div>
-                                        <div className="w-[0px] lg:min-w-[10px] xl:min-w-[12px]"></div>
-                                    </> : <></>
-                                }
-                                <div className="min-w-[126px] xl:min-w-[150px] hidden lg:block">Cuenta</div>
-                                <div className="min-w-[1%] md:min-w-[4px] lg:min-w-[10px] xl:min-w-[12px]"></div>
-                                <div className="min-w-[9%] md:min-w-[40px]"></div>
-
                             </div>
-
-                            </div>
-                            {vizTxByDate === false ?
-                                <div>
-                                    {user_transactions.total !== null ?
-                                        <div>
-                                            {user_transactions.total === 0 ?
-                                                <div className="p-6 dark:text-gray-300">Aún no tienes transacciones. Crea una con el botón «Crear» o conecta tu correo para que Topi las agregue solas.</div>
-                                                :
-                                                <ul className='text-gray-400 text-sm'>
-                                                    {displayItems && displayItems.map((transaction, index) => (
-                                                        <li
-                                                            key={transaction.id}
-                                                            onClick={() => handleOpenTransDetail(transaction.id)}
-                                                            //onMouseOver={()=>appearUp(transaction.should_verify, transaction.id)}
-                                                            //onMouseLeave={disappearInfo}
-                                                            className='relative py-2 flex flex-row justify-start border-t dark:border-gray-700 gap-[1%] md:gap-[4px] lg:gap-[9px] xl:gap-[12px] hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition-colors duration-150'>
-                                                            {/* monto */}
-                                                            <div className='min-w-[30%] md:min-w-[130px] lg:min-w-[150px] xl:min-w-[150px] flex flex-col'>
-
-                                                                <div className="flex flex-row justify-start items-center">
-                                                                    {transaction.expense === false ?
-                                                                        <div className="w-[24px] md:w-[32px] h-8 flex justify-center items-center">
-                                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#16a34a" class="size-5">
-                                                                                <path fill-rule="evenodd" d="M8.25 3.75H19.5a.75.75 0 0 1 .75.75v11.25a.75.75 0 0 1-1.5 0V6.31L5.03 20.03a.75.75 0 0 1-1.06-1.06L17.69 5.25H8.25a.75.75 0 0 1 0-1.5Z" clip-rule="evenodd" />
-                                                                            </svg>
-                                                                        </div>
-                                                                        :
-                                                                        <div className="w-[24px] md:w-[32px] h-8 flex justify-center items-center">
-                                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#e11d48" class="size-5">
-                                                                                <path fill-rule="evenodd" d="M3.97 3.97a.75.75 0 0 1 1.06 0l13.72 13.72V8.25a.75.75 0 0 1 1.5 0V19.5a.75.75 0 0 1-.75.75H8.25a.75.75 0 0 1 0-1.5h9.44L3.97 5.03a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
-                                                                            </svg>
-                                                                        </div>
-                                                                    }
-
-                                                                    <div className='w-[70px] md:w-[96px] lg:w-[100px] px-1 flex items-center text-gray-700 dark:text-gray-200'>
-                                                                        <FormatMoneyShowDecs
-                                                                            numb={transaction.amount}
-                                                                            currency={transaction.currency}
-                                                                            base={transaction.amount_base}
-                                                                            align="start"
-                                                                            showDecimals={true}
-                                                                            intClass="text-left text-xs lg:text-base"
-                                                                            decClass="text-left text-[8px] lg:text-[10px]"
-
-                                                                        />
-
-                                                                        {/* <span className='w-[70px] md:w-[96px] lg:w-[100px] text-left'>{formatMoney(transaction.amount)}</span> */}
-                                                                    </div>
-                                                                </div>
-                                                                <div className="xl:hidden w-full text-left pl-[28px] md:pl-[32px] lg:pl-[38px] text-xs text-gray-400 dark:text-gray-500">
-                                                                    {parseDatetimetoDateStrFormat(parseDatetoDatetimeBrow(transaction.date, "YYYY-MM-DD HH:mm:ss Z"), "YYYY-MM-DD")}
-                                                                </div>
-
-
-                                                            </div>
-                                                            {/* <div className="w-[3px] md:w-[4px] lg:w-[9px] xl:w-[12px]"></div> */}
-                                                            {/* description */}
-                                                            <div className='min-w-[40%] md:min-w-[184px] lg:min-w-[240px] xl:min-w-[290px] flex items-center text-gray-900 dark:text-gray-100 font-medium'>
-                                                                <span className="truncate lg:text-sm text-xs text-left w-full">{transaction.description}</span>
-                                                            </div>
-                                                            {/* <div className="w-[3px] md:w-[4px] lg:w-[9px] xl:w-[12px]"></div> */}
-                                                            <div className='min-w-[18%] md:min-w-[116px] lg:min-w-[136px] xl:min-w-[152px] flex items-center justify-start gap-1 md:gap-2'>
-                                                                {transaction.category?.emoji && transaction.category.emoji !== "" && (
-                                                                    <Emoji unified={(transaction.category.emoji).toLowerCase()} emojiStyle="apple" size={16} />
-                                                                )}
-                                                                <span className="truncate text-left w-full text-xs lg:text-base">{capitalizeWords(transaction.category.name)}</span>
-                                                            </div>
-                                                            {/* <div className="w-[0px] xl:w-[12px]"></div> */}
-                                                            <div className='min-w-[90px] hidden xl:flex items-center'>
-                                                                <span className="truncate text-left w-full">{formatDate(transaction.date)}</span>
-                                                            </div>
-                                                            {/* <div className="w-[0px] lg:w-[9px] xl:w-[12px]"></div> */}
-                                                            <div className='min-w-[126px] xl:min-w-[150px] hidden lg:flex items-center justify-start'>
-                                                                <span className="truncate text-left w-full">{transaction.account.name}</span>
-                                                            </div>
-                                                            {/* <div className="w-[3px] md:w-[4px] lg:w-[9px] xl:w-[12px]"></div> */}
-                                                            <div className='min-w-[9%] md:min-w-[40px] flex items-center justify-start'>
-                                                                <span className="w-[28px] md:w-[35px] flex justify-start text-center">
-                                                                    {transaction.transfer_group_id && <span title="Transferencia entre tus cuentas" className="inline-flex items-center mr-1 text-topi-500"><ArrowsRightLeftIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Transferencia</span></span>}
-                                                                    {transaction.needs_counterpart && <span title="Falta elegir la cuenta con que pagaste" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Falta elegir la cuenta con que pagaste</span></span>}
-                                                                    {transaction.needs_counterpart ? null : transaction.should_verify === true ?
-                                                                        <span title="Por revisar" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Por revisar</span></span> :
-                                                                        <>
-                                                                            {transaction.checked === false ?
-                                                                                <span title="Nuevo" className="inline-flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-topi-500" aria-hidden="true" /><span className="sr-only">Nuevo</span></span> :
-                                                                                <></>}
-                                                                        </>}
-
-
-
-                                                                </span>
-                                                            </div>
-
-                                                        </li>
-                                                    ))}
-
-                                                </ul>
-                                            }
-                                        </div> :
-                                        <div>
-                                            Cargando ...
-                                        </div>
-                                    }
-                                </div> : <></>}
-
-
-                            {/* transactions table2 */}
-                            {vizTxByDate === true ?
-                                <div>
-                                    {user_transactions.total !== null ?
-                                        <div>
-                                            {groupedTransactions.sortedDates && groupedTransactions.sortedDates.map(date => (
-                                                <section key={date} className="date-group border-y border-gray-200 dark:border-gray-700" aria-labelledby={`date-${date}`}>
-                                                    <h3 id={`date-${date}`} className="py-1 px-2 date-header text-[11px] md:text-[13px] font-semibold text-gray-500 dark:text-gray-400 sticky top-0 bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
-                                                        {date}
-                                                    </h3>
-                                                    <ul className="transactions-list space-y-3 text-gray-400 text-sm">
-                                                        {groupedTransactions.groups[date].map((tx) => (
-                                                            <li key={tx.id}
-                                                                onClick={() => handleOpenTransDetail(tx.id)}
-                                                                className="transaction-item relative py-2 flex flex-row justify-start border-t dark:border-gray-700 gap-[1%] md:gap-[4px] lg:gap-[9px] xl:gap-[12px] hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition-colors duration-150">
-
-                                                                <div className='min-w-[30%] md:min-w-[130px] lg:min-w-[150px] xl:min-w-[150px]'>
-                                                                    <div className="flex flex-row justify-start items-center">
-                                                                        {tx.expense === false ?
-                                                                            <div className="w-[24px] md:w-[32px] h-8 flex justify-center items-center">
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#16a34a" class="size-5">
-                                                                                    <path fill-rule="evenodd" d="M8.25 3.75H19.5a.75.75 0 0 1 .75.75v11.25a.75.75 0 0 1-1.5 0V6.31L5.03 20.03a.75.75 0 0 1-1.06-1.06L17.69 5.25H8.25a.75.75 0 0 1 0-1.5Z" clip-rule="evenodd" />
-                                                                                </svg>
-                                                                            </div>
-                                                                            :
-                                                                            <div className="w-[24px] md:w-[32px] h-8 flex justify-center items-center">
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#e11d48" class="size-5">
-                                                                                    <path fill-rule="evenodd" d="M3.97 3.97a.75.75 0 0 1 1.06 0l13.72 13.72V8.25a.75.75 0 0 1 1.5 0V19.5a.75.75 0 0 1-.75.75H8.25a.75.75 0 0 1 0-1.5h9.44L3.97 5.03a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
-                                                                                </svg>
-                                                                            </div>
-                                                                        }
-                                                                        <p className={`w-[70px] md:w-[96px] lg:w-[100px] px-1 flex items-center font-semibold ${tx.expense ? 'text-gray-800 dark:text-gray-200' : 'text-green-600 dark:text-green-500'}`}>
-                                                                            <FormatMoneyShowDecs
-                                                                                numb={tx.amount}
-                                                                                currency={tx.currency}
-                                                                                base={tx.amount_base}
-                                                                                align="start"
-                                                                                showDecimals={true}
-                                                                                intClass="text-left text-xs lg:text-base"
-                                                                                decClass="text-left text-[8px] lg:text-[10px]"
-                                                                            />
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className='min-w-[40%] md:min-w-[184px] lg:min-w-[240px] xl:min-w-[290px] flex items-center text-gray-900 dark:text-gray-100 font-medium'>
-                                                                    <span className="truncate lg:text-sm text-xs text-left max-w-[290px]">{tx.description}</span>
-                                                                </div>
-                                                                {/* <div className="w-[3px] md:w-[4px] lg:w-[9px] xl:w-[12px]"></div> */}
-                                                                <div className='min-w-[18%] md:min-w-[116px] lg:min-w-[136px] xl:min-w-[152px] flex items-center justify-start gap-1 md:gap-2'>
-                                                                    {tx.category?.emoji && tx.category.emoji !== "" && (
-                                                                        <Emoji unified={(tx.category.emoji).toLowerCase()} emojiStyle="apple" size={16} />
-                                                                    )}
-                                                                    <span className="truncate text-left w-full text-xs lg:text-base">{capitalizeWords(tx.category.name)}</span>
-                                                                </div>
-                                                                <div className='min-w-[126px] xl:min-w-[150px] hidden lg:flex items-center justify-start'>
-                                                                    <span className="truncate text-left w-full">{tx.account.name}</span>
-                                                                </div>
-                                                                {/* <div className="w-[3px] md:w-[4px] lg:w-[9px] xl:w-[12px]"></div> */}
-                                                                <div className='min-w-[9%] md:min-w-[40px] flex items-center justify-start'>
-                                                                    <span className="w-[28px] md:w-[35px] flex justify-start text-center">
-                                                                        {tx.transfer_group_id && <span title="Transferencia entre tus cuentas" className="inline-flex items-center mr-1 text-topi-500"><ArrowsRightLeftIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Transferencia</span></span>}
-                                                                    {tx.needs_counterpart && <span title="Falta elegir la cuenta con que pagaste" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Falta elegir la cuenta con que pagaste</span></span>}
-                                                                    {tx.needs_counterpart ? null : tx.should_verify === true ?
-                                                                            <span title="Por revisar" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Por revisar</span></span> :
-                                                                            <>
-                                                                                {tx.checked === false ?
-                                                                                    <span title="Nuevo" className="inline-flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-topi-500" aria-hidden="true" /><span className="sr-only">Nuevo</span></span> :
-                                                                                    <></>}
-                                                                            </>}
-
-                                                                    </span>
-                                                                </div>
-
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </section>
-                                            ))}
-                                        </div> :
-                                        <div>
-                                            Cargando ...
-                                        </div>
-                                    }
-                                </div> : <></>}
-
+                            {user_transactions.total === null ? (
+                                <SkeletonRows rows={6} className="px-3" />
+                            ) : user_transactions.total === 0 ? (
+                                anyFilter ? (
+                                    <EmptyState icon={FunnelIcon} title="Nada con estos filtros"
+                                        action={<Button size="sm" variant="secondary" onClick={clearAllFilters}>Quitar filtros</Button>} />
+                                ) : (
+                                    <EmptyState icon={EnvelopeIcon} title="Aún no hay transacciones"
+                                        description="Conecta tu correo y Topi las agrega solas."
+                                        action={<Link to="/dashboard/connect-email" className="text-sm font-medium text-topi-600 dark:text-indigo-300 hover:underline">Conectar correo</Link>} />
+                                )
+                            ) : (
+                                days.map(({ date, items }, index) => {
+                                    // Un día partido entre dos páginas tendría un neto a medias: mejor no mostrarlo
+                                    const cut = (index === 0 && currentFrontendPage > 1) || (index === days.length - 1 && lastOfBatch < user_transactions.total);
+                                    const net = cut ? null : dayNet(items);
+                                    return (
+                                        <section key={date} aria-labelledby={`date-${date}`} className="border-t border-gray-200 dark:border-gray-700">
+                                            <div className="px-3 md:px-4 py-1.5 flex items-center justify-between gap-2 bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+                                                <h3 id={`date-${date}`} className="text-xs md:text-sm font-semibold text-ink-2 dark:text-gray-300">{dayLabel(date)}</h3>
+                                                {net !== null && (
+                                                    <span className={`text-xs md:text-sm font-semibold tabular-nums ${net > 0 ? 'text-money-in dark:text-money-in-dark' : net < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-ink-2 dark:text-gray-400'}`}>
+                                                        <span className="sr-only">Neto del día: </span>{net > 0 ? '+' : ''}{formatMoney(net)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+                                                {items.map(tx => <TransactionRow key={tx.id} tx={tx} onOpen={handleOpenTransDetail} />)}
+                                            </ul>
+                                        </section>
+                                    );
+                                })
+                            )}
 
                             <div className="w-full p-2 flex flex-row justify-between border-t border-gray-200 dark:border-gray-700 items-center transition-colors duration-300">
 
