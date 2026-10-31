@@ -16,6 +16,7 @@ import BudgetOverview from './dashboard/budgetCategories/BudgetOverview';
 import BudDashCategorieList from './dashboard/budgetCategories/BudDashCategorieList';
 import { SET_DASH_CATEGORY_ACTIVATED } from '../redux/actions/types';
 import BudDashTransCategorie from './dashboard/budgetCategories/BudDashTransCategorie';
+import CreditCardPanel from './dashboard/productsAccounts/CreditCardPanel';
 import axios from 'axios';
 
 jest.mock('axios', () => {
@@ -140,7 +141,7 @@ test('Ajustar saldo: propone registrar la diferencia como gasto en Intereses', (
   expect(el.textContent).toMatch(/Faltan .*50\.000/);
   const pressed = [...el.querySelectorAll('button[aria-pressed=true]')].map(b => b.textContent.trim());
   expect(pressed).toContain('Intereses');
-  expect(el.textContent).toContain('Último corte');
+  expect(el.textContent).toContain('Corte anterior');
   expect(el.textContent).not.toContain('Salario');
   act(() => root.unmount());
 });
@@ -200,4 +201,23 @@ test('Cargos de Tarjeta: muestra lo calculado por corte, que no son transaccione
   expect(el.textContent).toMatch(/30\.000/);
   await act(async () => root.unmount());
   axios.get.mockImplementation(original);
+});
+
+test('Tarjeta: separa el corte actual, abierto, del anterior, que es el que se paga', async () => {
+  const card = {
+    account_id: 3, debt: '2100000', last_statement: '2026-10-15', next_statement: '2026-11-15', due_date: '2026-10-30',
+    statement_debt: '1884408', paid_since_statement: '0', pending_statement: '1884408', purchases_since: '215000',
+  };
+  const original = axios.get.getMockImplementation();
+  axios.get.mockImplementation((url) => Promise.resolve({ status: 200, data: { data: url.includes('credit-cards') ? [card] : {} } }));
+  const el = document.createElement('div'); document.body.appendChild(el); const root = createRoot(el);
+  await act(async () => { root.render(<Provider store={store()}><CreditCardPanel account={accounts[2]} data={null} /></Provider>); });
+  expect(el.textContent).toContain('Corte actual');
+  expect(el.textContent).toContain('cierra el 15 de noviembre');
+  expect(el.textContent).toContain('cerró el 15 de octubre');
+  expect(el.textContent).toMatch(/Falta pagar ≈ .*1\.884\.408/);
+  expect(el.textContent).toContain('La fecha límite fue el 30 de octubre');
+  expect(el.textContent).not.toMatch(/Último corte|Próximo:/);
+  axios.get.mockImplementation(original);
+  await act(async () => root.unmount());
 });

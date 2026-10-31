@@ -206,6 +206,7 @@ const ReviewInbox = ({
   const loading = txs === null || candidates === null;
   const total = (txTotal || 0) + (candidates?.length || 0) + cards.length;
   const accountName = (id) => (user_accounts?.items || []).find(a => a.id === id)?.name || 'Cuenta';
+  const isCard = (id) => isCreditAccount((user_accounts?.items || []).find(a => a.id === id));
 
   useEffect(() => {
     if (!loading && !failed && total === 0) fetch_credit_cards().then(list => setNotice(nextPaymentNotice(list)));
@@ -270,7 +271,7 @@ const ReviewInbox = ({
           </div>
           <div className="flex items-center gap-2">
             <Button size="sm" variant="secondary" loading={isBusy} disabled={busy !== null} onClick={() => linkPair(c)} className="flex-1 min-w-0 !px-2">
-              <span className="truncate">Unir como transferencia</span>
+              <span className="truncate">{isCard(c.in_account_id) ? 'Unir como pago de tarjeta' : 'Unir como transferencia'}</span>
             </Button>
             <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => dismissPair(c)}>No es</Button>
           </div>

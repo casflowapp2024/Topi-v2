@@ -98,7 +98,7 @@ const CardReconcile = ({ account, balance, card, user_categories, create_transac
             <span className="block mb-1 text-xs font-medium text-gray-600 dark:text-gray-300">Fecha del gasto</span>
             <div className="flex flex-wrap gap-2">
               <Chip selected={when === 'today'} onClick={() => setWhen('today')}>Hoy</Chip>
-              {lastStatement && <Chip selected={when === 'statement'} onClick={() => setWhen('statement')}>Último corte ({lastStatement.format('DD MMM')})</Chip>}
+              {lastStatement && <Chip selected={when === 'statement'} onClick={() => setWhen('statement')}>Corte anterior ({lastStatement.format('DD MMM')})</Chip>}
             </div>
             <p className="mt-1 text-xs text-ink-2 dark:text-gray-400">
               Es un acumulado: no siempre se sabe a qué mes corresponde cada cargo. Cuenta en los gastos del mes de esa fecha.

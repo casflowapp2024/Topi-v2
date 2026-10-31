@@ -123,6 +123,14 @@ test('Confirmar con un toque guarda, saca el ítem y baja el contador', async ()
   await act(async () => root.unmount());
 });
 
+test('Una pareja que llega a una tarjeta se une como pago de tarjeta', async () => {
+  api([], [{ ...pair, in_account_id: 3 }]);
+  const { el, root } = await mount(state({ Fx: { net_worth: { accounts: [] } } }));
+  expect(button(el, 'Unir como pago de tarjeta')).toBeTruthy();
+  expect(button(el, 'Unir como transferencia')).toBeFalsy();
+  await act(async () => root.unmount());
+});
+
 test('Ver todo lleva a Transacciones con el filtro', async () => {
   api([1, 3, 4, 5, 6, 7].map(i => tx(i)), []);
   const st = state({ Fx: { net_worth: { accounts: [] } } });

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import moment from 'moment-timezone';
+import 'moment/locale/es';
 import { CreditCardIcon, ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/20/solid';
 import { setAlert } from '../../../redux/actions/alert';
 import { get_net_worth } from '../../../redux/actions/fx';
@@ -13,7 +14,7 @@ import { formatMoney, formatedCurrToNumber } from '../../helpers';
 
 const fieldClass = 'bg-gray-50 p-2 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white';
 const labelClass = 'block mb-1 text-xs font-medium text-gray-600 dark:text-gray-300';
-const fmtDate = (d) => moment(d).format('DD-MM-YYYY');
+const dayMonth = (d) => moment(d).locale('es').format('D [de] MMMM');
 
 const Box = ({ label, children, hint, className = '' }) => (
     <div className={`bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 ${className}`}>
@@ -23,8 +24,8 @@ const Box = ({ label, children, hint, className = '' }) => (
     </div>
 );
 
-// Resumen de una tarjeta de crédito (reemplaza al resumen de la cuenta): deuda estimada, consumos de
-// este corte y el último corte con su fecha límite.
+// Resumen de una tarjeta de crédito (reemplaza al resumen de la cuenta): deuda estimada, el corte
+// actual, que sigue abierto, y el anterior, que ya cerró y es el que se paga.
 // Los pagos son transferencias desde otra cuenta: no cuentan como ingreso.
 const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, set_dash_account_activated }) => {
     const [reconcile, setReconcile] = useState(false);
@@ -159,7 +160,7 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, se
                             </Box>
                         )}
                         {card.last_statement && (
-                            <Box label="Consumos de este corte" hint={`Hasta el ${fmtDate(card.next_statement)}`}>
+                            <Box label="Corte actual" hint={`Sigue abierto, cierra el ${dayMonth(card.next_statement)}`}>
                                 <span className="text-gray-900 dark:text-white">{formatMoney(card.purchases_since, currency)}</span>
                             </Box>
                         )}
@@ -167,19 +168,21 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, se
 
                     {card.last_statement ? (
                         <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-3 text-sm space-y-2">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                Último corte: {fmtDate(card.last_statement)} · Próximo: {fmtDate(card.next_statement)}
+                            <p className="font-semibold text-gray-900 dark:text-white">
+                                Corte anterior <span className="font-normal text-xs text-ink-2 dark:text-gray-400">· cerró el {dayMonth(card.last_statement)}</span>
                             </p>
                             <div className="flex flex-wrap gap-x-6 gap-y-1 text-gray-700 dark:text-gray-200">
-                                <span>Compras del corte: <b>{formatMoney(card.statement_debt, currency)}</b></span>
-                                <span>Pagado desde el corte: <b>{formatMoney(card.paid_since_statement, currency)}</b></span>
+                                <span>Compras y cuotas: <b>{formatMoney(card.statement_debt, currency)}</b></span>
+                                <span>Pagado: <b>{formatMoney(card.paid_since_statement, currency)}</b></span>
                             </div>
                             {pending > 0 ? (
                                 <p className={`flex gap-2 rounded-lg p-2 ${overdue ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'}`}>
                                     <ExclamationTriangleIcon className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
                                     <span>
-                                        Este corte suma <b>≈ {formatMoney(pending, currency)}</b>
-                                        {card.due_date ? (overdue ? ` y no vemos un pago (la fecha límite fue el ${fmtDate(card.due_date)})` : `: págalo antes del ${fmtDate(card.due_date)}`) : ''}. Tu banco tiene el valor exacto.
+                                        {overdue ? <>Falta pagar <b>≈ {formatMoney(pending, currency)}</b>. La fecha límite fue el {dayMonth(card.due_date)}.</>
+                                            : card.due_date ? <>Paga <b>≈ {formatMoney(pending, currency)}</b> antes del {dayMonth(card.due_date)}.</>
+                                                : <>Falta pagar <b>≈ {formatMoney(pending, currency)}</b>.</>}
+                                        {' '}Tu banco tiene el valor exacto.
                                     </span>
                                 </p>
                             ) : (
