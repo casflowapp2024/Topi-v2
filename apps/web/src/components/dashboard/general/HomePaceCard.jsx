@@ -53,8 +53,11 @@ const HomePaceCard = ({ history_dash, current_Month, current_Year, loading }) =>
   } else if (budget > 0) {
     body = (
       <>
-        <Headline label={`Gastaste ${formatMoney(spent)}`} value={`de ${formatMoney(budget)}`} />
-        <BudgetStatusLabel status={status} />
+        <Headline label="Gastaste" value={formatMoney(spent)} />
+        <p className="flex flex-wrap items-center gap-x-2 text-xs text-ink-2 dark:text-gray-400">
+          <span>de {formatMoney(budget)}</span>
+          <BudgetStatusLabel status={status} />
+        </p>
       </>
     );
   } else {

@@ -79,7 +79,7 @@ test('Ritmo: mes pasado sin "hoy puedes"', () => {
   const m = prev.getMonth() + 1;
   const { el, root } = render(<HomePaceCard />, { Reports: { current_Year: y, current_Month: m, history_dash: { expense_budget: 500000, daily: daily(y, m, 900000, 28), monthly } } });
   expect(el.textContent).not.toContain('Hoy puedes gastar');
-  expect(el.textContent).toContain(`Gastaste ${formatMoney(900000)}`);
+  expect(el.textContent).toContain(`Gastaste${formatMoney(900000)}`);
   expect(el.textContent).toContain(`de ${formatMoney(500000)}`);
   expect(el.textContent).toContain('Te pasaste');
   act(() => root.unmount());
@@ -120,9 +120,14 @@ test('Flujo: la barra marca el déficit con palabra cuando se gasta más de lo q
 });
 
 test('Patrimonio: los tramos suman el total y el toque abre Cuentas en "Todo"', () => {
-  const net_worth = { base_currency: 'COP', total: '7500000', cash_total: '5000000', investments_total: '3000000', credit_total: '-500000' };
+  const net_worth = {
+    base_currency: 'COP', total: '7500000', cash_total: '5000000', investments_total: '3000000', credit_total: '-500000',
+    accounts: [{ type_id: 1, base_value: '5000000' }, { type_id: 4, base_value: '-600000' }, { type_id: 4, base_value: '100000' }],
+  };
   const segments = netWorthSegments(net_worth);
-  expect(segments.map(s => s.label)).toEqual(['Efectivo', 'Inversiones', 'Deudas de tarjeta']);
+  expect(segments.map(s => [s.label, s.value])).toEqual([
+    ['Efectivo', 5000000], ['Inversiones', 3000000], ['A favor en tarjetas', 100000], ['Deudas de tarjeta', -600000],
+  ]);
   expect(segments.reduce((sum, s) => sum + s.value, 0)).toBe(Number(net_worth.total));
   const { el, root } = render(<HomeNetWorthCard />, { Fx: { net_worth } });
   expect(el.textContent).toContain(formatMoney(7500000));

@@ -14,12 +14,12 @@ import { Emoji } from "emoji-picker-react";
 
 
 const DropDownCat = ({
-     options, selected, onChange, placeholder,
+     options, selected, onChange, placeholder, defaultOpen = false,
      create_category, setAlert, get_user_categories,
      default_categories
      
 }) => {
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(defaultOpen);
     const [createBox, setOpenCreateBox] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const searchInputRef = useRef(null);

@@ -120,15 +120,26 @@ isCreditAccount, isInvestmentAccount) · transfers actions · `TransferLinkSecti
 
 ## Criterios de aceptación
 
-- [ ] Inicio PC: fila de 3 tarjetas (Ritmo, Flujo, Patrimonio con barra de composición) de igual alto.
-- [ ] "Hoy puedes gastar" coincide con la cuenta manual (presupuesto − gastado) / días restantes en un
-      usuario de prueba; el total no incluye transferencias.
-- [ ] Mes pasado y usuario sin presupuestos muestran los textos alternativos.
-- [ ] Patrimonio = `net_worth.total`; la suma de los tramos de la barra cuadra con el total.
-- [ ] "Por revisar" lista los 4 tipos; confirmar una categoría con un toque funciona y baja el contador.
-- [ ] No hay botón de agregar transacción protagonista en ninguna vista.
-- [ ] Transacciones agrupadas por día con neto diario; transferencias neutrales.
-- [ ] Móvil 360px y PC 1440px, claro y oscuro: sin desbordes (capturas en el reporte final).
+- [x] Inicio PC: fila de 3 tarjetas (Ritmo, Flujo, Patrimonio con barra de composición) de igual alto.
+- [x] "Hoy puedes gastar" coincide con la cuenta manual (presupuesto − gastado) / días restantes en un
+      usuario de prueba; el total no incluye transferencias. *(Lo gastado no las incluye; el presupuesto
+      total suma todas las categorías de gasto: ver "Pendientes" abajo.)*
+- [x] Mes pasado y usuario sin presupuestos muestran los textos alternativos.
+- [x] Patrimonio = `net_worth.total`; la suma de los tramos de la barra cuadra con el total.
+- [x] "Por revisar" lista los 4 tipos; confirmar una categoría con un toque funciona y baja el contador.
+      *("Pagado de más" solo cubre tarjetas sin día de corte, decisión del 30-oct.)*
+- [x] No hay botón de agregar transacción protagonista en ninguna vista.
+- [x] Transacciones agrupadas por día con neto diario; transferencias neutrales.
+- [x] Móvil 360px y PC 1440px, claro y oscuro: sin desbordes (capturas en el reporte final).
 - [ ] `CI=true npx react-scripts test --watchAll=false` verde (incluye tests nuevos de las 3 tarjetas,
-      la fórmula de "hoy puedes gastar" y la bandeja) y `npm run build` sin errores.
-- [ ] Si se tocó la API: `go test ./...` verde.
+      la fórmula de "hoy puedes gastar" y la bandeja) y `npm run build` sin errores. *(33 tests pasan y el
+      build compila; `src/App.test.js`, el stub de CRA, falla igual en `main`: por eso sin marcar.)*
+- [x] Si se tocó la API: `go test ./...` verde. *(No se tocó.)*
+
+## Pendientes tras la implementación
+
+- **Presupuesto con categorías de traslado:** `expense_budget` suma todas las categorías de gasto. Si una
+  categoría con presupuesto solo recibe transferencias (p. ej. "Tarjetas"), su presupuesto infla "Hoy
+  puedes gastar", porque lo gastado sí las excluye. En la copia del dump, 4 de 19 usuarios con presupuesto
+  tienen categorías de ese estilo por nombre (1 %, 14 %, 34 % y 74 % de su total). Corregirlo pide
+  decidir el criterio y tocar la API.

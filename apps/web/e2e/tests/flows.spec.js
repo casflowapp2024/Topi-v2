@@ -19,7 +19,7 @@ async function login(page, email, password) {
   await page.fill('#password', password);
   await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
   await page.waitForURL('**/dashboard');
-  await expect(page.getByRole('heading', { name: 'Tu Balance' }).first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ritmo del mes' }).first()).toBeVisible();
 }
 
 // La API limita los logins a 10/min por IP (RATE_LIMIT_PER_MIN): los flujos 2–6 siguen con la
@@ -35,7 +35,7 @@ async function resume(page, session) {
     localStorage.setItem('refresh_token', s.refresh_token);
   }, session);
   await page.goto('/dashboard');
-  await expect(page.getByRole('heading', { name: 'Tu Balance' }).first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ritmo del mes' }).first()).toBeVisible();
 }
 
 test.describe('usuario migrado', () => {
@@ -62,7 +62,7 @@ test.describe('usuario migrado', () => {
     await page.getByRole('button', { name: 'Crear contraseña y entrar' }).click();
 
     await page.waitForURL('**/dashboard');
-    await expect(page.getByRole('heading', { name: 'Tu Balance' }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Ritmo del mes' }).first()).toBeVisible();
     password = NEW_PASSWORD;
     saveCreds(test.info().project.name, { email: user.email, password });
     session = await page.evaluate(() => ({
@@ -73,7 +73,7 @@ test.describe('usuario migrado', () => {
 
   test('2. dashboard: general, presupuestos y cuentas cargan datos', async ({ page }) => {
     await resume(page, session);
-    await expect(page.getByRole('heading', { name: 'Últimas Transacciones' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^Por revisar/ })).toBeVisible();
     await page.waitForLoadState('networkidle');
 
     await navLink(page, '/dashboard/budgets').click();
@@ -96,10 +96,11 @@ test.describe('usuario migrado', () => {
     await page.waitForURL('**/dashboard/transactions');
     await expect(page.getByRole('textbox', { name: 'Buscar por Descripción' })).toBeVisible();
     // listar: el usuario migrado tiene historial
-    await expect(page.locator('li.cursor-pointer').first()).toBeVisible();
+    await expect(page.locator('section li:has(button)').first()).toBeVisible();
 
     // crear
-    await page.getByRole('button', { name: 'Crear', exact: true }).click();
+    await page.getByRole('button', { name: 'Agregar movimiento' }).click();
+    await page.getByRole('menuitem', { name: /Gasto o ingreso/ }).click();
     const createDialog = page.getByRole('dialog');
     await createDialog.locator('#description').fill(description);
     await createDialog.locator('label[for="amount"] + div input').first().fill('12345');
@@ -109,7 +110,7 @@ test.describe('usuario migrado', () => {
     await createDialog.getByRole('button', { name: 'Cerrar modal' }).click();
 
     // editar
-    const row = page.locator('li.cursor-pointer', { hasText: description });
+    const row = page.locator('section li:has(button)', { hasText: description });
     await row.first().click();
     const detail = page.getByRole('dialog');
     await detail.getByRole('button', { name: 'Editar' }).click();
@@ -119,15 +120,15 @@ test.describe('usuario migrado', () => {
     await detail.getByRole('button', { name: 'Actualizar' }).click();
     expect((await updated).status()).toBe(200);
     await detail.getByRole('button', { name: 'Cerrar modal' }).first().click();
-    await expect(page.locator('li.cursor-pointer', { hasText: edited }).first()).toBeVisible();
+    await expect(page.locator('section li:has(button)', { hasText: edited }).first()).toBeVisible();
 
     // borrar
-    await page.locator('li.cursor-pointer', { hasText: edited }).first().click();
+    await page.locator('section li:has(button)', { hasText: edited }).first().click();
     await page.getByRole('dialog').getByRole('button', { name: 'Eliminar' }).click();
     const txDeleted = apiCall(page, 'DELETE', /^\/transactions\/\d+$/);
     await page.getByRole('dialog').getByRole('button', { name: 'Si, Eliminar!' }).click();
     expect((await txDeleted).status()).toBe(200);
-    await expect(page.locator('li.cursor-pointer', { hasText: edited })).toHaveCount(0);
+    await expect(page.locator('section li:has(button)', { hasText: edited })).toHaveCount(0);
   });
 
   test('4. cuentas y categorías: crear y borrar', async ({ page }) => {

@@ -10,8 +10,8 @@ const LEAD_TONE = {
   crit: 'text-status-crit-text dark:text-red-400',
 };
 
-const ChartLegend = ({ items = [], lead = null, className = '' }) => (
-  <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-4 text-xs text-ink-2 dark:text-gray-400 ${lead ? 'justify-between' : 'justify-end'} ${className}`}>
+const ChartLegend = ({ items = [], lead = null, className = '', align = 'end' }) => (
+  <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-4 text-xs text-ink-2 dark:text-gray-400 ${lead ? 'justify-between' : align === 'start' ? 'justify-start' : 'justify-end'} ${className}`}>
     {lead && (
       <span className="inline-flex items-baseline gap-1.5 whitespace-nowrap">
         <span>{String(lead.label ?? "").charAt(0).toUpperCase() + String(lead.label ?? "").slice(1)}</span>
@@ -20,7 +20,7 @@ const ChartLegend = ({ items = [], lead = null, className = '' }) => (
         </span>
       </span>
     )}
-    <span className="inline-flex flex-wrap items-center justify-end gap-x-4 gap-y-1">
+    <span className={`inline-flex flex-wrap items-center gap-x-4 gap-y-1 ${align === 'start' ? 'justify-start' : 'justify-end'}`}>
       {items.filter(Boolean).map((it) => (
         <span key={it.label} className="inline-flex items-center gap-1.5 whitespace-nowrap">
           {it.type === 'solid' ? (

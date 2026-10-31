@@ -54,8 +54,11 @@ const AAGenDashboard = ({
                 </div>
             </div>
             <div className="contents lg:flex lg:flex-row lg:gap-6">
+                {/* La columna derecha crece con la bandeja: la gráfica conserva su alto y acompaña el scroll */}
                 <div className="order-6 lg:order-none lg:flex-1 lg:min-w-0">
-                    <MultiChartDash />
+                    <div className="lg:sticky lg:top-[78px] lg:h-[420px]">
+                        <MultiChartDash />
+                    </div>
                 </div>
                 <div className="contents lg:flex lg:flex-col lg:gap-6 lg:w-[320px] xl:w-[300px] lg:shrink-0">
                     <div className="order-4 lg:order-none">

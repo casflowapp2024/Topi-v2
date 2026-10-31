@@ -7,15 +7,23 @@ import ChartLegend from '../../ui/ChartLegend';
 import Money from '../../ui/Money';
 import Skeleton from '../../ui/Skeleton';
 import { useChartColors } from '../../charts/chartTheme';
-import { formatMoneyCompact, getBaseCurrency } from '../../helpers';
+import { formatMoneyCompact, getBaseCurrency, isCreditAccount } from '../../helpers';
 
 // Tramos del patrimonio: los totales por clase de la API suman exactamente net_worth.total. Las
-// tarjetas valen su deuda estimada por cortes, la misma de Cuentas.
-export const netWorthSegments = (netWorth) => [
-  { id: 'cash', label: 'Efectivo', value: Number(netWorth?.cash_total || 0) },
-  { id: 'investment', label: 'Inversiones', value: Number(netWorth?.investments_total || 0) },
-  { id: 'credit', label: Number(netWorth?.credit_total || 0) > 0 ? 'A favor en tarjetas' : 'Deudas de tarjeta', value: Number(netWorth?.credit_total || 0) },
-].filter(s => s.value !== 0);
+// tarjetas valen su deuda estimada por cortes, la misma de Cuentas; lo pagado de más en otra tarjeta
+// va aparte para que no le reste a esa deuda.
+export const netWorthSegments = (netWorth) => {
+  const credit = Number(netWorth?.credit_total || 0);
+  const debt = (netWorth?.accounts || [])
+    .filter(a => isCreditAccount(a) && Number(a.base_value) < 0)
+    .reduce((sum, a) => sum + Number(a.base_value), 0);
+  return [
+    { id: 'cash', label: 'Efectivo', value: Number(netWorth?.cash_total || 0) },
+    { id: 'investment', label: 'Inversiones', value: Number(netWorth?.investments_total || 0) },
+    { id: 'favor', label: 'A favor en tarjetas', value: credit - debt },
+    { id: 'credit', label: 'Deudas de tarjeta', value: debt },
+  ].filter(s => s.value !== 0);
+};
 
 /**
  * Tercera tarjeta del inicio: ¿cuánto tengo en total? Siempre es de hoy, sin importar el mes elegido.
@@ -24,7 +32,7 @@ export const netWorthSegments = (netWorth) => [
 const HomeNetWorthCard = ({ net_worth, set_dash_account_activated, history = null }) => {
   const navigate = useNavigate();
   const c = useChartColors();
-  const color = { cash: c.balance, investment: c.inversion, credit: c.crit };
+  const color = { cash: c.balance, investment: c.inversion, favor: c.ok, credit: c.crit };
   const base = net_worth?.base_currency || getBaseCurrency();
   const segments = netWorthSegments(net_worth);
   const scale = segments.reduce((sum, s) => sum + Math.abs(s.value), 0);
@@ -62,7 +70,7 @@ const HomeNetWorthCard = ({ net_worth, set_dash_account_activated, history = nul
                 ))}
               </span>
             )}
-            <ChartLegend className="!px-0 !justify-start"
+            <ChartLegend className="!px-0" align="start"
               items={segments.map(s => ({ type: 'bar', color: s.value < 0 ? c.crit : color[s.id], label: s.label, value: formatMoneyCompact(s.value, base) }))} />
             {segments.some(s => s.id === 'credit' && s.value < 0) && (
               <span className="text-xs text-ink-2 dark:text-gray-400">La deuda es aproximada: tu banco tiene la cifra exacta.</span>

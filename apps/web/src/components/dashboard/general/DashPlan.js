@@ -42,12 +42,12 @@ const DashPlan = ({
 
 
   return (
-    <div className='h-auto md:h-[410px] bg-white border border-gray-200 rounded-2xl shadow dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300'>
+    <div className='h-auto md:h-[410px] lg:h-[320px] bg-white border border-gray-200 rounded-2xl shadow dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300'>
       <div className="flex flex-col py-4 px-3 w-full">
         <div className='pb-3 flex flex-row justify-between items-center text-sm font-medium border-b border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-300'>
           <h2>Presupuestos</h2>
         </div>
-        <div aria-busy={loadingReport} className={`max-h-[344px] md:h-[344px] overflow-y-auto hide-scrollbar transition-opacity duration-200 ${loadingReport && expenses_report ? 'opacity-50' : ''}`}>
+        <div aria-busy={loadingReport} className={`max-h-[344px] md:h-[344px] lg:h-[254px] overflow-y-auto hide-scrollbar transition-opacity duration-200 ${loadingReport && expenses_report ? 'opacity-50' : ''}`}>
 
           {loadingReport && !expenses_report ?
             <SkeletonRows rows={5} withBar /> :
@@ -55,7 +55,7 @@ const DashPlan = ({
               {expenses_report ? (
                 <ul role="list" className="">
                   {expenses_report.map((category) => (
-                    <li key={category.id} className="py-[5px] lg:px-1">
+                    <li key={category.category_id} className="py-[5px] lg:px-1">
                       <div className="flex flex-row justify-start">
                         {category.emoji && category.emoji !== "" && (
                           <Emoji unified={(category.emoji).toLowerCase()} emojiStyle="apple" size={16} />

@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Emoji } from 'emoji-picker-react';
 import {
-  ArrowRightIcon, ArrowsRightLeftIcon, CheckIcon, CreditCardIcon, ExclamationTriangleIcon,
+  ArrowRightIcon, CheckIcon, CreditCardIcon, ExclamationTriangleIcon,
 } from '@heroicons/react/20/solid';
 import { CheckCircleIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 //redux
@@ -26,7 +26,7 @@ import CardReconcile from '../productsAccounts/CardReconcile';
 import DropDownCat from '../../transactions/DropDownCat';
 import TransactionDetail from '../../transactions/TransactionDetail2';
 import TransferLinkSection from '../../transactions/TransferLinkSection';
-import { capitalizeWords, findElmentById, formatMoney, getBaseCurrency, isCreditAccount, isOpenAccount } from '../../helpers';
+import { capitalizeWords, findElmentById, formatMoney, isCreditAccount, isOpenAccount } from '../../helpers';
 
 const MAX_VISIBLE = 5;
 const PAGE = 10;
@@ -209,7 +209,7 @@ const ReviewInbox = ({
         <Row key={item.key} leaving={off}>
           <TxSummary tx={tx} onOpen={() => setDetail(tx)} />
           {picking === tx.id ? (
-            <DropDownCat options={user_categories.items} selected={tx.category?.id} placeholder="Elige una categoría"
+            <DropDownCat defaultOpen options={user_categories.items} selected={tx.category?.id} placeholder="Elige una categoría"
               onChange={e => chooseCategory(tx, e.target.value)} />
           ) : (
             <div className="flex items-center gap-2">
@@ -248,7 +248,7 @@ const ReviewInbox = ({
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="secondary" icon={ArrowsRightLeftIcon} loading={isBusy} disabled={busy !== null} onClick={() => linkPair(c)} className="flex-1 min-w-0">
+            <Button size="sm" variant="secondary" loading={isBusy} disabled={busy !== null} onClick={() => linkPair(c)} className="flex-1 min-w-0 !px-2">
               <span className="truncate">Unir como transferencia</span>
             </Button>
             <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => dismissPair(c)}>No es</Button>
