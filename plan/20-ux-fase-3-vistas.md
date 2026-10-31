@@ -167,4 +167,15 @@ Reemplazan las secciones A, B y C en lo que se contradiga. Layout de PC:
 - Límites conocidos: lo presupuestado para invertir cuenta como disponible hasta que se hace la transferencia, y
   una categoría con presupuesto que solo recibe pagos de tarjeta sigue sumando al total hasta que el usuario
   lo mueva. Las parejas sin unir cuentan hasta que se unan.
-- Siguiente bloque: excedente del pago de tarjeta en la categoría "Cargos de Tarjeta". Después, cuotas.
+
+## Cargos de Tarjeta (31-oct)
+
+- `card_charges` compara por corte lo debido (lo arrastrado más las compras) con lo pagado hasta el siguiente corte.
+  El excedente es un gasto de la categoría "Cargos de Tarjeta" en el mes del último pago de esa ventana.
+- No es una transacción: se recalcula, así una compra que llega tarde lo corrige y no se cuenta doble.
+- Pago parcial: sin excedente, y en un corte cerrado lo que falta descuenta cargos anteriores (eran un pago
+  adelantado) y se arrastra. El corte en curso solo suma.
+- Solo desde los cortes de octubre de 2026 y con periodo completo: la historia no se recalcula.
+- Límites: las tarjetas sin día de corte no tienen cargos (siguen con "Pagado de más"); el cargo incluye compras
+  que no llegaron por correo; una compra a cuotas registrada completa oculta los intereses hasta el bloque de cuotas.
+- Siguiente bloque: cuotas, con su propio plan.

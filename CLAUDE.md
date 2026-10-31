@@ -67,6 +67,9 @@ plan/         plan de migración
   presupuestos (`countsInBudget`) solo cuentan si la otra pata está en una cuenta de inversión; entre cuentas
   propias o pagando una tarjeta, no. `mtd_budget` y `budget_spent` son lo comparable con el presupuesto: flujos
   más lo movido a inversiones. Plan: `plan/10-tipos-de-cuenta.md`.
+- Cargos de tarjeta (`card_charges`): lo pagado por encima de lo debido por corte. Se calculan, no son
+  transacciones: una compra que llega tarde los corrige. Entran a gastos y a la categoría "Cargos de Tarjeta" en
+  el mes del pago, solo desde los cortes de octubre de 2026. No cambian saldos ni la deuda estimada.
 - Clases de cuenta (`account_types.class`: deposit | investment | credit). En el front, `accountClass` /
   `isCreditAccount` / `isInvestmentAccount` de `helpers.js`; no compares `type_id`. Inversiones: su saldo es la
   última valoración (`account_valuations`) + movimientos posteriores; los reportes de saldos suman

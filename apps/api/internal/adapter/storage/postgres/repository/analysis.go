@@ -10,10 +10,13 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
+	"strings"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
+	"github.com/shopspring/decimal"
 )
 
 // AnalysisRepository implements port.TransactionRepository interface
@@ -48,6 +51,61 @@ const otherLegInInvestment = `exists (
 // nothing was spent, even if the two legs have different categories.
 const countsInBudget = "not t.needs_counterpart and (t.transfer_group_id is null or " + otherLegInInvestment + ")"
 
+// GetCardCharges returns the card charges (function card_charges) of the months from start to end.
+func (ar *AnalysisRepository) GetCardCharges(ctx context.Context, userID string, start, end time.Time) ([]domain.CardCharge, error) {
+	out := make([]domain.CardCharge, 0)
+	rows, err := ar.db.Query(ctx, `
+		SELECT account_id, account_name, currency, statement_date, charged_on, amount::text, amount_base::text
+		FROM card_charges($1)
+		WHERE amount_base IS NOT NULL
+		  AND charged_on >= date_trunc('month', $2::date)
+		  AND charged_on < date_trunc('month', $3::date) + INTERVAL '1 month'
+		ORDER BY charged_on, account_id`, userID, start, end)
+	if err != nil {
+		return out, mappers.MapPostgresErrorCode(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var (
+			charge             domain.CardCharge
+			amount, amountBase string
+		)
+		if err := rows.Scan(&charge.AccountID, &charge.AccountName, &charge.Currency, &charge.StatementDate, &charge.ChargedOn, &amount, &amountBase); err != nil {
+			return out, err
+		}
+		if charge.Amount, err = decimal.NewFromString(amount); err != nil {
+			return out, err
+		}
+		if charge.AmountBase, err = decimal.NewFromString(amountBase); err != nil {
+			return out, err
+		}
+		out = append(out, charge)
+	}
+	return out, rows.Err()
+}
+
+// cardChargesByDay sums the charges in the base currency by day (YYYY-MM-DD)
+func (ar *AnalysisRepository) cardChargesByDay(ctx context.Context, userID string, start, end time.Time) (map[string]float64, error) {
+	charges, err := ar.GetCardCharges(ctx, userID, start, end)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]float64)
+	for _, c := range charges {
+		out[c.ChargedOn.Format("2006-01-02")] += c.AmountBase.InexactFloat64()
+	}
+	return out, nil
+}
+
+// byMonth rolls a map by day up to a map by month (YYYY-MM)
+func byMonth(days map[string]float64) map[string]float64 {
+	out := make(map[string]float64)
+	for day, amount := range days {
+		out[day[:7]] += amount
+	}
+	return out
+}
+
 // GetFinancialSummary retrieves a financial summary for a user, including income and expenses
 // grouped by month. The summary includes data for the specified time range, with
 // transactions properly adjusted to the user's timezone.
@@ -74,6 +132,12 @@ func (ar *AnalysisRepository) GetFinancialSummary(
 		summary   = make(domain.FinancialSummary)
 		lastMonth = end.AddDate(0, -1, 0)
 	)
+
+	chargesByDay, err := ar.cardChargesByDay(ctx, userID, start, end)
+	if err != nil {
+		return nil, err
+	}
+	charges := byMonth(chargesByDay)
 
 	// Date calculations in user's timezone
 	userDate := "(t.date at time zone coalesce(u.utc_offset, 'utc'))::date"
@@ -135,9 +199,10 @@ func (ar *AnalysisRepository) GetFinancialSummary(
 	index := domain.Index(0)
 	for rows.Next() {
 		var report domain.MonthlyReport
+		var year uint16
 
 		err = rows.Scan(
-			nil, // year (not used)
+			&year,
 			&report.Month,
 			&report.CurrentMonth,
 			&report.Income.Value,
@@ -148,6 +213,7 @@ func (ar *AnalysisRepository) GetFinancialSummary(
 			return nil, err
 		}
 
+		report.Expenses.Value -= charges[fmt.Sprintf("%04d-%02d", year, report.Month)]
 		summary[index] = report
 		index++
 	}
@@ -368,6 +434,25 @@ func (ar *AnalysisRepository) GetCategoriesReport(
 		expenseReport = make([]domain.CategoryMetric, 0)
 	)
 
+	chargesByDay, err := ar.cardChargesByDay(ctx, userID, filter, filter)
+	if err != nil {
+		return report, err
+	}
+	charged := 0.0
+	for _, amount := range chargesByDay {
+		charged += amount
+	}
+	// Si el usuario borró la categoría, vuelve: los cargos ya están en los gastos del mes
+	if charged != 0 {
+		if _, err = ar.db.Exec(ctx, `
+			INSERT INTO categories (user_id, name, budget, emoji, income)
+			SELECT $1::varchar, $2::varchar, 0, '1f4b3', false
+			WHERE NOT EXISTS (SELECT 1 FROM categories WHERE user_id = $1 AND lower(name) = lower($2))`,
+			userID, domain.CardChargesCategory); err != nil {
+			return report, mappers.MapPostgresErrorCode(err)
+		}
+	}
+
 	// Calculate the expense
 	amountExpr := "coalesce(sum(case when t.expense is false then t.amount_base else -t.amount_base end), 0)"
 
@@ -445,6 +530,10 @@ func (ar *AnalysisRepository) GetCategoriesReport(
 			return report, err
 		}
 
+		if !income && strings.EqualFold(metric.Name, domain.CardChargesCategory) {
+			value -= charged
+		}
+
 		metric.SetMetric(value, budget, income)
 
 		if income {
@@ -503,6 +592,13 @@ func (ar *AnalysisRepository) GetDailyAnalysis(ctx context.Context, fr *domain.F
 		err error
 	)
 
+	charges, err := ar.cardChargesByDay(ctx, fr.UserID, fr.End, fr.End)
+	if err != nil {
+		fr.DailyErr = err
+		return
+	}
+	chargedInMonth := 0.0
+
 	sqlQuery := `
 		SELECT date, income, expense, mtd_income, mtd_expense, mtd_savings,
 		       running_savings_balance, running_credits_balance, updated_at
@@ -539,11 +635,14 @@ func (ar *AnalysisRepository) GetDailyAnalysis(ctx context.Context, fr *domain.F
 			return
 		}
 
+		charged := charges[date.Format("2006-01-02")]
+		chargedInMonth += charged
+
 		out.Income = append(out.Income, income)
-		out.Expense = append(out.Expense, expense)
+		out.Expense = append(out.Expense, expense-charged)
 		out.MTDIncome = append(out.MTDIncome, mtdIncome)
-		out.MTDExpense = append(out.MTDExpense, mtdExpense)
-		out.MTDSavings = append(out.MTDSavings, mtdSavings)
+		out.MTDExpense = append(out.MTDExpense, mtdExpense-chargedInMonth)
+		out.MTDSavings = append(out.MTDSavings, mtdSavings-chargedInMonth)
 		out.RSavingsBalance = append(out.RSavingsBalance, runSavings)
 		out.RCreditsBalance = append(out.RCreditsBalance, runCredits)
 		out.Date = append(out.Date, date.Format("2006-01-02"))
@@ -577,6 +676,13 @@ func (ar *AnalysisRepository) GetMonthlyAnalysis(ctx context.Context, fr *domain
 		incomeBudget  float64
 		expenseBudget float64
 	)
+
+	chargesByDay, err := ar.cardChargesByDay(ctx, fr.UserID, fr.Start.AddDate(0, -1, 0), fr.End)
+	if err != nil {
+		fr.MonthlyErr = err
+		return
+	}
+	charges := byMonth(chargesByDay)
 
 	// Convert year and month to a comparable numeric format (YYYYMM)
 	startYearMonth := fr.Start.Year()*100 + int(fr.Start.Month())
@@ -633,6 +739,14 @@ func (ar *AnalysisRepository) GetMonthlyAnalysis(ctx context.Context, fr *domain
 			return
 		}
 
+		charged := charges[fmt.Sprintf("%04d-%02d", year, month)]
+		pastMonth := time.Date(int(year), time.Month(month)-1, 1, 0, 0, 0, 0, time.UTC)
+		chargedPast := charges[pastMonth.Format("2006-01")]
+		expense -= charged
+		expensePast -= chargedPast
+		savings -= charged
+		savingsPast -= chargedPast
+
 		out.Income = append(out.Income, domain.IncomeMetrics(income, incomePast, incomeBudget))
 		out.Expense = append(out.Expense, domain.ExpenseMetrics(expense, expensePast, expenseBudget))
 		out.Savings = append(out.Savings, domain.SavingsMetrics(savings, savingsPast, incomeBudget-expenseBudget))
@@ -650,10 +764,7 @@ func (ar *AnalysisRepository) GetMonthlyAnalysis(ctx context.Context, fr *domain
 		fr.MonthlyErr = err
 		return
 	}
-	movedByMonth := make(map[string]float64)
-	for day, amount := range moves {
-		movedByMonth[day[:7]] += amount
-	}
+	movedByMonth := byMonth(moves)
 	for i, year := range out.Year {
 		key := fmt.Sprintf("%04d-%02d", year, out.Month[i])
 		out.BudgetSpent = append(out.BudgetSpent, utils.Round(math.Min(out.Expense[i].Value+movedByMonth[key], 0), 2))
@@ -728,32 +839,64 @@ func (ar *AnalysisRepository) GetCategoryAnalysis(
 		budget              float64
 	)
 
-	for rows.Next() {
-		var year, month uint16
-		var monthBudget, balance float64
-		var isIncomeCategory bool
+	type monthRow struct {
+		year, month      uint16
+		budget, balance  float64
+		isIncomeCategory bool
+	}
+	var months []monthRow
 
-		err = rows.Scan(&year, &month, &monthBudget, &balance, &isIncomeCategory)
+	for rows.Next() {
+		var m monthRow
+
+		err = rows.Scan(&m.year, &m.month, &m.budget, &m.balance, &m.isIncomeCategory)
 		if err != nil {
 			return analysis, mappers.MapPostgresErrorCode(err)
 		}
+		months = append(months, m)
+	}
 
+	// Los cargos de tarjeta no son transacciones: se suman a su categoría, también en meses sin movimientos
+	var name string
+	var categoryBudget float64
+	if err = ar.db.QueryRow(ctx, "SELECT name, budget FROM "+enums.CategoryTableName+" WHERE id = $1 AND user_id = $2",
+		categoryID, userID).Scan(&name, &categoryBudget); err == nil && strings.EqualFold(name, domain.CardChargesCategory) {
+		chargesByDay, err := ar.cardChargesByDay(ctx, userID, start, end.AddDate(0, 0, -1))
+		if err != nil {
+			return analysis, err
+		}
+		for key, amount := range byMonth(chargesByDay) {
+			var year, month uint16
+			if _, err := fmt.Sscanf(key, "%d-%d", &year, &month); err != nil {
+				return analysis, err
+			}
+			i := slices.IndexFunc(months, func(m monthRow) bool { return m.year == year && m.month == month })
+			if i < 0 {
+				months = append(months, monthRow{year: year, month: month, budget: categoryBudget})
+				i = len(months) - 1
+			}
+			months[i].balance -= amount
+		}
+		slices.SortFunc(months, func(a, b monthRow) int { return int(a.year)*100 + int(a.month) - int(b.year)*100 - int(b.month) })
+	}
+
+	for _, m := range months {
 		// Set the budget from the first row (should be consistent across months)
 		if budget == 0 {
-			budget = monthBudget
+			budget = m.budget
 		}
 
 		var monthlyMetric domain.MonthlyMetrics
 
-		if isIncomeCategory {
-			monthlyMetric = domain.IncomeMetrics(balance, 0, monthBudget)
+		if m.isIncomeCategory {
+			monthlyMetric = domain.IncomeMetrics(m.balance, 0, m.budget)
 		} else {
-			monthlyMetric = domain.ExpenseMetrics(balance, 0, monthBudget)
+			monthlyMetric = domain.ExpenseMetrics(m.balance, 0, m.budget)
 		}
 
 		monthlyMetrics = append(monthlyMetrics, monthlyMetric)
-		yearList = append(yearList, year)
-		monthList = append(monthList, month)
+		yearList = append(yearList, m.year)
+		monthList = append(monthList, m.month)
 	}
 
 	analysis.Budget = budget

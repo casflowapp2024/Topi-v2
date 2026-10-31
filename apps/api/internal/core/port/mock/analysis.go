@@ -81,6 +81,21 @@ func (mr *MockAnalysisRepositoryMockRecorder) GetBalanceSummary(ctx, userID, sta
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBalanceSummary", reflect.TypeOf((*MockAnalysisRepository)(nil).GetBalanceSummary), ctx, userID, start, end, accountTypes, accounts)
 }
 
+// GetCardCharges mocks base method.
+func (m *MockAnalysisRepository) GetCardCharges(ctx context.Context, userID string, start, end time.Time) ([]domain.CardCharge, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCardCharges", ctx, userID, start, end)
+	ret0, _ := ret[0].([]domain.CardCharge)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCardCharges indicates an expected call of GetCardCharges.
+func (mr *MockAnalysisRepositoryMockRecorder) GetCardCharges(ctx, userID, start, end interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCardCharges", reflect.TypeOf((*MockAnalysisRepository)(nil).GetCardCharges), ctx, userID, start, end)
+}
+
 // GetCategoriesReport mocks base method.
 func (m *MockAnalysisRepository) GetCategoriesReport(ctx context.Context, userID string, filter time.Time) (domain.CategoriesReport, error) {
 	m.ctrl.T.Helper()
@@ -230,6 +245,21 @@ func (m *MockAnalysisService) GetAccountsReport(ctx context.Context, report *dom
 func (mr *MockAnalysisServiceMockRecorder) GetAccountsReport(ctx, report interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountsReport", reflect.TypeOf((*MockAnalysisService)(nil).GetAccountsReport), ctx, report)
+}
+
+// GetCardCharges mocks base method.
+func (m *MockAnalysisService) GetCardCharges(ctx context.Context, userID string, month time.Time) ([]domain.CardCharge, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCardCharges", ctx, userID, month)
+	ret0, _ := ret[0].([]domain.CardCharge)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCardCharges indicates an expected call of GetCardCharges.
+func (mr *MockAnalysisServiceMockRecorder) GetCardCharges(ctx, userID, month interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCardCharges", reflect.TypeOf((*MockAnalysisService)(nil).GetCardCharges), ctx, userID, month)
 }
 
 // GetCategoriesReport mocks base method.

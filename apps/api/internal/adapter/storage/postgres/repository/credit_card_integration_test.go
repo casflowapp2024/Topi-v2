@@ -6,6 +6,8 @@ import (
 	"cash-flow/internal/adapter/storage/postgres/repository"
 	"cash-flow/internal/core/domain"
 	"context"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -103,7 +105,7 @@ func TestCreditCards(t *testing.T) {
 		categories = append(categories, name)
 	}
 	rows.Close()
-	assert.Equal(t, []string{"Comisiones", "Compras IT", "intereses"}, categories, "no crea Intereses si ya hay una")
+	assert.Equal(t, []string{"Cargos de Tarjeta", "Comisiones", "Compras IT", "intereses"}, categories, "no crea Intereses si ya hay una")
 
 	got, err := repo.GetCreditCard(ctx, userID, card)
 	require.NoError(t, err)
@@ -131,4 +133,115 @@ func TestCreditCards(t *testing.T) {
 	assert.True(t, s.PendingStatement.IsZero(), s.PendingStatement.String())
 	assert.True(t, s.PurchasesSince.Equal(d("50000")), s.PurchasesSince.String())
 	assert.Equal(t, 1, s.InstallmentPurchases)
+}
+
+// TestCardCharges: lo pagado por encima de lo debido por corte es un cargo, en el mes del pago, y entra
+// a gastos y a su categoría. Un pago que luego resulta adelantado lo corrige un corte cerrado, y el
+// corte en curso no descuenta nada todavía.
+func TestCardCharges(t *testing.T) {
+	ctx := context.Background()
+	db := integrationDB(t)
+	userID := "it-chg-" + uuid.NewString()
+	t.Cleanup(func() {
+		_, _ = db.Exec(ctx, "DELETE FROM transactions WHERE user_id = $1", userID)
+		_, _ = db.Exec(ctx, "DELETE FROM credit_card_details WHERE user_id = $1", userID)
+		for _, table := range []string{"accounts", "categories", "banks", "user_extra"} {
+			_, _ = db.Exec(ctx, "DELETE FROM "+table+" WHERE user_id = $1", userID)
+		}
+	})
+	id := func(sql string, args ...any) uint64 {
+		t.Helper()
+		var out uint64
+		require.NoError(t, db.QueryRow(ctx, sql, args...).Scan(&out))
+		return out
+	}
+	_, err := db.Exec(ctx, "INSERT INTO user_extra (user_id, utc_offset, whatsapp) VALUES ($1, 'America/Bogota', '')", userID)
+	require.NoError(t, err)
+	bank := id("INSERT INTO banks (user_id, name, email) VALUES ($1, 'Banco IT', 'it@banco.test') RETURNING id", userID)
+	buys := id("INSERT INTO categories (user_id, name, budget, emoji) VALUES ($1, 'Compras IT', 0, '') RETURNING id", userID)
+	category := id("INSERT INTO categories (user_id, name, budget, emoji) VALUES ($1, 'Cargos de Tarjeta', 100000, '') RETURNING id", userID)
+	account := func(name, digits string, typeID int) uint64 {
+		return id(`INSERT INTO accounts (user_id, name, last_four_digits, bank_id, type_id, initial_balance, currency, created_at)
+			VALUES ($1, $2, $3, $4, $5, 0, 'COP', '2026-08-01 12:00:00-05') RETURNING id`, userID, name, digits, bank, typeID)
+	}
+	card := account("Tarjeta IT", "0001", 4)
+	_, err = db.Exec(ctx, "INSERT INTO credit_card_details (account_id, user_id, statement_day, due_day) VALUES ($1, $2, 15, 5)", card, userID)
+	require.NoError(t, err)
+	tx := func(accountID uint64, expense bool, amount, at string) {
+		t.Helper()
+		id(`INSERT INTO transactions (user_id, category_id, account_id, description, expense, amount, date)
+			VALUES ($1, $2, $3, 'IT', $4, $5, $6) RETURNING id`, userID, buys, accountID, expense, amount, at)
+	}
+	charges := func(today string) map[string]string {
+		t.Helper()
+		rows, err := db.Query(ctx, "SELECT charged_on::text, amount::text FROM card_charges($1, $2::date)", userID, today)
+		require.NoError(t, err)
+		defer rows.Close()
+		out := map[string]string{}
+		for rows.Next() {
+			var day, amount string
+			require.NoError(t, rows.Scan(&day, &amount))
+			out[day] = strings.TrimSuffix(amount, ".0000")
+		}
+		return out
+	}
+
+	tx(card, true, "1000000", "2026-09-20 10:00:00-05")  // corte del 15-oct
+	tx(card, false, "1030000", "2026-10-25 10:00:00-05") // pago con intereses
+	assert.Equal(t, map[string]string{"2026-10-25": "30000"}, charges("2026-10-31"))
+
+	// compra después del corte: no se confunde con el pago anterior
+	tx(card, true, "200000", "2026-10-20 10:00:00-05") // corte del 15-nov
+	assert.Equal(t, map[string]string{"2026-10-25": "30000"}, charges("2026-11-20"), "corte en curso sin pago: no descuenta")
+
+	// pago parcial en un corte cerrado: faltan 100.000; el cargo era pago adelantado y lo demás se arrastra
+	tx(card, false, "100000", "2026-11-20 10:00:00-05")
+	assert.Empty(t, charges("2026-12-16"))
+
+	// el arrastre (70.000) + 300.000 del corte contra 400.000 pagados: 30.000 de cargo
+	tx(card, true, "300000", "2026-11-25 10:00:00-05")
+	tx(card, false, "400000", "2026-12-20 10:00:00-05")
+	assert.Equal(t, map[string]string{"2026-12-20": "30000"}, charges("2026-12-31"))
+
+	// una compra que llega tarde corrige el cargo sola
+	tx(card, true, "10000", "2026-11-26 10:00:00-05")
+	assert.Equal(t, map[string]string{"2026-12-20": "20000"}, charges("2026-12-31"))
+	_, err = db.Exec(ctx, "DELETE FROM transactions WHERE user_id = $1 AND date >= '2026-10-20 00:00:00-05' AND date <> '2026-10-25 10:00:00-05'", userID)
+	require.NoError(t, err)
+
+	// en los reportes: gasto del mes del pago y de su categoría, sin ser una transacción
+	analysis := repository.NewAnalysisRepository(db)
+	october := time.Date(2026, 10, 15, 0, 0, 0, 0, time.UTC)
+	report, err := analysis.GetCategoriesReport(ctx, userID, october)
+	require.NoError(t, err)
+	for _, m := range report.Expenses.Report {
+		if m.CategoryID == category {
+			assert.InDelta(t, -30000, m.Value, 0.001)
+		}
+	}
+	summary, err := analysis.GetFinancialSummary(ctx, userID, time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC))
+	require.NoError(t, err)
+	require.Len(t, summary, 1)
+	assert.InDelta(t, 1030000-30000, summary[0].Expenses.Value, 0.001, "el pago sin ligar suma; el cargo resta")
+
+	fr := &domain.FinancialResolver{UserID: userID, Start: time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC), End: october,
+		Rsp: &domain.FinancialAnalysis{}, Mu: &sync.Mutex{}, Wg: &sync.WaitGroup{}}
+	fr.Wg.Add(2)
+	analysis.GetDailyAnalysis(ctx, fr)
+	analysis.GetMonthlyAnalysis(ctx, fr)
+	require.NoError(t, fr.DailyErr)
+	require.NoError(t, fr.MonthlyErr)
+	last := len(fr.Rsp.Daily.MTDExpense) - 1
+	require.GreaterOrEqual(t, last, 0)
+	assert.InDelta(t, 1030000-30000, fr.Rsp.Daily.MTDExpense[last], 0.001)
+	assert.InDelta(t, 1030000-30000, fr.Rsp.Daily.MTDBudget[last], 0.001)
+	listed, err := analysis.GetCardCharges(ctx, userID, october, october)
+	require.NoError(t, err)
+	require.Len(t, listed, 1)
+	assert.Equal(t, "Tarjeta IT", listed[0].AccountName)
+
+	history, err := analysis.GetCategoryAnalysis(ctx, userID, category, time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC))
+	require.NoError(t, err)
+	require.Len(t, history.Monthly, 1)
+	assert.InDelta(t, -30000, history.Monthly[0].Value, 0.001)
 }

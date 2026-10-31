@@ -15,6 +15,8 @@ import CardReconcile from './dashboard/productsAccounts/CardReconcile';
 import BudgetOverview from './dashboard/budgetCategories/BudgetOverview';
 import BudDashCategorieList from './dashboard/budgetCategories/BudDashCategorieList';
 import { SET_DASH_CATEGORY_ACTIVATED } from '../redux/actions/types';
+import BudDashTransCategorie from './dashboard/budgetCategories/BudDashTransCategorie';
+import axios from 'axios';
 
 jest.mock('axios', () => {
   const noop = { use() {} };
@@ -180,4 +182,20 @@ test('Presupuestos: ninguna categoría elegida al entrar; tocar elige y tocar ot
   act(() => rows()[0].dispatchEvent(new MouseEvent('click', { bubbles: true })));
   expect(store.getState().Reports.category_activated).toBeNull();
   act(() => root.unmount());
+});
+
+test('Cargos de Tarjeta: muestra lo calculado por corte, que no son transacciones', async () => {
+  axios.get.mockResolvedValueOnce({ status: 200, data: { data: [
+    { account_id: 3, account_name: 'Visa', currency: 'COP', statement_date: '2026-10-15', charged_on: '2026-10-25', amount: '30000', amount_base: '30000' },
+  ] } });
+  const st = { ...budgetState({ category_id: 9, name: 'Cargos de Tarjeta', emoji: '1f4b3', value: -30000, budget: 0 }) };
+  st.Reports.transactions_category_activated = [];
+  st.CashFlow = { ...st.CashFlow, user_transactions: { default_limit: 30 }, banks: { items: [] } };
+  const el = document.createElement('div'); document.body.appendChild(el); const root = createRoot(el);
+  await act(async () => { root.render(<Provider store={createStore((s = st) => s, applyMiddleware(thunk))}><BudDashTransCategorie /></Provider>); });
+  expect(axios.get.mock.calls.at(-1)[0]).toContain('/analysis/card-charges?date=2026-10');
+  expect(el.textContent).toContain('Visa');
+  expect(el.textContent).toContain('Corte del 15-10');
+  expect(el.textContent).toMatch(/30\.000/);
+  await act(async () => root.unmount());
 });

@@ -161,6 +161,71 @@ func (ah *AnalysisHandler) GetCategoriesReport(ctx *gin.Context) {
 	handleSuccess(ctx, rsp)
 }
 
+type cardChargesRequest struct {
+	Date string `form:"date" binding:"required" example:"2026-10"`
+}
+
+type cardChargeResponse struct {
+	AccountID     uint64 `json:"account_id" example:"1"`
+	AccountName   string `json:"account_name" example:"Visa"`
+	Currency      string `json:"currency" example:"COP"`
+	StatementDate string `json:"statement_date" example:"2026-10-15"`
+	ChargedOn     string `json:"charged_on" example:"2026-10-25"`
+	Amount        string `json:"amount" example:"30000"`
+	AmountBase    string `json:"amount_base" example:"30000"`
+}
+
+// GetCardCharges returns what was paid to the cards above what was recorded in a month
+//
+//	@Summary		Get the card charges of a month
+//	@Description	Computed from the statements: interest, fees or purchases that never arrived by email. They count as expenses of the category "Cargos de Tarjeta" in the month of the payment.
+//	@Tags			Analysis
+//	@Accept			json
+//	@Produce		json
+//	@Param			date	query		string	true	"Month in YYYY-MM format"
+//	@Success		200		{object}	response{data=[]cardChargeResponse}	"Card charges"
+//	@Failure		400		{object}	errorResponse	"Validation error"
+//	@Failure		401		{object}	errorResponse	"Unauthorized error"
+//	@Failure		500		{object}	errorResponse	"Internal server error"
+//	@Router			/analysis/card-charges [get]
+func (ah *AnalysisHandler) GetCardCharges(ctx *gin.Context) {
+	var req cardChargesRequest
+
+	userID, err := domain.GetAuthUserID(ctx, enums.AuthorizationPayloadKey)
+	if err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	if err = ctx.ShouldBindQuery(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	month, err := time.Parse("2006-01", req.Date)
+	if err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	charges, err := ah.svc.GetCardCharges(ctx, *userID, month)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	rsp := make([]cardChargeResponse, 0, len(charges))
+	for _, c := range charges {
+		rsp = append(rsp, cardChargeResponse{
+			AccountID: c.AccountID, AccountName: c.AccountName, Currency: c.Currency,
+			StatementDate: c.StatementDate.Format("2006-01-02"), ChargedOn: c.ChargedOn.Format("2006-01-02"),
+			Amount: c.Amount.String(), AmountBase: c.AmountBase.String(),
+		})
+	}
+
+	handleSuccess(ctx, rsp)
+}
+
 type FinancialAnalysisRequest struct {
 	Date string `form:"date" binding:"required" example:"2025-05"`
 }

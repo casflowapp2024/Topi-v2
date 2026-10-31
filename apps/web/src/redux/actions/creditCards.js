@@ -39,3 +39,9 @@ export const fetch_credit_cards = async () => {
     const result = await call(() => axios.get(`${process.env.REACT_APP_API_URL}/analysis/credit-cards`, authConfig()));
     return result.ok ? (result.data || []) : null;
 };
+
+// Cargos de tarjeta de un mes (YYYY-MM): lo pagado por encima de lo registrado; null si falló
+export const fetch_card_charges = async (month) => {
+    const result = await call(() => axios.get(`${process.env.REACT_APP_API_URL}/analysis/card-charges?date=${month}`, authConfig()));
+    return result.ok ? (result.data || []) : null;
+};

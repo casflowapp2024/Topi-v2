@@ -166,6 +166,7 @@ func (r *Routes) AnalysisRoutes() {
 		AuthAnalysis.GET("/financial-analysis", r.AnalysisHandler.GetFinancialAnalysis)
 		AuthAnalysis.POST("/categories-report", r.AnalysisHandler.GetCategoriesReport)
 		AuthAnalysis.GET("/category-analysis", r.AnalysisHandler.GetCategoryAnalysis)
+		AuthAnalysis.GET("/card-charges", r.AnalysisHandler.GetCardCharges)
 		AuthAnalysis.POST("/accounts-report", r.AnalysisHandler.GetAccountsReport)
 		AuthAnalysis.GET("/account-analysis", r.AnalysisHandler.GetAccountAnalysis)
 	}

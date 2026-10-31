@@ -18,6 +18,7 @@ import (
 var cardChargeCategories = []struct{ name, emoji string }{
 	{"Intereses", "1f4b8"},
 	{"Comisiones", "1f9fe"},
+	{domain.CardChargesCategory, "1f4b3"},
 }
 
 // CreditCardRepository implements port.CreditCardRepository (credit_card_details and the function

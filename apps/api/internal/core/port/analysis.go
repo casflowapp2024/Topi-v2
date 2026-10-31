@@ -48,6 +48,8 @@ type AnalysisRepository interface {
 		fr *domain.FinancialResolver,
 	)
 
+	// GetCardCharges returns the card charges of the months from start to end
+	GetCardCharges(ctx context.Context, userID string, start, end time.Time) ([]domain.CardCharge, error)
 	// GetCategoryAnalysis returns the category behavior analysis over time for the given user and category
 	GetCategoryAnalysis(
 		ctx context.Context,
@@ -107,6 +109,8 @@ type AnalysisService interface {
 		date string,
 	) (domain.FinancialAnalysis, error)
 
+	// GetCardCharges returns the card charges of a month
+	GetCardCharges(ctx context.Context, userID string, month time.Time) ([]domain.CardCharge, error)
 	// GetCategoryAnalysis returns the category behavior analysis over time for the given user and category
 	GetCategoryAnalysis(
 		ctx context.Context,

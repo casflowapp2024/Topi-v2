@@ -74,3 +74,18 @@ func OverpaidTotal(cycles []CreditCardCycle) decimal.Decimal {
 	}
 	return total
 }
+
+// CardChargesCategory receives the card charges. They are found by name, like the other card categories.
+const CardChargesCategory = "Cargos de Tarjeta"
+
+// CardCharge is what was paid to a card above what was recorded for a statement (function
+// card_charges): interest, fees or purchases that never arrived by email. It is computed, not stored.
+type CardCharge struct {
+	AccountID     uint64
+	AccountName   string
+	Currency      string
+	StatementDate time.Time
+	ChargedOn     time.Time
+	Amount        decimal.Decimal
+	AmountBase    decimal.Decimal
+}

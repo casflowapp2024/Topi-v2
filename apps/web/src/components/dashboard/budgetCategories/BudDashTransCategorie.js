@@ -7,6 +7,7 @@ import { update_transaction_local, update_transaction } from '../../../redux/act
 import { get_user_transactions } from '../../../redux/actions/cashflow';
 import { get_history_dash, get_history_category_by_month, get_expenses_report } from '../../../redux/actions/reports';
 import { set_dash_category_activated } from '../../../redux/actions/reports';
+import { fetch_card_charges } from '../../../redux/actions/creditCards';
 //componentes
 import { Emoji } from "emoji-picker-react";
 import { formatMoney, formatDate, findElmentById, deepEqual, capitalizeWords } from '../../helpers';
@@ -39,6 +40,18 @@ const BudDashTransCategorie = ({
   active_report_tab,
   // Props passed from parent
 }) => {
+  // Los cargos de tarjeta no son transacciones: se calculan desde los cortes
+  const isCharges = String(category_activated?.name || '').toLowerCase() === 'cargos de tarjeta';
+  const [charges, setCharges] = useState([]);
+  useEffect(() => {
+    let active = true;
+    setCharges([]);
+    if (isCharges) {
+      fetch_card_charges(`${current_Year}-${String(current_Month).padStart(2, '0')}`).then(list => { if (active) setCharges(list || []); });
+    }
+    return () => { active = false; };
+  }, [isCharges, current_Month, current_Year]);
+
   const groupedTransactions = useMemo(() => {
     if (!Array.isArray(category_transactions)) {
       return {};
@@ -164,6 +177,24 @@ const BudDashTransCategorie = ({
       </header>
 
       <div className="px-2 py-2 lg:flex-1 lg:min-h-0 lg:flex lg:flex-col">
+        {charges.length > 0 && (
+          <section aria-label="Cargos de tarjeta del mes" className="mb-2 px-2">
+            <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+              {charges.map(c => (
+                <li key={`${c.account_id}-${c.statement_date}`} className="py-2 flex items-center justify-between gap-3">
+                  <span className="min-w-0 flex flex-col">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{c.account_name}</span>
+                    <span className="text-xs text-ink-2 dark:text-gray-400">Corte del {moment(c.statement_date).format('DD-MM')} · pago del {moment(c.charged_on).format('DD-MM')}</span>
+                  </span>
+                  <Money amount={c.amount} currency={c.currency} base={c.amount_base} sign="-" className="text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-100" />
+                </li>
+              ))}
+            </ul>
+            <p className="pt-1 text-xs text-ink-2 dark:text-gray-400">
+              Lo que pagaste por encima de lo registrado: intereses, cuota de manejo o compras que no llegaron por correo.
+            </p>
+          </section>
+        )}
         {category_transactions && category_transactions.length > 0 ? (
           <div className="max-h-[300px] md:max-h-[380px] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto overscroll-contain">
             {groupedTransactions.sortedDates && groupedTransactions.sortedDates.map(date => (

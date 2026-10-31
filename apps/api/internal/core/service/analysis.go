@@ -143,6 +143,11 @@ func (as *AnalysisService) GetCategoriesReport(
 	return report, nil
 }
 
+// GetCardCharges returns the card charges of a month
+func (as *AnalysisService) GetCardCharges(ctx context.Context, userID string, month time.Time) ([]domain.CardCharge, error) {
+	return as.repo.GetCardCharges(ctx, userID, month, month)
+}
+
 // GetFinancialAnalysis aggregates data from daily and monthly analysis concurrently
 func (as *AnalysisService) GetFinancialAnalysis(
 	ctx context.Context,
