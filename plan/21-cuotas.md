@@ -3,7 +3,7 @@
 Continúa `20-ux-fase-3-vistas.md` (bloques "Presupuestos y transferencias" y "Cargos de Tarjeta"). Revierte una
 decisión de `10-tipos-de-cuenta.md`: "Compra = gasto en la fecha de compra, aunque sea a cuotas".
 
-Estado: decisiones D1 a D7 aprobadas el 31-oct. Fases 1 y 2 hechas (migraciones 000035 y 000036); sigue la fase 3.
+Estado: decisiones D1 a D7 aprobadas el 31-oct. Fases 1, 2 y 3 hechas; sigue la fase 4. La fase 3 no está en `main`: solo en la rama, porque sin la fase 4 las cuotas no se explican en pantalla.
 
 ## Qué se quiere
 
@@ -70,7 +70,9 @@ Cada una termina con tests y parada para revisar.
    devuelve todas las compras con `purchased_on`: el límite de D3 se aplica en los reportes (fase 3).
 2. **Tarjeta (hecho).** Lo cobrado por corte en `credit_card_status`, `credit_card_cycles` y `card_charges`; deuda con
    cuotas pendientes. Tests con compra a 6 cuotas más pago exacto (cargo 0) y pago con intereses (cargo = interés).
-3. **Reportes.** `expenseAdjustments` en los cinco sitios. Comprobar que el total por categorías cuadra con
+3. **Reportes (hecho).** `extraExpensesByDay` e `installmentShifts` en los cinco sitios. Las cuotas 2 en adelante
+   cuentan desde el día 1 de su mes, no el día de la compra: así "Hoy puedes gastar" las conoce desde el inicio y la
+   serie diaria cuadra con el reporte por categorías. Comparación sobre el dump: 10.524 reportes idénticos. Comprobar que el total por categorías cuadra con
    `mtd_budget` y `budget_spent`. Comprobar con `TestReportSnapshot` que sin cuotas nada cambia.
 4. **Front.**
    - Bandeja: tipo nuevo con su filtro en la API (D4, D5).

@@ -84,6 +84,68 @@ func (ar *AnalysisRepository) GetCardCharges(ctx context.Context, userID string,
 	return out, rows.Err()
 }
 
+// InstallmentsFrom is the first purchase date that is spread in the reports: closed months do not
+// change. Older purchases with installments only count by installment in the card statements.
+var InstallmentsFrom = time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC)
+
+type installmentShift struct {
+	day        string
+	categoryID uint64
+	amount     float64 // positive: more expense that day
+}
+
+// installmentShifts moves what a purchase in installments does not weigh in its month to the months of
+// the other installments: out of the purchase day and into the first day of each month, so a month
+// knows its installments from the start and the daily series adds up to the report by category.
+func (ar *AnalysisRepository) installmentShifts(ctx context.Context, userID string, start, end time.Time) ([]installmentShift, error) {
+	rows, err := ar.db.Query(ctx, `
+		WITH spread AS (
+			SELECT s.purchased_on, s.budget_date, s.category_id, s.amount_base
+			FROM installment_schedule($1) s
+			JOIN categories c ON c.id = s.category_id AND c.income IS FALSE
+			WHERE s.installment > 1 AND s.amount_base IS NOT NULL AND s.purchased_on >= $4::date
+		)
+		SELECT to_char(x.day, 'YYYY-MM-DD'), x.category_id, sum(x.amount)::float8
+		FROM (
+			SELECT purchased_on AS day, category_id, -amount_base AS amount FROM spread
+			UNION ALL
+			SELECT date_trunc('month', budget_date)::date, category_id, amount_base FROM spread
+		) x
+		WHERE x.day >= date_trunc('month', $2::date) AND x.day < date_trunc('month', $3::date) + INTERVAL '1 month'
+		GROUP BY 1, 2`, userID, start, end, InstallmentsFrom)
+	if err != nil {
+		return nil, mappers.MapPostgresErrorCode(err)
+	}
+	defer rows.Close()
+
+	var out []installmentShift
+	for rows.Next() {
+		var shift installmentShift
+		if err := rows.Scan(&shift.day, &shift.categoryID, &shift.amount); err != nil {
+			return nil, err
+		}
+		out = append(out, shift)
+	}
+	return out, rows.Err()
+}
+
+// extraExpensesByDay is what the expense flows do not have by themselves, by day (YYYY-MM-DD): the card
+// charges and the installments. Positive: more expense that day.
+func (ar *AnalysisRepository) extraExpensesByDay(ctx context.Context, userID string, start, end time.Time) (map[string]float64, error) {
+	out, err := ar.cardChargesByDay(ctx, userID, start, end)
+	if err != nil {
+		return nil, err
+	}
+	shifts, err := ar.installmentShifts(ctx, userID, start, end)
+	if err != nil {
+		return nil, err
+	}
+	for _, shift := range shifts {
+		out[shift.day] += shift.amount
+	}
+	return out, nil
+}
+
 // cardChargesByDay sums the charges in the base currency by day (YYYY-MM-DD)
 func (ar *AnalysisRepository) cardChargesByDay(ctx context.Context, userID string, start, end time.Time) (map[string]float64, error) {
 	charges, err := ar.GetCardCharges(ctx, userID, start, end)
@@ -133,11 +195,13 @@ func (ar *AnalysisRepository) GetFinancialSummary(
 		lastMonth = end.AddDate(0, -1, 0)
 	)
 
-	chargesByDay, err := ar.cardChargesByDay(ctx, userID, start, end)
+	extraByDay, err := ar.extraExpensesByDay(ctx, userID, start, end)
 	if err != nil {
 		return nil, err
 	}
-	charges := byMonth(chargesByDay)
+	extra := byMonth(extraByDay)
+	currentMonth := lastMonth.Format("2006-01")
+	currentMonthFound := false
 
 	// Date calculations in user's timezone
 	userDate := "(t.date at time zone coalesce(u.utc_offset, 'utc'))::date"
@@ -213,9 +277,21 @@ func (ar *AnalysisRepository) GetFinancialSummary(
 			return nil, err
 		}
 
-		report.Expenses.Value -= charges[fmt.Sprintf("%04d-%02d", year, report.Month)]
+		month := fmt.Sprintf("%04d-%02d", year, report.Month)
+		currentMonthFound = currentMonthFound || month == currentMonth
+		report.Expenses.Value -= extra[month]
 		summary[index] = report
 		index++
+	}
+
+	// Un mes sin movimientos también tiene sus cuotas
+	if amount := extra[currentMonth]; !currentMonthFound && amount != 0 {
+		if past, ok := summary[0]; ok {
+			summary[1] = past
+		}
+		current := domain.MonthlyReport{Month: uint8(lastMonth.Month()), CurrentMonth: uint8(lastMonth.Month())}
+		current.Expenses.Value = -amount
+		summary[0] = current
 	}
 
 	return summary, nil
@@ -443,6 +519,14 @@ func (ar *AnalysisRepository) GetCategoriesReport(
 		charged += amount
 	}
 	// Si el usuario borró la categoría, vuelve: los cargos ya están en los gastos del mes
+	shifts, err := ar.installmentShifts(ctx, userID, filter, filter)
+	if err != nil {
+		return report, err
+	}
+	shifted := make(map[uint64]float64)
+	for _, shift := range shifts {
+		shifted[shift.categoryID] += shift.amount
+	}
 	if charged != 0 {
 		if _, err = ar.db.Exec(ctx, `
 			INSERT INTO categories (user_id, name, budget, emoji, income)
@@ -530,8 +614,11 @@ func (ar *AnalysisRepository) GetCategoriesReport(
 			return report, err
 		}
 
-		if !income && strings.EqualFold(metric.Name, domain.CardChargesCategory) {
-			value -= charged
+		if !income {
+			value -= shifted[metric.CategoryID]
+			if strings.EqualFold(metric.Name, domain.CardChargesCategory) {
+				value -= charged
+			}
 		}
 
 		metric.SetMetric(value, budget, income)
@@ -592,12 +679,12 @@ func (ar *AnalysisRepository) GetDailyAnalysis(ctx context.Context, fr *domain.F
 		err error
 	)
 
-	charges, err := ar.cardChargesByDay(ctx, fr.UserID, fr.End, fr.End)
+	extra, err := ar.extraExpensesByDay(ctx, fr.UserID, fr.End, fr.End)
 	if err != nil {
 		fr.DailyErr = err
 		return
 	}
-	chargedInMonth := 0.0
+	extraInMonth := 0.0
 
 	sqlQuery := `
 		SELECT date, income, expense, mtd_income, mtd_expense, mtd_savings,
@@ -635,14 +722,14 @@ func (ar *AnalysisRepository) GetDailyAnalysis(ctx context.Context, fr *domain.F
 			return
 		}
 
-		charged := charges[date.Format("2006-01-02")]
-		chargedInMonth += charged
+		extraToday := extra[date.Format("2006-01-02")]
+		extraInMonth += extraToday
 
 		out.Income = append(out.Income, income)
-		out.Expense = append(out.Expense, expense-charged)
+		out.Expense = append(out.Expense, expense-extraToday)
 		out.MTDIncome = append(out.MTDIncome, mtdIncome)
-		out.MTDExpense = append(out.MTDExpense, mtdExpense-chargedInMonth)
-		out.MTDSavings = append(out.MTDSavings, mtdSavings-chargedInMonth)
+		out.MTDExpense = append(out.MTDExpense, mtdExpense-extraInMonth)
+		out.MTDSavings = append(out.MTDSavings, mtdSavings-extraInMonth)
 		out.RSavingsBalance = append(out.RSavingsBalance, runSavings)
 		out.RCreditsBalance = append(out.RCreditsBalance, runCredits)
 		out.Date = append(out.Date, date.Format("2006-01-02"))
@@ -677,12 +764,12 @@ func (ar *AnalysisRepository) GetMonthlyAnalysis(ctx context.Context, fr *domain
 		expenseBudget float64
 	)
 
-	chargesByDay, err := ar.cardChargesByDay(ctx, fr.UserID, fr.Start.AddDate(0, -1, 0), fr.End)
+	extraByDay, err := ar.extraExpensesByDay(ctx, fr.UserID, fr.Start.AddDate(0, -1, 0), fr.End)
 	if err != nil {
 		fr.MonthlyErr = err
 		return
 	}
-	charges := byMonth(chargesByDay)
+	extra := byMonth(extraByDay)
 
 	// Convert year and month to a comparable numeric format (YYYYMM)
 	startYearMonth := fr.Start.Year()*100 + int(fr.Start.Month())
@@ -739,13 +826,13 @@ func (ar *AnalysisRepository) GetMonthlyAnalysis(ctx context.Context, fr *domain
 			return
 		}
 
-		charged := charges[fmt.Sprintf("%04d-%02d", year, month)]
+		extraNow := extra[fmt.Sprintf("%04d-%02d", year, month)]
 		pastMonth := time.Date(int(year), time.Month(month)-1, 1, 0, 0, 0, 0, time.UTC)
-		chargedPast := charges[pastMonth.Format("2006-01")]
-		expense -= charged
-		expensePast -= chargedPast
-		savings -= charged
-		savingsPast -= chargedPast
+		extraPast := extra[pastMonth.Format("2006-01")]
+		expense -= extraNow
+		expensePast -= extraPast
+		savings -= extraNow
+		savingsPast -= extraPast
 
 		out.Income = append(out.Income, domain.IncomeMetrics(income, incomePast, incomeBudget))
 		out.Expense = append(out.Expense, domain.ExpenseMetrics(expense, expensePast, expenseBudget))
@@ -856,16 +943,28 @@ func (ar *AnalysisRepository) GetCategoryAnalysis(
 		months = append(months, m)
 	}
 
-	// Los cargos de tarjeta no son transacciones: se suman a su categoría, también en meses sin movimientos
+	// Cargos de tarjeta y cuotas no son transacciones de ese mes: se suman a su categoría, también en
+	// meses sin movimientos
 	var name string
 	var categoryBudget float64
 	if err = ar.db.QueryRow(ctx, "SELECT name, budget FROM "+enums.CategoryTableName+" WHERE id = $1 AND user_id = $2",
-		categoryID, userID).Scan(&name, &categoryBudget); err == nil && strings.EqualFold(name, domain.CardChargesCategory) {
-		chargesByDay, err := ar.cardChargesByDay(ctx, userID, start, end.AddDate(0, 0, -1))
+		categoryID, userID).Scan(&name, &categoryBudget); err == nil {
+		byDay := make(map[string]float64)
+		if strings.EqualFold(name, domain.CardChargesCategory) {
+			if byDay, err = ar.cardChargesByDay(ctx, userID, start, end.AddDate(0, 0, -1)); err != nil {
+				return analysis, err
+			}
+		}
+		shifts, err := ar.installmentShifts(ctx, userID, start, end.AddDate(0, 0, -1))
 		if err != nil {
 			return analysis, err
 		}
-		for key, amount := range byMonth(chargesByDay) {
+		for _, shift := range shifts {
+			if shift.categoryID == categoryID {
+				byDay[shift.day] += shift.amount
+			}
+		}
+		for key, amount := range byMonth(byDay) {
 			var year, month uint16
 			if _, err := fmt.Sscanf(key, "%d-%d", &year, &month); err != nil {
 				return analysis, err

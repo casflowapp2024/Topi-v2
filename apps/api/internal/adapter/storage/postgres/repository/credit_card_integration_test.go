@@ -379,3 +379,119 @@ func TestCardCarry(t *testing.T) {
 	require.NoError(t, db.QueryRow(ctx, "SELECT card_carry('otro', $1, '2027-01-15')::text", card).Scan(&other))
 	assert.Equal(t, "0", other, "la tarjeta es del usuario")
 }
+
+// TestInstallmentsInReports: la compra a cuotas pesa una cuota por mes en todos los reportes, las cuotas
+// cuentan desde el día 1 del mes y las compras anteriores a InstallmentsFrom no se reparten.
+func TestInstallmentsInReports(t *testing.T) {
+	ctx := context.Background()
+	db := integrationDB(t)
+	userID := "it-repq-" + uuid.NewString()
+	t.Cleanup(func() {
+		_, _ = db.Exec(ctx, "DELETE FROM transactions WHERE user_id = $1", userID)
+		for _, table := range []string{"accounts", "categories", "banks", "user_extra"} {
+			_, _ = db.Exec(ctx, "DELETE FROM "+table+" WHERE user_id = $1", userID)
+		}
+	})
+	id := func(sql string, args ...any) uint64 {
+		t.Helper()
+		var out uint64
+		require.NoError(t, db.QueryRow(ctx, sql, args...).Scan(&out))
+		return out
+	}
+	_, err := db.Exec(ctx, "INSERT INTO user_extra (user_id, utc_offset, whatsapp) VALUES ($1, 'America/Bogota', '')", userID)
+	require.NoError(t, err)
+	bank := id("INSERT INTO banks (user_id, name, email) VALUES ($1, 'Banco IT', 'it@banco.test') RETURNING id", userID)
+	category := id("INSERT INTO categories (user_id, name, budget, emoji) VALUES ($1, 'Compras IT', 1000000, '') RETURNING id", userID)
+	other := id("INSERT INTO categories (user_id, name, budget, emoji) VALUES ($1, 'Otros IT', 0, '') RETURNING id", userID)
+	card := id(`INSERT INTO accounts (user_id, name, last_four_digits, bank_id, type_id, initial_balance, currency, created_at)
+		VALUES ($1, 'Tarjeta IT', '0001', $2, 4, 0, 'COP', '2026-08-01 12:00:00-05') RETURNING id`, userID, bank)
+	tx := func(categoryID uint64, amount, at string, installments any) uint64 {
+		t.Helper()
+		return id(`INSERT INTO transactions (user_id, category_id, account_id, description, expense, amount, date, installments)
+			VALUES ($1, $2, $3, 'IT', true, $4, $5, $6) RETURNING id`, userID, categoryID, card, amount, at, installments)
+	}
+
+	analysis := repository.NewAnalysisRepository(db)
+	date := func(s string) time.Time {
+		day, err := time.Parse(time.DateOnly, s)
+		require.NoError(t, err)
+		return day
+	}
+	spent := func(month string, categoryID uint64) float64 {
+		t.Helper()
+		report, err := analysis.GetCategoriesReport(ctx, userID, date(month))
+		require.NoError(t, err)
+		for _, m := range report.Expenses.Report {
+			if m.CategoryID == categoryID {
+				return m.Value
+			}
+		}
+		t.Fatalf("sin la categoría %d", categoryID)
+		return 0
+	}
+
+	tx(category, "600000", "2026-09-10 10:00:00-05", 3)
+	tx(other, "100000", "2026-10-05 10:00:00-05", nil)
+
+	// compra anterior al límite: sigue completa en su mes
+	require.True(t, repository.InstallmentsFrom.After(date("2026-09-10")))
+	assert.InDelta(t, -600000, spent("2026-09-15", category), 0.001)
+	assert.InDelta(t, 0, spent("2026-10-15", category), 0.001)
+
+	from := repository.InstallmentsFrom
+	repository.InstallmentsFrom = date("2026-08-01")
+	t.Cleanup(func() { repository.InstallmentsFrom = from })
+
+	// por categoría: una cuota por mes, y nada después de la última
+	assert.InDelta(t, -200000, spent("2026-09-15", category), 0.001)
+	assert.InDelta(t, -200000, spent("2026-10-15", category), 0.001)
+	assert.InDelta(t, -200000, spent("2026-11-15", category), 0.001)
+	assert.InDelta(t, 0, spent("2026-12-15", category), 0.001)
+	assert.InDelta(t, -100000, spent("2026-10-15", other), 0.001, "las otras categorías no cambian")
+
+	// resumen del mes, también uno sin movimientos
+	summary, err := analysis.GetFinancialSummary(ctx, userID, date("2026-09-01"), date("2026-11-01"))
+	require.NoError(t, err)
+	assert.InDelta(t, -300000, summary[0].Expenses.Value, 0.001)
+	assert.InDelta(t, -200000, summary[1].Expenses.Value, 0.001)
+	empty, err := analysis.GetFinancialSummary(ctx, userID, date("2026-10-01"), date("2026-12-01"))
+	require.NoError(t, err)
+	assert.InDelta(t, -200000, empty[0].Expenses.Value, 0.001, "noviembre no tiene transacciones")
+	assert.Equal(t, uint8(11), empty[0].Month)
+	assert.InDelta(t, -300000, empty[1].Expenses.Value, 0.001)
+
+	// series: la cuota cuenta desde el día 1 y el total cuadra con el reporte por categorías
+	fr := &domain.FinancialResolver{UserID: userID, Start: date("2026-08-01"), End: date("2026-10-15"),
+		Rsp: &domain.FinancialAnalysis{}, Mu: &sync.Mutex{}, Wg: &sync.WaitGroup{}}
+	fr.Wg.Add(2)
+	analysis.GetDailyAnalysis(ctx, fr)
+	analysis.GetMonthlyAnalysis(ctx, fr)
+	require.NoError(t, fr.DailyErr)
+	require.NoError(t, fr.MonthlyErr)
+	daily := fr.Rsp.Daily
+	require.NotEmpty(t, daily.Date)
+	assert.Equal(t, "2026-10-01", daily.Date[0])
+	assert.InDelta(t, -200000, daily.MTDExpense[0], 0.001)
+	assert.InDelta(t, -300000, daily.MTDExpense[len(daily.MTDExpense)-1], 0.001)
+	assert.InDelta(t, -300000, daily.MTDBudget[len(daily.MTDBudget)-1], 0.001)
+	assert.InDelta(t, -300000, daily.MTDSavings[len(daily.MTDSavings)-1], 0.001)
+
+	monthly := fr.Rsp.Monthly
+	require.GreaterOrEqual(t, len(monthly.Month), 2)
+	last := len(monthly.Month) - 1
+	assert.InDelta(t, -300000, monthly.Expense[last].Value, 0.001)
+	assert.InDelta(t, -300000, monthly.BudgetSpent[last], 0.001)
+	assert.InDelta(t, -300000, monthly.Savings[last].Value, 0.001)
+	assert.InDelta(t, -200000, monthly.Expense[last-1].Value, 0.001)
+	require.NotNil(t, monthly.Expense[last].Percentage)
+	assert.InDelta(t, 50, *monthly.Expense[last].Percentage, 0.001, "contra la cuota del mes anterior, no la compra")
+
+	// historia de la categoría, con un mes sin transacciones
+	history, err := analysis.GetCategoryAnalysis(ctx, userID, category, date("2026-09-01"), date("2026-12-01"))
+	require.NoError(t, err)
+	require.Len(t, history.Monthly, 3)
+	for i, month := range []uint16{9, 10, 11} {
+		assert.Equal(t, month, history.Month[i])
+		assert.InDelta(t, -200000, history.Monthly[i].Value, 0.001)
+	}
+}
