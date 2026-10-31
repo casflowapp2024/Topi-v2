@@ -17,6 +17,7 @@ import BudDashCategorieList from './dashboard/budgetCategories/BudDashCategorieL
 import { SET_DASH_CATEGORY_ACTIVATED } from '../redux/actions/types';
 import BudDashTransCategorie from './dashboard/budgetCategories/BudDashTransCategorie';
 import CreditCardPanel from './dashboard/productsAccounts/CreditCardPanel';
+import InstallmentSchedule from './transactions/InstallmentSchedule';
 import axios from 'axios';
 
 jest.mock('axios', () => {
@@ -235,6 +236,40 @@ test('Tarjeta: un pago parcial no dice pagado y muestra lo que venía de antes',
   expect(el.textContent).not.toContain('Corte pagado');
   expect(el.textContent).toMatch(/Venía de antes: .*250\.000/);
   expect(el.textContent).toMatch(/Paga ≈ .*850\.000/);
+  axios.get.mockImplementation(original);
+  await act(async () => root.unmount());
+});
+
+test('Detalle: calendario de una compra a cuotas', async () => {
+  const rows = [
+    { number: 1, budget_date: '2026-11-10', amount: '200000', currency: 'COP' },
+    { number: 2, budget_date: '2026-12-10', amount: '200000', currency: 'COP' },
+  ];
+  const original = axios.get.getMockImplementation();
+  axios.get.mockImplementation((url) => Promise.resolve({ status: 200, data: { data: url.includes('transaction_id=5') ? rows : [] } }));
+  const el = document.createElement('div'); document.body.appendChild(el); const root = createRoot(el);
+  await act(async () => { root.render(<InstallmentSchedule transactionId={5} installments={2} />); });
+  expect(el.textContent).toContain('Calendario de cuotas');
+  expect(el.textContent).toContain('diciembre 2026');
+  await act(async () => { root.render(<InstallmentSchedule transactionId={5} installments={null} />); });
+  expect(el.textContent).toBe('');
+  axios.get.mockImplementation(original);
+  await act(async () => root.unmount());
+});
+
+test('Presupuestos: lista las cuotas de compras de meses anteriores en su categoría', async () => {
+  const items = [{ transaction_id: 22, description: 'Nevera', category_id: 7, account_name: 'Visa', currency: 'COP', number: 2, total: 6, budget_date: '2026-12-01', amount: '200000', amount_base: '200000' }];
+  const original = axios.get.getMockImplementation();
+  axios.get.mockImplementation((url) => Promise.resolve({ status: 200, data: { data: url.includes('/transactions/installments?date=2026-12') ? items : [] } }));
+  const st = { ...budgetState({ category_id: 7, name: 'mercado', emoji: '1f6d2', value: -200000, budget: 700000 }) };
+  st.Reports.current_Month = 12;
+  st.Reports.transactions_category_activated = [];
+  st.CashFlow = { ...st.CashFlow, user_transactions: { default_limit: 30 }, banks: { items: [] } };
+  const el = document.createElement('div'); document.body.appendChild(el); const root = createRoot(el);
+  await act(async () => { root.render(<Provider store={createStore((s = st) => s, applyMiddleware(thunk))}><BudDashTransCategorie /></Provider>); });
+  expect(el.textContent).toContain('Nevera');
+  expect(el.textContent).toContain('Cuota 2 de 6 · Visa');
+  expect(el.textContent).not.toContain('Sin movimientos');
   axios.get.mockImplementation(original);
   await act(async () => root.unmount());
 });

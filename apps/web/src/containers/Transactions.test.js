@@ -67,6 +67,17 @@ test('Neto del día sin transferencias ni pagos sin su otra pata', () => {
   expect(dayNet([tx(9, '2026-10-30', 1000), tx(10, '2026-10-30', 500, { amount_base: null })])).toBe(-1000);
 });
 
+test('Una compra a cuotas pesa su cuota en el neto y lo dice en la fila', async () => {
+  const purchase = tx(11, '2026-11-10', 1200000, {
+    installments: 6, installment_amount: '200000', installment_amount_base: '200000',
+  });
+  expect(dayNet([purchase])).toBe(-200000);
+  expect(dayNet([tx(12, '2026-10-10', 1200000, { installments: 6 })])).toBe(-1200000); // sin repartir
+  const { el, root } = await mount(state({ user_transactions: { items: [purchase], total: 1, default_limit: 30 } }));
+  expect(el.textContent).toMatch(/6 cuotas de .*200\.000/);
+  await act(async () => root.unmount());
+});
+
 test('Lista por día con neto, transferencias neutrales y Agregar sin relleno', async () => {
   const { el, root } = await mount(state());
   expect([...el.querySelectorAll('h3')].map(h => h.id)).toEqual(['date-2026-10-30', 'date-2026-10-27']);

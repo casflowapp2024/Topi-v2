@@ -43,6 +43,10 @@ type TransactionRepository interface {
 	ListTransferCandidates(ctx context.Context, userID string, limit uint64) ([]domain.TransferCandidate, error)
 	// DismissTransferCandidate hides a candidate pair
 	DismissTransferCandidate(ctx context.Context, userID string, outID, inID uint64) error
+	// SetInstallments answers how many installments a card purchase has; 1 means none
+	SetInstallments(ctx context.Context, userID string, id uint64, installments int16) error
+	// ListInstallments returns rows of the schedule of the user's purchases
+	ListInstallments(ctx context.Context, userID string, filter domain.InstallmentFilter) ([]domain.Installment, error)
 }
 
 // TransactionService is an interface for interacting with payment-related business logic
@@ -74,4 +78,8 @@ type TransactionService interface {
 	ListTransferCandidates(ctx context.Context, userID string, limit uint64) ([]domain.TransferCandidate, error)
 	// DismissTransferCandidate hides a candidate pair
 	DismissTransferCandidate(ctx context.Context, userID string, outID, inID uint64) error
+	// SetInstallments answers how many installments a card purchase has; 1 means none
+	SetInstallments(ctx context.Context, userID string, id uint64, installments int16) error
+	// ListInstallments returns rows of the schedule of the user's purchases
+	ListInstallments(ctx context.Context, userID string, filter domain.InstallmentFilter) ([]domain.Installment, error)
 }

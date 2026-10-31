@@ -3,7 +3,7 @@
 Continúa `20-ux-fase-3-vistas.md` (bloques "Presupuestos y transferencias" y "Cargos de Tarjeta"). Revierte una
 decisión de `10-tipos-de-cuenta.md`: "Compra = gasto en la fecha de compra, aunque sea a cuotas".
 
-Estado: decisiones D1 a D7 aprobadas el 31-oct. Fases 1, 2 y 3 hechas; sigue la fase 4. La fase 3 no está en `main`: solo en la rama, porque sin la fase 4 las cuotas no se explican en pantalla.
+Estado: hecho (31-oct, migraciones 000035 a 000037).
 
 ## Qué se quiere
 
@@ -74,12 +74,13 @@ Cada una termina con tests y parada para revisar.
    cuentan desde el día 1 de su mes, no el día de la compra: así "Hoy puedes gastar" las conoce desde el inicio y la
    serie diaria cuadra con el reporte por categorías. Comparación sobre el dump: 10.524 reportes idénticos. Comprobar que el total por categorías cuadra con
    `mtd_budget` y `budget_spent`. Comprobar con `TestReportSnapshot` que sin cuotas nada cambia.
-4. **Front.**
-   - Bandeja: tipo nuevo con su filtro en la API (D4, D5).
-   - Presupuestos: lista "cuota 2 de 6" como Cargos de Tarjeta; las cuotas de compras pasadas no están en ese mes.
-   - Transacciones: rótulo "a 6 cuotas · $ 200.000 este mes"; el neto del día usa la cuota.
-   - Detalle de compra: calendario de cuotas.
-5. **Verificación final.** Prueba en la app con datos inventados, y luego `CLAUDE.md`, `plan/10` y este plan.
+4. **Front (hecho).**
+   - Bandeja (`ReviewInbox`): tipo nuevo `installments` con filtro `needs_installments=true` en `GET /transactions/list` y guardado en `POST /transactions/:id/installments` (D4, D5: `1 · 3 · 6 · 12 · Otra`).
+   - Presupuestos (`BudDashTransCategorie`): consulta `GET /transactions/installments?date=YYYY-MM` y lista "Cuota 2 de 6" de compras de meses pasados; en el mes de la compra la fila muestra `N cuotas de $ X`.
+   - Transacciones (`Transactions`, `transactionDays`): rótulo `6 cuotas de $ 200.000` (`installment_amount` en la API); el neto del día (`dayNet`) usa `installment_amount_base`.
+   - Detalle de compra (`TransSumm`, `InstallmentSchedule`): calendario de cuotas desde `GET /transactions/installments?transaction_id=:id`.
+   - Ritmo (`HomePaceCard`): en meses futuros muestra "Comprometido en cuotas" en lugar de cero.
+5. **Verificación final (hecho).** Prueba de extremo a extremo con una compra de $ 1.200.000 a 6 cuotas (bandeja, calendario, presupuestos de noviembre y diciembre, neto diario) y actualización de `CLAUDE.md`, `plan/10-tipos-de-cuenta.md` y este plan.
 
 ## Corte pagado (31-oct)
 

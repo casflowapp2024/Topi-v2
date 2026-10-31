@@ -45,3 +45,20 @@ export const fetch_card_charges = async (month) => {
     const result = await call(() => axios.get(`${process.env.REACT_APP_API_URL}/analysis/card-charges?date=${month}`, authConfig()));
     return result.ok ? (result.data || []) : null;
 };
+
+// Compras con tarjeta por las que falta preguntar las cuotas: { items, total }; null si falló
+export const fetch_installment_reviews = async (limit = 10) => {
+    const result = await call(() => axios.get(`${process.env.REACT_APP_API_URL}/transactions/list?skip=0&limit=${limit}&needs_installments=true`, authConfig()));
+    return result.ok ? { items: result.data?.transactions || [], total: result.data?.meta?.total || 0 } : null;
+};
+
+// Responde cuántas cuotas tiene una compra; 1 = sin cuotas
+export const save_installments = (transactionId, installments) =>
+    call(() => axios.post(`${process.env.REACT_APP_API_URL}/transactions/${transactionId}/installments`, JSON.stringify({ installments }), authConfig()));
+
+// Cuotas que caen en un mes (YYYY-MM), sin la primera, o todas las de una compra; null si falló
+export const fetch_installments = async ({ month, transactionId }) => {
+    const query = month ? `date=${month}` : `transaction_id=${transactionId}`;
+    const result = await call(() => axios.get(`${process.env.REACT_APP_API_URL}/transactions/installments?${query}`, authConfig()));
+    return result.ok ? (result.data || []) : null;
+};

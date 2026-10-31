@@ -5,6 +5,7 @@ import (
 	"cash-flow/internal/core/port"
 	"cash-flow/internal/enums"
 	"cash-flow/internal/utils"
+	"errors"
 	"strconv"
 	"strings"
 	"time"
@@ -156,8 +157,10 @@ type ListTransactionsRequest struct {
 	ShouldVerify *bool  `form:"should_verify" binding:"omitempty" example:"false"`
 	Checked      *bool  `form:"checked" binding:"omitempty" example:"false"`
 	Transfer     *bool  `form:"transfer" binding:"omitempty" example:"true"`
-	SortBy       string `form:"sort_by" binding:"omitempty,sort_by" example:"date"`
-	SortOrder    string `form:"sort_order" binding:"omitempty,sort_order" example:"desc"`
+	// NeedsInstallments: card purchases that still have to answer how many installments they have
+	NeedsInstallments *bool  `form:"needs_installments" binding:"omitempty" example:"true"`
+	SortBy            string `form:"sort_by" binding:"omitempty,sort_by" example:"date"`
+	SortOrder         string `form:"sort_order" binding:"omitempty,sort_order" example:"desc"`
 }
 
 // ListTransactions godoc
@@ -449,17 +452,18 @@ func (r *ListTransactionsRequest) mapTransactionFilters(
 	userID string,
 ) (domain.TransactionFilters, error) {
 	filters := domain.TransactionFilters{
-		UserID:       userID,
-		Skip:         r.Skip,
-		Limit:        r.Limit,
-		Keyword:      r.Keyword,
-		Expense:      r.Expense,
-		Automated:    r.Automated,
-		ShouldVerify: r.ShouldVerify,
-		Checked:      r.Checked,
-		Transfer:     r.Transfer,
-		SortBy:       r.SortBy,
-		SortOrder:    r.SortOrder,
+		UserID:            userID,
+		Skip:              r.Skip,
+		Limit:             r.Limit,
+		Keyword:           r.Keyword,
+		Expense:           r.Expense,
+		Automated:         r.Automated,
+		ShouldVerify:      r.ShouldVerify,
+		Checked:           r.Checked,
+		Transfer:          r.Transfer,
+		NeedsInstallments: r.NeedsInstallments,
+		SortBy:            r.SortBy,
+		SortOrder:         r.SortOrder,
 	}
 
 	if r.InitDate != "" {
@@ -579,4 +583,129 @@ func (ph *TransactionHandler) CreateTransfer(ctx *gin.Context) {
 		Out:             newTransactionResponse(&transfer.Out),
 		In:              newTransactionResponse(&transfer.In),
 	})
+}
+
+type setInstallmentsRequest struct {
+	Installments int16 `json:"installments" binding:"required,min=1,max=120" example:"6"`
+}
+
+// SetInstallments godoc
+//
+//	@Summary		Answer how many installments a card purchase has
+//	@Description	1 means none. Stops asking about the purchase.
+//	@Tags			Transactions
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path		uint64					true	"Transaction ID"
+//	@Param			request	body		setInstallmentsRequest	true	"Installments"
+//	@Success		200		{object}	response				"Saved"
+//	@Failure		400		{object}	errorResponse			"Validation error"
+//	@Failure		404		{object}	errorResponse			"Not a card purchase of the user"
+//	@Router			/transactions/{id}/installments [post]
+//	@Security		BearerAuth
+func (ph *TransactionHandler) SetInstallments(ctx *gin.Context) {
+	var (
+		uri linkTransferURI
+		req setInstallmentsRequest
+	)
+
+	userID, err := domain.GetAuthUserID(ctx, enums.AuthorizationPayloadKey)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	if err = ctx.ShouldBindUri(&uri); err != nil {
+		validationError(ctx, err)
+		return
+	}
+	if err = ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+	if err = ph.svc.SetInstallments(ctx, *userID, uri.ID, req.Installments); err != nil {
+		handleError(ctx, err)
+		return
+	}
+	handleSuccess(ctx, nil)
+}
+
+type listInstallmentsRequest struct {
+	Date          string  `form:"date" binding:"omitempty" example:"2026-11"`
+	TransactionID *uint64 `form:"transaction_id" binding:"omitempty,min=1" example:"1"`
+}
+
+type installmentResponse struct {
+	TransactionID uint64  `json:"transaction_id" example:"1"`
+	Description   string  `json:"description" example:"Nevera"`
+	CategoryID    uint64  `json:"category_id" example:"1"`
+	AccountName   string  `json:"account_name" example:"Visa"`
+	Currency      string  `json:"currency" example:"COP"`
+	Number        int     `json:"number" example:"2"`
+	Total         int     `json:"total" example:"6"`
+	BudgetDate    string  `json:"budget_date" example:"2026-12-10"`
+	StatementDate *string `json:"statement_date" example:"2026-12-15"`
+	Amount        string  `json:"amount" example:"200000"`
+	AmountBase    *string `json:"amount_base" example:"200000"`
+}
+
+// ListInstallments godoc
+//
+//	@Summary		Schedule of the purchases in installments
+//	@Description	The installments that fall in a month (date), without the first one, or all the installments of a purchase (transaction_id).
+//	@Tags			Transactions
+//	@Produce		json
+//	@Param			date			query		string	false	"Month in YYYY-MM format"
+//	@Param			transaction_id	query		uint64	false	"Transaction ID"
+//	@Success		200				{object}	response{data=[]installmentResponse}	"Installments"
+//	@Failure		400				{object}	errorResponse	"Validation error"
+//	@Router			/transactions/installments [get]
+//	@Security		BearerAuth
+func (ph *TransactionHandler) ListInstallments(ctx *gin.Context) {
+	var (
+		req    listInstallmentsRequest
+		filter domain.InstallmentFilter
+	)
+
+	userID, err := domain.GetAuthUserID(ctx, enums.AuthorizationPayloadKey)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	if err = ctx.ShouldBindQuery(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+	filter.TransactionID = req.TransactionID
+	if req.Date != "" {
+		month, err := time.Parse("2006-01", req.Date)
+		if err != nil {
+			validationError(ctx, err)
+			return
+		}
+		filter.Month = &month
+	}
+	if filter.Month == nil && filter.TransactionID == nil {
+		validationError(ctx, errors.New("date or transaction_id is required"))
+		return
+	}
+
+	installments, err := ph.svc.ListInstallments(ctx, *userID, filter)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	rsp := make([]installmentResponse, 0, len(installments))
+	for _, i := range installments {
+		item := installmentResponse{
+			TransactionID: i.TransactionID, Description: i.Description, CategoryID: i.CategoryID, AccountName: i.AccountName,
+			Currency: i.Currency, Number: i.Number, Total: i.Total, BudgetDate: i.BudgetDate.Format("2006-01-02"),
+			Amount: i.Amount.String(), AmountBase: decimalString(i.AmountBase),
+		}
+		if i.StatementDate != nil {
+			statement := i.StatementDate.Format("2006-01-02")
+			item.StatementDate = &statement
+		}
+		rsp = append(rsp, item)
+	}
+	handleSuccess(ctx, rsp)
 }

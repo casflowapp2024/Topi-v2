@@ -434,13 +434,13 @@ func TestInstallmentsInReports(t *testing.T) {
 	tx(other, "100000", "2026-10-05 10:00:00-05", nil)
 
 	// compra anterior al límite: sigue completa en su mes
-	require.True(t, repository.InstallmentsFrom.After(date("2026-09-10")))
+	require.True(t, domain.InstallmentsFrom.After(date("2026-09-10")))
 	assert.InDelta(t, -600000, spent("2026-09-15", category), 0.001)
 	assert.InDelta(t, 0, spent("2026-10-15", category), 0.001)
 
-	from := repository.InstallmentsFrom
-	repository.InstallmentsFrom = date("2026-08-01")
-	t.Cleanup(func() { repository.InstallmentsFrom = from })
+	from := domain.InstallmentsFrom
+	domain.InstallmentsFrom = date("2026-08-01")
+	t.Cleanup(func() { domain.InstallmentsFrom = from })
 
 	// por categoría: una cuota por mes, y nada después de la última
 	assert.InDelta(t, -200000, spent("2026-09-15", category), 0.001)
@@ -494,4 +494,102 @@ func TestInstallmentsInReports(t *testing.T) {
 		assert.Equal(t, month, history.Month[i])
 		assert.InDelta(t, -200000, history.Monthly[i].Value, 0.001)
 	}
+}
+
+// TestInstallmentQuestions: se pregunta por las compras grandes de tarjeta leídas de correo, una sola
+// vez; responder deja el calendario listo y se puede consultar por mes o por compra.
+func TestInstallmentQuestions(t *testing.T) {
+	ctx := context.Background()
+	db := integrationDB(t)
+	userID := "it-preg-" + uuid.NewString()
+	t.Cleanup(func() {
+		_, _ = db.Exec(ctx, "DELETE FROM transactions WHERE user_id = $1", userID)
+		for _, table := range []string{"accounts", "categories", "banks", "user_extra"} {
+			_, _ = db.Exec(ctx, "DELETE FROM "+table+" WHERE user_id = $1", userID)
+		}
+	})
+	id := func(sql string, args ...any) uint64 {
+		t.Helper()
+		var out uint64
+		require.NoError(t, db.QueryRow(ctx, sql, args...).Scan(&out))
+		return out
+	}
+	_, err := db.Exec(ctx, "INSERT INTO user_extra (user_id, utc_offset, whatsapp) VALUES ($1, 'America/Bogota', '')", userID)
+	require.NoError(t, err)
+	bank := id("INSERT INTO banks (user_id, name, email) VALUES ($1, 'Banco IT', 'it@banco.test') RETURNING id", userID)
+	category := id("INSERT INTO categories (user_id, name, budget, emoji) VALUES ($1, 'Compras IT', 0, '') RETURNING id", userID)
+	account := func(digits string, typeID int) uint64 {
+		return id(`INSERT INTO accounts (user_id, name, last_four_digits, bank_id, type_id, initial_balance, currency, created_at)
+			VALUES ($1, 'Cuenta IT', $2, $3, $4, 0, 'COP', '2026-08-01 12:00:00-05') RETURNING id`, userID, digits, bank, typeID)
+	}
+	card, savings := account("0001", 4), account("0002", 1)
+	tx := func(accountID uint64, expense, automated bool, amount, at string) uint64 {
+		t.Helper()
+		return id(`INSERT INTO transactions (user_id, category_id, account_id, description, expense, automated, amount, date)
+			VALUES ($1, $2, $3, 'Nevera', $4, $5, $6, $7) RETURNING id`, userID, category, accountID, expense, automated, amount, at)
+	}
+
+	from := domain.InstallmentsFrom
+	domain.InstallmentsFrom = time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+	t.Cleanup(func() { domain.InstallmentsFrom = from })
+
+	big := tx(card, true, true, "1200000", "2026-09-10 10:00:00-05")
+	limit := tx(card, true, true, "200000", "2026-09-11 10:00:00-05")
+	tx(card, true, true, "199999", "2026-09-12 10:00:00-05")    // pequeña
+	tx(card, true, false, "900000", "2026-09-13 10:00:00-05")   // digitada a mano
+	tx(savings, true, true, "900000", "2026-09-14 10:00:00-05") // fuera de la tarjeta
+	tx(card, false, true, "900000", "2026-09-15 10:00:00-05")   // entrada
+	tx(card, true, true, "900000", "2026-08-20 10:00:00-05")    // antes del límite
+
+	transactions := repository.NewTransactionRepository(db)
+	yes := true
+	pending := func() []uint64 {
+		t.Helper()
+		list, err := transactions.ListTransactions(ctx, domain.TransactionFilters{UserID: userID, NeedsInstallments: &yes, Limit: 20})
+		require.NoError(t, err)
+		ids := make([]uint64, 0, len(list))
+		for _, item := range list {
+			ids = append(ids, item.ID)
+		}
+		return ids
+	}
+	assert.ElementsMatch(t, []uint64{big, limit}, pending())
+
+	// responder saca la compra de la lista; 1 cuota también cuenta como respuesta
+	require.NoError(t, transactions.SetInstallments(ctx, userID, big, 6))
+	require.NoError(t, transactions.SetInstallments(ctx, userID, limit, 1))
+	assert.Empty(t, pending())
+
+	var installments *int16
+	require.NoError(t, db.QueryRow(ctx, "SELECT installments FROM transactions WHERE id = $1", limit).Scan(&installments))
+	assert.Nil(t, installments, "1 cuota = sin cuotas")
+
+	// solo compras con tarjeta del usuario
+	assert.ErrorIs(t, transactions.SetInstallments(ctx, "otro", big, 3), domain.ErrDataNotFound)
+	other := tx(savings, true, true, "300000", "2026-09-16 10:00:00-05")
+	assert.ErrorIs(t, transactions.SetInstallments(ctx, userID, other, 3), domain.ErrDataNotFound)
+
+	// calendario de la compra y cuotas de un mes, sin la primera
+	all, err := transactions.ListInstallments(ctx, userID, domain.InstallmentFilter{TransactionID: &big})
+	require.NoError(t, err)
+	require.Len(t, all, 6)
+	assert.Equal(t, 1, all[0].Number)
+	assert.Equal(t, "Nevera", all[0].Description)
+	first := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+	month, err := transactions.ListInstallments(ctx, userID, domain.InstallmentFilter{Month: &first})
+	require.NoError(t, err)
+	assert.Empty(t, month, "en el mes de compra la cuota 1 es la transacción misma")
+	october := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	month, err = transactions.ListInstallments(ctx, userID, domain.InstallmentFilter{Month: &october})
+	require.NoError(t, err)
+	require.Len(t, month, 1)
+	assert.Equal(t, 2, month[0].Number)
+	assert.Equal(t, category, month[0].CategoryID)
+
+	// editar las cuotas en el detalle también cuenta como respuesta
+	edited := tx(card, true, true, "500000", "2026-09-17 10:00:00-05")
+	require.Contains(t, pending(), edited)
+	four := int16(4)
+	require.NoError(t, transactions.UpdateTransaction(ctx, &domain.Transaction{ID: edited, UserID: userID, Installments: &four}))
+	assert.NotContains(t, pending(), edited)
 }

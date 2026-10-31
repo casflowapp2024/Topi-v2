@@ -277,6 +277,57 @@ func (tr *TransactionRepository) ListTransactions(
 	return transactions, nil
 }
 
+// SetInstallments answers how many installments a card purchase has; 1 means none
+func (tr *TransactionRepository) SetInstallments(ctx context.Context, userID string, id uint64, installments int16) error {
+	tag, err := tr.db.Exec(ctx, `
+		UPDATE `+enums.TransactionsTableName+` t
+		SET installments = CASE WHEN $3::smallint < 2 THEN NULL ELSE $3::smallint END,
+		    installments_reviewed_at = now(), updated_at = now()
+		WHERE t.user_id = $1 AND t.id = $2 AND t.expense
+		  AND t.account_id IN (SELECT a.id FROM accounts a JOIN account_types at ON at.id = a.type_id AND at.class = 'credit')`,
+		userID, id, installments)
+	if err != nil {
+		return mappers.MapPostgresErrorCode(err)
+	}
+	if tag.RowsAffected() == 0 {
+		return domain.ErrDataNotFound
+	}
+	return nil
+}
+
+// ListInstallments returns rows of the schedule of the user's purchases
+func (tr *TransactionRepository) ListInstallments(ctx context.Context, userID string, filter domain.InstallmentFilter) ([]domain.Installment, error) {
+	out := make([]domain.Installment, 0)
+	rows, err := tr.db.Query(ctx, `
+		SELECT s.transaction_id, t.description, s.category_id, a.name, t.currency, s.installment, s.installments,
+		       s.budget_date, s.statement_date, s.amount::text, s.amount_base::text
+		FROM installment_schedule($1) s
+		JOIN transactions t ON t.id = s.transaction_id
+		JOIN accounts a ON a.id = s.account_id
+		WHERE ($2::date IS NULL OR (date_trunc('month', s.budget_date) = date_trunc('month', $2::date)
+		                            AND s.installment > 1 AND s.purchased_on >= $4::date))
+		  AND ($3::bigint IS NULL OR s.transaction_id = $3)
+		ORDER BY s.budget_date, s.transaction_id, s.installment`,
+		userID, filter.Month, filter.TransactionID, domain.InstallmentsFrom)
+	if err != nil {
+		return out, mappers.MapPostgresErrorCode(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var i domain.Installment
+		var amount string
+		if err := rows.Scan(&i.TransactionID, &i.Description, &i.CategoryID, &i.AccountName, &i.Currency, &i.Number, &i.Total,
+			&i.BudgetDate, &i.StatementDate, &amount, scanDecimal(&i.AmountBase)); err != nil {
+			return out, err
+		}
+		if i.Amount, err = decimal.NewFromString(amount); err != nil {
+			return out, err
+		}
+		out = append(out, i)
+	}
+	return out, rows.Err()
+}
+
 // UpdateTransaction updates a transaction record in the database
 func (tr *TransactionRepository) UpdateTransaction(ctx context.Context, transaction *domain.Transaction) error {
 	categoryID := utils.NullUint64(transaction.Category.ID)
@@ -303,6 +354,9 @@ func (tr *TransactionRepository) UpdateTransaction(ctx context.Context, transact
 		// nil keeps the installments; 0 or 1 clears them
 		Set("installments", sq.Expr("CASE WHEN ?::smallint IS NULL THEN installments WHEN ?::smallint < 2 THEN NULL ELSE ?::smallint END",
 			transaction.Installments, transaction.Installments, transaction.Installments)).
+		// whoever edits the installments already answered how many they are
+		Set("installments_reviewed_at", sq.Expr("CASE WHEN ?::smallint IS NULL THEN installments_reviewed_at ELSE now() END",
+			transaction.Installments)).
 		Set("updated_at", time.Now()).
 		Where(sq.Eq{"id": transaction.ID}).
 		Where(sq.Eq{"user_id": transaction.UserID}).

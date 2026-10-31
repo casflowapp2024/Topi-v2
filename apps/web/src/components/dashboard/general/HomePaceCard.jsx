@@ -28,7 +28,7 @@ const vsLastMonth = (spent, history_dash, year, month) => {
  * Primera tarjeta del inicio: ¿cómo voy este mes? Lo usado (mtd_budget) es lo mismo que suma
  * Presupuestos: los gastos más lo movido a inversiones, que sale del dinero disponible sin ser gasto.
  */
-const HomePaceCard = ({ history_dash, current_Month, current_Year, loading }) => {
+const HomePaceCard = ({ history_dash, expenses_report_full, current_Month, current_Year, loading }) => {
   const year = Number(current_Year);
   const month = Number(current_Month);
   const budget = Math.abs(Number(history_dash?.expense_budget) || 0);
@@ -40,7 +40,16 @@ const HomePaceCard = ({ history_dash, current_Month, current_Year, loading }) =>
 
   let body;
   if (future) {
-    body = <Headline label="Este mes aún no empieza" value={budget > 0 ? `${formatMoney(budget)} de presupuesto` : formatMoney(0)} />;
+    // Lo único que ya se sabe de un mes que no empieza son sus cuotas
+    const committed = Math.abs(Number(expenses_report_full?.value) || 0);
+    body = (
+      <>
+        <Headline label="Comprometido en cuotas" value={formatMoney(committed)} />
+        <p className="text-xs text-ink-2 dark:text-gray-400">
+          Este mes aún no empieza{budget > 0 ? ` · presupuesto de ${formatMoney(budget)}` : ''}
+        </p>
+      </>
+    );
   } else if (budget > 0 && allowance) {
     body = (
       <>
@@ -92,6 +101,7 @@ const HomePaceCard = ({ history_dash, current_Month, current_Year, loading }) =>
 
 const mapStateToProps = (state) => ({
   history_dash: state.Reports.history_dash,
+  expenses_report_full: state.Reports.expenses_report_full,
   current_Month: state.Reports.current_Month,
   current_Year: state.Reports.current_Year,
 });

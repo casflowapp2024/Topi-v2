@@ -7,7 +7,8 @@ import { update_transaction_local, update_transaction } from '../../../redux/act
 import { get_user_transactions } from '../../../redux/actions/cashflow';
 import { get_history_dash, get_history_category_by_month, get_expenses_report } from '../../../redux/actions/reports';
 import { set_dash_category_activated } from '../../../redux/actions/reports';
-import { fetch_card_charges } from '../../../redux/actions/creditCards';
+import { fetch_card_charges, fetch_installments } from '../../../redux/actions/creditCards';
+import { installmentsLabel } from '../../transactions/transactionDays';
 //componentes
 import { Emoji } from "emoji-picker-react";
 import { formatMoney, formatDate, findElmentById, deepEqual, capitalizeWords } from '../../helpers';
@@ -51,6 +52,20 @@ const BudDashTransCategorie = ({
     }
     return () => { active = false; };
   }, [isCharges, current_Month, current_Year]);
+
+  // Cuotas de compras de meses anteriores: pesan aquí, pero su transacción está en el mes de la compra
+  const categoryId = category_activated?.category_id;
+  const showInstallments = Boolean(categoryId || active_report_tab === 'Expenses');
+  const [installments, setInstallments] = useState([]);
+  useEffect(() => {
+    let active = true;
+    setInstallments([]);
+    if (showInstallments) {
+      fetch_installments({ month: `${current_Year}-${String(current_Month).padStart(2, '0')}` })
+        .then(list => { if (active) setInstallments((list || []).filter(i => !categoryId || i.category_id === categoryId)); });
+    }
+    return () => { active = false; };
+  }, [showInstallments, categoryId, current_Month, current_Year]);
 
   const groupedTransactions = useMemo(() => {
     if (!Array.isArray(category_transactions)) {
@@ -177,6 +192,21 @@ const BudDashTransCategorie = ({
       </header>
 
       <div className="px-2 py-2 lg:flex-1 lg:min-h-0 lg:flex lg:flex-col">
+        {installments.length > 0 && (
+          <section aria-label="Cuotas del mes" className="mb-2 px-2">
+            <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+              {installments.map(i => (
+                <li key={`${i.transaction_id}-${i.number}`} className="py-2 flex items-center justify-between gap-3">
+                  <span className="min-w-0 flex flex-col">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{i.description}</span>
+                    <span className="text-xs text-ink-2 dark:text-gray-400 truncate">Cuota {i.number} de {i.total} · {i.account_name}</span>
+                  </span>
+                  <Money amount={i.amount} currency={i.currency} base={i.amount_base} sign="-" className="text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-100" />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         {charges.length > 0 && (
           <section aria-label="Cargos de tarjeta del mes" className="mb-2 px-2">
             <ul className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -215,7 +245,7 @@ const BudDashTransCategorie = ({
                           <span className="flex-1 min-w-0">
                             <span className="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>
                             <span className="block text-xs text-ink-2 dark:text-gray-400 truncate">
-                              {!cat && tx.category?.name ? `${capitalizeWords(tx.category.name)} · ` : ''}{tx.account?.name}{transfer ? ' · transferencia' : ''}
+                              {!cat && tx.category?.name ? `${capitalizeWords(tx.category.name)} · ` : ''}{tx.account?.name}{transfer ? ' · transferencia' : ''}{tx.installments > 1 ? ` · ${installmentsLabel(tx)}` : ''}
                             </span>
                           </span>
                           <Money amount={tx.amount} currency={tx.currency} base={tx.amount_base}
@@ -229,7 +259,7 @@ const BudDashTransCategorie = ({
               </section>
             ))}
           </div>
-        ) : charges.length > 0 ? null : (
+        ) : charges.length > 0 || installments.length > 0 ? null : (
           <EmptyState compact icon={ArrowsRightLeftIcon}
             title={cat ? `Sin movimientos de ${capitalizeWords(cat.name)}` : 'Sin movimientos este mes'}
             description="Los que lleguen por correo aparecerán aquí; también puedes agregarlos." />

@@ -116,6 +116,16 @@ func (ts *TransactionService) LinkTransfer(ctx context.Context, link *domain.Tra
 	return ts.repo.CreateTransferCounterpart(ctx, link)
 }
 
+// SetInstallments answers how many installments a card purchase has; 1 means none
+func (ts *TransactionService) SetInstallments(ctx context.Context, userID string, id uint64, installments int16) error {
+	return ts.repo.SetInstallments(ctx, userID, id, installments)
+}
+
+// ListInstallments returns rows of the schedule of the user's purchases
+func (ts *TransactionService) ListInstallments(ctx context.Context, userID string, filter domain.InstallmentFilter) ([]domain.Installment, error) {
+	return ts.repo.ListInstallments(ctx, userID, filter)
+}
+
 // DismissCounterpart stops asking for the other leg of a card payment
 func (ts *TransactionService) DismissCounterpart(ctx context.Context, userID string, id uint64) error {
 	return ts.repo.DismissCounterpart(ctx, userID, id)

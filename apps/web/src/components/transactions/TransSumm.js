@@ -2,6 +2,7 @@
 import { formatMoney, capitalizeWords, formatDate, parseDatetimetoDateStrFormat, parseDatetoDatetimeBrow } from "../helpers";
 import { Emoji } from "emoji-picker-react";
 import FormatMoneyShowDecs from "../FormatMoneyShowDecs";
+import InstallmentSchedule from "./InstallmentSchedule";
 const TransSumm = ({
     detailInfo,
     create = false
@@ -60,6 +61,7 @@ const TransSumm = ({
                     <span>Producto: {detailInfo.account && detailInfo.account.name} - {detailInfo.account && detailInfo.account.last_four_digits}</span>
 
                     {detailInfo.installments > 1 && <span> Cuotas: {detailInfo.installments}</span>}
+                    {!create && <InstallmentSchedule transactionId={detailInfo.id} installments={detailInfo.installments} />}
                     {detailInfo.transfer_group_id ?
                         <span> Tipo: Transferencia ({detailInfo.expense === false ? 'entrada' : 'salida'})</span>
                         : detailInfo.expense === false ?

@@ -84,10 +84,6 @@ func (ar *AnalysisRepository) GetCardCharges(ctx context.Context, userID string,
 	return out, rows.Err()
 }
 
-// InstallmentsFrom is the first purchase date that is spread in the reports: closed months do not
-// change. Older purchases with installments only count by installment in the card statements.
-var InstallmentsFrom = time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC)
-
 type installmentShift struct {
 	day        string
 	categoryID uint64
@@ -112,7 +108,7 @@ func (ar *AnalysisRepository) installmentShifts(ctx context.Context, userID stri
 			SELECT date_trunc('month', budget_date)::date, category_id, amount_base FROM spread
 		) x
 		WHERE x.day >= date_trunc('month', $2::date) AND x.day < date_trunc('month', $3::date) + INTERVAL '1 month'
-		GROUP BY 1, 2`, userID, start, end, InstallmentsFrom)
+		GROUP BY 1, 2`, userID, start, end, domain.InstallmentsFrom)
 	if err != nil {
 		return nil, mappers.MapPostgresErrorCode(err)
 	}

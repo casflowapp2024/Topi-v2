@@ -37,7 +37,7 @@ Y cuentas por **clase**:
 |---|---|---|---|
 | `deposit` (activo) | Ahorros, corriente, billetera, efectivo | Saldo inicial + movimientos | Lo actual |
 | `investment` (activo) | CDT, fondos, acciones, bróker, cripto | Última valoración + movimientos posteriores | Aportes y retiros = transferencias; ganancia = valor − aportes netos |
-| `credit` (pasivo) | Tarjetas, préstamos | Negativo = deuda | Compra = gasto (el día de la compra); pago = transferencia; intereses y comisiones = gasto |
+| `credit` (pasivo) | Tarjetas, préstamos | Negativo = deuda | Compra de contado = gasto en su fecha; a cuotas desde nov-2026 = una cuota por mes (`plan/21-cuotas.md`); pago = transferencia; intereses y comisiones = gasto |
 
 Reportes resultantes:
 - **Flujo de caja** (ingresos, gastos, presupuestos, categorías): solo flujos, en `amount_base`.
@@ -261,8 +261,8 @@ credit_card_details (account_id PK, credit_limit NUMERIC(20,4), statement_day SM
                      due_day SMALLINT, interest_rate_ea NUMERIC(9,6) NULL)
 transactions.installments SMALLINT NULL   -- compra diferida a N cuotas (informativo)
 ```
-- Saldo negativo = deuda (como hoy). La UI muestra "Deuda $X" y "Disponible = cupo − deuda".
-- **Compra** = gasto en la fecha de compra, aunque sea a cuotas (criterio de causación).
+- Saldo negativo = deuda (como hoy). La UI muestra "Deuda $X".
+- **Compra**: la tarjeta debe el total desde el primer día, pero desde `plan/21-cuotas.md` (31-oct, migraciones 000035–000037) una compra a cuotas reparte el gasto y el cobro por corte en N cuotas (`installment_schedule`, `card_billed`, `card_carry`); en los reportes aplica a compras desde el 1-nov-2026.
 - **Pago** = transferencia desde un depósito (etapa 1). Los pagos que llegan por correo se
   proponen como transferencia con la cuenta de origen más probable.
 - **Intereses, cuota de manejo, seguros** = gastos con categorías del sistema "Intereses" y

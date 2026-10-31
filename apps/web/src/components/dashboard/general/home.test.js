@@ -83,6 +83,17 @@ test('Ritmo: lo movido a inversiones usa el presupuesto aunque no sea gasto', ()
   act(() => root.unmount());
 });
 
+test('Ritmo: un mes futuro muestra lo comprometido en cuotas', () => {
+  const next = new Date(Y, M, 1);
+  const { el, root } = render(<HomePaceCard />, {
+    Reports: { current_Year: next.getFullYear(), current_Month: next.getMonth() + 1, history_dash: { expense_budget: 1000000 }, expenses_report_full: { value: -200000 } },
+  });
+  expect(el.textContent).toContain('Comprometido en cuotas');
+  expect(el.textContent).toContain(formatMoney(200000));
+  expect(el.textContent).toContain('Este mes aún no empieza');
+  act(() => root.unmount());
+});
+
 test('Ritmo: mes pasado sin "hoy puedes"', () => {
   const y = prev.getFullYear();
   const m = prev.getMonth() + 1;

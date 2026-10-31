@@ -52,14 +52,16 @@ const state = (extra = {}) => ({
   Alert: {},
 });
 
-const api = (txs, candidates, creditCards = []) => {
+const api = (txs, candidates, creditCards = [], purchases = []) => {
   axios.get.mockImplementation((url) => {
     if (url.includes('should_verify=true')) return Promise.resolve({ status: 200, data: { data: { transactions: txs, meta: { total: txs.length } } } });
+    if (url.includes('needs_installments=true')) return Promise.resolve({ status: 200, data: { data: { transactions: purchases, meta: { total: purchases.length } } } });
     if (url.includes('transfer/candidates')) return Promise.resolve({ status: 200, data: { data: candidates } });
     if (url.includes('analysis/credit-cards')) return Promise.resolve({ status: 200, data: { data: creditCards } });
     return Promise.resolve({ status: 200, data: { data: {} } });
   });
   axios.put.mockResolvedValue({ status: 200, data: { data: {} } });
+  axios.post.mockResolvedValue({ status: 200, data: { data: {} } });
 };
 
 const mount = async (st) => {
@@ -128,6 +130,22 @@ test('Una pareja que llega a una tarjeta se une como pago de tarjeta', async () 
   const { el, root } = await mount(state({ Fx: { net_worth: { accounts: [] } } }));
   expect(button(el, 'Unir como pago de tarjeta')).toBeTruthy();
   expect(button(el, 'Unir como transferencia')).toBeFalsy();
+  await act(async () => root.unmount());
+});
+
+test('Pregunta las cuotas de una compra grande y la saca al responder', async () => {
+  jest.useFakeTimers();
+  api([], [], [], [tx(21, { description: 'Nevera', amount: 1200000, amount_base: 1200000, should_verify: false })]);
+  const { el, root } = await mount(state({ Fx: { net_worth: { accounts: [] } } }));
+  expect(title(el)).toBe('Por revisar · 1');
+  expect(el.textContent).toContain('¿A cuántas cuotas?');
+  await click(el.querySelector('[aria-label="6 cuotas"]'));
+  const [, body] = axios.post.mock.calls.find(([url]) => url.includes('/transactions/21/installments'));
+  expect(JSON.parse(body)).toEqual({ installments: 6 });
+  await act(async () => { jest.advanceTimersByTime(250); });
+  expect(el.textContent).not.toContain('Nevera');
+  expect(el.textContent).toContain('Todo al día');
+  jest.useRealTimers();
   await act(async () => root.unmount());
 });
 

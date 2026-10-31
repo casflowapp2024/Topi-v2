@@ -13,7 +13,7 @@ import {
 //import Layout from "../hocs/Layout"
 import TransactionDetail from "../components/transactions/TransactionDetail2";
 import { formatMoney, formatDate, capitalizeWords } from "../components/helpers";
-import { groupByDay, dayLabel, dayNet, isNeutral } from "../components/transactions/transactionDays";
+import { groupByDay, dayLabel, dayNet, installmentsLabel, isNeutral } from "../components/transactions/transactionDays";
 
 import TransactionFilterSheet, { countPanelFilters } from "../components/transactions/TransactionFilterSheet";
 import Chip from "../components/ui/Chip";
@@ -62,7 +62,7 @@ const TransactionRow = ({ tx, onOpen }) => {
                 </span>
                 <span className="flex-1 min-w-0 flex flex-col">
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>
-                    <span className="text-xs text-ink-2 dark:text-gray-400 truncate">{capitalizeWords(tx.category?.name)} · {tx.account?.name}</span>
+                    <span className="text-xs text-ink-2 dark:text-gray-400 truncate">{capitalizeWords(tx.category?.name)} · {tx.account?.name}{tx.installments > 1 ? ` · ${installmentsLabel(tx)}` : ''}</span>
                 </span>
                 <span className="shrink-0 flex items-center gap-1.5">
                     <Money amount={tx.amount} currency={tx.currency} base={tx.amount_base}

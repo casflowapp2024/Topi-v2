@@ -16,7 +16,7 @@ import { get_expenses_report, get_financial_report, get_history_dash } from '../
 import { get_net_worth } from '../../../redux/actions/fx';
 import { setAlert } from '../../../redux/actions/alert';
 import { dismiss_transfer_candidate, fetch_transfer_candidates, link_transfer } from '../../../redux/actions/transfers';
-import { fetch_credit_cards } from '../../../redux/actions/creditCards';
+import { fetch_credit_cards, fetch_installment_reviews, save_installments } from '../../../redux/actions/creditCards';
 //components
 import Button from '../../ui/Button';
 import Card, { CardHeader } from '../../ui/Card';
@@ -33,6 +33,7 @@ import { capitalizeWords, cardsDueSoon, findElmentById, formatMoney, isCreditAcc
 const MIN_LOADED = 5;   // con menos en memoria se pide la siguiente tanda
 const MAX_DOTS = 5;
 const PAGE = 10;
+const INSTALLMENT_OPTIONS = [1, 3, 6, 12];
 const LEAVE_MS = 200;
 
 // Cola de la bandeja: uno de cada grupo por vuelta, así ningún tipo queda de último
@@ -91,6 +92,9 @@ const ReviewInbox = ({
   const navigate = useNavigate();
   const [txs, setTxs] = useState(null);         // null = cargando
   const [txTotal, setTxTotal] = useState(0);
+  const [purchases, setPurchases] = useState(null); // compras por las que falta preguntar las cuotas
+  const [purchasesTotal, setPurchasesTotal] = useState(0);
+  const [customInstallments, setCustomInstallments] = useState('');
   const [candidates, setCandidates] = useState(null);
   const [failed, setFailed] = useState(false);
   const [leaving, setLeaving] = useState(() => new Set());
@@ -102,8 +106,12 @@ const ReviewInbox = ({
   const [notice, setNotice] = useState(null);
 
   const load = useCallback(async () => {
-    const [review, pairs] = await Promise.all([fetch_review_transactions(PAGE), fetch_transfer_candidates()]);
-    setFailed(review === null || pairs === null);
+    const [review, pairs, asking] = await Promise.all([
+      fetch_review_transactions(PAGE), fetch_transfer_candidates(), fetch_installment_reviews(PAGE),
+    ]);
+    setFailed(review === null || pairs === null || asking === null);
+    setPurchases(asking?.items || []);
+    setPurchasesTotal(asking?.total || 0);
     setTxs(review?.items || []);
     setTxTotal(review?.total || 0);
     setCandidates(pairs || []);
@@ -142,7 +150,8 @@ const ReviewInbox = ({
   // Quedan más en la API que aquí: se trae la siguiente tanda
   useEffect(() => {
     if (txs && txs.length < MIN_LOADED && txTotal > txs.length) load();
-  }, [txs, txTotal, load]);
+    if (purchases && purchases.length < MIN_LOADED && purchasesTotal > purchases.length) load();
+  }, [txs, txTotal, purchases, purchasesTotal, load]);
 
   const confirm = async (tx, categoryId = tx.category?.id) => {
     setBusy(`tx:${tx.id}`);
@@ -175,6 +184,23 @@ const ReviewInbox = ({
     confirm(tx, categoryId);
   };
 
+  const chooseInstallments = async (tx, installments) => {
+    const key = `cuotas:${tx.id}`;
+    setBusy(key);
+    const result = await save_installments(tx.id, installments);
+    setBusy(null);
+    if (!result.ok) {
+      setAlert('No se pudo guardar, intenta de nuevo.', false, 'text-white', 'bg-red-500', 4000);
+      return;
+    }
+    setCustomInstallments('');
+    leave(key, () => {
+      setPurchases(list => list.filter(t => t.id !== tx.id));
+      setPurchasesTotal(n => n - 1);
+    });
+    if (installments > 1) refreshReports();
+  };
+
   const linkPair = async (c) => {
     setBusy(pairKey(c));
     const result = await link_transfer(c.out_transaction_id, { counterpartTransactionId: c.in_transaction_id });
@@ -203,8 +229,8 @@ const ReviewInbox = ({
     navigate('/dashboard/transactions');
   };
 
-  const loading = txs === null || candidates === null;
-  const total = (txTotal || 0) + (candidates?.length || 0) + cards.length;
+  const loading = txs === null || candidates === null || purchases === null;
+  const total = (txTotal || 0) + (purchasesTotal || 0) + (candidates?.length || 0) + cards.length;
   const accountName = (id) => (user_accounts?.items || []).find(a => a.id === id)?.name || 'Cuenta';
   const isCard = (id) => isCreditAccount((user_accounts?.items || []).find(a => a.id === id));
 
@@ -215,6 +241,7 @@ const ReviewInbox = ({
   const queue = loading ? [] : buildQueue([
     (txs || []).filter(t => !t.needs_counterpart).map(tx => ({ kind: 'verify', key: `tx:${tx.id}`, tx })),
     (txs || []).filter(t => t.needs_counterpart).map(tx => ({ kind: 'payment', key: `tx:${tx.id}`, tx })),
+    (purchases || []).map(tx => ({ kind: 'installments', key: `cuotas:${tx.id}`, tx })),
     (candidates || []).map(c => ({ kind: 'pair', key: pairKey(c), c })),
     cards.map(row => ({ kind: 'card', key: `card:${row.acc.id}`, ...row })),
   ]);
@@ -251,6 +278,29 @@ const ReviewInbox = ({
         <Row key={item.key} leaving={off}>
           <TxSummary tx={tx} onOpen={() => setSheet({ pay: tx })} />
           <Button size="sm" variant="secondary" icon={CreditCardIcon} onClick={() => setSheet({ pay: tx })}>¿De qué cuenta salió?</Button>
+        </Row>
+      );
+    }
+    if (item.kind === 'installments') {
+      const { tx } = item;
+      const custom = Number(customInstallments);
+      return (
+        <Row key={item.key} leaving={off}>
+          <TxSummary tx={tx} onOpen={() => setDetail(tx)} />
+          <form className="flex flex-col gap-1.5"
+            onSubmit={(e) => { e.preventDefault(); if (custom >= 2 && custom <= 120) chooseInstallments(tx, custom); }}>
+            <span className="text-xs font-medium text-ink-2 dark:text-gray-400">¿A cuántas cuotas?</span>
+            <span className="flex items-center gap-1.5">
+              {INSTALLMENT_OPTIONS.map(n => (
+                <Button key={n} size="sm" variant="secondary" disabled={busy !== null} onClick={() => chooseInstallments(tx, n)}
+                  aria-label={n === 1 ? 'Una sola cuota' : `${n} cuotas`} className="!px-0 flex-1 min-w-0">{n}</Button>
+              ))}
+              <input type="number" inputMode="numeric" min="2" max="120" value={customInstallments} placeholder="Otra" aria-label="Otra cantidad de cuotas"
+                onChange={e => setCustomInstallments(e.target.value)}
+                className="h-8 w-14 shrink-0 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 text-sm text-gray-900 dark:text-gray-100" />
+            </span>
+            {custom >= 2 && <Button type="submit" size="sm" loading={busy === item.key}>Guardar {custom} cuotas</Button>}
+          </form>
         </Row>
       );
     }

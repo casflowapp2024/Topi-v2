@@ -80,8 +80,12 @@ plan/         plan de migración
 - Tarjetas: términos en `credit_card_details`. Con día de corte, `credit_card_status` y `net_worth` estiman la deuda
   con compras y pagos por corte, no con el saldo acumulado (arrastra lo que nunca llegó por correo); es una cifra
   aproximada y la UI lo dice. `credit_card_cycles`: compras y pagos por corte. `transactions.installments`: el
-  calendario sale de `installment_schedule` y lo cobrado por corte de `card_billed` (contado más cuotas); la deuda
-  incluye las cuotas por cobrar y lo no pagado de cortes anteriores (`card_carry`, por cortes y desde octubre de 2026). En los reportes las compras desde `InstallmentsFrom` pesan una cuota por mes (`extraExpensesByDay`); las anteriores siguen completas.
+  calendario sale de `installment_schedule` (`GET /transactions/installments`) y lo cobrado por corte de `card_billed`
+  (contado más cuotas); la deuda incluye las cuotas por cobrar y lo no pagado de cortes anteriores (`card_carry`, por
+  cortes y desde octubre de 2026). En los reportes las compras desde `InstallmentsFrom` pesan una cuota por mes
+  (`extraExpensesByDay`); las anteriores siguen completas. La bandeja pregunta las cuotas de compras grandes con tarjeta
+  leídas de correo (`needs_installments=true`, `InstallmentPromptMin`, `POST /transactions/:id/installments` marca
+  `installments_reviewed_at`). Plan: `plan/21-cuotas.md`.
 - Pagos de tarjeta por correo: el worker (`flag_card_payments`, sin tocar el prompt) los vuelve entrada de la tarjeta y
   la API los guarda con `transactions.needs_counterpart`: ya cuentan como transferencia. `link_pending_card_payments`
   liga solo el caso sin duda; si no, la app pregunta de qué cuenta salió. No uses `should_verify` para esto: abrir la

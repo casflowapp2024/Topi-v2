@@ -9,6 +9,36 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+// InstallmentsFrom is the first purchase date that is spread in the reports and asked about: closed
+// months do not change. Older purchases with installments only count by installment in the statements.
+var InstallmentsFrom = time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC)
+
+// InstallmentPromptMin is the smallest purchase worth asking about, in COP (converted to the user's base
+// currency): asking for every purchase would fill the inbox.
+const InstallmentPromptMin = 200000
+
+// InstallmentFilter selects a schedule: the installments that fall in a month (the first one is the
+// purchase itself, so it is left out) or all the installments of a purchase.
+type InstallmentFilter struct {
+	Month         *time.Time
+	TransactionID *uint64
+}
+
+// Installment is one row of the schedule of a purchase (function installment_schedule)
+type Installment struct {
+	TransactionID uint64
+	Description   string
+	CategoryID    uint64
+	AccountName   string
+	Currency      string
+	Number        int
+	Total         int
+	BudgetDate    time.Time
+	StatementDate *time.Time
+	Amount        decimal.Decimal
+	AmountBase    *decimal.Decimal
+}
+
 // TransactionType is an enum for payment's type
 type TransactionType string
 
@@ -156,8 +186,10 @@ type TransactionFilters struct {
 	ShouldVerify *bool
 	Checked      *bool
 	Transfer     *bool // true: solo transferencias entre cuentas propias; false: sin ellas
-	SortBy       string
-	SortOrder    string
+	// NeedsInstallments: card purchases read from an email that still have to answer how many installments
+	NeedsInstallments *bool
+	SortBy            string
+	SortOrder         string
 }
 
 func (f *TransactionFilters) ApplyTransactionsQueryFilters(
@@ -208,6 +240,14 @@ func (f *TransactionFilters) ApplyTransactionsQueryFilters(
 
 	if f.Checked != nil {
 		query = query.Where(squirrel.Eq{"t.checked": f.Checked})
+	}
+
+	if f.NeedsInstallments != nil && *f.NeedsInstallments {
+		query = query.Where(`t.expense AND t.automated AND t.installments IS NULL AND t.installments_reviewed_at IS NULL
+			AND t.transfer_group_id IS NULL AND NOT t.needs_counterpart AND t.date >= ?
+			AND t.account_id IN (SELECT a.id FROM accounts a JOIN account_types at ON at.id = a.type_id AND at.class = 'credit')
+			AND t.amount_base >= ?::numeric * fx_rate_at('COP', user_base_currency(t.user_id), t.date::date)`,
+			InstallmentsFrom, InstallmentPromptMin)
 	}
 
 	if f.Transfer != nil {

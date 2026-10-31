@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/shopspring/decimal"
 )
 
 // =============================================================================
@@ -706,12 +707,32 @@ type transactionResponse struct {
 	TransferGroupID *string `json:"transfer_group_id" example:"0b8f..."`
 	// Installments: card purchase deferred to N payments (null = none)
 	Installments *int16 `json:"installments" example:"6"`
+	// InstallmentAmount and InstallmentAmountBase: what the purchase weighs each month in the reports,
+	// only if it is spread (null otherwise). Not exact for the last one, which absorbs the rounding.
+	InstallmentAmount     *string `json:"installment_amount" example:"200000"`
+	InstallmentAmountBase *string `json:"installment_amount_base" example:"200000"`
 	// NeedsCounterpart: card payment waiting for the account it was paid from
 	NeedsCounterpart bool `json:"needs_counterpart" example:"false"`
 }
 
+// installmentAmounts is what a purchase weighs each month, if the reports spread it
+func installmentAmounts(transaction *domain.Transaction) (amount, base *string) {
+	if transaction.Installments == nil || *transaction.Installments < 2 || !transaction.Expense ||
+		transaction.TransferGroupID != nil || transaction.Date.Before(domain.InstallmentsFrom) {
+		return nil, nil
+	}
+	n := decimal.NewFromInt(int64(*transaction.Installments))
+	native := decimal.NewFromFloat(transaction.Amount).Div(n).Round(4).String()
+	if transaction.AmountBase != nil {
+		value := transaction.AmountBase.Div(n).Round(4).String()
+		base = &value
+	}
+	return &native, base
+}
+
 // newTransactionResponse is a helper function to create a response body for handling transaction data
 func newTransactionResponse(transaction *domain.Transaction) transactionResponse {
+	installmentAmount, installmentAmountBase := installmentAmounts(transaction)
 	var newBank *customBankResponse
 	var newType *accountTypeResponse
 
@@ -763,6 +784,9 @@ func newTransactionResponse(transaction *domain.Transaction) transactionResponse
 		TransferGroupID:  transaction.TransferGroupID,
 		Installments:     transaction.Installments,
 		NeedsCounterpart: transaction.NeedsCounterpart,
+
+		InstallmentAmount:     installmentAmount,
+		InstallmentAmountBase: installmentAmountBase,
 	}
 }
 
