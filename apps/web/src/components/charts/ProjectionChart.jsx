@@ -10,7 +10,8 @@ import { niceMax } from './chartTheme';
 // Proyección del gasto del mes: lo gastado día a día (área) y, desde hoy, cómo cerraría el mes si
 // sigue al mismo ritmo (línea punteada), contra el presupuesto (línea horizontal).
 // En un mes pasado muestra cómo cerró, sin proyección.
-const ProjectionChart = ({ history_dash, current_Year, current_Month }) => {
+// compact: para tarjetas angostas; sin titular ni eje Y (la tarjeta ya dice las cifras).
+const ProjectionChart = ({ history_dash, current_Year, current_Month, compact = false }) => {
   const c = useChartColors();
   const budget = Math.abs(Number(history_dash?.expense_budget) || 0);
 
@@ -85,16 +86,16 @@ const ProjectionChart = ({ history_dash, current_Year, current_Month }) => {
   return (
     <div className="h-full w-full flex flex-col">
       <ChartLegend
-        lead={lead}
+        lead={compact ? null : lead}
         items={[
           m.showProjection ? { type: 'line', label: 'Proyección', color: c.gasto, projection: true } : null,
           budget > 0 ? { type: 'line', label: 'Presupuesto', value: formatMoneyCompact(budget) } : null,
         ]}
-        className="pt-2"
+        className={compact ? '!px-0' : 'pt-2'}
       />
       <div className="flex-1 min-h-0">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={m.data} margin={{ ...chartMargin, right: 20 }}>
+          <ComposedChart data={m.data} margin={compact ? { top: 8, right: 8, left: 8, bottom: 0 } : { ...chartMargin, right: 20 }}>
             <defs>
               <linearGradient id="topiSpentFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={c.gasto} stopOpacity={0.25} />
@@ -103,7 +104,7 @@ const ProjectionChart = ({ history_dash, current_Year, current_Month }) => {
             </defs>
             <CartesianGrid vertical={false} />
             <XAxis dataKey="label" {...xAxisProps} ticks={ticks} />
-            <YAxis {...yAxisProps} tickCount={4} domain={[0, (dataMax) => niceMax(dataMax, budget)]} tickFormatter={(v) => formatMoneyCompact(v)} />
+            <YAxis {...yAxisProps} hide={compact} tickCount={4} domain={[0, (dataMax) => niceMax(dataMax, budget)]} tickFormatter={(v) => formatMoneyCompact(v)} />
             <Tooltip content={tooltip} cursor={{ stroke: c.neutral, strokeDasharray: '3 3' }} />
             {budget > 0 && (
               <ReferenceLine y={budget} className="topi-budget-line" stroke={c.neutral} strokeWidth={1.5} strokeDasharray="6 4" />

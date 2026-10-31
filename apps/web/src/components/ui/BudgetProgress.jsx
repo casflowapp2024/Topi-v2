@@ -8,6 +8,15 @@ export const getMonthPace = (year, month) => {
   return now.getDate() / daysInMonth;
 };
 
+// Cuánto se puede gastar hoy: lo que queda del presupuesto repartido en los días que faltan, hoy
+// incluido. null si el periodo no es el mes en curso (ahí no hay "hoy").
+export const getDailyAllowance = (budget, spent, year, month, now = new Date()) => {
+  if (now.getFullYear() !== Number(year) || now.getMonth() + 1 !== Number(month)) return null;
+  const left = Math.max(budget - spent, 0);
+  const daysLeft = new Date(year, month, 0).getDate() - now.getDate() + 1;
+  return { left, daysLeft, perDay: left / daysLeft };
+};
+
 // ok | warn | crit. Para ingresos, llegar al 100% es bueno: nunca es "crit".
 export const getBudgetStatus = (usage, { isIncome = false, pace = null } = {}) => {
   const u = (parseFloat(usage) || 0) / 100;
@@ -43,6 +52,17 @@ const LABEL = {
   income: { ok: 'Meta cumplida', progress: 'En progreso' },
 };
 
+// Estado con ícono y palabra (nunca solo color). children reemplaza el texto por defecto.
+export const BudgetStatusLabel = ({ status, isIncome = false, className = '', children }) => {
+  const Icon = ICON[status];
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs font-semibold ${TEXT[status]} ${className}`}>
+      {Icon && <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />}
+      {children ?? (isIncome ? LABEL.income : LABEL.expense)[status]}
+    </span>
+  );
+};
+
 /**
  * Barra de presupuesto con estado. El color nunca va solo: lleva ícono y texto.
  * usage: porcentaje usado (ej. 118). pace: fracción del mes (0..1) o null.
@@ -50,7 +70,6 @@ const LABEL = {
 const BudgetProgress = ({ usage, isIncome = false, pace = null, showLabel = true, height = 'h-2', className = '' }) => {
   const pct = parseFloat(usage) || 0;
   const status = getBudgetStatus(pct, { isIncome, pace });
-  const Icon = ICON[status];
   const label = (isIncome ? LABEL.income : LABEL.expense)[status];
 
   return (
@@ -76,10 +95,7 @@ const BudgetProgress = ({ usage, isIncome = false, pace = null, showLabel = true
         )}
       </div>
       {showLabel && (status !== 'ok' || isIncome) && status !== 'progress' && (
-        <span className={`flex items-center gap-1 text-xs font-semibold ${TEXT[status]}`}>
-          {Icon && <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />}
-          {label} · {Math.round(pct)}%
-        </span>
+        <BudgetStatusLabel status={status} isIncome={isIncome}>{label} · {Math.round(pct)}%</BudgetStatusLabel>
       )}
     </div>
   );

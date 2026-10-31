@@ -89,7 +89,7 @@ const AccountGroupCard = ({ group, onGroupChange, onCreate, user_accounts, net_w
         {assets > 0 && (
           <div className="mt-3 flex h-2.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700" aria-hidden="true">
             {tiles.filter(t => t.id !== 'credit').map(t => (
-              <span key={t.id} className={t.id === 'investment' ? 'bg-[#0E9AA7]' : 'bg-topi-500'} style={{ width: `${(Math.max(0, t.total) / (assets + debt)) * 100}%` }} />
+              <span key={t.id} className={t.id === 'investment' ? 'bg-data-inversion' : 'bg-topi-500'} style={{ width: `${(Math.max(0, t.total) / (assets + debt)) * 100}%` }} />
             ))}
             {debt > 0 && <span className="bg-data-gasto" style={{ width: `${(debt / (assets + debt)) * 100}%` }} />}
           </div>

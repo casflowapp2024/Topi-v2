@@ -83,10 +83,10 @@ const click = (el, text) => {
 };
 
 describe.each([[3000000, M], [0, M], [3000000, M === 1 ? 12 : M - 1]])('presupuesto %s, mes %s', (budget, month) => {
-  test('inicio: las 4 pestañas', () => {
+  test('inicio: las 3 pestañas', () => {
     const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
     const { el, root } = render(<MultiChartDash />, makeStore(budget, month));
-    for (const tab of ['Flujo', 'Gastos', 'Proyección', 'Balance']) {
+    for (const tab of ['Flujo', 'Gastos', 'Balance']) {
       click(el, tab);
       expect(el.querySelector('svg.recharts-surface')).not.toBeNull();
     }

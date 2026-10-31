@@ -75,6 +75,12 @@ export const dailyRows = (daily) => (daily?.date || []).map((d) => {
   };
 });
 
+// Métrica ({ value, diff, percentage, ... }) de un mes en una serie mensual del API; null si no está
+export const monthlyMetricAt = (monthly, key, year, month) => {
+  const i = (monthly?.month || []).findIndex((m, idx) => Number(m) === Number(month) && Number(monthly.year?.[idx]) === Number(year));
+  return i >= 0 ? monthly[key]?.[i] ?? null : null;
+};
+
 export const isCurrentMonth = (year, month) => {
   const now = new Date();
   return now.getFullYear() === Number(year) && now.getMonth() + 1 === Number(month);

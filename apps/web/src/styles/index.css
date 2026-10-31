@@ -196,6 +196,8 @@ input, select, textarea {
 .dark .recharts-cartesian-grid line { stroke: #2A3045; }
 .topi-chart-value { fill: #1E1E2A; }
 .dark .topi-chart-value { fill: #ECEDF5; }
+/* tramo que resta en una barra de composición: rayado, para que no dependa solo del color */
+.topi-stripes { background-image: repeating-linear-gradient(45deg, transparent 0 3px, rgba(255, 255, 255, 0.4) 3px 6px); }
 .topi-budget-line line { stroke: #6A6F88; }
 .dark .topi-budget-line line { stroke: #9097B4; }
 .topi-budget-label { fill: #5B6078; }
