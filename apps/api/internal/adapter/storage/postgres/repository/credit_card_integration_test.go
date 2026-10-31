@@ -121,18 +121,18 @@ func TestCreditCards(t *testing.T) {
 	require.Len(t, status, 1)
 	s := status[0]
 	assert.Equal(t, card, s.AccountID)
-	// el corte ya tiene un pago: quedan los consumos de este corte y las 5 cuotas que faltan
-	assert.True(t, s.Debt.Equal(d("133333.3333")), s.Debt.String())
+	// falta parte del corte anterior, más los consumos de este corte y las 5 cuotas que quedan
+	assert.True(t, s.Debt.Equal(d("300000")), s.Debt.String())
 	require.NotNil(t, s.Available)
-	assert.True(t, s.Available.Equal(d("866666.6667")), s.Available.String())
+	assert.True(t, s.Available.Equal(d("700000")), s.Available.String())
 	require.NotNil(t, s.LastStatement)
 	assert.Equal(t, firstOfMonth.Format(time.DateOnly), s.LastStatement.Format(time.DateOnly))
 	assert.Equal(t, firstOfMonth.AddDate(0, 1, 0).Format(time.DateOnly), s.NextStatement.Format(time.DateOnly))
 	assert.Equal(t, firstOfMonth.AddDate(0, 0, 19).Format(time.DateOnly), s.DueDate.Format(time.DateOnly))
 	assert.True(t, s.StatementDebt.Equal(d("316666.6667")), s.StatementDebt.String()) // contado + primera cuota
 	assert.True(t, s.PaidSinceStatement.Equal(d("150000")), s.PaidSinceStatement.String())
-	assert.True(t, s.PendingStatement.IsZero(), s.PendingStatement.String())
-	assert.True(t, s.PurchasesSince.Equal(d("66666.6667")), s.PurchasesSince.String()) // contado + segunda cuota
+	assert.True(t, s.PendingStatement.Equal(d("166666.6667")), s.PendingStatement.String()) // pago parcial
+	assert.True(t, s.PurchasesSince.Equal(d("66666.6667")), s.PurchasesSince.String())      // contado + segunda cuota
 	assert.Equal(t, 1, s.InstallmentPurchases)
 }
 
@@ -319,4 +319,63 @@ func TestCardChargesWithInstallments(t *testing.T) {
 	_, err = db.Exec(ctx, "UPDATE transactions SET installments = NULL WHERE id = $1", purchase)
 	require.NoError(t, err)
 	assert.Empty(t, charges("2026-11-30"))
+}
+
+// TestCardCarry: lo que no se paga de un corte pasa al siguiente, y lo pagado de más lo cubre después.
+func TestCardCarry(t *testing.T) {
+	ctx := context.Background()
+	db := integrationDB(t)
+	userID := "it-carry-" + uuid.NewString()
+	t.Cleanup(func() {
+		_, _ = db.Exec(ctx, "DELETE FROM transactions WHERE user_id = $1", userID)
+		_, _ = db.Exec(ctx, "DELETE FROM credit_card_details WHERE user_id = $1", userID)
+		for _, table := range []string{"accounts", "categories", "banks", "user_extra"} {
+			_, _ = db.Exec(ctx, "DELETE FROM "+table+" WHERE user_id = $1", userID)
+		}
+	})
+	id := func(sql string, args ...any) uint64 {
+		t.Helper()
+		var out uint64
+		require.NoError(t, db.QueryRow(ctx, sql, args...).Scan(&out))
+		return out
+	}
+	_, err := db.Exec(ctx, "INSERT INTO user_extra (user_id, utc_offset, whatsapp) VALUES ($1, 'America/Bogota', '')", userID)
+	require.NoError(t, err)
+	bank := id("INSERT INTO banks (user_id, name, email) VALUES ($1, 'Banco IT', 'it@banco.test') RETURNING id", userID)
+	category := id("INSERT INTO categories (user_id, name, budget, emoji) VALUES ($1, 'Compras IT', 0, '') RETURNING id", userID)
+	card := id(`INSERT INTO accounts (user_id, name, last_four_digits, bank_id, type_id, initial_balance, currency, created_at)
+		VALUES ($1, 'Tarjeta IT', '0001', $2, 4, 0, 'COP', '2026-08-01 12:00:00-05') RETURNING id`, userID, bank)
+	_, err = db.Exec(ctx, "INSERT INTO credit_card_details (account_id, user_id, statement_day, due_day) VALUES ($1, $2, 15, 5)", card, userID)
+	require.NoError(t, err)
+	tx := func(expense bool, amount, at string) {
+		t.Helper()
+		id(`INSERT INTO transactions (user_id, category_id, account_id, description, expense, amount, date)
+			VALUES ($1, $2, $3, 'IT', $4, $5, $6) RETURNING id`, userID, category, card, expense, amount, at)
+	}
+	carry := func(cut string) string {
+		t.Helper()
+		var out string
+		require.NoError(t, db.QueryRow(ctx, "SELECT card_carry($1, $2, $3::date)::text", userID, card, cut).Scan(&out))
+		return decimal.RequireFromString(out).String()
+	}
+
+	assert.Equal(t, "0", carry("2026-10-15"), "antes del primer corte contado no hay arrastre")
+
+	// corte del 15-oct: 1.000.000, pagados 400.000: pasan 600.000
+	tx(true, "1000000", "2026-09-20 10:00:00-05")
+	tx(false, "400000", "2026-10-20 10:00:00-05")
+	assert.Equal(t, "600000", carry("2026-11-15"))
+
+	// corte del 15-nov: 100.000 más lo que venía, pagados 800.000: sobran 100.000 a favor
+	tx(true, "100000", "2026-10-25 10:00:00-05")
+	tx(false, "800000", "2026-11-20 10:00:00-05")
+	assert.Equal(t, "0", carry("2026-12-15"))
+
+	// corte del 15-dic: sin pago; los 100.000 a favor cubren parte de los 150.000
+	tx(true, "150000", "2026-11-25 10:00:00-05")
+	assert.Equal(t, "50000", carry("2027-01-15"))
+
+	var other string
+	require.NoError(t, db.QueryRow(ctx, "SELECT card_carry('otro', $1, '2027-01-15')::text", card).Scan(&other))
+	assert.Equal(t, "0", other, "la tarjeta es del usuario")
 }

@@ -79,6 +79,12 @@ Cada una termina con tests y parada para revisar.
    - Detalle de compra: calendario de cuotas.
 5. **Verificación final.** Prueba en la app con datos inventados, y luego `CLAUDE.md`, `plan/10` y este plan.
 
+## Corte pagado (31-oct)
+
+Se quitó la regla del 10 %: un corte queda pagado solo si se cubre lo cobrado, y lo que falte pasa al siguiente
+(`card_carry`, migración 000037). No usa el saldo acumulado: va por cortes y desde octubre de 2026. Un pago que no
+llegó por correo se ve como deuda hasta registrarlo.
+
 ## Riesgos
 
 - **Es el cambio más grande a los reportes hasta ahora.** Toca cinco consultas y tres funciones de tarjeta. Mitigación:

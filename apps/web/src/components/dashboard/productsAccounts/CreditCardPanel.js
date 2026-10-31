@@ -82,6 +82,8 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, se
     const unrecorded = debt === 0 && nwBalance > 0 ? nwBalance : 0;
     const afterReconcile = () => { setReconcile(false); load(); get_net_worth(); set_dash_account_activated({ ...account }); };
     const pending = card?.pending_statement != null ? Number(card.pending_statement) : null;
+    // Lo que quedó sin pagar de cortes anteriores: la API lo incluye en lo pendiente
+    const carried = pending > 0 ? pending - (Number(card?.statement_debt ?? 0) - Number(card?.paid_since_statement ?? 0)) : 0;
     const today = moment().startOf('day');
     const overdue = pending > 0 && card?.due_date && moment(card.due_date).isBefore(today);
 
@@ -172,6 +174,7 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, se
                                 Corte anterior <span className="font-normal text-xs text-ink-2 dark:text-gray-400">· cerró el {dayMonth(card.last_statement)}</span>
                             </p>
                             <div className="flex flex-wrap gap-x-6 gap-y-1 text-gray-700 dark:text-gray-200">
+                                {carried > 0.5 && <span>Venía de antes: <b>{formatMoney(carried, currency)}</b></span>}
                                 <span>Compras y cuotas: <b>{formatMoney(card.statement_debt, currency)}</b></span>
                                 <span>Pagado: <b>{formatMoney(card.paid_since_statement, currency)}</b></span>
                             </div>

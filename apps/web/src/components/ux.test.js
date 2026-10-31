@@ -218,6 +218,23 @@ test('Tarjeta: separa el corte actual, abierto, del anterior, que es el que se p
   expect(el.textContent).toMatch(/Falta pagar ≈ .*1\.884\.408/);
   expect(el.textContent).toContain('La fecha límite fue el 30 de octubre');
   expect(el.textContent).not.toMatch(/Último corte|Próximo:/);
+  expect(el.textContent).not.toContain('Venía de antes');
+  axios.get.mockImplementation(original);
+  await act(async () => root.unmount());
+});
+
+test('Tarjeta: un pago parcial no dice pagado y muestra lo que venía de antes', async () => {
+  const card = {
+    account_id: 3, debt: '900000', last_statement: '2026-10-15', next_statement: '2026-11-15', due_date: '2099-10-30',
+    statement_debt: '1000000', paid_since_statement: '400000', pending_statement: '850000', purchases_since: '50000',
+  };
+  const original = axios.get.getMockImplementation();
+  axios.get.mockImplementation((url) => Promise.resolve({ status: 200, data: { data: url.includes('credit-cards') ? [card] : {} } }));
+  const el = document.createElement('div'); document.body.appendChild(el); const root = createRoot(el);
+  await act(async () => { root.render(<Provider store={store()}><CreditCardPanel account={accounts[2]} data={null} /></Provider>); });
+  expect(el.textContent).not.toContain('Corte pagado');
+  expect(el.textContent).toMatch(/Venía de antes: .*250\.000/);
+  expect(el.textContent).toMatch(/Paga ≈ .*850\.000/);
   axios.get.mockImplementation(original);
   await act(async () => root.unmount());
 });
