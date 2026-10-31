@@ -3,7 +3,7 @@
 Continúa `20-ux-fase-3-vistas.md` (bloques "Presupuestos y transferencias" y "Cargos de Tarjeta"). Revierte una
 decisión de `10-tipos-de-cuenta.md`: "Compra = gasto en la fecha de compra, aunque sea a cuotas".
 
-Estado: **propuesta, pendiente de aprobar las decisiones de abajo.**
+Estado: decisiones D1 a D7 aprobadas el 31-oct. Fase 1 hecha (migración 000035); sigue la fase 2.
 
 ## Qué se quiere
 
@@ -65,8 +65,9 @@ cobrar. Se quita de la UI la advertencia de "tu extracto puede pedir menos".
 
 Cada una termina con tests y parada para revisar.
 
-1. **Calendario.** Migración con `installment_schedule` y `down`. Campo para saber si ya se preguntó
-   (`installments_reviewed_at`). Tests: redondeo, meses cortos, entre monedas, cambiar y quitar cuotas.
+1. **Calendario (hecho).** Migración con `installment_schedule` y `down`. Campo para saber si ya se preguntó
+   (`installments_reviewed_at`). Tests: redondeo, meses cortos, entre monedas, cambiar y quitar cuotas. La función
+   devuelve todas las compras con `purchased_on`: el límite de D3 se aplica en los reportes (fase 3).
 2. **Tarjeta.** Lo cobrado por corte en `credit_card_status`, `credit_card_cycles` y `card_charges`; deuda con
    cuotas pendientes. Tests con compra a 6 cuotas más pago exacto (cargo 0) y pago con intereses (cargo = interés).
 3. **Reportes.** `expenseAdjustments` en los cinco sitios. Comprobar que el total por categorías cuadra con
