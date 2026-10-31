@@ -44,6 +44,9 @@ type Transaction struct {
 	// Installments: a card purchase deferred to N payments (2–120). Informative: the purchase is a
 	// full expense on its date. In an update, nil keeps it and 0 or 1 clears it.
 	Installments *int16
+	// NeedsCounterpart: a card payment read from an email whose outgoing leg is still missing. It
+	// already counts as a transfer; the app asks the user which account paid.
+	NeedsCounterpart bool
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -196,7 +199,11 @@ func (f *TransactionFilters) ApplyTransactionsQueryFilters(
 	}
 
 	if f.ShouldVerify != nil {
-		query = query.Where(squirrel.Eq{"t.should_verify": f.ShouldVerify})
+		if *f.ShouldVerify {
+			query = query.Where("(t.should_verify OR t.needs_counterpart)")
+		} else {
+			query = query.Where(squirrel.Eq{"t.should_verify": false, "t.needs_counterpart": false})
+		}
 	}
 
 	if f.Checked != nil {

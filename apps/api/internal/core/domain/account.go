@@ -143,6 +143,15 @@ type AccountFilters struct {
 
 type AccountTypes []uint64
 
+func (at *AccountTypes) IsCredit() bool {
+	for _, id := range *at {
+		if AccountClassOf(id) != AccountClassCredit {
+			return false
+		}
+	}
+	return len(*at) > 0
+}
+
 func (at *AccountTypes) IsSaving() bool {
 	savings := make([]uint64, 0)
 
@@ -223,6 +232,7 @@ func (a Accounts) BuildReadEmailRequests() []ReadEmailBodyRequest {
 			SenderEmail: *firstAccount.Bank.Email,
 			Accounts:    Accounts(accounts).buildAccountsMap(),
 			Currencies:  Accounts(accounts).buildCurrenciesMap(),
+			Classes:     Accounts(accounts).buildClassesMap(),
 			Onboarding:  true,
 		}
 
@@ -288,6 +298,15 @@ type AccountBasicInfo struct {
 	ID             uint64 `json:"id"`
 	Name           string `json:"name"`
 	LastFourDigits string `json:"last_four_digits"`
+}
+
+// buildClassesMap returns account_id: account class
+func (a Accounts) buildClassesMap() map[string]string {
+	classes := make(map[string]string, len(a))
+	for _, account := range a {
+		classes[fmt.Sprintf("%d", account.ID)] = account.Type.ClassOrDefault()
+	}
+	return classes
 }
 
 // buildCurrenciesMap returns account_id: currency (COP when the account has none loaded)

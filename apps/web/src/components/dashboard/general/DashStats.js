@@ -6,7 +6,7 @@ import { get_financial_report } from '../../../redux/actions/reports';
 import { get_savings_account } from '../../../redux/actions/reports';
 //components
 import DropDownAccount from './DropDownAccounts';
-import { formatMoney, getPerc2 } from '../../helpers';
+import { formatMoney, getPerc2, isCreditAccount } from '../../helpers';
 import FormatMoneyShowDecs from '../../FormatMoneyShowDecs';
 import DashStatsCard from './DashStatsCard';
 import PeriodSelector from '../../navigation/PeriodSelector';
@@ -32,6 +32,7 @@ const DashStats = ({
     expenses,
     credits_balance,
     user_accounts,
+    net_worth,
     get_financial_report,
     get_savings_account, balance_by_account
 
@@ -56,6 +57,17 @@ const DashStats = ({
         }
     }, [current_Month, current_Year]);
 
+
+    // El mes en curso muestra la deuda estimada de las tarjetas, la misma de Cuentas; los meses
+    // pasados siguen con el saldo al cierre, porque no hay deuda estimada histórica.
+    const now = new Date();
+    const isCurrentMonth = Number(current_Month) === now.getMonth() + 1 && Number(current_Year) === now.getFullYear();
+    const creditIds = new Set((user_accounts?.items || []).filter(isCreditAccount).map(a => a.id));
+    const cardsDebt = (net_worth?.accounts || []).filter(a => creditIds.has(a.account_id))
+        .reduce((sum, a) => sum + Math.max(-Number(a.base_value || 0), 0), 0);
+    const debts = isCurrentMonth && credits_balance && net_worth
+        ? { ...credits_balance, value: cardsDebt, vs_past_month: 0 }
+        : credits_balance;
 
     return (
 
@@ -83,7 +95,7 @@ const DashStats = ({
                     <DashStatsCard
                         loadingReport={loadingReport}
                         metric_id={1}
-                        metric_state={credits_balance}
+                        metric_state={debts}
                         up_pos={false}
                         down_pos={true}
                     />
@@ -124,6 +136,7 @@ const mapStateToProps = (state) => ({
     income: state.Reports.income,
     expenses: state.Reports.expenses,
     credits_balance: state.Reports.credits_balance,
+    net_worth: state.Fx.net_worth,
     user_accounts: state.CashFlow.user_accounts,
     account_in_dash: state.Reports.account_in_dash,
     balance_by_account: state.Reports.balance_by_account,

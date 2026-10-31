@@ -72,8 +72,14 @@ plan/         plan de migración
 - Cambiar la moneda de una cuenta con movimientos o la moneda base: solo con `change_account_currency` /
   `change_base_currency` (vista previa y aplicar). Cuentas cerradas (`accounts.closed_at`): fuera de los selectores
   de movimientos nuevos (`isOpenAccount`).
-- Tarjetas: términos en `credit_card_details` y estado del corte con `credit_card_status` (deuda, disponible,
-  lo que falta pagar del corte). `transactions.installments` es informativo: la compra es gasto completo en su fecha.
+- Tarjetas: términos en `credit_card_details`. Con día de corte, `credit_card_status` y `net_worth` estiman la deuda
+  con compras y pagos por corte, no con el saldo acumulado (arrastra lo que nunca llegó por correo); es una cifra
+  aproximada y la UI lo dice. `credit_card_cycles`: compras y pagos por corte. `transactions.installments` es
+  informativo: la compra es gasto completo en su fecha.
+- Pagos de tarjeta por correo: el worker (`flag_card_payments`, sin tocar el prompt) los vuelve entrada de la tarjeta y
+  la API los guarda con `transactions.needs_counterpart`: ya cuentan como transferencia. `link_pending_card_payments`
+  liga solo el caso sin duda; si no, la app pregunta de qué cuenta salió. No uses `should_verify` para esto: abrir la
+  transacción lo borra.
 
 ## Reglas
 

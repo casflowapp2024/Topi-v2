@@ -46,10 +46,12 @@ def transform_automations_msgs(data: Dict[str, Any]) -> List[Dict[str, Any]]:
                         "sender_email": sender_email,
                         "accounts": {},
                         "currencies": {},
+                        "classes": {},
                     }
 
                 grouped_accounts[group_key]["accounts"][account["last_four_digits"]] = str(account["id"])
                 grouped_accounts[group_key]["currencies"][str(account["id"])] = account.get("currency") or "COP"
+                grouped_accounts[group_key]["classes"][str(account["id"])] = account.get("account_class") or "deposit"
             except KeyError as e:
                 logger.warning("missing required field in account data", extra={"field": str(e)})
                 continue
@@ -202,3 +204,34 @@ def flag_currency_mismatch(transactions: List[Dict[str, Any]], currencies: Dict[
             transaction["should_verify"] = True
     return flagged
 
+
+# Pago de la tarjeta ("pago de Tarjeta de Crédito", "abono a tu tarjeta"), no pago CON la tarjeta.
+_CARD_PAYMENT = re.compile(
+    r"\b(?:pagos?|abonos?)\s+(?:de|a|para)\s+(?:(?:tu|su|la)\s+)?(?:tarjeta|t\.?c\.?\b)"
+    r"|\b(?:pagaste|abonaste)\s+(?:a\s+)?(?:tu|la)\s+tarjeta",
+    re.IGNORECASE,
+)
+# Un correo de compra puede traer al pie "recuerda el pago de tu tarjeta": ese sigue siendo gasto.
+_PURCHASE = re.compile(r"\b(?:compra|compraste|retiro|avance)\b", re.IGNORECASE)
+
+
+def detect_card_payment(text: str) -> bool:
+    """El correo avisa de un pago hecho a una tarjeta de crédito. No usa el LLM ni guarda el texto."""
+    return bool(text) and bool(_CARD_PAYMENT.search(text)) and not _PURCHASE.search(text)
+
+
+def flag_card_payments(
+    transactions: List[Dict[str, Any]], accounts: Dict[str, str], classes: Dict[str, str]
+) -> int:
+    """El prompt lee "Pago" como gasto y no sabe qué tipo de cuenta son los últimos 4 dígitos. Si el
+    correo avisa de un pago (transaction["mentions_card_payment"]) y sus dígitos son los de una tarjeta,
+    para esa cuenta es una entrada: expense=False y card_payment=True. Devuelve cuántas marcó. Sin
+    `classes` (jobs viejos) no hace nada."""
+    flagged = 0
+    for transaction in transactions:
+        account_id = accounts.get(transaction.get("account_number"))
+        if transaction.get("mentions_card_payment") and classes.get(account_id) == "credit":
+            transaction["expense"] = False
+            transaction["card_payment"] = True
+            flagged += 1
+    return flagged

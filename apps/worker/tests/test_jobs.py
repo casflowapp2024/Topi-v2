@@ -242,3 +242,18 @@ def test_usd_email_on_usd_account_is_not_flagged():
     processor.handle(job(currencies={"11": "COP", "22": "USD"}))
 
     assert api.create_calls[0][0]["should_verify"] is False
+
+
+def test_card_payment_email_is_an_income_of_the_card():
+    """El extractor lo lee como gasto ("Pago"); en la tarjeta es una entrada y queda a la espera de
+    la cuenta con que se pagó."""
+    pago = EmailMessage(id="m12", subject="Pago de Tarjeta de Crédito", sender="a@banco.co",
+                        received_at=LAST_RUN + timedelta(minutes=30), body="TX:1111:900")
+    compra = email("m13", "TX:1111:50")
+    processor, _, api, _, _ = make([pago, compra])
+
+    processor.handle(job(classes={"11": "credit", "22": "deposit"}))
+
+    sent = {t["source_message_id"]: t for t in api.create_calls[0]}
+    assert sent["m12"]["expense"] is False and sent["m12"]["card_payment"] is True
+    assert sent["m13"]["expense"] is True and "card_payment" not in sent["m13"]

@@ -42,14 +42,35 @@ type CreditCardStatus struct {
 	CreditCardDetails
 	Name                 string
 	Currency             string
-	Debt                 decimal.Decimal  // debt today (0 with a balance in favor)
+	Debt                 decimal.Decimal  // estimated debt today (see credit_card_status)
 	Available            *decimal.Decimal // credit limit − debt
 	LastStatement        *time.Time
 	NextStatement        *time.Time
 	DueDate              *time.Time
-	StatementDebt        *decimal.Decimal // debt at the last statement
+	StatementDebt        *decimal.Decimal // purchases of the last statement (approximate bill)
 	PaidSinceStatement   *decimal.Decimal
-	PendingStatement     *decimal.Decimal // what is left to pay of the last statement
+	PendingStatement     *decimal.Decimal // what is left of the last statement: 0 once it has a payment
 	PurchasesSince       *decimal.Decimal
 	InstallmentPurchases int // purchases in installments still running: the bank bills only the installment
+}
+
+// CreditCardCycle is one statement of a card (function credit_card_cycles): its purchases and what
+// came in until the next statement, which is when that statement gets paid. Counted says whether
+// it enters the comparison of payments and purchases.
+type CreditCardCycle struct {
+	StatementDate time.Time
+	Purchases     decimal.Decimal
+	Payments      decimal.Decimal
+	Counted       bool
+}
+
+// OverpaidTotal is what the user paid above the purchases of the counted statements
+func OverpaidTotal(cycles []CreditCardCycle) decimal.Decimal {
+	total := decimal.Zero
+	for _, c := range cycles {
+		if c.Counted {
+			total = total.Add(c.Payments.Sub(c.Purchases))
+		}
+	}
+	return total
 }

@@ -662,6 +662,8 @@ func TestTransactionService_AdminCreateTransactions(t *testing.T) {
 
 				// Admin create transactions
 				mockRepo.EXPECT().AdminCreateTransactions(gomock.Any(), gomock.Any()).Return(&domain.AdminCreateResult{Created: createdTransactions}, nil)
+				// a failed link does not fail the batch: the payment waits for the user
+				mockRepo.EXPECT().LinkPendingCardPayments(gomock.Any(), validUserID).Return(0, errors.New("boom"))
 			},
 			expectedResult: &domain.AdminCreateResult{Created: createdTransactions},
 			expectedError:  nil,

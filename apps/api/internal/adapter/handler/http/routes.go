@@ -122,6 +122,7 @@ func (r *Routes) AccountsRoutes() {
 		AuthAccounts.POST("/:id/reopen", r.CurrencyChangeHandler.ReopenAccount)
 		AuthAccounts.GET("/:id/credit-card", r.CreditCardHandler.GetCreditCard)
 		AuthAccounts.PUT("/:id/credit-card", r.CreditCardHandler.SaveCreditCard)
+		AuthAccounts.GET("/:id/credit-card/cycles", r.CreditCardHandler.ListCreditCardCycles)
 	}
 
 	admin := AuthAccounts.Use(AdminMiddleware())
@@ -140,6 +141,8 @@ func (r *Routes) TransactionRoutes() {
 		AuthTransactions.POST("/transfer/dismiss", r.TransactionHandler.DismissTransferCandidate)
 		AuthTransactions.DELETE("/transfer/:group", r.TransactionHandler.UnlinkTransfer)
 		AuthTransactions.POST("/:id/transfer", r.TransactionHandler.LinkTransfer)
+		AuthTransactions.POST("/:id/transfer/dismiss", r.TransactionHandler.DismissCounterpart)
+		AuthTransactions.GET("/:id/transfer/suggestion", r.TransactionHandler.SuggestCounterpart)
 		AuthTransactions.GET("/:id", r.TransactionHandler.GetTransaction)
 		AuthTransactions.GET("/list", r.TransactionHandler.ListTransactions)
 		AuthTransactions.PUT("/:id", r.TransactionHandler.UpdateTransaction)

@@ -22,7 +22,9 @@ from worker.errors import (
     CredentialError, PermanentJobError, TransientError, WorkerError, backoff_seconds, classify,
 )
 from worker.extractors.base import AccountRef, TransactionExtractor
-from worker.mapping import detect_currencies, flag_currency_mismatch, map_account_ids, to_api_date
+from worker.mapping import (
+    detect_card_payment, detect_currencies, flag_card_payments, flag_currency_mismatch, map_account_ids, to_api_date,
+)
 from worker.providers.base import MailProvider
 from worker.providers.senders import split_senders
 
@@ -143,6 +145,7 @@ class JobProcessor:
         sender_email = payload["sender_email"]
         accounts: dict[str, str] = payload["accounts"] or {}
         currencies: dict[str, str] = payload.get("currencies") or {}  # account_id: moneda (opcional)
+        classes: dict[str, str] = payload.get("classes") or {}  # account_id: clase de cuenta (opcional)
         if not accounts:
             raise PermanentJobError("el job no tiene cuentas")
 
@@ -209,7 +212,9 @@ class JobProcessor:
                     self.db.update_message(email_id, email.id, "no_transaction")
                 continue
 
-            mentioned = detect_currencies(f"{email.subject or ''} {email.body or ''}")
+            text = f"{email.subject or ''} {email.body or ''}"
+            mentioned = detect_currencies(text)
+            card_payment = detect_card_payment(text)
             for item in found:
                 transaction = {
                     "account_number": item.account_number,
@@ -219,6 +224,7 @@ class JobProcessor:
                     "date": to_api_date(item.date or email.received_at),
                     "source_message_id": email.id,
                     "detected_currencies": mentioned,
+                    "mentions_card_payment": card_payment,
                 }
                 if item.confidence is not None and item.confidence < self.settings.confidence_threshold:
                     transaction["should_verify"] = True
@@ -231,12 +237,15 @@ class JobProcessor:
             flagged = flag_currency_mismatch(transactions, currencies)
             if flagged:
                 logger.info("moneda distinta a la de la cuenta: a revisión", extra={"email_id": email_id, "flagged": flagged})
+            payments = flag_card_payments(transactions, accounts, classes)
+            if payments:
+                logger.info("pago de tarjeta: entrada en la tarjeta", extra={"email_id": email_id, "payments": payments})
             to_send = []
             for t in transactions:
                 if "error" in t:
                     failures.append(t["source_message_id"])
                     continue
-                to_send.append({
+                item = {
                     "account_id": t["account_id"],
                     "description": t["description"],
                     "expense": t["expense"],
@@ -244,7 +253,10 @@ class JobProcessor:
                     "date": t["date"],
                     "should_verify": bool(t.get("should_verify", False)),
                     "source_message_id": t["source_message_id"],
-                })
+                }
+                if t.get("card_payment"):
+                    item["card_payment"] = True
+                to_send.append(item)
 
             if self.settings.dry_run:
                 result.would_create = to_send

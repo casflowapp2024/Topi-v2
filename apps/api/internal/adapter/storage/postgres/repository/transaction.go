@@ -20,11 +20,11 @@ import (
 // Explicit (not "*") so adding columns to the table does not break the scans.
 const transactionColumns = "id, user_id, category_id, account_id, description, expense, amount, date, " +
 	"automated, should_verify, checked, created_at, updated_at, raw_description, " +
-	"currency, fx_rate::text, fx_rate_source, amount_base::text, transfer_group_id::text, installments"
+	"currency, fx_rate::text, fx_rate_source, amount_base::text, transfer_group_id::text, installments, needs_counterpart"
 
 const transactionColumnsT = "t.id, t.user_id, t.category_id, t.account_id, t.description, t.expense, t.amount, t.date, " +
 	"t.automated, t.should_verify, t.checked, t.created_at, t.updated_at, t.raw_description, " +
-	"t.currency, t.fx_rate::text, t.fx_rate_source, t.amount_base::text, t.transfer_group_id::text, t.installments"
+	"t.currency, t.fx_rate::text, t.fx_rate_source, t.amount_base::text, t.transfer_group_id::text, t.installments, t.needs_counterpart"
 
 // TransactionRepository implements port.TransactionRepository interface
 // and provides access to the postgres database
@@ -92,6 +92,7 @@ func (tr *TransactionRepository) CreateTransaction(
 		scanDecimal(&transaction.AmountBase),
 		&transaction.TransferGroupID,
 		&transaction.Installments,
+		&transaction.NeedsCounterpart,
 	)
 
 	if err != nil {
@@ -146,6 +147,7 @@ func (tr *TransactionRepository) GetTransactionByID(
 		scanDecimal(&transaction.AmountBase),
 		&transaction.TransferGroupID,
 		&transaction.Installments,
+		&transaction.NeedsCounterpart,
 		&transaction.Category.Name,
 		&transaction.Category.Emoji,
 		&transaction.Account.Name,
@@ -251,6 +253,7 @@ func (tr *TransactionRepository) ListTransactions(
 			scanDecimal(&transaction.AmountBase),
 			&transaction.TransferGroupID,
 			&transaction.Installments,
+			&transaction.NeedsCounterpart,
 			&transaction.Category.Name,
 			&transaction.Category.Emoji,
 			&transaction.Account.Name,
@@ -290,6 +293,8 @@ func (tr *TransactionRepository) UpdateTransaction(ctx context.Context, transact
 		Set("amount", sq.Expr("COALESCE(?, amount)", amount)).
 		Set("date", sq.Expr("COALESCE(?, date)", date)).
 		Set("should_verify", sq.Expr("COALESCE(?, should_verify)", transaction.ShouldVerify)).
+		// turned into an expense it is no longer a card payment waiting for its other leg
+		Set("needs_counterpart", sq.Expr("needs_counterpart AND NOT COALESCE(?, expense)", transaction.Expense)).
 		Set("checked", sq.Expr("COALESCE(?, checked)", transaction.Checked)).
 		// a rate set by the user: the trigger recalculates amount_base = amount × fx_rate
 		Set("fx_rate", sq.Expr("COALESCE(?::numeric, fx_rate)", decimalText(transaction.FxRate))).
@@ -329,6 +334,7 @@ func (tr *TransactionRepository) UpdateTransaction(ctx context.Context, transact
 		scanDecimal(&transaction.AmountBase),
 		&transaction.TransferGroupID,
 		&transaction.Installments,
+		&transaction.NeedsCounterpart,
 	)
 
 	if err != nil {
@@ -408,6 +414,7 @@ func (tr *TransactionRepository) AdminCreateTransactions(
 				"should_verify",
 				"checked",
 				"source_message_id",
+				"needs_counterpart",
 			).
 			Values(
 				transaction.UserID,
@@ -422,6 +429,7 @@ func (tr *TransactionRepository) AdminCreateTransactions(
 				transaction.ShouldVerify,
 				transaction.Checked,
 				transaction.SourceMessageID,
+				transaction.NeedsCounterpart,
 			).
 			Suffix("ON CONFLICT (user_id, source_message_id) WHERE source_message_id IS NOT NULL DO NOTHING " +
 				"RETURNING " + transactionColumns + ", source_message_id")
@@ -453,6 +461,7 @@ func (tr *TransactionRepository) AdminCreateTransactions(
 			scanDecimal(&created.AmountBase),
 			&created.TransferGroupID,
 			&created.Installments,
+			&created.NeedsCounterpart,
 			&created.SourceMessageID,
 		)
 		if errors.Is(err, pgx.ErrNoRows) {

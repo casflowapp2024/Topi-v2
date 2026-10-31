@@ -61,7 +61,7 @@ const render = (ui) => {
 test('Cuentas: el total va primero y debajo el selector de tipo (con Cerradas aparte)', () => {
   const onChange = jest.fn();
   const { el, root } = render(<AccountGroupCard group="credit" onGroupChange={onChange} onCreate={() => {}} />);
-  expect(el.textContent).toContain('Tarjetas de crédito · deuda hoy · 1 cuenta');
+  expect(el.textContent).toContain('Tarjetas de crédito · deuda estimada · 1 cuenta');
   expect(el.textContent).toContain('Pagado de más');
   const tabs = [...el.querySelectorAll('[role=tab]')].map(t => t.textContent.replace(/\s+/g, ' ').trim());
   expect(tabs).toEqual(['Todo 4', 'Efectivo 2', 'Tarjetas 1', 'Inversiones 1', 'Cerradas (1)']);

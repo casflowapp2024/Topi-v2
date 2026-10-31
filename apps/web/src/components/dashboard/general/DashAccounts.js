@@ -17,7 +17,7 @@ import {
   ExclamationTriangleIcon,
 } from '@heroicons/react/20/solid';
 
-// Aviso de pago: tarjetas con saldo del corte por pagar y fecha límite en los próximos 7 días (o vencida)
+// Aviso de pago: tarjetas cuyo último corte aún no tiene un pago y con fecha límite en los próximos 7 días (o vencida)
 const DUE_SOON_DAYS = 7;
 const dueSoon = (cards) => (cards || []).filter(c => Number(c.pending_statement) > 0 && c.due_date
   && moment(c.due_date).diff(moment().startOf('day'), 'days') <= DUE_SOON_DAYS);
@@ -116,7 +116,7 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
               <li key={c.account_id} className={`flex gap-2 rounded-xl px-3 py-2 text-sm ${overdue ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'}`}>
                 <ExclamationTriangleIcon className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
                 <span>
-                  {c.name}: {overdue ? 'quedó pendiente' : 'paga'} <b>{formatMoney(c.pending_statement, c.currency)}</b>
+                  {c.name}: {overdue ? 'quedó pendiente' : 'este corte suma'} <b>≈ {formatMoney(c.pending_statement, c.currency)}</b>
                   {overdue ? ` (la fecha límite fue el ${moment(c.due_date).format('DD-MM')})` : ` antes del ${moment(c.due_date).format('DD-MM')}`}
                 </span>
               </li>

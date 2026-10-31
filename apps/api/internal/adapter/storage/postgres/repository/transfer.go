@@ -73,6 +73,7 @@ func insertTransferLeg(ctx context.Context, tx pgx.Tx, leg transferLeg) (domain.
 		scanDecimal(&created.AmountBase),
 		&created.TransferGroupID,
 		&created.Installments,
+		&created.NeedsCounterpart,
 	)
 	return created, mappers.MapPostgresErrorCode(err)
 }
@@ -128,7 +129,7 @@ func (tr *TransactionRepository) LinkTransactions(ctx context.Context, link *dom
 
 	groupID := uuid.NewString()
 	if _, err = tx.Exec(ctx, `
-		UPDATE `+enums.TransactionsTableName+` SET transfer_group_id = $4, updated_at = now()
+		UPDATE `+enums.TransactionsTableName+` SET transfer_group_id = $4, needs_counterpart = false, updated_at = now()
 		WHERE user_id = $1 AND id IN ($2, $3)`,
 		link.UserID, link.TransactionID, link.CounterpartTransactionID, groupID); err != nil {
 		return mappers.MapPostgresErrorCode(err)
@@ -216,7 +217,7 @@ func (tr *TransactionRepository) CreateTransferCounterpart(ctx context.Context, 
 		return err
 	}
 	if _, err = tx.Exec(ctx, `
-		UPDATE `+enums.TransactionsTableName+` SET transfer_group_id = $3, updated_at = now()
+		UPDATE `+enums.TransactionsTableName+` SET transfer_group_id = $3, needs_counterpart = false, updated_at = now()
 		WHERE user_id = $1 AND id = $2`, link.UserID, link.TransactionID, groupID); err != nil {
 		return mappers.MapPostgresErrorCode(err)
 	}
@@ -225,6 +226,54 @@ func (tr *TransactionRepository) CreateTransferCounterpart(ctx context.Context, 
 	}
 	link.GroupID = groupID
 	return tr.fillLink(ctx, link, counterpart.ID)
+}
+
+// LinkPendingCardPayments links the card payments waiting for their other leg when exactly one
+// expense matches (function link_pending_card_payments). Returns how many it linked.
+func (tr *TransactionRepository) LinkPendingCardPayments(ctx context.Context, userID string) (int, error) {
+	var linked int
+	err := tr.db.QueryRow(ctx, "SELECT link_pending_card_payments($1)", userID).Scan(&linked)
+	return linked, mappers.MapPostgresErrorCode(err)
+}
+
+// DismissCounterpart stops asking for the other leg of a card payment: it did not come from an
+// account of the user
+func (tr *TransactionRepository) DismissCounterpart(ctx context.Context, userID string, id uint64) error {
+	tag, err := tr.db.Exec(ctx, `
+		UPDATE `+enums.TransactionsTableName+` SET needs_counterpart = false, updated_at = now()
+		WHERE user_id = $1 AND id = $2 AND needs_counterpart`, userID, id)
+	if err != nil {
+		return mappers.MapPostgresErrorCode(err)
+	}
+	if tag.RowsAffected() == 0 {
+		return domain.ErrDataNotFound
+	}
+	return nil
+}
+
+// SuggestCounterpartAccount returns the open account the user most often transferred from to the
+// account of this transaction, or nil without history
+func (tr *TransactionRepository) SuggestCounterpartAccount(ctx context.Context, userID string, id uint64) (*uint64, error) {
+	var accountID uint64
+	err := tr.db.QueryRow(ctx, `
+		SELECT o.account_id
+		FROM `+enums.TransactionsTableName+` tx
+		JOIN `+enums.TransactionsTableName+` i ON i.user_id = tx.user_id AND i.account_id = tx.account_id
+		 AND i.expense IS FALSE AND i.transfer_group_id IS NOT NULL
+		JOIN `+enums.TransactionsTableName+` o ON o.user_id = i.user_id AND o.expense IS TRUE
+		 AND o.transfer_group_id = i.transfer_group_id
+		JOIN `+enums.AccountTableName+` a ON a.id = o.account_id AND a.closed_at IS NULL
+		WHERE tx.user_id = $1 AND tx.id = $2
+		GROUP BY o.account_id
+		ORDER BY count(*) DESC, max(o.date) DESC
+		LIMIT 1`, userID, id).Scan(&accountID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, mappers.MapPostgresErrorCode(err)
+	}
+	return &accountID, nil
 }
 
 // fillLink reads both legs after linking (with their category and account)

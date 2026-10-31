@@ -29,9 +29,10 @@ func NewAnalysisRepository(db *postgres.DB) *AnalysisRepository {
 }
 
 // flowAmountCalc is a transaction's flow in the user's base currency: positive for income,
-// negative for expenses and zero for transfer legs (they move money between the user's accounts).
+// negative for expenses and zero for transfer legs (they move money between the user's accounts),
+// including a card payment still waiting for its other leg.
 // Reports by category keep counting transfer legs: the user's category still applies to budgets.
-const flowAmountCalc = "case when t.transfer_group_id is not null then 0 " +
+const flowAmountCalc = "case when t.transfer_group_id is not null or t.needs_counterpart then 0 " +
 	"when t.expense is false then t.amount_base else -t.amount_base end"
 
 // GetFinancialSummary retrieves a financial summary for a user, including income and expenses
@@ -807,6 +808,10 @@ func (ar *AnalysisRepository) GetFinancialAccountSummary(
 	} else {
 		// Amount calculation: positive for income, negative for expenses (transfers excluded)
 		income = "sum(case when t.expense is false and t.transfer_group_id is null then t.amount_base else 0 end)"
+		if accountTypes.IsCredit() {
+			// Everything that comes in is a payment, and payments are transfers from another account
+			income = "sum(case when t.expense is false then t.amount_base else 0 end)"
+		}
 		expense = "sum(case when t.expense is true and t.transfer_group_id is null then -t.amount_base else 0 end)"
 	}
 

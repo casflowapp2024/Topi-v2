@@ -30,3 +30,7 @@ func (cs *CreditCardService) SaveCreditCard(ctx context.Context, details *domain
 func (cs *CreditCardService) ListCreditCardStatus(ctx context.Context, userID string) ([]domain.CreditCardStatus, error) {
 	return cs.repo.ListCreditCardStatus(ctx, userID)
 }
+
+func (cs *CreditCardService) ListCreditCardCycles(ctx context.Context, userID string, accountID uint64) ([]domain.CreditCardCycle, error) {
+	return cs.repo.ListCreditCardCycles(ctx, userID, accountID)
+}

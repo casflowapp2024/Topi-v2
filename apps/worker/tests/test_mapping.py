@@ -14,7 +14,7 @@ def test_transform_groups_by_user_email_and_sender():
             {"id": 1, "last_four_digits": "1111", "email_id": 7, "user_email": "u1@gmail.com",
              "user_provider": "gmail", "sender_email": "a@b.co,c@b.co"},
             {"id": 2, "last_four_digits": "2222", "email_id": 7, "user_email": "u1@gmail.com",
-             "user_provider": "gmail", "sender_email": "a@b.co,c@b.co", "currency": "USD"},
+             "user_provider": "gmail", "sender_email": "a@b.co,c@b.co", "currency": "USD", "account_class": "deposit"},
             {"id": 3, "last_four_digits": "3333", "email_id": 7, "user_email": "u1@gmail.com",
              "user_provider": "gmail", "sender_email": "nu@nu.com.co"},
             {"id": 4, "last_four_digits": "4444"},  # incompleta: se ignora
@@ -26,9 +26,10 @@ def test_transform_groups_by_user_email_and_sender():
     assert jobs == [
         {"user_id": "u1", "user_mail": "u1@gmail.com", "email_id": 7, "user_provider": "gmail",
          "sender_email": "a@b.co,c@b.co", "accounts": {"1111": "1", "2222": "2"},
-         "currencies": {"1": "COP", "2": "USD"}},
+         "currencies": {"1": "COP", "2": "USD"}, "classes": {"1": "deposit", "2": "deposit"}},
         {"user_id": "u1", "user_mail": "u1@gmail.com", "email_id": 7, "user_provider": "gmail",
-         "sender_email": "nu@nu.com.co", "accounts": {"3333": "3"}, "currencies": {"3": "COP"}},
+         "sender_email": "nu@nu.com.co", "accounts": {"3333": "3"}, "currencies": {"3": "COP"},
+         "classes": {"3": "deposit"}},
     ]
     assert dedupe_key(jobs[0]) == "7:a@b.co,c@b.co"
 
@@ -66,7 +67,9 @@ def test_dates_are_utc_aware():
 
 import pytest  # noqa: E402
 
-from worker.mapping import detect_currencies, flag_currency_mismatch  # noqa: E402
+from worker.mapping import (  # noqa: E402
+    detect_card_payment, detect_currencies, flag_card_payments, flag_currency_mismatch,
+)
 
 
 @pytest.mark.parametrize("text, expected", [
@@ -102,3 +105,40 @@ def test_flag_currency_mismatch_without_currencies_does_nothing():
     assert flag_currency_mismatch(txs, {}) == 0
     assert "should_verify" not in txs[0]
 
+
+# ------------------------------------------------------------------ pagos de tarjeta
+
+@pytest.mark.parametrize("text, expected", [
+    ("Nuestro sistema detectó un pago de Tarjeta de Crédito No. XXXX0556 por un valor de $ 1,844,908.30", True),
+    ("Recibimos el pago de tu tarjeta y lo estamos procesando", True),
+    ("Abono a tu tarjeta terminada en 1234", True),
+    ("Pagaste tu tarjeta de crédito", True),
+    ("Pago a TC *1234 exitoso", True),
+    ("Realizaste un pago con tu tarjeta *0556 en Spotify", False),      # pago CON la tarjeta: compra
+    ("Realizaste un pago por $109,200.00 de 157 ENEL - CODENSA", False),
+    ("Realizaste una compra de $25.000. Recuerda el pago de tu tarjeta", False),  # compra con pie
+    ("", False),
+])
+def test_detect_card_payment(text, expected):
+    assert detect_card_payment(text) is expected
+
+
+def test_flag_card_payments_only_on_the_card_itself():
+    accounts = {"0556": "1", "7194": "2"}
+    classes = {"1": "credit", "2": "deposit"}
+    txs = [
+        {"account_number": "0556", "expense": True, "mentions_card_payment": True},   # el pago, en la tarjeta
+        {"account_number": "7194", "expense": True, "mentions_card_payment": True},   # la salida, en el depósito
+        {"account_number": "0556", "expense": True, "mentions_card_payment": False},  # compra con la tarjeta
+        {"account_number": "9999", "expense": True, "mentions_card_payment": True},   # dígitos desconocidos
+    ]
+
+    assert flag_card_payments(txs, accounts, classes) == 1
+    assert [t["expense"] for t in txs] == [False, True, True, True]
+    assert [t.get("card_payment", False) for t in txs] == [True, False, False, False]
+
+
+def test_flag_card_payments_without_classes_does_nothing():
+    txs = [{"account_number": "0556", "expense": True, "mentions_card_payment": True}]
+    assert flag_card_payments(txs, {"0556": "1"}, {}) == 0
+    assert txs[0]["expense"] is True

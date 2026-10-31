@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { connect } from 'react-redux';
 import { set_dash_account_activated, get_accounts_status_by_period, get_history_accounts_by_month } from "../../../redux/actions/reports.js";
 import AccChartHistory from "./AccChartHistory.js";
+import CardCyclesChart from "./CardCyclesChart";
 import AccTransPeriod from "./AccTransPeriod.js";
 import AccountDetail from "../../accounts/AccountDetail";
 import AccountCreate from "../../accounts/AccountCreate";
@@ -15,7 +16,7 @@ import { groupOfAccount, accountsOfGroup } from "./accountGroups";
 
 const CHART_TITLE = {
     deposit: ['Saldo', 'últimos 12 meses, al cierre de cada mes'],
-    credit: ['Deuda', 'al cierre de cada mes, últimos 12 meses'],
+    credit: ['Compras y pagos', 'por corte, últimos 12 cortes'],
     investment: ['Valor', 'al cierre de cada mes, últimos 12 meses'],
 };
 
@@ -100,7 +101,9 @@ const AAAcountsDashboard = ({
                                     <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{chartTitle} <span className="font-normal text-ink-2 dark:text-gray-400">· {chartHint}</span></h3>
                                     {history_accounts_by_month && (
                                         <div className="flex-1 min-h-0 mt-1">
-                                            <AccChartHistory />
+                                            {cls === 'credit'
+                                                ? <CardCyclesChart account={account_activated} fallback={<AccChartHistory />} />
+                                                : <AccChartHistory />}
                                         </div>
                                     )}
                                 </section>

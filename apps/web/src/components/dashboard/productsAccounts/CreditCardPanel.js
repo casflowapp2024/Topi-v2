@@ -23,8 +23,8 @@ const Box = ({ label, children, hint, className = '' }) => (
     </div>
 );
 
-// Resumen de una tarjeta de crédito (reemplaza al resumen de la cuenta): deuda, cupo disponible,
-// el último corte con lo que falta pagar y la fecha límite, y lo comprado en el periodo elegido.
+// Resumen de una tarjeta de crédito (reemplaza al resumen de la cuenta): deuda estimada, consumos de
+// este corte, el último corte con su fecha límite y lo comprado en el periodo elegido.
 // Los pagos son transferencias desde otra cuenta: no cuentan como ingreso.
 const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, set_dash_account_activated }) => {
     const [reconcile, setReconcile] = useState(false);
@@ -80,8 +80,6 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, se
     // (intereses, cuota de manejo): se pagaron pero no se registraron como gasto.
     const unrecorded = debt === 0 && nwBalance > 0 ? nwBalance : 0;
     const afterReconcile = () => { setReconcile(false); load(); get_net_worth(); set_dash_account_activated({ ...account }); };
-    const limit = card?.credit_limit != null ? Number(card.credit_limit) : null;
-    const used = limit ? Math.min(100, Math.round((debt / limit) * 100)) : null;
     const pending = card?.pending_statement != null ? Number(card.pending_statement) : null;
     const today = moment().startOf('day');
     const overdue = pending > 0 && card?.due_date && moment(card.due_date).isBefore(today);
@@ -157,18 +155,16 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, se
                                 </span>
                             </Box>
                         ) : (
-                            <Box label="Deuda hoy" hint={debt === 0 ? 'No debes nada en esta tarjeta.' : undefined}>
+                            <Box label={card.last_statement ? 'Deuda estimada' : 'Deuda hoy'}
+                                hint={card.last_statement ? 'Aproximada: tu banco tiene la cifra exacta.' : (debt === 0 ? 'No debes nada en esta tarjeta.' : undefined)}>
                                 <span className={debt > 0 ? 'text-money-out dark:text-money-out-dark' : 'text-gray-900 dark:text-white'}>{formatMoney(debt, currency)}</span>
                             </Box>
                         )}
-                        <Box label="Disponible" hint={limit != null ? `De un cupo de ${formatMoney(limit, currency)}` : 'Configura el cupo para verlo'}>
-                            <span className="text-gray-900 dark:text-white">{card.available != null ? formatMoney(card.available, currency) : '—'}</span>
-                            {used !== null && (
-                                <span className="mt-1.5 block h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-600" title={`${used}% del cupo usado`}>
-                                    <span className={`block h-full rounded-full ${used >= 90 ? 'bg-red-500' : 'bg-topi-500'}`} style={{ width: `${used}%` }} />
-                                </span>
-                            )}
-                        </Box>
+                        {card.last_statement && (
+                            <Box label="Consumos de este corte" hint={`Hasta el ${fmtDate(card.next_statement)}`}>
+                                <span className="text-gray-900 dark:text-white">{formatMoney(card.purchases_since, currency)}</span>
+                            </Box>
+                        )}
                     </div>
 
                     {card.last_statement ? (
@@ -177,15 +173,15 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, se
                                 Último corte: {fmtDate(card.last_statement)} · Próximo: {fmtDate(card.next_statement)}
                             </p>
                             <div className="flex flex-wrap gap-x-6 gap-y-1 text-gray-700 dark:text-gray-200">
-                                <span>Saldo al corte: <b>{formatMoney(card.statement_debt, currency)}</b></span>
+                                <span>Compras del corte: <b>{formatMoney(card.statement_debt, currency)}</b></span>
                                 <span>Pagado desde el corte: <b>{formatMoney(card.paid_since_statement, currency)}</b></span>
                             </div>
                             {pending > 0 ? (
                                 <p className={`flex gap-2 rounded-lg p-2 ${overdue ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'}`}>
                                     <ExclamationTriangleIcon className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
                                     <span>
-                                        Falta pagar <b>{formatMoney(pending, currency)}</b> del corte
-                                        {card.due_date ? (overdue ? ` (la fecha límite fue el ${fmtDate(card.due_date)})` : ` antes del ${fmtDate(card.due_date)}`) : ''}.
+                                        Este corte suma <b>≈ {formatMoney(pending, currency)}</b>
+                                        {card.due_date ? (overdue ? ` y no vemos un pago (la fecha límite fue el ${fmtDate(card.due_date)})` : `: págalo antes del ${fmtDate(card.due_date)}`) : ''}. Tu banco tiene el valor exacto.
                                     </span>
                                 </p>
                             ) : (
@@ -202,7 +198,7 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, se
                         </div>
                     ) : (
                         <p className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 p-3 text-sm text-gray-600 dark:text-gray-300">
-                            Configura el día de corte y el de pago para ver cuánto te falta pagar y hasta cuándo.
+                            Configura el día de corte y el de pago para ver tus compras por corte y hasta cuándo pagar.
                         </p>
                     )}
 

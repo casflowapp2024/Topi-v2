@@ -32,6 +32,13 @@ type TransactionRepository interface {
 	CreateTransferCounterpart(ctx context.Context, link *domain.TransferLink) error
 	// UnlinkTransfer turns both legs of a transfer back into ordinary transactions
 	UnlinkTransfer(ctx context.Context, userID, groupID string) error
+	// LinkPendingCardPayments links the card payments waiting for their other leg when exactly one
+	// expense matches; returns how many it linked
+	LinkPendingCardPayments(ctx context.Context, userID string) (int, error)
+	// DismissCounterpart stops asking for the other leg of a card payment
+	DismissCounterpart(ctx context.Context, userID string, id uint64) error
+	// SuggestCounterpartAccount returns the account that most often paid into this one (nil if none)
+	SuggestCounterpartAccount(ctx context.Context, userID string, id uint64) (*uint64, error)
 	// ListTransferCandidates returns pairs of transactions that look like transfers
 	ListTransferCandidates(ctx context.Context, userID string, limit uint64) ([]domain.TransferCandidate, error)
 	// DismissTransferCandidate hides a candidate pair
@@ -57,6 +64,10 @@ type TransactionService interface {
 	// LinkTransfer marks a transaction as a transfer leg, linking it with an existing transaction or
 	// creating the other leg
 	LinkTransfer(ctx context.Context, link *domain.TransferLink) error
+	// DismissCounterpart stops asking for the other leg of a card payment
+	DismissCounterpart(ctx context.Context, userID string, id uint64) error
+	// SuggestCounterpartAccount returns the account that most often paid into this one (nil if none)
+	SuggestCounterpartAccount(ctx context.Context, userID string, id uint64) (*uint64, error)
 	// UnlinkTransfer turns both legs of a transfer back into ordinary transactions
 	UnlinkTransfer(ctx context.Context, userID, groupID string) error
 	// ListTransferCandidates returns pairs of transactions that look like transfers

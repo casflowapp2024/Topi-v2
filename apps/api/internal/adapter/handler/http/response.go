@@ -572,6 +572,7 @@ type customAccountResponse struct {
 	LastFourDigits string               `json:"last_four_digits,omitempty" example:"1234"`
 	InitialBalance *float64             `json:"initial_balance,omitempty" example:"1000000"`
 	Currency       string               `json:"currency,omitempty" example:"COP"`
+	AccountClass   string               `json:"account_class,omitempty" example:"credit"`
 	Bank           *customBankResponse  `json:"bank,omitempty"`
 	Type           *accountTypeResponse `json:"type,omitempty"`
 	EmailID        *uint64              `json:"email_id"`
@@ -601,6 +602,7 @@ func newAdminAccountResponse(account *domain.Account) customAccountResponse {
 		Name:                     account.Name,
 		LastFourDigits:           account.LastFourDigits,
 		Currency:                 account.Currency,
+		AccountClass:             account.Type.ClassOrDefault(),
 		customAutomationResponse: &automation,
 		EmailID:                  account.Email.ID,
 	}
@@ -704,6 +706,8 @@ type transactionResponse struct {
 	TransferGroupID *string `json:"transfer_group_id" example:"0b8f..."`
 	// Installments: card purchase deferred to N payments (null = none)
 	Installments *int16 `json:"installments" example:"6"`
+	// NeedsCounterpart: card payment waiting for the account it was paid from
+	NeedsCounterpart bool `json:"needs_counterpart" example:"false"`
 }
 
 // newTransactionResponse is a helper function to create a response body for handling transaction data
@@ -752,12 +756,13 @@ func newTransactionResponse(transaction *domain.Transaction) transactionResponse
 			Bank:           newBank,
 			Type:           newType,
 		},
-		Currency:        transaction.Currency,
-		FxRate:          decimalString(transaction.FxRate),
-		FxRateSource:    transaction.FxRateSource,
-		AmountBase:      decimalString(transaction.AmountBase),
-		TransferGroupID: transaction.TransferGroupID,
-		Installments:    transaction.Installments,
+		Currency:         transaction.Currency,
+		FxRate:           decimalString(transaction.FxRate),
+		FxRateSource:     transaction.FxRateSource,
+		AmountBase:       decimalString(transaction.AmountBase),
+		TransferGroupID:  transaction.TransferGroupID,
+		Installments:     transaction.Installments,
+		NeedsCounterpart: transaction.NeedsCounterpart,
 	}
 }
 

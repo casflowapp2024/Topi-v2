@@ -26,9 +26,8 @@ const periodKpis = (cls, data) => {
       rows: [
         { label: 'Compras y cargos', value: formatMoney(exp), tone: 'out' },
         { label: 'Pagos', value: formatMoney(inc), tone: 'in' },
-        { label: 'Deuda al final', value: formatMoney(Math.abs(bal)), tone: bal < 0 ? 'out' : undefined },
       ],
-      note: inc >= exp ? 'Pagaste lo que compraste en el periodo.' : `Quedaron ${formatMoney(exp - inc)} de compras sin pagar en el periodo.`,
+      note: 'El pago de un corte llega en el corte siguiente: no se comparan dentro del mismo periodo.',
     };
   }
   if (cls === 'investment') {

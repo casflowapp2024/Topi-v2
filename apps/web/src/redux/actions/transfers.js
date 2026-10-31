@@ -32,6 +32,17 @@ export const link_transfer = (transactionId, { counterpartTransactionId, counter
         JSON.stringify(body), authConfig()));
 };
 
+// Pago de tarjeta que no salió de una cuenta del usuario: deja de preguntar por la otra pata
+export const dismiss_counterpart = (transactionId) =>
+    call(() => axios.post(`${process.env.REACT_APP_API_URL}/transactions/${transactionId}/transfer/dismiss`, null, authConfig()));
+
+// La cuenta que más veces ha pagado a esta (null si no hay historia)
+export const fetch_counterpart_suggestion = async (transactionId) => {
+    const result = await call(() => axios.get(
+        `${process.env.REACT_APP_API_URL}/transactions/${transactionId}/transfer/suggestion`, authConfig()));
+    return result.ok ? (result.data?.account_id ?? null) : null;
+};
+
 export const unlink_transfer = (groupId) =>
     call(() => axios.delete(`${process.env.REACT_APP_API_URL}/transactions/transfer/${groupId}`, authConfig()));
 

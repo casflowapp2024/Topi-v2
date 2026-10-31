@@ -4,6 +4,7 @@ import (
 	"cash-flow/internal/core/domain"
 	"cash-flow/internal/core/port"
 	"context"
+	"log/slog"
 	"sync"
 )
 
@@ -115,6 +116,16 @@ func (ts *TransactionService) LinkTransfer(ctx context.Context, link *domain.Tra
 	return ts.repo.CreateTransferCounterpart(ctx, link)
 }
 
+// DismissCounterpart stops asking for the other leg of a card payment
+func (ts *TransactionService) DismissCounterpart(ctx context.Context, userID string, id uint64) error {
+	return ts.repo.DismissCounterpart(ctx, userID, id)
+}
+
+// SuggestCounterpartAccount returns the account that most often paid into this one (nil if none)
+func (ts *TransactionService) SuggestCounterpartAccount(ctx context.Context, userID string, id uint64) (*uint64, error) {
+	return ts.repo.SuggestCounterpartAccount(ctx, userID, id)
+}
+
 // UnlinkTransfer turns both legs of a transfer back into ordinary transactions
 func (ts *TransactionService) UnlinkTransfer(ctx context.Context, userID, groupID string) error {
 	return ts.repo.UnlinkTransfer(ctx, userID, groupID)
@@ -195,6 +206,13 @@ func (ts *TransactionService) AdminCreateTransactions(
 	result, err := ts.repo.AdminCreateTransactions(ctx, transactions)
 	if err != nil {
 		return nil, err
+	}
+
+	// The transactions are stored: a failed link leaves the card payment waiting for the user
+	if len(result.Created) > 0 {
+		if _, lErr := ts.repo.LinkPendingCardPayments(ctx, userID); lErr != nil {
+			slog.Error("linking pending card payments", "error", lErr)
+		}
 	}
 
 	return result, nil

@@ -4,7 +4,7 @@ import moment from 'moment-timezone';
 import { ArrowsRightLeftIcon } from '@heroicons/react/24/solid';
 import { setAlert } from '../../redux/actions/alert';
 import { get_net_worth, fetch_fx_rate } from '../../redux/actions/fx';
-import { link_transfer, unlink_transfer, fetch_transfer_candidates } from '../../redux/actions/transfers';
+import { link_transfer, unlink_transfer, fetch_transfer_candidates, dismiss_counterpart, fetch_counterpart_suggestion } from '../../redux/actions/transfers';
 import InputMoneyInt2Decs from '../InputMoneyInt2Decs';
 import Button from '../ui/Button';
 import { formatMoney, formatedCurrToNumber, isOpenAccount } from '../helpers';
@@ -17,6 +17,8 @@ const shortDate = (date) => moment(date).format('DD-MM-YYYY');
 // Marca una transacción como una pata de una transferencia entre cuentas propias: la liga con un
 // movimiento que ya existe (las candidatas que propone la API) o crea el que falta en otra cuenta.
 // Ligada, deja de contar como ingreso o gasto; la categoría y el presupuesto siguen viéndola.
+// Un pago de tarjeta leído de un correo (needs_counterpart) llega abierto: la app pregunta de qué
+// cuenta salió, con la que más veces ha pagado esa tarjeta ya elegida.
 const TransferLinkSection = ({ detailInfo, setDetailInfo, onChanged, user_accounts, setAlert, get_net_worth }) => {
     const accounts = useMemo(() => user_accounts?.items || [], [user_accounts]);
     const [open, setOpen] = useState(false);
@@ -29,13 +31,20 @@ const TransferLinkSection = ({ detailInfo, setDetailInfo, onChanged, user_accoun
 
     const id = detailInfo?.id;
     const linked = Boolean(detailInfo?.transfer_group_id);
+    const pending = Boolean(detailInfo?.needs_counterpart) && !linked;
     const currency = detailInfo?.currency || 'COP';
     const others = accounts.filter(a => isOpenAccount(a) && String(a.id) !== String(detailInfo?.account?.id));
     const target = others.find(a => String(a.id) === String(accountId));
     const targetCurrency = target?.currency || 'COP';
     const crossCurrency = Boolean(target) && targetCurrency !== currency;
 
-    useEffect(() => { setOpen(false); setChoice(''); setAccountId(''); setAmount(null); }, [id]);
+    useEffect(() => { setOpen(pending); setChoice(''); setAccountId(''); setAmount(null); }, [id, pending]);
+
+    useEffect(() => {
+        let active = true;
+        if (pending) fetch_counterpart_suggestion(id).then(suggested => { if (active && suggested) setAccountId(String(suggested)); });
+        return () => { active = false; };
+    }, [id, pending]);
 
     // candidatas de esta transacción (la API devuelve las de todo el usuario)
     useEffect(() => {
@@ -73,6 +82,21 @@ const TransferLinkSection = ({ detailInfo, setDetailInfo, onChanged, user_accoun
     };
     const valid = choice.startsWith('tx:') || (choice === 'account' && target && (!crossCurrency || counterpartAmount > 0));
 
+    const dismiss = async () => {
+        setSaving(true);
+        const result = await dismiss_counterpart(id);
+        setSaving(false);
+        if (!result.ok) {
+            setAlert('No se pudo guardar, intenta de nuevo.', false, 'text-white', 'bg-red-500', 4000);
+            return;
+        }
+        setDetailInfo({ ...detailInfo, needs_counterpart: false });
+        setOpen(false);
+        setAlert('Listo: queda como un abono a la tarjeta.', true, '', '', 2500);
+        onChanged && onChanged();
+        get_net_worth();
+    };
+
     const unlink = async () => {
         setSaving(true);
         const result = await unlink_transfer(detailInfo.transfer_group_id);
@@ -103,7 +127,7 @@ const TransferLinkSection = ({ detailInfo, setDetailInfo, onChanged, user_accoun
             setAlert(msg, false, 'text-white', 'bg-red-500', 4000);
             return;
         }
-        setDetailInfo({ ...detailInfo, transfer_group_id: result.data.transfer_group_id });
+        setDetailInfo({ ...detailInfo, transfer_group_id: result.data.transfer_group_id, needs_counterpart: false });
         setOpen(false);
         setAlert('Transferencia ligada: ya no cuenta como ingreso ni gasto.', true, '', '', 3000);
         onChanged && onChanged();
@@ -141,7 +165,14 @@ const TransferLinkSection = ({ detailInfo, setDetailInfo, onChanged, user_accoun
 
     return (
         <form onSubmit={link} aria-label="Ligar transferencia" className="mt-4 rounded-xl border border-gray-200 dark:border-gray-700 p-3 text-sm space-y-3">
-            <p className="font-medium text-gray-900 dark:text-white">¿Cuál es el otro movimiento de esta transferencia?</p>
+            <p className="font-medium text-gray-900 dark:text-white">
+                {pending ? '¿Desde qué cuenta pagaste esta tarjeta?' : '¿Cuál es el otro movimiento de esta transferencia?'}
+            </p>
+            {pending && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                    El correo del banco no dice de dónde salió el dinero. Hasta que lo elijas, este pago no resta de ninguna cuenta.
+                </p>
+            )}
 
             {candidates === null ? (
                 <p className="text-xs text-gray-500 dark:text-gray-400" aria-live="polite">Buscando el otro movimiento…</p>
@@ -195,13 +226,17 @@ const TransferLinkSection = ({ detailInfo, setDetailInfo, onChanged, user_accoun
                         </div>
                     )}
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Se crea {detailInfo.expense ? 'la entrada' : 'la salida'} con la misma fecha, descripción y categoría.
+                        {target
+                            ? <>Se crea {detailInfo.expense ? 'una entrada' : 'una salida'} de <b>{formatMoney(crossCurrency ? counterpartAmount : detailInfo.amount, targetCurrency)}</b> en <b>{target.name}</b> con la misma fecha, descripción y categoría.</>
+                            : `Se crea ${detailInfo.expense ? 'la entrada' : 'la salida'} con la misma fecha, descripción y categoría.`}
                     </p>
                 </div>
             )}
 
             <div className="flex justify-end gap-2">
-                <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>Cancelar</Button>
+                {pending
+                    ? <Button variant="secondary" size="sm" onClick={dismiss} disabled={saving}>No pagué desde mis cuentas</Button>
+                    : <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>Cancelar</Button>}
                 <Button type="submit" size="sm" disabled={!valid} loading={saving} icon={ArrowsRightLeftIcon}>Ligar</Button>
             </div>
         </form>

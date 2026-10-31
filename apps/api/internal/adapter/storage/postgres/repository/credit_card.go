@@ -117,3 +117,27 @@ func (cr *CreditCardRepository) ListCreditCardStatus(ctx context.Context, userID
 	}
 	return out, mappers.MapPostgresErrorCode(rows.Err())
 }
+
+// ListCreditCardCycles returns the last statements of a card, oldest first
+func (cr *CreditCardRepository) ListCreditCardCycles(ctx context.Context, userID string, accountID uint64) ([]domain.CreditCardCycle, error) {
+	out := make([]domain.CreditCardCycle, 0)
+	rows, err := cr.db.Query(ctx, `
+		SELECT statement_date, purchases::text, payments::text, counted
+		FROM credit_card_cycles($1, $2)`, userID, accountID)
+	if err != nil {
+		return out, mappers.MapPostgresErrorCode(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var (
+			c                   domain.CreditCardCycle
+			purchases, payments *decimal.Decimal
+		)
+		if err = rows.Scan(&c.StatementDate, scanDecimal(&purchases), scanDecimal(&payments), &c.Counted); err != nil {
+			return out, err
+		}
+		c.Purchases, c.Payments = *purchases, *payments
+		out = append(out, c)
+	}
+	return out, mappers.MapPostgresErrorCode(rows.Err())
+}

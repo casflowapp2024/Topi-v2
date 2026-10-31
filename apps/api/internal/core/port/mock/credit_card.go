@@ -50,6 +50,21 @@ func (mr *MockCreditCardRepositoryMockRecorder) GetCreditCard(ctx, userID, accou
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCreditCard", reflect.TypeOf((*MockCreditCardRepository)(nil).GetCreditCard), ctx, userID, accountID)
 }
 
+// ListCreditCardCycles mocks base method.
+func (m *MockCreditCardRepository) ListCreditCardCycles(ctx context.Context, userID string, accountID uint64) ([]domain.CreditCardCycle, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListCreditCardCycles", ctx, userID, accountID)
+	ret0, _ := ret[0].([]domain.CreditCardCycle)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListCreditCardCycles indicates an expected call of ListCreditCardCycles.
+func (mr *MockCreditCardRepositoryMockRecorder) ListCreditCardCycles(ctx, userID, accountID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCreditCardCycles", reflect.TypeOf((*MockCreditCardRepository)(nil).ListCreditCardCycles), ctx, userID, accountID)
+}
+
 // ListCreditCardStatus mocks base method.
 func (m *MockCreditCardRepository) ListCreditCardStatus(ctx context.Context, userID string) ([]domain.CreditCardStatus, error) {
 	m.ctrl.T.Helper()
@@ -115,6 +130,21 @@ func (m *MockCreditCardService) GetCreditCard(ctx context.Context, userID string
 func (mr *MockCreditCardServiceMockRecorder) GetCreditCard(ctx, userID, accountID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCreditCard", reflect.TypeOf((*MockCreditCardService)(nil).GetCreditCard), ctx, userID, accountID)
+}
+
+// ListCreditCardCycles mocks base method.
+func (m *MockCreditCardService) ListCreditCardCycles(ctx context.Context, userID string, accountID uint64) ([]domain.CreditCardCycle, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListCreditCardCycles", ctx, userID, accountID)
+	ret0, _ := ret[0].([]domain.CreditCardCycle)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListCreditCardCycles indicates an expected call of ListCreditCardCycles.
+func (mr *MockCreditCardServiceMockRecorder) ListCreditCardCycles(ctx, userID, accountID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCreditCardCycles", reflect.TypeOf((*MockCreditCardService)(nil).ListCreditCardCycles), ctx, userID, accountID)
 }
 
 // ListCreditCardStatus mocks base method.

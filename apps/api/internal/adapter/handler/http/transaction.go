@@ -379,6 +379,8 @@ type adminTransactionRequest struct {
 	ShouldVerify bool    `json:"should_verify" binding:"omitempty" example:"false"`
 	// SourceMessageID is the provider message id of the email (worker). Makes the insert idempotent.
 	SourceMessageID *string `json:"source_message_id" binding:"omitempty,max=512" example:"18c2f0a1b2c3d4e5"`
+	// CardPayment: a card payment read from an email. It waits for its other leg until it is linked.
+	CardPayment bool `json:"card_payment" binding:"omitempty" example:"false"`
 }
 
 // AdminCreateTransactions godoc
@@ -426,7 +428,8 @@ func (ph *TransactionHandler) AdminCreateTransactions(ctx *gin.Context) {
 			Account:      domain.Account{ID: t.AccountID},
 			Automated:    true,
 
-			SourceMessageID: t.SourceMessageID,
+			SourceMessageID:  t.SourceMessageID,
+			NeedsCounterpart: t.CardPayment,
 		}
 	}
 

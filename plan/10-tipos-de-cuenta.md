@@ -239,6 +239,22 @@ Cómo quedó:
 - No se hizo: extractos guardados (`credit_card_statements`), pago mínimo ni simulación de
   intereses.
 
+### Etapa 4b — pagos por correo y reglas generales (30-oct, migración 000033)
+
+El saldo acumulado de una tarjeta nunca coincidió con el banco: en la tarjeta de prueba quedaba hasta
+1,7 M por debajo del pago siguiente, porque arrastra cuotas, intereses y compras que no llegan por
+correo. Reglas nuevas, válidas en cualquier banco (reemplazan lo de abajo donde lo contradigan):
+- Exacto: compras y cargos por periodo, pagos (toda entrada, incluidas transferencias).
+- Aproximado: deuda = lo que falta del último corte + consumos desde el corte − lo pagado de más. Un
+  corte queda pagado con entradas ≥ 10 % de sus compras: no se compara contra el monto porque el
+  banco cobra distinto, y el 10 % evita que una devolución pequeña lo marque pagado.
+- Sin cupo disponible en la UI: las cuotas bloquean cupo de formas que no se ven.
+- `net_worth` usa la deuda estimada si hay día de corte. "Tus Deudas" en el inicio también, solo el mes en curso.
+- Lo pagado por encima de lo comprado (`credit_card_cycles`) es una tendencia, no intereses: incluye
+  compras que no llegaron por correo.
+- Un pago por correo es entrada de la tarjeta con `needs_counterpart`. Se liga solo si hay exactamente
+  un gasto de depósito con mismo monto y moneda a ±1 día; es la única excepción a D5.
+
 ### Datos
 ```
 credit_card_details (account_id PK, credit_limit NUMERIC(20,4), statement_day SMALLINT,

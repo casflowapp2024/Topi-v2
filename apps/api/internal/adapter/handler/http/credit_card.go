@@ -180,3 +180,55 @@ func (ch *CreditCardHandler) ListCreditCards(ctx *gin.Context) {
 	}
 	handleSuccess(ctx, out)
 }
+
+type creditCardCycleResponse struct {
+	StatementDate string `json:"statement_date" example:"2026-10-15"`
+	Purchases     string `json:"purchases" example:"1884408"`
+	Payments      string `json:"payments" example:"1844908.3"`
+	Counted       bool   `json:"counted" example:"true"`
+}
+
+type creditCardCyclesResponse struct {
+	Cycles []creditCardCycleResponse `json:"cycles"`
+	// Overpaid is what was paid above the purchases of the counted statements (negative: below)
+	Overpaid string `json:"overpaid" example:"298028.28"`
+}
+
+// ListCreditCardCycles godoc
+//
+//	@Summary		Purchases and payments by statement
+//	@Description	The last statements of a card, oldest first: purchases of each statement and what came in until the next one. Empty without a statement day.
+//	@Tags			Accounts
+//	@Produce		json
+//	@Param			id	path		uint64										true	"Account ID"
+//	@Success		200	{object}	response{data=creditCardCyclesResponse}	"Statements"
+//	@Router			/accounts/{id}/credit-card/cycles [get]
+//	@Security		BearerAuth
+func (ch *CreditCardHandler) ListCreditCardCycles(ctx *gin.Context) {
+	var uri accountIDURI
+	userID, err := domain.GetAuthUserID(ctx, enums.AuthorizationPayloadKey)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	if err = ctx.ShouldBindUri(&uri); err != nil {
+		validationError(ctx, err)
+		return
+	}
+	cycles, err := ch.svc.ListCreditCardCycles(ctx, *userID, uri.ID)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	out := creditCardCyclesResponse{
+		Cycles:   make([]creditCardCycleResponse, 0, len(cycles)),
+		Overpaid: domain.OverpaidTotal(cycles).String(),
+	}
+	for _, c := range cycles {
+		out.Cycles = append(out.Cycles, creditCardCycleResponse{
+			StatementDate: c.StatementDate.Format(time.DateOnly), Purchases: c.Purchases.String(),
+			Payments: c.Payments.String(), Counted: c.Counted,
+		})
+	}
+	handleSuccess(ctx, out)
+}

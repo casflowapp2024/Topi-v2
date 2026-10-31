@@ -503,7 +503,8 @@ const Transactions = ({
                                                             <div className='min-w-[9%] md:min-w-[40px] flex items-center justify-start'>
                                                                 <span className="w-[28px] md:w-[35px] flex justify-start text-center">
                                                                     {transaction.transfer_group_id && <span title="Transferencia entre tus cuentas" className="inline-flex items-center mr-1 text-topi-500"><ArrowsRightLeftIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Transferencia</span></span>}
-                                                                    {transaction.should_verify === true ?
+                                                                    {transaction.needs_counterpart && <span title="Falta elegir la cuenta con que pagaste" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Falta elegir la cuenta con que pagaste</span></span>}
+                                                                    {transaction.needs_counterpart ? null : transaction.should_verify === true ?
                                                                         <span title="Por revisar" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Por revisar</span></span> :
                                                                         <>
                                                                             {transaction.checked === false ?
@@ -591,7 +592,8 @@ const Transactions = ({
                                                                 <div className='min-w-[9%] md:min-w-[40px] flex items-center justify-start'>
                                                                     <span className="w-[28px] md:w-[35px] flex justify-start text-center">
                                                                         {tx.transfer_group_id && <span title="Transferencia entre tus cuentas" className="inline-flex items-center mr-1 text-topi-500"><ArrowsRightLeftIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Transferencia</span></span>}
-                                                                    {tx.should_verify === true ?
+                                                                    {tx.needs_counterpart && <span title="Falta elegir la cuenta con que pagaste" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Falta elegir la cuenta con que pagaste</span></span>}
+                                                                    {tx.needs_counterpart ? null : tx.should_verify === true ?
                                                                             <span title="Por revisar" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Por revisar</span></span> :
                                                                             <>
                                                                                 {tx.checked === false ?

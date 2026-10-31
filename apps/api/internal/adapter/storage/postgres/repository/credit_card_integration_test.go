@@ -119,16 +119,16 @@ func TestCreditCards(t *testing.T) {
 	require.Len(t, status, 1)
 	s := status[0]
 	assert.Equal(t, card, s.AccountID)
-	assert.True(t, s.Debt.Equal(d("300000")), s.Debt.String()) // 450.000 en compras − 150.000 pagados
+	assert.True(t, s.Debt.Equal(d("50000")), s.Debt.String()) // el corte ya tiene un pago: solo los consumos de este corte
 	require.NotNil(t, s.Available)
-	assert.True(t, s.Available.Equal(d("700000")), s.Available.String())
+	assert.True(t, s.Available.Equal(d("950000")), s.Available.String())
 	require.NotNil(t, s.LastStatement)
 	assert.Equal(t, firstOfMonth.Format(time.DateOnly), s.LastStatement.Format(time.DateOnly))
 	assert.Equal(t, firstOfMonth.AddDate(0, 1, 0).Format(time.DateOnly), s.NextStatement.Format(time.DateOnly))
 	assert.Equal(t, firstOfMonth.AddDate(0, 0, 19).Format(time.DateOnly), s.DueDate.Format(time.DateOnly))
 	assert.True(t, s.StatementDebt.Equal(d("400000")), s.StatementDebt.String())
 	assert.True(t, s.PaidSinceStatement.Equal(d("150000")), s.PaidSinceStatement.String())
-	assert.True(t, s.PendingStatement.Equal(d("250000")), s.PendingStatement.String())
+	assert.True(t, s.PendingStatement.IsZero(), s.PendingStatement.String())
 	assert.True(t, s.PurchasesSince.Equal(d("50000")), s.PurchasesSince.String())
 	assert.Equal(t, 1, s.InstallmentPurchases)
 }

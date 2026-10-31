@@ -245,12 +245,14 @@ func TestAccounts_BuildReadEmailRequests_GroupsBySender(t *testing.T) {
 	if assert.Len(t, requests, 2) {
 		assert.Equal(t, ReadEmailBodyRequest{
 			UserID: "u1", Email: "u1@gmail.com", EmailID: 7, Provider: "gmail", SenderEmail: bancolombia,
-			Accounts: map[string]string{"1111": "1", "2222": "2"}, Currencies: map[string]string{"1": "COP", "2": "COP"}, Onboarding: true,
+			Accounts: map[string]string{"1111": "1", "2222": "2"}, Currencies: map[string]string{"1": "COP", "2": "COP"},
+			Classes: map[string]string{"1": "deposit", "2": "deposit"}, Onboarding: true,
 		}, requests[0])
 		// before the fix the second group reused the first account's connection and all accounts
 		assert.Equal(t, ReadEmailBodyRequest{
 			UserID: "u1", Email: "u1@outlook.com", EmailID: 9, Provider: "outlook", SenderEmail: nubank,
-			Accounts: map[string]string{"3333": "3"}, Currencies: map[string]string{"3": "COP"}, Onboarding: true,
+			Accounts: map[string]string{"3333": "3"}, Currencies: map[string]string{"3": "COP"},
+			Classes: map[string]string{"3": "deposit"}, Onboarding: true,
 		}, requests[1])
 		assert.Equal(t, "9:nu@nu.com.co", requests[1].DedupeKey())
 	}

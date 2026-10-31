@@ -107,6 +107,20 @@ func (mr *MockTransactionRepositoryMockRecorder) DeleteTransaction(ctx, id, user
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTransaction", reflect.TypeOf((*MockTransactionRepository)(nil).DeleteTransaction), ctx, id, userID)
 }
 
+// DismissCounterpart mocks base method.
+func (m *MockTransactionRepository) DismissCounterpart(ctx context.Context, userID string, id uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DismissCounterpart", ctx, userID, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DismissCounterpart indicates an expected call of DismissCounterpart.
+func (mr *MockTransactionRepositoryMockRecorder) DismissCounterpart(ctx, userID, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DismissCounterpart", reflect.TypeOf((*MockTransactionRepository)(nil).DismissCounterpart), ctx, userID, id)
+}
+
 // DismissTransferCandidate mocks base method.
 func (m *MockTransactionRepository) DismissTransferCandidate(ctx context.Context, userID string, outID, inID uint64) error {
 	m.ctrl.T.Helper()
@@ -134,6 +148,21 @@ func (m *MockTransactionRepository) GetTransactionByID(ctx context.Context, user
 func (mr *MockTransactionRepositoryMockRecorder) GetTransactionByID(ctx, userID, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionByID", reflect.TypeOf((*MockTransactionRepository)(nil).GetTransactionByID), ctx, userID, id)
+}
+
+// LinkPendingCardPayments mocks base method.
+func (m *MockTransactionRepository) LinkPendingCardPayments(ctx context.Context, userID string) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LinkPendingCardPayments", ctx, userID)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LinkPendingCardPayments indicates an expected call of LinkPendingCardPayments.
+func (mr *MockTransactionRepositoryMockRecorder) LinkPendingCardPayments(ctx, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkPendingCardPayments", reflect.TypeOf((*MockTransactionRepository)(nil).LinkPendingCardPayments), ctx, userID)
 }
 
 // LinkTransactions mocks base method.
@@ -190,6 +219,21 @@ func (m *MockTransactionRepository) PredictTransactionCategory(ctx context.Conte
 func (mr *MockTransactionRepositoryMockRecorder) PredictTransactionCategory(ctx, descriptions, cpr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PredictTransactionCategory", reflect.TypeOf((*MockTransactionRepository)(nil).PredictTransactionCategory), ctx, descriptions, cpr)
+}
+
+// SuggestCounterpartAccount mocks base method.
+func (m *MockTransactionRepository) SuggestCounterpartAccount(ctx context.Context, userID string, id uint64) (*uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SuggestCounterpartAccount", ctx, userID, id)
+	ret0, _ := ret[0].(*uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SuggestCounterpartAccount indicates an expected call of SuggestCounterpartAccount.
+func (mr *MockTransactionRepositoryMockRecorder) SuggestCounterpartAccount(ctx, userID, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SuggestCounterpartAccount", reflect.TypeOf((*MockTransactionRepository)(nil).SuggestCounterpartAccount), ctx, userID, id)
 }
 
 // UnlinkTransfer mocks base method.
@@ -300,6 +344,20 @@ func (mr *MockTransactionServiceMockRecorder) DeleteTransaction(ctx, userID, id 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTransaction", reflect.TypeOf((*MockTransactionService)(nil).DeleteTransaction), ctx, userID, id)
 }
 
+// DismissCounterpart mocks base method.
+func (m *MockTransactionService) DismissCounterpart(ctx context.Context, userID string, id uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DismissCounterpart", ctx, userID, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DismissCounterpart indicates an expected call of DismissCounterpart.
+func (mr *MockTransactionServiceMockRecorder) DismissCounterpart(ctx, userID, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DismissCounterpart", reflect.TypeOf((*MockTransactionService)(nil).DismissCounterpart), ctx, userID, id)
+}
+
 // DismissTransferCandidate mocks base method.
 func (m *MockTransactionService) DismissTransferCandidate(ctx context.Context, userID string, outID, inID uint64) error {
 	m.ctrl.T.Helper()
@@ -371,6 +429,21 @@ func (m *MockTransactionService) ListTransferCandidates(ctx context.Context, use
 func (mr *MockTransactionServiceMockRecorder) ListTransferCandidates(ctx, userID, limit interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTransferCandidates", reflect.TypeOf((*MockTransactionService)(nil).ListTransferCandidates), ctx, userID, limit)
+}
+
+// SuggestCounterpartAccount mocks base method.
+func (m *MockTransactionService) SuggestCounterpartAccount(ctx context.Context, userID string, id uint64) (*uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SuggestCounterpartAccount", ctx, userID, id)
+	ret0, _ := ret[0].(*uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SuggestCounterpartAccount indicates an expected call of SuggestCounterpartAccount.
+func (mr *MockTransactionServiceMockRecorder) SuggestCounterpartAccount(ctx, userID, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SuggestCounterpartAccount", reflect.TypeOf((*MockTransactionService)(nil).SuggestCounterpartAccount), ctx, userID, id)
 }
 
 // UnlinkTransfer mocks base method.

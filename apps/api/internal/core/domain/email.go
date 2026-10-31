@@ -58,6 +58,8 @@ type ReadEmailBodyRequest struct {
 	// Currencies is account_id: ISO 4217 currency. The worker marks a transaction for review
 	// (should_verify) when the email mentions another currency. Optional: old jobs do not have it.
 	Currencies map[string]string `json:"currencies,omitempty"`
+	// Classes is account_id: account class. A card payment is an income of a credit account.
+	Classes    map[string]string `json:"classes,omitempty"`
 	Onboarding bool              `json:"onboarding"`
 }
 

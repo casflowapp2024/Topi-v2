@@ -89,6 +89,70 @@ func (ph *TransactionHandler) LinkTransfer(ctx *gin.Context) {
 	})
 }
 
+// DismissCounterpart godoc
+//
+//	@Summary		Stop asking for the other leg of a card payment
+//	@Description	The payment did not come from an account of the user: it stays as an income of the card.
+//	@Tags			Transactions
+//	@Produce		json
+//	@Param			id	path		uint64			true	"Transaction ID"
+//	@Success		200	{object}	response		"Dismissed"
+//	@Failure		404	{object}	errorResponse	"Transaction not found or not waiting"
+//	@Router			/transactions/{id}/transfer/dismiss [post]
+//	@Security		BearerAuth
+func (ph *TransactionHandler) DismissCounterpart(ctx *gin.Context) {
+	var uri linkTransferURI
+
+	userID, err := domain.GetAuthUserID(ctx, enums.AuthorizationPayloadKey)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	if err = ctx.ShouldBindUri(&uri); err != nil {
+		validationError(ctx, err)
+		return
+	}
+	if err = ph.svc.DismissCounterpart(ctx, *userID, uri.ID); err != nil {
+		handleError(ctx, err)
+		return
+	}
+	handleSuccess(ctx, nil)
+}
+
+type counterpartSuggestionResponse struct {
+	AccountID *uint64 `json:"account_id" example:"2"`
+}
+
+// SuggestCounterpart godoc
+//
+//	@Summary		Most likely account for the other leg
+//	@Description	The account the user most often transferred from to the account of this transaction (null without history).
+//	@Tags			Transactions
+//	@Produce		json
+//	@Param			id	path		uint64											true	"Transaction ID"
+//	@Success		200	{object}	response{data=counterpartSuggestionResponse}	"Suggestion"
+//	@Router			/transactions/{id}/transfer/suggestion [get]
+//	@Security		BearerAuth
+func (ph *TransactionHandler) SuggestCounterpart(ctx *gin.Context) {
+	var uri linkTransferURI
+
+	userID, err := domain.GetAuthUserID(ctx, enums.AuthorizationPayloadKey)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	if err = ctx.ShouldBindUri(&uri); err != nil {
+		validationError(ctx, err)
+		return
+	}
+	accountID, err := ph.svc.SuggestCounterpartAccount(ctx, *userID, uri.ID)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	handleSuccess(ctx, counterpartSuggestionResponse{AccountID: accountID})
+}
+
 type unlinkTransferURI struct {
 	GroupID string `uri:"group" binding:"required,uuid" example:"5b1c0c4e-3f0e-4c55-9d3a-0f6f1f1e2a10"`
 }

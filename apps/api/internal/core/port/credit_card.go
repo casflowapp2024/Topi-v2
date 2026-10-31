@@ -16,6 +16,8 @@ type CreditCardRepository interface {
 	SaveCreditCard(ctx context.Context, details *domain.CreditCardDetails) error
 	// ListCreditCardStatus returns every open card of the user today
 	ListCreditCardStatus(ctx context.Context, userID string) ([]domain.CreditCardStatus, error)
+	// ListCreditCardCycles returns the last statements of a card, oldest first
+	ListCreditCardCycles(ctx context.Context, userID string, accountID uint64) ([]domain.CreditCardCycle, error)
 }
 
 // CreditCardService validates card terms and returns card status
@@ -23,4 +25,5 @@ type CreditCardService interface {
 	GetCreditCard(ctx context.Context, userID string, accountID uint64) (*domain.CreditCardDetails, error)
 	SaveCreditCard(ctx context.Context, details *domain.CreditCardDetails) error
 	ListCreditCardStatus(ctx context.Context, userID string) ([]domain.CreditCardStatus, error)
+	ListCreditCardCycles(ctx context.Context, userID string, accountID uint64) ([]domain.CreditCardCycle, error)
 }

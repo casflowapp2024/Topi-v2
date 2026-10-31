@@ -338,7 +338,7 @@ func TestApplyTransactionsQueryFilters(t *testing.T) {
 			},
 			limits:  false,
 			order:   false,
-			wantSQL: "WHERE t.expense = ? AND t.automated = ? AND t.should_verify = ? AND t.checked = ?",
+			wantSQL: "WHERE t.expense = ? AND t.automated = ? AND (t.should_verify OR t.needs_counterpart) AND t.checked = ?",
 		},
 		{
 			name:    "should keep only transfers when transfer is true",

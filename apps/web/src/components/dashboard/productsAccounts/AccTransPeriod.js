@@ -217,7 +217,9 @@ const AccTransPeriod = ({
                                                 </span>
                                                 <span className="flex-1 min-w-0">
                                                     <span className="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>
-                                                    <span className="block text-xs text-ink-2 dark:text-gray-400 truncate">{transfer ? 'Transferencia' : (tx.category?.name || '')}</span>
+                                                    {tx.needs_counterpart
+                                                        ? <span className="block text-xs text-status-warn-text dark:text-amber-300 truncate">Falta elegir la cuenta con que pagaste</span>
+                                                        : <span className="block text-xs text-ink-2 dark:text-gray-400 truncate">{transfer ? 'Transferencia' : (tx.category?.name || '')}</span>}
                                                 </span>
                                                 <span className={`text-sm font-semibold tabular-nums whitespace-nowrap ${transfer ? 'text-gray-700 dark:text-gray-200' : tx.expense ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}`}>
                                                     {transfer ? '' : tx.expense ? '−' : '+'}{formatMoney(tx.amount, tx.currency)}

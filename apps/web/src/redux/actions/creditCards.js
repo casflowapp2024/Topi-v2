@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Tarjetas de crédito: términos (cupo, corte, pago, tasa) y su estado de hoy (deuda, disponible,
-// último corte, lo que falta pagar y la fecha límite). Montos como string decimal.
+// Tarjetas de crédito: términos (cupo, corte, pago, tasa), su estado de hoy (deuda estimada, último
+// corte, lo que falta pagar y la fecha límite) y compras y pagos por corte. Montos como string decimal.
 
 const authConfig = () => ({
     headers: {
@@ -27,6 +27,12 @@ export const save_credit_card = (accountId, { creditLimit, statementDay, dueDay,
         due_day: dueDay ? Number(dueDay) : null,
         interest_rate_ea: interestRateEA === '' || interestRateEA === null || interestRateEA === undefined ? null : String(interestRateEA),
     }), authConfig()));
+
+// Últimos cortes de una tarjeta: { cycles: [...], overpaid }; null si falló
+export const fetch_credit_card_cycles = async (accountId) => {
+    const result = await call(() => axios.get(`${process.env.REACT_APP_API_URL}/accounts/${accountId}/credit-card/cycles`, authConfig()));
+    return result.ok ? result.data : null;
+};
 
 // Estado de todas las tarjetas abiertas del usuario; null si falló
 export const fetch_credit_cards = async () => {

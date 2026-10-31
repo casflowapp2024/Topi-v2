@@ -105,6 +105,7 @@ func TestEmailHandler_ReadEmail_EnqueuesJob(t *testing.T) {
 		SenderEmail: sender,
 		Accounts:    map[string]string{"1234": "10"},
 		Currencies:  map[string]string{"10": "COP"},
+		Classes:     map[string]string{"10": "deposit"},
 		Onboarding:  true,
 	}, store.payloads[0])
 
