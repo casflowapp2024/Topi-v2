@@ -194,9 +194,7 @@ const AccTransPeriod = ({
                             </p>
                         )}
                     </div>
-                    <Button size="sm" icon={PlusIcon} onClick={() => handleOpenCreatePopUp()} aria-label="Agregar movimiento">
-                        <span className="hidden sm:inline">Agregar</span>
-                    </Button>
+                    <Button size="icon" variant="ghost" icon={PlusIcon} onClick={() => handleOpenCreatePopUp()} aria-label="Agregar movimiento" title="Agregar movimiento" className="shrink-0" />
                 </div>
 
                 <div className='max-h-[360px] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto overscroll-contain'>

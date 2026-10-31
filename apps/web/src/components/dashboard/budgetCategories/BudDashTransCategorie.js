@@ -160,9 +160,7 @@ const BudDashTransCategorie = ({
             </>
           )}
         </div>
-        <Button size="sm" icon={PlusIcon} onClick={handleOpenCreatePopUp} aria-label="Agregar transacción">
-          <span className="hidden sm:inline">Agregar</span>
-        </Button>
+        <Button size="icon" variant="ghost" icon={PlusIcon} onClick={handleOpenCreatePopUp} aria-label="Agregar transacción" title="Agregar transacción" className="shrink-0" />
       </header>
 
       <div className="px-2 py-2 lg:flex-1 lg:min-h-0 lg:flex lg:flex-col">

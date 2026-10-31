@@ -108,7 +108,7 @@ const CardReconcile = ({ account, balance, card, user_categories, create_transac
       ) : diff < 0 ? (
         <p className="text-sm text-gray-800 dark:text-gray-100">
           En Topi tienes <b>{formatMoney(-diff, currency)}</b> más de deuda que en tu banco. Probablemente falta registrar un pago:
-          créalo en Transacciones → Nuevo → Transferencia, desde la cuenta con la que pagaste.
+          créalo en Transacciones → Agregar → Transferencia, desde la cuenta con la que pagaste.
         </p>
       ) : (
         <p className="text-sm text-money-in dark:text-money-in-dark font-medium">Cuadra con tu banco. No hay nada que ajustar.</p>

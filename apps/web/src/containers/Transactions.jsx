@@ -334,10 +334,11 @@ const Transactions = ({
                                         )}
                                     </button>
                                     <Menu as="div" className="relative shrink-0">
-                                        <MenuButton className="h-10 px-3 md:px-4 rounded-2xl bg-topi-500 hover:bg-topi-600 text-white text-sm font-semibold flex items-center gap-1.5 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 focus-visible:ring-offset-2"
-                                            aria-label="Nuevo movimiento">
+                                        {/* Discreto a propósito: las transacciones llegan solas, digitar es la excepción */}
+                                        <MenuButton className="h-10 px-3 rounded-2xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm font-medium flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 focus-visible:ring-offset-2"
+                                            aria-label="Agregar movimiento">
                                             <PlusIcon className="w-5 h-5" aria-hidden="true" />
-                                            <span className="hidden md:inline">Nuevo</span>
+                                            <span className="hidden md:inline">Agregar</span>
                                             <ChevronDownIcon className="hidden md:block w-4 h-4 opacity-80" aria-hidden="true" />
                                         </MenuButton>
                                         <MenuItems anchor={{ to: 'bottom end', gap: 6 }}
