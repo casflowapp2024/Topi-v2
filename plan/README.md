@@ -10,6 +10,7 @@
 | `05-fase-5-deploy.md` | Deploy en Coolify: código (Parte A) y runbook manual (Parte B) |
 | `10-tipos-de-cuenta.md` | Transferencias, inversiones con valoraciones, tarjetas y cambio de moneda de cuentas |
 | `20-ux-fase-3-vistas.md` | UX Fase 3: Inicio (ritmo, flujo, patrimonio), bandeja "Por revisar", agregar discreto, movimientos por día |
+| `21-cuotas.md` | Repartir compras a cuotas en gastos, presupuestos y cortes de tarjeta (propuesta) |
 | `90-evaluacion-jev.md` | Análisis de Jev vs Gemini (para después) |
 | `PROMPT-fase-*.md` | Prompts para Claude Code |
 
