@@ -73,13 +73,16 @@ const HomePaceCard = ({ history_dash, current_Month, current_Year, loading }) =>
 
   return (
     <Card className="h-full flex flex-col gap-2" aria-label="Ritmo del mes">
-      <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Ritmo del mes</h2>
       {!history_dash ? (
         <div className="flex flex-col gap-2"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-7 w-3/4" /><Skeleton className="h-[140px] w-full" /></div>
       ) : (
         <div aria-busy={loading} className={`flex-1 flex flex-col gap-1 min-w-0 transition-opacity duration-200 ${loading ? 'opacity-50' : ''}`}>
           {body}
-          {!future && <div className="mt-auto pt-2 h-[140px]"><ProjectionChart compact /></div>}
+          {!future && (
+            <div className="relative flex-1 min-h-[140px] lg:min-h-[190px] mt-2">
+              <div className="absolute inset-0"><ProjectionChart compact /></div>
+            </div>
+          )}
         </div>
       )}
     </Card>

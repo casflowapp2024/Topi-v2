@@ -108,6 +108,8 @@ test('Inicio: las cuentas cerradas no aparecen y se avisa del pagado de más', (
   expect(el.textContent).toMatch(/Visa: pagaste .*más de lo registrado/);
   expect(el.textContent).toContain('Nómina');
   expect(el.textContent).not.toContain('Vieja');
+  // tarjetas de igual alto, tengan o no una línea extra por su moneda
+  expect(el.querySelector('ul.auto-rows-fr button.h-full')).not.toBeNull();
   act(() => root.unmount());
 });
 

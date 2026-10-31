@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import moment from 'moment-timezone';
 import { connect } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Emoji } from 'emoji-picker-react';
 import {
-  ArrowRightIcon, CheckIcon, CreditCardIcon, ExclamationTriangleIcon,
+  ArrowRightIcon, CheckIcon, ChevronRightIcon, CreditCardIcon, ExclamationTriangleIcon,
 } from '@heroicons/react/20/solid';
 import { CheckCircleIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 //redux
@@ -15,6 +16,7 @@ import { get_expenses_report, get_financial_report, get_history_dash } from '../
 import { get_net_worth } from '../../../redux/actions/fx';
 import { setAlert } from '../../../redux/actions/alert';
 import { dismiss_transfer_candidate, fetch_transfer_candidates, link_transfer } from '../../../redux/actions/transfers';
+import { fetch_credit_cards } from '../../../redux/actions/creditCards';
 //components
 import Button from '../../ui/Button';
 import Card, { CardHeader } from '../../ui/Card';
@@ -26,19 +28,28 @@ import CardReconcile from '../productsAccounts/CardReconcile';
 import DropDownCat from '../../transactions/DropDownCat';
 import TransactionDetail from '../../transactions/TransactionDetail2';
 import TransferLinkSection from '../../transactions/TransferLinkSection';
-import { capitalizeWords, findElmentById, formatMoney, isCreditAccount, isOpenAccount } from '../../helpers';
+import { capitalizeWords, cardsDueSoon, findElmentById, formatMoney, isCreditAccount, isOpenAccount } from '../../helpers';
 
-const MAX_VISIBLE = 5;
+const MIN_LOADED = 5;   // con menos en memoria se pide la siguiente tanda
+const MAX_DOTS = 5;
 const PAGE = 10;
 const LEAVE_MS = 200;
 
-// Hasta `max` ítems tomando uno de cada grupo por vuelta: ningún tipo se queda sin aparecer
-export const pickVisible = (groups, max) => {
+// Cola de la bandeja: uno de cada grupo por vuelta, así ningún tipo queda de último
+export const buildQueue = (groups) => {
   const out = [];
-  for (let i = 0; out.length < max && groups.some(g => i < g.length); i += 1) {
-    groups.forEach(g => { if (i < g.length && out.length < max) out.push(g[i]); });
+  for (let i = 0; groups.some(g => i < g.length); i += 1) {
+    groups.forEach(g => { if (i < g.length) out.push(g[i]); });
   }
   return out;
+};
+
+// Aviso del estado vacío: el pago de tarjeta más cercano, si hay. No cuenta como pendiente.
+export const nextPaymentNotice = (cards) => {
+  const [next] = cardsDueSoon(cards).sort((a, b) => moment(a.due_date) - moment(b.due_date));
+  if (!next) return null;
+  const overdue = moment(next.due_date).isBefore(moment().startOf('day'));
+  return `${next.name}: ${overdue ? 'quedó pendiente' : 'paga'} ≈ ${formatMoney(next.pending_statement, next.currency)}${overdue ? '' : ` antes del ${moment(next.due_date).format('DD-MM')}`}`;
 };
 
 // Al ligar una pareja, las otras con alguna de sus transacciones dejan de ser posibles
@@ -46,9 +57,9 @@ const pairKey = (c) => `${c.out_transaction_id}-${c.in_transaction_id}`;
 const sharesLeg = (a, b) => [a.out_transaction_id, a.in_transaction_id].some(id => id === b.out_transaction_id || id === b.in_transaction_id);
 
 const Row = ({ leaving, children }) => (
-  <li className={`py-2.5 flex flex-col gap-2 transition-opacity duration-200 motion-reduce:transition-none ${leaving ? 'opacity-0' : ''}`}>
+  <div className={`flex flex-col gap-2 transition-opacity duration-200 motion-reduce:transition-none ${leaving ? 'opacity-0' : ''}`}>
     {children}
-  </li>
+  </div>
 );
 
 const TxSummary = ({ tx, onOpen }) => (
@@ -68,7 +79,8 @@ const TxSummary = ({ tx, onOpen }) => (
 /**
  * Bandeja "Por revisar": la acción principal del inicio. Reúne lo que el worker no pudo resolver
  * solo: transacciones por confirmar, pagos de tarjeta sin la cuenta de origen, posibles
- * transferencias y tarjetas con pagos de más. Cada ítem se resuelve aquí mismo, sin salir del inicio.
+ * transferencias y tarjetas con pagos de más. Muestra uno a la vez: al resolverlo sale el siguiente.
+ * El contador solo cuenta lo que hay que resolver: el aviso de pago aparece cuando ya no queda nada.
  */
 const ReviewInbox = ({
   user_categories, user_accounts, net_worth, first_steps, trans_filters_activated, current_Month, current_Year,
@@ -85,6 +97,8 @@ const ReviewInbox = ({
   const [picking, setPicking] = useState(null); // transacción con "Otra…" abierto
   const [sheet, setSheet] = useState(null);     // { pay: tx } | { card: fila de tarjeta }
   const [detail, setDetail] = useState(null);
+  const [position, setPosition] = useState(0);
+  const [notice, setNotice] = useState(null);
 
   const load = useCallback(async () => {
     const [review, pairs] = await Promise.all([fetch_review_transactions(PAGE), fetch_transfer_candidates()]);
@@ -126,7 +140,7 @@ const ReviewInbox = ({
   });
   // Quedan más en la API que aquí: se trae la siguiente tanda
   useEffect(() => {
-    if (txs && txs.length < MAX_VISIBLE && txTotal > txs.length) load();
+    if (txs && txs.length < MIN_LOADED && txTotal > txs.length) load();
   }, [txs, txTotal, load]);
 
   const confirm = async (tx, categoryId = tx.category?.id) => {
@@ -192,12 +206,17 @@ const ReviewInbox = ({
   const total = (txTotal || 0) + (candidates?.length || 0) + cards.length;
   const accountName = (id) => (user_accounts?.items || []).find(a => a.id === id)?.name || 'Cuenta';
 
-  const visible = loading ? [] : pickVisible([
+  useEffect(() => {
+    if (!loading && !failed && total === 0) fetch_credit_cards().then(list => setNotice(nextPaymentNotice(list)));
+  }, [loading, failed, total]);
+
+  const queue = loading ? [] : buildQueue([
     (txs || []).filter(t => !t.needs_counterpart).map(tx => ({ kind: 'verify', key: `tx:${tx.id}`, tx })),
     (txs || []).filter(t => t.needs_counterpart).map(tx => ({ kind: 'payment', key: `tx:${tx.id}`, tx })),
     (candidates || []).map(c => ({ kind: 'pair', key: pairKey(c), c })),
     cards.map(row => ({ kind: 'card', key: `card:${row.acc.id}`, ...row })),
-  ], MAX_VISIBLE);
+  ]);
+  const current = queue.length ? queue[position % queue.length] : null;
 
   const renderItem = (item) => {
     const off = leaving.has(item.key);
@@ -269,15 +288,30 @@ const ReviewInbox = ({
   };
 
   return (
-    <Card aria-label="Por revisar">
-      <CardHeader className="!mb-0" title={total > 0 ? `Por revisar · ${total}` : 'Por revisar'}
-        action={total > visible.length && (
+    <Card aria-label="Por revisar" className="h-full flex flex-col">
+      <CardHeader title={total > 0 ? `Por revisar · ${total}` : 'Por revisar'}
+        action={total > 1 && (
           <button type="button" onClick={seeAll} className="shrink-0 text-xs font-medium text-topi-600 dark:text-indigo-300 hover:underline">Ver todo</button>
         )} />
       {loading ? (
         <SkeletonRows rows={3} />
-      ) : total > 0 ? (
-        <ul className="divide-y divide-gray-100 dark:divide-gray-700">{visible.map(renderItem)}</ul>
+      ) : current ? (
+        <>
+          {renderItem(current)}
+          {queue.length > 1 && (
+            <div className="mt-auto pt-3 flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5" aria-hidden="true">
+                {Array.from({ length: Math.min(queue.length, MAX_DOTS) }).map((_, i) => (
+                  <span key={i} className={`w-1.5 h-1.5 rounded-full ${i === Math.min(position % queue.length, MAX_DOTS - 1) ? 'bg-topi-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                ))}
+              </span>
+              <button type="button" onClick={() => { setPicking(null); setPosition(p => p + 1); }} aria-label="Ver el siguiente por revisar"
+                className="inline-flex items-center text-xs font-medium text-ink-2 dark:text-gray-400 hover:text-topi-600 dark:hover:text-indigo-300 transition-colors">
+                Siguiente <ChevronRightIcon className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
+          )}
+        </>
       ) : failed ? (
         <EmptyState compact icon={ExclamationTriangleIcon} title="No pudimos revisar tus movimientos"
           action={<Button size="sm" variant="secondary" onClick={load}>Reintentar</Button>} />
@@ -285,7 +319,7 @@ const ReviewInbox = ({
         <EmptyState compact icon={EnvelopeIcon} title="Conecta tu correo" description="Tus movimientos llegan solos y aquí solo confirmas lo que haga falta."
           action={<Button size="sm" onClick={() => navigate('/dashboard/connect-email')}>Conectar correo</Button>} />
       ) : (
-        <EmptyState compact icon={CheckCircleIcon} title="Todo al día" description="Cuando llegue algo por confirmar, lo verás aquí." />
+        <EmptyState compact icon={CheckCircleIcon} title="Todo al día" description={notice || 'Cuando llegue algo por confirmar, lo verás aquí.'} />
       )}
 
       <Sheet open={Boolean(sheet)} onClose={() => setSheet(null)} title={sheet?.card ? 'Ajustar con el banco' : 'Pago de tarjeta'}

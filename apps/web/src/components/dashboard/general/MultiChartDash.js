@@ -18,7 +18,7 @@ function MultiChartDash({ history_dash }) {
   const [tab, setTab] = useState('balance');
 
   return (
-    <div className="h-[330px] sm:h-[320px] lg:h-full flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow overflow-hidden transition-colors duration-300">
+    <div className="h-[330px] sm:h-[320px] lg:h-[300px] flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow overflow-hidden transition-colors duration-300">
       <ChartTabs tabs={TABS} value={tab} onChange={setTab} label="Gráficas del mes" />
 
       <div className="flex-1 min-h-0 w-full" role="tabpanel">

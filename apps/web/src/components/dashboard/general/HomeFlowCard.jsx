@@ -20,12 +20,12 @@ const Change = ({ percentage, upIsGood }) => {
 };
 
 const Figure = ({ label, color, value, percentage, upIsGood, loading }) => (
-  <div className="flex items-start justify-between gap-2">
+  <div className="flex flex-wrap items-baseline lg:items-start justify-between gap-x-2">
     <span className="inline-flex items-center gap-1.5 text-sm text-ink-2 dark:text-gray-400">
       <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: color }} aria-hidden="true" />
       {label}
     </span>
-    <span className={`flex flex-col items-end min-w-0 transition-opacity duration-200 ${loading ? 'opacity-50' : ''}`}>
+    <span className={`ml-auto flex flex-row-reverse items-baseline gap-2 lg:flex-col lg:items-end lg:gap-0 min-w-0 transition-opacity duration-200 ${loading ? 'opacity-50' : ''}`}>
       <span className="text-base font-bold tabular-nums text-gray-900 dark:text-gray-100">{value}</span>
       <Change percentage={percentage} upIsGood={upIsGood} />
     </span>
@@ -54,7 +54,7 @@ const HomeFlowCard = ({ income, expenses, history_dash, current_Month, current_Y
   const bar = flowBarSegments(inValue, outValue);
 
   return (
-    <Card className="h-full flex flex-col gap-3" aria-label="Flujo del mes">
+    <Card className="h-full flex flex-col gap-2 lg:gap-3" aria-label="Flujo del mes">
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Flujo del mes</h2>
         <span className="text-xs text-ink-2 dark:text-gray-400">vs. mes anterior</span>
@@ -63,12 +63,12 @@ const HomeFlowCard = ({ income, expenses, history_dash, current_Month, current_Y
         <div className="flex flex-col gap-3"><Skeleton className="h-5 w-full" /><Skeleton className="h-5 w-full" /><Skeleton className="h-5 w-full" /></div>
       ) : (
         <>
-          <div className="flex flex-col gap-3" aria-busy={loading}>
+          <div className="flex flex-col gap-1.5 lg:flex-1 lg:justify-between lg:gap-3" aria-busy={loading}>
             <Figure label="Ingresos" color={c.ingreso} value={formatMoney(inValue)} percentage={income.vs_past_month} upIsGood loading={loading} />
             <Figure label="Gastos" color={c.gasto} value={formatMoney(outValue)} percentage={expenses.vs_past_month} upIsGood={false} loading={loading} />
-            <Figure label="Ahorro neto" color={c.ahorro} value={formatMoney(savings?.value)} percentage={savings?.percentage} upIsGood loading={loading} />
+            <Figure label="Ahorro" color={c.ahorro} value={formatMoney(savings?.value)} percentage={savings?.percentage} upIsGood loading={loading} />
           </div>
-          <div className="mt-auto flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5">
             <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700" aria-hidden="true">
               <span style={{ width: `${bar.spent}%`, background: c.gasto }} />
               <span style={{ width: `${bar.saved}%`, background: c.ahorro }} />

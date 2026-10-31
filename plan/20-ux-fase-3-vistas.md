@@ -121,12 +121,14 @@ isCreditAccount, isInvestmentAccount) · transfers actions · `TransferLinkSecti
 ## Criterios de aceptación
 
 - [x] Inicio PC: fila de 3 tarjetas (Ritmo, Flujo, Patrimonio con barra de composición) de igual alto.
+      *(Cambió tras la prueba del usuario: ver "Ajustes tras la prueba".)*
 - [x] "Hoy puedes gastar" coincide con la cuenta manual (presupuesto − gastado) / días restantes en un
       usuario de prueba; el total no incluye transferencias. *(Lo gastado no las incluye; el presupuesto
       total suma todas las categorías de gasto: ver "Pendientes" abajo.)*
 - [x] Mes pasado y usuario sin presupuestos muestran los textos alternativos.
 - [x] Patrimonio = `net_worth.total`; la suma de los tramos de la barra cuadra con el total.
 - [x] "Por revisar" lista los 4 tipos; confirmar una categoría con un toque funciona y baja el contador.
+      *(Ahora muestra uno a la vez.)*
       *("Pagado de más" solo cubre tarjetas sin día de corte, decisión del 30-oct.)*
 - [x] No hay botón de agregar transacción protagonista en ninguna vista.
 - [x] Transacciones agrupadas por día con neto diario; transferencias neutrales.
@@ -135,6 +137,25 @@ isCreditAccount, isInvestmentAccount) · transfers actions · `TransferLinkSecti
       la fórmula de "hoy puedes gastar" y la bandeja) y `npm run build` sin errores. *(33 tests pasan y el
       build compila; `src/App.test.js`, el stub de CRA, falla igual en `main`: por eso sin marcar.)*
 - [x] Si se tocó la API: `go test ./...` verde. *(No se tocó.)*
+
+## Ajustes tras la prueba (30 y 31-oct)
+
+Reemplazan las secciones A, B y C en lo que se contradiga. Layout de PC:
+
+```
+[ Ritmo (más ancha, sin título) ][ Flujo (angosta) ][ Mes                ]
+[                               ][                 ][ Por revisar (uno)  ]
+[ Patrimonio: franja alargada                      ][ Presupuestos       ]
+[ MultiChartDash (300 px)                          ][                    ]
+[ DashAccounts                                                           ]
+```
+
+- Móvil: Ritmo, Flujo contraído, Por revisar, Patrimonio, gráficas, Presupuestos, Mis cuentas. El mes sigue en la barra superior.
+- Patrimonio no se fusiona con Balance: esa gráfica es el efectivo del mes elegido y Patrimonio es el total de hoy.
+- "Por revisar" muestra un ítem a la vez, con puntos y "Siguiente" para saltarlo; al resolverlo sale el siguiente.
+- El contador solo cuenta lo que hay que resolver. Sin pendientes dice "Todo al día" y recuerda el pago de tarjeta
+  más cercano, si lo hay. No es una bandeja de notificaciones.
+- "Ahorro neto" pasa a "Ahorro". "Mis cuentas" ya no repite el patrimonio y sus tarjetas tienen un mismo alto.
 
 ## Pendientes tras la implementación
 

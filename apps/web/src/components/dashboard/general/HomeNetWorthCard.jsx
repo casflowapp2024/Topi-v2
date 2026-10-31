@@ -45,37 +45,34 @@ const HomeNetWorthCard = ({ net_worth, set_dash_account_activated, history = nul
 
   return (
     <Card as="button" type="button" onClick={openAccounts} aria-label="Patrimonio: ver cuentas"
-      className="group w-full h-full flex flex-col gap-3 text-left hover:border-topi-500/40 active:scale-[0.99] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500">
-      <span className="flex items-center justify-between gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
-        Patrimonio
-        <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-topi-500 transition-colors" aria-hidden="true" />
-      </span>
+      className="group w-full flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6 text-left hover:border-topi-500/40 active:scale-[0.99] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500">
       {!net_worth ? (
-        <span className="flex flex-col gap-2 w-full"><Skeleton className="h-7 w-3/4" /><Skeleton className="h-2.5 w-full rounded-full" /></span>
+        <span className="flex flex-col gap-2 w-full"><Skeleton className="h-7 w-1/2" /><Skeleton className="h-2.5 w-full rounded-full" /></span>
       ) : (
         <>
-          <span className="flex flex-col">
-            <span className="text-sm text-ink-2 dark:text-gray-400">Lo que tienes menos lo que debes, hoy</span>
+          <span className="flex flex-col shrink-0">
+            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Patrimonio · hoy</span>
             <span className="flex items-baseline gap-1">
               <Money amount={net_worth.total} currency={base} baseCurrency={base} align="left" className="text-2xl font-extrabold tabular-nums text-gray-900 dark:text-gray-100" />
               {net_worth.missing_rates && <span className="text-sm text-ink-2 dark:text-gray-400" title="Alguna cuenta aún no tiene tasa de cambio">*</span>}
             </span>
           </span>
-          <span className="mt-auto flex flex-col gap-2 w-full">
+          <span className="flex-1 min-w-0 flex flex-col gap-2 w-full">
             {scale > 0 && (
               <span className="flex h-2.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700" aria-hidden="true">
                 {segments.map(s => (
                   <span key={s.id} className={s.value < 0 ? 'topi-stripes' : ''}
-                    style={{ width: `${(Math.abs(s.value) / scale) * 100}%`, backgroundColor: s.value < 0 ? c.crit : color[s.id] }} />
+                    style={{ width: `${(Math.abs(s.value) / scale) * 100}%`, backgroundColor: color[s.id] }} />
                 ))}
               </span>
             )}
             <ChartLegend className="!px-0" align="start"
-              items={segments.map(s => ({ type: 'bar', color: s.value < 0 ? c.crit : color[s.id], label: s.label, value: formatMoneyCompact(s.value, base) }))} />
-            {segments.some(s => s.id === 'credit' && s.value < 0) && (
-              <span className="text-xs text-ink-2 dark:text-gray-400">La deuda es aproximada: tu banco tiene la cifra exacta.</span>
-            )}
+              items={segments.map(s => ({
+                type: 'bar', color: color[s.id], value: formatMoneyCompact(s.value, base),
+                label: s.id === 'credit' ? `${s.label} (aprox.)` : s.label,
+              }))} />
           </span>
+          <ChevronRightIcon className="hidden lg:block w-4 h-4 shrink-0 text-gray-300 group-hover:text-topi-500 transition-colors" aria-hidden="true" />
         </>
       )}
     </Card>

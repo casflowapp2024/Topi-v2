@@ -5,7 +5,7 @@ import { Provider } from 'react-redux';
 import { createStore, applyMiddleware } from 'redux';
 import { thunk } from 'redux-thunk';
 import axios from 'axios';
-import ReviewInbox, { pickVisible } from './ReviewInbox';
+import ReviewInbox, { buildQueue, nextPaymentNotice } from './ReviewInbox';
 
 jest.mock('axios', () => {
   const noop = { use() {} };
@@ -52,10 +52,11 @@ const state = (extra = {}) => ({
   Alert: {},
 });
 
-const api = (txs, candidates) => {
+const api = (txs, candidates, creditCards = []) => {
   axios.get.mockImplementation((url) => {
     if (url.includes('should_verify=true')) return Promise.resolve({ status: 200, data: { data: { transactions: txs, meta: { total: txs.length } } } });
     if (url.includes('transfer/candidates')) return Promise.resolve({ status: 200, data: { data: candidates } });
+    if (url.includes('analysis/credit-cards')) return Promise.resolve({ status: 200, data: { data: creditCards } });
     return Promise.resolve({ status: 200, data: { data: {} } });
   });
   axios.put.mockResolvedValue({ status: 200, data: { data: {} } });
@@ -79,21 +80,27 @@ beforeEach(() => {
   mockNavigate.mockClear();
 });
 
-test('Un ítem de cada tipo antes de repetir, hasta el máximo', () => {
-  expect(pickVisible([[1, 2, 3], ['a'], [], ['x', 'y']], 4)).toEqual([1, 'a', 'x', 2]);
-  expect(pickVisible([[1], [2]], 5)).toEqual([1, 2]);
+test('La cola toma un ítem de cada tipo antes de repetir', () => {
+  expect(buildQueue([[1, 2, 3], ['a'], [], ['x', 'y']])).toEqual([1, 'a', 'x', 2, 'y', 3]);
 });
 
-test('Lista los 4 tipos con el contador', async () => {
+test('Muestra uno a la vez y Siguiente recorre los 4 tipos', async () => {
   api([tx(1), payment], [pair]);
   const { el, root } = await mount(state());
+  const next = () => click(el.querySelector('[aria-label="Ver el siguiente por revisar"]'));
   expect(title(el)).toBe('Por revisar · 4');
   expect(button(el, 'Mercado')).toBeTruthy();                 // categoría sugerida, un toque
   expect(button(el, 'Otra…')).toBeTruthy();
+  expect(button(el, '¿De qué cuenta salió?')).toBeFalsy();    // solo se ve el primero
+  await next();
   expect(button(el, '¿De qué cuenta salió?')).toBeTruthy();
+  await next();
   expect(button(el, 'Unir como transferencia')).toBeTruthy();
+  await next();
   expect(el.textContent).toContain('Pagado de más en Visa');
   expect(el.textContent).not.toContain('Vieja');               // las cerradas no se revisan
+  await next();
+  expect(button(el, 'Mercado')).toBeTruthy();                 // da la vuelta
   await act(async () => root.unmount());
 });
 
@@ -110,16 +117,16 @@ test('Confirmar con un toque guarda, saca el ítem y baja el contador', async ()
   await act(async () => { jest.advanceTimersByTime(250); });
   expect(title(el)).toBe('Por revisar · 1');
   expect(el.textContent).not.toContain('Compra 1');
+  expect(el.textContent).toContain('Compra 3');               // sale el siguiente
   jest.useRealTimers();
   await act(async () => root.unmount());
 });
 
-test('Máximo 5 visibles y Ver todo lleva a Transacciones con el filtro', async () => {
+test('Ver todo lleva a Transacciones con el filtro', async () => {
   api([1, 3, 4, 5, 6, 7].map(i => tx(i)), []);
   const st = state({ Fx: { net_worth: { accounts: [] } } });
   const { el, root } = await mount(st);
   expect(title(el)).toBe('Por revisar · 6');
-  expect(el.querySelectorAll('li')).toHaveLength(5);
   await click(button(el, 'Ver todo'));
   expect(mockNavigate).toHaveBeenCalledWith('/dashboard/transactions');
   await act(async () => root.unmount());
@@ -135,6 +142,18 @@ test('Vacío: "Todo al día"; sin correo conectado invita a conectarlo, no a dig
   await click(button(noMail.el, 'Conectar correo'));
   expect(mockNavigate).toHaveBeenCalledWith('/dashboard/connect-email');
   await act(async () => noMail.root.unmount());
+});
+
+test('Sin pendientes recuerda el próximo pago de tarjeta, sin sumarlo al contador', async () => {
+  const soon = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
+  const card = { name: 'Visa', currency: 'COP', pending_statement: '200000', due_date: soon };
+  expect(nextPaymentNotice([{ ...card, pending_statement: '0' }])).toBeNull();
+  api([], [], [card]);
+  const { el, root } = await mount(state({ Fx: { net_worth: { accounts: [] } } }));
+  expect(title(el)).toBe('Por revisar');
+  expect(el.textContent).toContain('Todo al día');
+  expect(el.textContent).toMatch(/Visa: paga ≈ .*200\.000 antes del/);
+  await act(async () => root.unmount());
 });
 
 test('Si la API falla no dice "Todo al día"', async () => {

@@ -11,6 +11,7 @@ import HomePaceCard from './HomePaceCard';
 import HomeFlowCard from './HomeFlowCard';
 import HomeNetWorthCard from './HomeNetWorthCard';
 import ReviewInbox from './ReviewInbox';
+import Card from '../../ui/Card';
 import PeriodSelector from '../../navigation/PeriodSelector';
 
 const AAGenDashboard = ({
@@ -37,34 +38,34 @@ const AAGenDashboard = ({
                 En móvil las filas y columnas usan `contents`, así sus hijos entran directo en la pila
                 y `order-*` define el orden; en PC (lg) vuelven a ser filas y columnas.
             */}
-            {/* En móvil el periodo vive en la barra superior */}
-            <div className="hidden lg:flex items-center justify-between gap-2">
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Inicio</h1>
-                <PeriodSelector />
-            </div>
-            <div className="contents lg:grid lg:grid-cols-3 lg:gap-6">
+            <div className="contents lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)_320px] xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)_300px] lg:gap-6">
                 <div className="order-1 lg:order-none min-w-0">
                     <HomePaceCard loading={loadingReport} />
                 </div>
                 <div className="order-2 lg:order-none min-w-0">
                     <HomeFlowCard loading={loadingReport} />
                 </div>
-                <div className="order-3 lg:order-none min-w-0">
-                    <HomeNetWorthCard />
+                <div className="contents lg:flex lg:flex-col lg:gap-3 lg:min-w-0">
+                    {/* En móvil el periodo vive en la barra superior */}
+                    <Card padding="sm" className="hidden lg:flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Mes</span>
+                        <PeriodSelector />
+                    </Card>
+                    <div className="order-3 lg:order-none lg:flex-1 lg:min-h-0">
+                        <ReviewInbox />
+                    </div>
                 </div>
-            </div>
-            <div className="contents lg:flex lg:flex-row lg:gap-6">
-                {/* La columna derecha crece con la bandeja: la gráfica conserva su alto y acompaña el scroll */}
-                <div className="order-6 lg:order-none lg:flex-1 lg:min-w-0">
-                    <div className="lg:sticky lg:top-[78px] lg:h-[420px]">
+                <div className="contents lg:col-span-2 lg:flex lg:flex-col lg:gap-6 lg:min-w-0">
+                    <div className="order-4 lg:order-none">
+                        <HomeNetWorthCard />
+                    </div>
+                    <div className="order-5 lg:order-none">
                         <MultiChartDash />
                     </div>
                 </div>
-                <div className="contents lg:flex lg:flex-col lg:gap-6 lg:w-[320px] xl:w-[300px] lg:shrink-0">
-                    <div className="order-4 lg:order-none">
-                        <ReviewInbox />
-                    </div>
-                    <div className="order-5 lg:order-none">
+                {/* En PC Presupuestos llena el alto de Patrimonio y las gráficas */}
+                <div className="order-6 lg:order-none lg:relative">
+                    <div className="lg:absolute lg:inset-0">
                         <DashPlan />
                     </div>
                 </div>

@@ -7,7 +7,7 @@ import { set_dash_account_activated } from '../../../redux/actions/reports';
 import { get_net_worth } from '../../../redux/actions/fx';
 import { fetch_credit_cards } from '../../../redux/actions/creditCards';
 //components
-import { formatMoney, getBaseCurrency, accountClass, isOpenAccount } from '../../helpers';
+import { cardsDueSoon, formatMoney, getBaseCurrency, accountClass, isOpenAccount } from '../../helpers';
 import Money from '../../ui/Money';
 import Card, { CardHeader } from '../../ui/Card';
 import Button from '../../ui/Button';
@@ -16,11 +16,6 @@ import {
   BanknotesIcon, BuildingLibraryIcon, ArrowTrendingUpIcon, CreditCardIcon, ChevronRightIcon, PlusIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/react/20/solid';
-
-// Aviso de pago: tarjetas cuyo último corte aún no tiene un pago y con fecha límite en los próximos 7 días (o vencida)
-const DUE_SOON_DAYS = 7;
-const dueSoon = (cards) => (cards || []).filter(c => Number(c.pending_statement) > 0 && c.due_date
-  && moment(c.due_date).diff(moment().startOf('day'), 'days') <= DUE_SOON_DAYS);
 
 // Tipos de cuenta (ids del catálogo account_types)
 const TYPE_STYLE = {
@@ -40,7 +35,7 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
   useEffect(() => { get_net_worth(); }, [get_net_worth, user_accounts]);
   const [cards, setCards] = useState([]);
   useEffect(() => { fetch_credit_cards().then(list => setCards(list || [])); }, [user_accounts]);
-  const dueCards = dueSoon(cards);
+  const dueCards = cardsDueSoon(cards);
 
   const baseCurrency = net_worth?.base_currency || getBaseCurrency();
   const { rows, savings } = useMemo(() => {
@@ -56,7 +51,6 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
     const savings = rows.reduce((sum, r) => sum + (accountClass(r.acc) === 'deposit' && r.value > 0 ? r.value : 0), 0);
     return { rows, savings };
   }, [user_accounts, net_worth]);
-  const investmentsTotal = Number(net_worth?.investments_total || 0);
   // Tarjetas con saldo positivo: cargos (intereses, cuota de manejo) pagados pero sin registrar
   const overpaid = rows.filter(r => accountClass(r.acc) === 'credit' && Number(r.nw.balance) > 0);
 
@@ -73,18 +67,6 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
       <CardHeader
         className="mb-0"
         title="Mis cuentas"
-        subtitle={net_worth && rows.length > 0 && (
-          <span className="flex flex-col">
-            <span>Patrimonio hoy: <b className="text-gray-900 dark:text-gray-100 tabular-nums">{formatMoney(net_worth.total, baseCurrency)}</b>
-              {net_worth.missing_rates && <span title="Alguna cuenta aún no tiene tasa de cambio"> *</span>}</span>
-            {net_worth.cash_total != null && (
-              <span>Efectivo en cuentas: <span className="tabular-nums">{formatMoney(net_worth.cash_total, baseCurrency)}</span></span>
-            )}
-            {investmentsTotal !== 0 && (
-              <span>Inversiones: <span className="tabular-nums">{formatMoney(net_worth.investments_total, baseCurrency)}</span></span>
-            )}
-          </span>
-        )}
         action={
           <Link to="accounts" className="text-xs font-medium text-topi-600 dark:text-indigo-300 hover:underline inline-flex items-center">
             Ver detalle <ChevronRightIcon className="w-4 h-4" aria-hidden="true" />
@@ -133,7 +115,7 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
           action={<Button size="sm" icon={PlusIcon} onClick={() => navigate('/dashboard/accounts')}>Agregar cuenta</Button>}
         />
       ) : (
-        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-3">
+        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr gap-2 pt-3">
           {visible.map(({ acc, nw, value }) => {
             const style = TYPE_STYLE[parseInt(acc.type?.id)] || TYPE_STYLE[1];
             const { Icon } = style;
@@ -145,7 +127,7 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
                 <button
                   type="button"
                   onClick={() => openAccount(acc)}
-                  className="group w-full text-left flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-700 p-3 hover:border-topi-500/40 hover:bg-topi-50/60 dark:hover:bg-gray-700/60 active:scale-[0.99] transition-all"
+                  className="group w-full h-full text-left flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-700 p-3 hover:border-topi-500/40 hover:bg-topi-50/60 dark:hover:bg-gray-700/60 active:scale-[0.99] transition-all"
                 >
                   <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${style.tint}`}>
                     <Icon className="w-5 h-5" aria-hidden="true" />
@@ -191,8 +173,8 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
                         {Number(nw.market_gain) > 0 ? '+' : ''}{formatMoney(nw.market_gain, nw.currency)}
                       </span>
                     )}
-                    <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-topi-500 transition-colors" aria-hidden="true" />
                   </span>
+                  <ChevronRightIcon className="lg:hidden w-4 h-4 shrink-0 -ml-2 text-gray-300 group-hover:text-topi-500 transition-colors" aria-hidden="true" />
                 </button>
               </li>
             );

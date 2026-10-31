@@ -49,6 +49,9 @@ export const isCreditAccount = (account) => accountClass(account) === 'credit';
 export const isInvestmentAccount = (account) => accountClass(account) === 'investment';
 // Cuentas cerradas: conservan su historia pero no se ofrecen para movimientos nuevos
 export const isOpenAccount = (account) => !account?.closed_at;
+// Tarjetas cuyo último corte aún no tiene un pago y con fecha límite en los próximos días (o vencida)
+export const cardsDueSoon = (cards, days = 7) => (cards || []).filter(c => Number(c.pending_statement) > 0 && c.due_date
+    && moment(c.due_date).diff(moment().startOf('day'), 'days') <= days);
 // Grupo de la cuenta en los reportes de la API (/analysis/...): savings | investments | credits
 export const accountReportGroup = (account) =>
     ({ deposit: 'savings', investment: 'investments', credit: 'credits' })[accountClass(account)];
