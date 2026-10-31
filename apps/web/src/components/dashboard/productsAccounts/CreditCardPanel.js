@@ -188,11 +188,6 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, se
                                     Corte pagado.
                                 </p>
                             )}
-                            {card.installment_purchases > 0 && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    Tienes {card.installment_purchases === 1 ? '1 compra' : `${card.installment_purchases} compras`} a cuotas: el banco te cobra solo la cuota de cada mes, así que tu extracto puede pedir menos que esto.
-                                </p>
-                            )}
                         </div>
                     ) : (
                         <p className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 p-3 text-sm text-gray-600 dark:text-gray-300">

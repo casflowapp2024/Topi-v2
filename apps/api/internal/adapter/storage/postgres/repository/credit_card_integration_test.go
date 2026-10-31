@@ -121,17 +121,18 @@ func TestCreditCards(t *testing.T) {
 	require.Len(t, status, 1)
 	s := status[0]
 	assert.Equal(t, card, s.AccountID)
-	assert.True(t, s.Debt.Equal(d("50000")), s.Debt.String()) // el corte ya tiene un pago: solo los consumos de este corte
+	// el corte ya tiene un pago: quedan los consumos de este corte y las 5 cuotas que faltan
+	assert.True(t, s.Debt.Equal(d("133333.3333")), s.Debt.String())
 	require.NotNil(t, s.Available)
-	assert.True(t, s.Available.Equal(d("950000")), s.Available.String())
+	assert.True(t, s.Available.Equal(d("866666.6667")), s.Available.String())
 	require.NotNil(t, s.LastStatement)
 	assert.Equal(t, firstOfMonth.Format(time.DateOnly), s.LastStatement.Format(time.DateOnly))
 	assert.Equal(t, firstOfMonth.AddDate(0, 1, 0).Format(time.DateOnly), s.NextStatement.Format(time.DateOnly))
 	assert.Equal(t, firstOfMonth.AddDate(0, 0, 19).Format(time.DateOnly), s.DueDate.Format(time.DateOnly))
-	assert.True(t, s.StatementDebt.Equal(d("400000")), s.StatementDebt.String())
+	assert.True(t, s.StatementDebt.Equal(d("316666.6667")), s.StatementDebt.String()) // contado + primera cuota
 	assert.True(t, s.PaidSinceStatement.Equal(d("150000")), s.PaidSinceStatement.String())
 	assert.True(t, s.PendingStatement.IsZero(), s.PendingStatement.String())
-	assert.True(t, s.PurchasesSince.Equal(d("50000")), s.PurchasesSince.String())
+	assert.True(t, s.PurchasesSince.Equal(d("66666.6667")), s.PurchasesSince.String()) // contado + segunda cuota
 	assert.Equal(t, 1, s.InstallmentPurchases)
 }
 
@@ -244,4 +245,78 @@ func TestCardCharges(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, history.Monthly, 1)
 	assert.InDelta(t, -30000, history.Monthly[0].Value, 0.001)
+}
+
+// TestCardChargesWithInstallments: el banco cobra la cuota. Pagarla exacta no deja cargo, pagar de más
+// deja justo los intereses, y la deuda sigue siendo la compra completa hasta pagarla toda.
+func TestCardChargesWithInstallments(t *testing.T) {
+	ctx := context.Background()
+	db := integrationDB(t)
+	userID := "it-chgq-" + uuid.NewString()
+	t.Cleanup(func() {
+		_, _ = db.Exec(ctx, "DELETE FROM transactions WHERE user_id = $1", userID)
+		_, _ = db.Exec(ctx, "DELETE FROM credit_card_details WHERE user_id = $1", userID)
+		for _, table := range []string{"accounts", "categories", "banks", "user_extra"} {
+			_, _ = db.Exec(ctx, "DELETE FROM "+table+" WHERE user_id = $1", userID)
+		}
+	})
+	id := func(sql string, args ...any) uint64 {
+		t.Helper()
+		var out uint64
+		require.NoError(t, db.QueryRow(ctx, sql, args...).Scan(&out))
+		return out
+	}
+	_, err := db.Exec(ctx, "INSERT INTO user_extra (user_id, utc_offset, whatsapp) VALUES ($1, 'America/Bogota', '')", userID)
+	require.NoError(t, err)
+	bank := id("INSERT INTO banks (user_id, name, email) VALUES ($1, 'Banco IT', 'it@banco.test') RETURNING id", userID)
+	category := id("INSERT INTO categories (user_id, name, budget, emoji) VALUES ($1, 'Compras IT', 0, '') RETURNING id", userID)
+	card := id(`INSERT INTO accounts (user_id, name, last_four_digits, bank_id, type_id, initial_balance, currency, created_at)
+		VALUES ($1, 'Tarjeta IT', '0001', $2, 4, 0, 'COP', '2026-08-01 12:00:00-05') RETURNING id`, userID, bank)
+	_, err = db.Exec(ctx, "INSERT INTO credit_card_details (account_id, user_id, statement_day, due_day) VALUES ($1, $2, 15, 5)", card, userID)
+	require.NoError(t, err)
+	tx := func(expense bool, amount, at string, installments any) uint64 {
+		t.Helper()
+		return id(`INSERT INTO transactions (user_id, category_id, account_id, description, expense, amount, date, installments)
+			VALUES ($1, $2, $3, 'IT', $4, $5, $6, $7) RETURNING id`, userID, category, card, expense, amount, at, installments)
+	}
+	charges := func(today string) map[string]string {
+		t.Helper()
+		rows, err := db.Query(ctx, "SELECT charged_on::text, amount::text FROM card_charges($1, $2::date)", userID, today)
+		require.NoError(t, err)
+		defer rows.Close()
+		out := map[string]string{}
+		for rows.Next() {
+			var day, amount string
+			require.NoError(t, rows.Scan(&day, &amount))
+			out[day] = strings.TrimSuffix(amount, ".0000")
+		}
+		return out
+	}
+	billed := func(from, to string) decimal.Decimal {
+		t.Helper()
+		var out string
+		require.NoError(t, db.QueryRow(ctx, "SELECT card_billed($1, $2, $3::date, $4::date)::text", userID, card, from, to).Scan(&out))
+		return decimal.RequireFromString(out)
+	}
+
+	// 600.000 a 3 cuotas + 50.000 de contado, ambas en el corte del 15-oct
+	purchase := tx(true, "600000", "2026-09-20 10:00:00-05", 3)
+	tx(true, "50000", "2026-09-25 10:00:00-05", nil)
+	assert.True(t, billed("2026-09-15", "2026-10-15").Equal(decimal.NewFromInt(250000)))
+	assert.True(t, billed("2026-10-15", "2026-11-15").Equal(decimal.NewFromInt(200000)))
+	assert.True(t, billed("2026-11-15", "2026-12-15").Equal(decimal.NewFromInt(200000)))
+	assert.True(t, billed("2026-12-15", "2027-01-15").IsZero(), "no quedan cuotas")
+
+	// pago exacto del corte: sin cargo, aunque la compra completa sea mayor
+	tx(false, "250000", "2026-10-25 10:00:00-05", nil)
+	assert.Empty(t, charges("2026-10-31"))
+
+	// la segunda cuota con intereses: el cargo son los intereses
+	tx(false, "218000", "2026-11-25 10:00:00-05", nil)
+	assert.Equal(t, map[string]string{"2026-11-25": "18000"}, charges("2026-11-30"))
+
+	// sin las cuotas, el mismo pago no dejaría cargo: quitarlas lo recalcula
+	_, err = db.Exec(ctx, "UPDATE transactions SET installments = NULL WHERE id = $1", purchase)
+	require.NoError(t, err)
+	assert.Empty(t, charges("2026-11-30"))
 }

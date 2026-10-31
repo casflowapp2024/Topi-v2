@@ -51,7 +51,7 @@ type CreditCardStatus struct {
 	PaidSinceStatement   *decimal.Decimal
 	PendingStatement     *decimal.Decimal // what is left of the last statement: 0 once it has a payment
 	PurchasesSince       *decimal.Decimal
-	InstallmentPurchases int // purchases in installments still running: the bank bills only the installment
+	InstallmentPurchases int // purchases in installments still running
 }
 
 // CreditCardCycle is one statement of a card (function credit_card_cycles): its purchases and what

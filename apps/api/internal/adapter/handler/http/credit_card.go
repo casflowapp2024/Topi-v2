@@ -148,7 +148,7 @@ func dateString(t *time.Time) *string {
 // ListCreditCards godoc
 //
 //	@Summary		Credit cards today
-//	@Description	For each open card: debt, available credit and the last billing period (statement debt, payments since, what is left to pay and the due date). With purchases in installments the bank bills only the installment, so pending_statement is an upper bound.
+//	@Description	For each open card: debt, available credit and the last billing period (statement debt, payments since, what is left to pay and the due date). Purchases in installments count by installment: the debt includes the ones still to be billed.
 //	@Tags			Analysis
 //	@Produce		json
 //	@Success		200	{object}	response{data=[]creditCardStatusResponse}	"Cards"

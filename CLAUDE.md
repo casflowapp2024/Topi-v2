@@ -79,8 +79,9 @@ plan/         plan de migración
   de movimientos nuevos (`isOpenAccount`).
 - Tarjetas: términos en `credit_card_details`. Con día de corte, `credit_card_status` y `net_worth` estiman la deuda
   con compras y pagos por corte, no con el saldo acumulado (arrastra lo que nunca llegó por correo); es una cifra
-  aproximada y la UI lo dice. `credit_card_cycles`: compras y pagos por corte. `transactions.installments` es
-  informativo: la compra es gasto completo en su fecha.
+  aproximada y la UI lo dice. `credit_card_cycles`: compras y pagos por corte. `transactions.installments`: el
+  calendario sale de `installment_schedule` y lo cobrado por corte de `card_billed` (contado más cuotas); la deuda
+  incluye las cuotas por cobrar. En los reportes la compra sigue siendo gasto completo hasta la fase 3 de `plan/21-cuotas.md`.
 - Pagos de tarjeta por correo: el worker (`flag_card_payments`, sin tocar el prompt) los vuelve entrada de la tarjeta y
   la API los guarda con `transactions.needs_counterpart`: ya cuentan como transferencia. `link_pending_card_payments`
   liga solo el caso sin duda; si no, la app pregunta de qué cuenta salió. No uses `should_verify` para esto: abrir la
