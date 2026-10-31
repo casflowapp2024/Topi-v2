@@ -229,7 +229,7 @@ const BudDashTransCategorie = ({
               </section>
             ))}
           </div>
-        ) : (
+        ) : charges.length > 0 ? null : (
           <EmptyState compact icon={ArrowsRightLeftIcon}
             title={cat ? `Sin movimientos de ${capitalizeWords(cat.name)}` : 'Sin movimientos este mes'}
             description="Los que lleguen por correo aparecerán aquí; también puedes agregarlos." />

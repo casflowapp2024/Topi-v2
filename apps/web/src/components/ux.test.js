@@ -185,17 +185,19 @@ test('Presupuestos: ninguna categoría elegida al entrar; tocar elige y tocar ot
 });
 
 test('Cargos de Tarjeta: muestra lo calculado por corte, que no son transacciones', async () => {
-  axios.get.mockResolvedValueOnce({ status: 200, data: { data: [
-    { account_id: 3, account_name: 'Visa', currency: 'COP', statement_date: '2026-10-15', charged_on: '2026-10-25', amount: '30000', amount_base: '30000' },
-  ] } });
+  const charges = [{ account_id: 3, account_name: 'Visa', currency: 'COP', statement_date: '2026-10-15', charged_on: '2026-10-25', amount: '30000', amount_base: '30000' }];
+  const original = axios.get.getMockImplementation();
+  axios.get.mockImplementation((url) => Promise.resolve({ status: 200, data: { data: url.includes('card-charges') ? charges : [] } }));
   const st = { ...budgetState({ category_id: 9, name: 'Cargos de Tarjeta', emoji: '1f4b3', value: -30000, budget: 0 }) };
   st.Reports.transactions_category_activated = [];
   st.CashFlow = { ...st.CashFlow, user_transactions: { default_limit: 30 }, banks: { items: [] } };
   const el = document.createElement('div'); document.body.appendChild(el); const root = createRoot(el);
   await act(async () => { root.render(<Provider store={createStore((s = st) => s, applyMiddleware(thunk))}><BudDashTransCategorie /></Provider>); });
-  expect(axios.get.mock.calls.at(-1)[0]).toContain('/analysis/card-charges?date=2026-10');
+  expect(axios.get.mock.calls.some(([url]) => url.includes('/analysis/card-charges?date=2026-10'))).toBe(true);
+  expect(el.textContent).not.toContain('Sin movimientos');
   expect(el.textContent).toContain('Visa');
   expect(el.textContent).toContain('Corte del 15-10');
   expect(el.textContent).toMatch(/30\.000/);
   await act(async () => root.unmount());
+  axios.get.mockImplementation(original);
 });
