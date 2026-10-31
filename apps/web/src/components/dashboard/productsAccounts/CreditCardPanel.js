@@ -9,7 +9,7 @@ import InputMoneyInt2Decs from '../../InputMoneyInt2Decs';
 import Button from '../../ui/Button';
 import CardReconcile from './CardReconcile';
 import { set_dash_account_activated } from '../../../redux/actions/reports';
-import { formatMoney, formatedCurrToNumber, getBaseCurrency } from '../../helpers';
+import { formatMoney, formatedCurrToNumber } from '../../helpers';
 
 const fieldClass = 'bg-gray-50 p-2 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white';
 const labelClass = 'block mb-1 text-xs font-medium text-gray-600 dark:text-gray-300';
@@ -24,7 +24,7 @@ const Box = ({ label, children, hint, className = '' }) => (
 );
 
 // Resumen de una tarjeta de crédito (reemplaza al resumen de la cuenta): deuda estimada, consumos de
-// este corte, el último corte con su fecha límite y lo comprado en el periodo elegido.
+// este corte y el último corte con su fecha límite.
 // Los pagos son transferencias desde otra cuenta: no cuentan como ingreso.
 const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, set_dash_account_activated }) => {
     const [reconcile, setReconcile] = useState(false);
@@ -83,8 +83,6 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, se
     const pending = card?.pending_statement != null ? Number(card.pending_statement) : null;
     const today = moment().startOf('day');
     const overdue = pending > 0 && card?.due_date && moment(card.due_date).isBefore(today);
-    // el resumen del periodo viene en la moneda base; los pagos (transferencias) no son ingresos y no salen ahí
-    const purchases = Math.abs(Number(data?.expenses?.value ?? 0));
 
     return (
         <section aria-label="Tarjeta de crédito" className="p-4 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-xl shadow-md">
@@ -201,10 +199,6 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, se
                             Configura el día de corte y el de pago para ver tus compras por corte y hasta cuándo pagar.
                         </p>
                     )}
-
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Compras y cargos en el periodo elegido: {formatMoney(purchases, getBaseCurrency())}.
-                    </p>
                 </div>
             )}
         </section>

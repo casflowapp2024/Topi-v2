@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { connect } from 'react-redux';
+import moment from 'moment';
+import 'moment/locale/es';
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/react';
 import { ChevronLeftIcon, ChevronRightIcon, ChevronUpDownIcon, PencilSquareIcon, CheckIcon } from '@heroicons/react/20/solid';
 import { set_dash_account_activated } from '../../../redux/actions/reports';
@@ -16,6 +18,14 @@ import { ACCOUNT_GROUPS, accountsOfGroup } from './accountGroups';
  *  - tocar el nombre abre la lista del grupo con sus saldos (rápido si hay muchas cuentas)
  *  - puntos que dicen cuántas hay y en cuál estás
  */
+// Periodo elegido, para rotular las cifras: "16 oct. – 15 nov." (con el año si no es el actual)
+const periodLabel = (from, to) => {
+  if (!from || !to) return '';
+  const pattern = moment(from).isSame(moment(), 'year') && moment(to).isSame(moment(), 'year') ? 'D MMM' : 'D MMM YYYY';
+  const format = (d) => moment(d).locale('es').format(pattern);
+  return `${format(from)} – ${format(to)}`;
+};
+
 // Cifras del periodo según el tipo de cuenta (data = /analysis/accounts-report de la cuenta)
 const periodKpis = (cls, data) => {
   const inc = Math.abs(Number(data?.income?.value ?? 0));
@@ -27,7 +37,6 @@ const periodKpis = (cls, data) => {
         { label: 'Compras y cargos', value: formatMoney(exp), tone: 'out' },
         { label: 'Pagos', value: formatMoney(inc), tone: 'in' },
       ],
-      note: 'El pago de un corte llega en el corte siguiente: no se comparan dentro del mismo periodo.',
     };
   }
   if (cls === 'investment') {
@@ -50,7 +59,7 @@ const periodKpis = (cls, data) => {
   };
 };
 
-const AccountSwitcher = ({ group, account_activated, account_activated_stats, user_accounts, net_worth, set_dash_account_activated, onEdit, children }) => {
+const AccountSwitcher = ({ group, account_activated, account_activated_stats, iniDate_account_dash, endDate_account_dash, user_accounts, net_worth, set_dash_account_activated, onEdit, children }) => {
   const accounts = useMemo(() => accountsOfGroup(user_accounts?.items, group), [user_accounts, group]);
   const idx = Math.max(0, accounts.findIndex(a => a.id === account_activated?.id));
   const nwById = useMemo(() => new Map((net_worth?.accounts || []).map(a => [a.account_id, a])), [net_worth]);
@@ -85,6 +94,7 @@ const AccountSwitcher = ({ group, account_activated, account_activated_stats, us
   if (!account_activated) return null;
   const cls = accountClass(account_activated);
   const kpis = periodKpis(cls, account_activated_stats);
+  const period = periodLabel(iniDate_account_dash, endDate_account_dash);
   const rail = 'shrink-0 w-9 sm:w-10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-topi-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-25 disabled:pointer-events-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-topi-500';
 
   return (
@@ -151,8 +161,9 @@ const AccountSwitcher = ({ group, account_activated, account_activated_stats, us
             </Menu>
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-ink-2 dark:text-gray-400">
-            <span>Hoy:</span><AccountBalance account={account_activated} nw={nwById.get(account_activated.id)} baseCurrency={base} />
+          {/* En tarjetas el saldo lleva su palabra encima: "Hoy" se alinea con la cifra, no con el bloque */}
+          <div className={`flex gap-2 text-xs text-ink-2 dark:text-gray-400 ${cls === 'credit' ? 'items-end' : 'items-center'}`}>
+            <span className={cls === 'credit' ? 'pb-0.5' : undefined}>Hoy:</span><AccountBalance account={account_activated} nw={nwById.get(account_activated.id)} baseCurrency={base} />
           </div>
 
           <div data-no-swipe>{children}</div>
@@ -160,7 +171,9 @@ const AccountSwitcher = ({ group, account_activated, account_activated_stats, us
 
         {/* Derecha: lo que pasó en el periodo elegido */}
         <div className="p-4 pt-0 lg:pt-4 lg:border-l border-gray-100 dark:border-gray-700 flex flex-col justify-center min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-2 dark:text-gray-400 mb-1">En el periodo</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-2 dark:text-gray-400 mb-1">
+            En el periodo{period && <span className="font-medium normal-case tracking-normal"> · {period}</span>}
+          </p>
           <dl className="divide-y divide-gray-100 dark:divide-gray-700">
             {kpis.rows.map(k => (
               <div key={k.label} className="flex items-baseline justify-between gap-3 py-2">
@@ -185,6 +198,8 @@ const AccountSwitcher = ({ group, account_activated, account_activated_stats, us
 const mapStateToProps = state => ({
   account_activated: state.Reports.account_activated,
   account_activated_stats: state.Reports.account_activated_stats,
+  iniDate_account_dash: state.Reports.iniDate_account_dash,
+  endDate_account_dash: state.Reports.endDate_account_dash,
   user_accounts: state.CashFlow.user_accounts,
   net_worth: state.Fx.net_worth,
 });

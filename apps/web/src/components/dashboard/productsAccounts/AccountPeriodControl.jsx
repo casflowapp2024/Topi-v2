@@ -77,13 +77,11 @@ const AccountPeriodControl = ({
       <Segmented label="Periodo" value={mode} onChange={setMode} options={options} />
       {mode === 'month' && <PeriodSelector compact />}
       {mode === 'cycle' && cycles && (
-        <div className="flex flex-wrap gap-2">
-          <Chip selected={cycle === 'current'} onClick={() => setCycle('current')}>
-            Corte actual · {fmt(cycles.current.from)} – {fmt(cycles.current.to)}
-          </Chip>
-          <Chip selected={cycle === 'previous'} onClick={() => setCycle('previous')}>
-            Anterior · {fmt(cycles.previous.from)} – {fmt(cycles.previous.to)}
-          </Chip>
+        <div className="flex gap-2">
+          <Chip selected={cycle === 'current'} onClick={() => setCycle('current')}
+            title={`${fmt(cycles.current.from)} – ${fmt(cycles.current.to)}`}>Actual</Chip>
+          <Chip selected={cycle === 'previous'} onClick={() => setCycle('previous')}
+            title={`${fmt(cycles.previous.from)} – ${fmt(cycles.previous.to)}`}>Anterior</Chip>
         </div>
       )}
       {mode === 'range' && (
