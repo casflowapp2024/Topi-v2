@@ -5,7 +5,7 @@ import { Provider } from 'react-redux';
 import { createStore, applyMiddleware } from 'redux';
 import { thunk } from 'redux-thunk';
 import Transactions from './Transactions';
-import { dayLabel, dayNet, groupByDay } from '../components/transactions/transactionDays';
+import { dayLabel, dayNet, groupByDay, installmentsNote } from '../components/transactions/transactionDays';
 import { formatMoney } from '../components/helpers';
 
 jest.mock('axios', () => {
@@ -67,9 +67,20 @@ test('Neto del día sin transferencias ni pagos sin su otra pata', () => {
   expect(dayNet([tx(9, '2026-10-30', 1000), tx(10, '2026-10-30', 500, { amount_base: null })])).toBe(-1000);
 });
 
+test('Las compras con tarjeta dicen sus cuotas; lo demás no', () => {
+  const card = { id: 4, name: 'Visa', type: { id: 4 } };
+  expect(installmentsNote({ expense: true, account: card })).toBe('1 cuota');
+  expect(installmentsNote({ expense: true, account: card, installments: 6 })).toBe('6 cuotas');
+  expect(installmentsNote({ expense: true, account: card, installments: 6, installment_amount: '200000', currency: 'COP' })).toMatch(/6 cuotas de .*200\.000/);
+  expect(installmentsNote({ expense: false, account: card })).toBe('');                               // pago o devolución
+  expect(installmentsNote({ expense: true, account: card, transfer_group_id: 'g' })).toBe('');        // transferencia
+  expect(installmentsNote({ expense: true, account: { id: 1, type: { id: 1 } } })).toBe('');         // cuenta de ahorros
+});
+
 test('Una compra a cuotas pesa su cuota en el neto y lo dice en la fila', async () => {
   const purchase = tx(11, '2026-11-10', 1200000, {
     installments: 6, installment_amount: '200000', installment_amount_base: '200000',
+    account: { id: 4, name: 'Visa', type: { id: 4 } },
   });
   expect(dayNet([purchase])).toBe(-200000);
   expect(dayNet([tx(12, '2026-10-10', 1200000, { installments: 6 })])).toBe(-1200000); // sin repartir

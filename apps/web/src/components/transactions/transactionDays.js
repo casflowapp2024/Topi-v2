@@ -1,6 +1,6 @@
 import moment from 'moment';
 import 'moment/locale/es';
-import { formatMoney } from '../helpers';
+import { formatMoney, isCreditAccount } from '../helpers';
 
 // La API manda la fecha ya en la hora del usuario: el día son los primeros 10 caracteres
 const dayKey = (tx) => tx.date.split(' ')[0];
@@ -29,9 +29,11 @@ export const dayLabel = (date, now = new Date()) => {
 // Transferencias y pagos de tarjeta sin su otra pata mueven plata entre cuentas propias: ni ingreso ni gasto
 export const isNeutral = (tx) => Boolean(tx.transfer_group_id || tx.needs_counterpart);
 
-// Rótulo de una compra a cuotas: "6 cuotas de $ 200.000" si se reparte en los reportes
-export const installmentsLabel = (tx) => {
-  if (!(tx.installments > 1)) return '';
+// Cuotas de una compra con tarjeta, para ir debajo del monto: "1 cuota", "6 cuotas de $ 200.000" (si se
+// reparte en los reportes) o "6 cuotas". Vacío si no es un gasto con tarjeta.
+export const installmentsNote = (tx) => {
+  if (!tx?.expense || isNeutral(tx) || !isCreditAccount(tx.account)) return '';
+  if (!(tx.installments > 1)) return '1 cuota';
   return tx.installment_amount ? `${tx.installments} cuotas de ${formatMoney(tx.installment_amount, tx.currency)}` : `${tx.installments} cuotas`;
 };
 

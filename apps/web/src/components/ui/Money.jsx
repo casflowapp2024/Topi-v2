@@ -13,6 +13,7 @@ const Money = ({
   sign = '',                  // '-' o '+' delante del valor principal
   align = 'right',
   showBase = true,
+  note = '',                  // línea corta debajo del monto, p. ej. las cuotas de una compra
 }) => {
   const code = currency || baseCurrency;
   const foreign = code !== baseCurrency;
@@ -28,6 +29,7 @@ const Money = ({
           {base != null ? `≈ ${sign}${formatMoney(base, baseCurrency)}` : 'sin tasa aún'}
         </span>
       )}
+      {note && <span className="text-[11px] font-normal text-ink-2 dark:text-gray-400 whitespace-nowrap">{note}</span>}
     </span>
   );
 };

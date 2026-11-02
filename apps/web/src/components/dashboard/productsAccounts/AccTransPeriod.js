@@ -18,6 +18,7 @@ import { set_dash_account_activated, get_accounts_status_by_period, get_history_
 import { formatMoney, formatDate, findElmentById, formatToDateFilters, deepEqual } from '../../helpers';
 import { parseDatetimetoDateStrFormat, accountReportGroup } from '../../helpers';
 import TransactionDetail from '../../transactions/TransactionDetail2'
+import { installmentsNote } from '../../transactions/transactionDays';
 import CreateTransaction from '../../transactions/CreateTransaction';
 
 //ui
@@ -219,8 +220,11 @@ const AccTransPeriod = ({
                                                         ? <span className="block text-xs text-status-warn-text dark:text-amber-300 truncate">Falta elegir la cuenta con que pagaste</span>
                                                         : <span className="block text-xs text-ink-2 dark:text-gray-400 truncate">{transfer ? 'Transferencia' : (tx.category?.name || '')}</span>}
                                                 </span>
-                                                <span className={`text-sm font-semibold tabular-nums whitespace-nowrap ${transfer ? 'text-gray-700 dark:text-gray-200' : tx.expense ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}`}>
-                                                    {transfer ? '' : tx.expense ? '−' : '+'}{formatMoney(tx.amount, tx.currency)}
+                                                <span className="flex flex-col items-end shrink-0">
+                                                    <span className={`text-sm font-semibold tabular-nums whitespace-nowrap ${transfer ? 'text-gray-700 dark:text-gray-200' : tx.expense ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}`}>
+                                                        {transfer ? '' : tx.expense ? '−' : '+'}{formatMoney(tx.amount, tx.currency)}
+                                                    </span>
+                                                    {installmentsNote(tx) && <span className="text-[11px] text-ink-2 dark:text-gray-400 whitespace-nowrap">{installmentsNote(tx)}</span>}
                                                 </span>
                                             </button>
                                         </li>

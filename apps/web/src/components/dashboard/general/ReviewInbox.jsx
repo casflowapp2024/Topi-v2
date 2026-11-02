@@ -28,6 +28,7 @@ import CardReconcile from '../productsAccounts/CardReconcile';
 import DropDownCat from '../../transactions/DropDownCat';
 import TransactionDetail from '../../transactions/TransactionDetail2';
 import TransferLinkSection from '../../transactions/TransferLinkSection';
+import { installmentsNote } from '../../transactions/transactionDays';
 import { capitalizeWords, cardsDueSoon, findElmentById, formatMoney, isCreditAccount, isOpenAccount } from '../../helpers';
 
 const MIN_LOADED = 5;   // con menos en memoria se pide la siguiente tanda
@@ -73,7 +74,7 @@ const TxSummary = ({ tx, onOpen }) => (
       <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>
       <span className="text-xs text-ink-2 dark:text-gray-400 truncate">{capitalizeWords(tx.category?.name)} · {tx.account?.name}</span>
     </span>
-    <Money amount={tx.amount} currency={tx.currency} base={tx.amount_base} sign={tx.expense ? '-' : '+'}
+    <Money amount={tx.amount} currency={tx.currency} base={tx.amount_base} sign={tx.expense ? '-' : '+'} note={installmentsNote(tx)}
       className={`text-sm font-semibold tabular-nums ${tx.expense ? 'text-gray-900 dark:text-gray-100' : 'text-money-in dark:text-money-in-dark'}`} />
   </button>
 );
