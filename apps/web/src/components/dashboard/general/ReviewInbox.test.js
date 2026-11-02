@@ -173,13 +173,14 @@ test('Vacío: "Todo al día"; sin correo conectado invita a conectarlo, no a dig
 
 test('Sin pendientes recuerda el próximo pago de tarjeta, sin sumarlo al contador', async () => {
   const soon = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
-  const card = { name: 'Visa', currency: 'COP', pending_statement: '200000', due_date: soon };
-  expect(nextPaymentNotice([{ ...card, pending_statement: '0' }])).toBeNull();
+  const card = { name: 'Visa', currency: 'COP', statement_debt: '200000', paid_since_statement: '0', due_date: soon };
+  expect(nextPaymentNotice([{ ...card, paid_since_statement: '50000' }])).toBeNull(); // con un pago no adivina cuánto falta
   api([], [], [card]);
   const { el, root } = await mount(state({ Fx: { net_worth: { accounts: [] } } }));
   expect(title(el)).toBe('Por revisar');
   expect(el.textContent).toContain('Todo al día');
-  expect(el.textContent).toMatch(/Visa: paga ≈ .*200\.000 antes del/);
+  expect(el.textContent).toMatch(/Visa: paga antes del .*Aún no registramos pagos de ese corte/);
+  expect(el.textContent).not.toContain('200.000');
   await act(async () => root.unmount());
 });
 

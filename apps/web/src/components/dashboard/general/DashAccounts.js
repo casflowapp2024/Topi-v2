@@ -98,8 +98,8 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
               <li key={c.account_id} className={`flex gap-2 rounded-xl px-3 py-2 text-sm ${overdue ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'}`}>
                 <ExclamationTriangleIcon className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
                 <span>
-                  {c.name}: {overdue ? 'quedó pendiente' : 'este corte suma'} <b>≈ {formatMoney(c.pending_statement, c.currency)}</b>
-                  {overdue ? ` (la fecha límite fue el ${moment(c.due_date).format('DD-MM')})` : ` antes del ${moment(c.due_date).format('DD-MM')}`}
+                  {c.name}: {overdue ? `la fecha límite fue el ${moment(c.due_date).format('DD-MM')}` : `paga antes del ${moment(c.due_date).format('DD-MM')}`}.
+                  {' '}Aún no registramos pagos de ese corte.
                 </span>
               </li>
             );

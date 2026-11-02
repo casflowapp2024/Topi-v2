@@ -5,7 +5,7 @@ import { PlusIcon } from '@heroicons/react/20/solid';
 import Chip from '../../ui/Chip';
 import { fetch_credit_cards } from '../../../redux/actions/creditCards';
 import { get_net_worth } from '../../../redux/actions/fx';
-import { formatMoney, getBaseCurrency } from '../../helpers';
+import { cardsDueSoon, formatMoney, getBaseCurrency } from '../../helpers';
 import { ACCOUNT_GROUPS, ALL_GROUP, accountsOfGroup } from './accountGroups';
 
 // Selector de tipo + Agregar (en móvil la fila se desliza)
@@ -127,10 +127,10 @@ const AccountGroupCard = ({ group, onGroupChange, onCreate, user_accounts, net_w
     const debt = Math.abs(sumBase(accs, a => Number(a.balance) < 0));
     const over = sumBase(accs, a => Number(a.balance) > 0);
     const open = (cards || []).filter(c => accs.some(a => a.id === c.account_id));
-    const next = open.filter(c => Number(c.pending_statement) > 0 && c.due_date).sort((a, b) => moment(a.due_date) - moment(b.due_date))[0];
+    const next = cardsDueSoon(open, 31).sort((a, b) => moment(a.due_date) - moment(b.due_date))[0];
     headline = { label: 'Tarjetas de crédito · deuda estimada', value: formatMoney(debt, base), tone: debt > 0 ? 'out' : undefined };
     stats = [
-      next && { label: 'Próximo pago', value: `≈ ${formatMoney(next.pending_statement, next.currency)}`, tone: 'warn', hint: `${next.name} · antes del ${moment(next.due_date).format('D MMM')}` },
+      next && { label: 'Fecha límite', value: moment(next.due_date).locale('es').format('D MMM').replace('.', ''), tone: 'warn', hint: `${next.name} · sin pagos registrados` },
       over > 0 && { label: 'Pagado de más', value: formatMoney(over, base), tone: 'warn', hint: 'Cargos sin registrar' },
     ];
   } else if (group === 'investment') {

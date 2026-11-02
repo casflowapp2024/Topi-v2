@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import moment from 'moment-timezone';
 import 'moment/locale/es';
-import { CreditCardIcon, ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/20/solid';
+import { CreditCardIcon, ExclamationTriangleIcon } from '@heroicons/react/20/solid';
 import { setAlert } from '../../../redux/actions/alert';
 import { get_net_worth } from '../../../redux/actions/fx';
 import { fetch_credit_cards, save_credit_card } from '../../../redux/actions/creditCards';
@@ -81,11 +81,11 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, se
     // (intereses, cuota de manejo): se pagaron pero no se registraron como gasto.
     const unrecorded = debt === 0 && nwBalance > 0 ? nwBalance : 0;
     const afterReconcile = () => { setReconcile(false); load(); get_net_worth(); set_dash_account_activated({ ...account }); };
-    const pending = card?.pending_statement != null ? Number(card.pending_statement) : null;
-    // Lo que quedó sin pagar de cortes anteriores: la API lo incluye en lo pendiente
-    const carried = pending > 0 ? pending - (Number(card?.statement_debt ?? 0) - Number(card?.paid_since_statement ?? 0)) : 0;
+    // Solo hechos del corte anterior: lo comprado y lo pagado. Cuánto falta depende de saldos de cortes
+    // viejos (un pago de más, una compra que no llegó) que no conocemos: eso lo dice el banco.
+    const unpaid = Number(card?.statement_debt ?? 0) > 0 && Number(card?.paid_since_statement ?? 0) === 0;
     const today = moment().startOf('day');
-    const overdue = pending > 0 && card?.due_date && moment(card.due_date).isBefore(today);
+    const overdue = unpaid && card?.due_date && moment(card.due_date).isBefore(today);
 
     return (
         <section aria-label="Tarjeta de crédito" className="p-4 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-xl shadow-md">
@@ -171,27 +171,22 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, se
                     {card.last_statement ? (
                         <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-3 text-sm space-y-2">
                             <p className="font-semibold text-gray-900 dark:text-white">
-                                Corte anterior <span className="font-normal text-xs text-ink-2 dark:text-gray-400">· cerró el {dayMonth(card.last_statement)}</span>
+                                Corte anterior <span className="font-normal text-xs text-ink-2 dark:text-gray-400">
+                                    · cerró el {dayMonth(card.last_statement)}{card.due_date ? ` · fecha límite el ${dayMonth(card.due_date)}` : ''}
+                                </span>
                             </p>
                             <div className="flex flex-wrap gap-x-6 gap-y-1 text-gray-700 dark:text-gray-200">
-                                {carried > 0.5 && <span>Venía de antes: <b>{formatMoney(carried, currency)}</b></span>}
                                 <span>Compras y cuotas: <b>{formatMoney(card.statement_debt, currency)}</b></span>
-                                <span>Pagado: <b>{formatMoney(card.paid_since_statement, currency)}</b></span>
+                                <span>Pagos desde el cierre: <b>{formatMoney(card.paid_since_statement, currency)}</b></span>
                             </div>
-                            {pending > 0 ? (
+                            {unpaid ? (
                                 <p className={`flex gap-2 rounded-lg p-2 ${overdue ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'}`}>
                                     <ExclamationTriangleIcon className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
-                                    <span>
-                                        {overdue ? <>Falta pagar <b>≈ {formatMoney(pending, currency)}</b>. La fecha límite fue el {dayMonth(card.due_date)}.</>
-                                            : card.due_date ? <>Paga <b>≈ {formatMoney(pending, currency)}</b> antes del {dayMonth(card.due_date)}.</>
-                                                : <>Falta pagar <b>≈ {formatMoney(pending, currency)}</b>.</>}
-                                        {' '}Tu banco tiene el valor exacto.
-                                    </span>
+                                    Aún no registramos pagos de este corte.
                                 </p>
                             ) : (
-                                <p className="flex gap-2 rounded-lg p-2 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                                    <CheckCircleIcon className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
-                                    Corte pagado.
+                                <p className="text-xs text-ink-2 dark:text-gray-400">
+                                    El valor exacto a pagar está en el extracto de tu banco: puede incluir saldos de cortes anteriores.
                                 </p>
                             )}
                         </div>

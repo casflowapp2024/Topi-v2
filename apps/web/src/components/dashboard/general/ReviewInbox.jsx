@@ -50,7 +50,8 @@ export const nextPaymentNotice = (cards) => {
   const [next] = cardsDueSoon(cards).sort((a, b) => moment(a.due_date) - moment(b.due_date));
   if (!next) return null;
   const overdue = moment(next.due_date).isBefore(moment().startOf('day'));
-  return `${next.name}: ${overdue ? 'quedó pendiente' : 'paga'} ≈ ${formatMoney(next.pending_statement, next.currency)}${overdue ? '' : ` antes del ${moment(next.due_date).format('DD-MM')}`}`;
+  const date = moment(next.due_date).format('DD-MM');
+  return `${next.name}: ${overdue ? `la fecha límite fue el ${date}` : `paga antes del ${date}`}. Aún no registramos pagos de ese corte.`;
 };
 
 // Al ligar una pareja, las otras con alguna de sus transacciones dejan de ser posibles
