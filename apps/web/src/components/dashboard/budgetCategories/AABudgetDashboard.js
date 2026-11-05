@@ -113,9 +113,10 @@ const AABudgetDashboard = ({
                 y `order-*` define el orden; en PC (lg) vuelven a ser columnas.
             */}
             {/* En PC la vista ocupa el alto de la pantalla: las dos listas se desplazan por dentro y las columnas quedan alineadas */}
-            <div className="flex flex-col gap-2 lg:flex-row lg:gap-6 px-2 lg:px-0 pb-4 md:max-w-[560px] md:mx-auto lg:max-w-none lg:w-full lg:h-[calc(100dvh-96px)] lg:min-h-[640px]">
-                {/* Izquierda: Gastos | Ingresos con el total del mes, y la lista (manda en toda la vista) */}
-                <div className="contents lg:flex lg:flex-col lg:gap-6 lg:w-[380px] xl:w-[360px] lg:shrink-0 lg:min-h-0">
+            <div className="flex flex-col gap-2 lg:flex-row lg:gap-6 pb-4 md:max-w-[560px] md:mx-auto lg:max-w-none lg:w-full lg:h-[calc(100dvh-96px)] lg:min-h-[640px]">
+                {/* Izquierda: Gastos | Ingresos con el total del mes, y la lista (manda en toda la vista).
+                    En porcentaje para que las dos columnas crezcan juntas con el ancho */}
+                <div className="contents lg:flex lg:flex-col lg:gap-6 lg:w-[45%] xl:w-[39%] lg:shrink-0 lg:min-h-0">
                     <div className="order-1 lg:order-none">
                         <BudgetOverview />
                     </div>

@@ -2,15 +2,17 @@
 import { useEffect, useState } from "react";
 //redux
 import { connect } from 'react-redux';
-import { get_user_extra_data, update_user_extra_data, update_user_config } from "../../redux/actions/auth";
+import { get_user_extra_data, update_user_extra_data, update_user_config, set_theme } from "../../redux/actions/auth";
 import { setAlert } from "../../redux/actions/alert";
 //components
-import { UserIcon, ChevronDownIcon, LanguageIcon, GlobeAmericasIcon, SunIcon, MoonIcon, CheckIcon } from '@heroicons/react/24/outline'
+import { UserIcon, ChevronDownIcon, LanguageIcon, GlobeAmericasIcon, CheckIcon } from '@heroicons/react/24/outline'
 import { timezones_list } from '../info_arrays';
 import { useRef } from 'react';
 import Alert from "../alert";
 import ChangePasswordCard from "./ChangePasswordCard";
 import BaseCurrencyCard from "./BaseCurrencyCard";
+import ThemeSwitch from '../ui/ThemeSwitch';
+import { themePreference } from '../ui/theme';
 
 const CustomSelect = ({ name, value, options, onChange, Icon, menuUp = false }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -86,6 +88,7 @@ const ProfileSetts = ({
     update_user_extra_data,
     get_user_extra_data,
     update_user_config,
+    set_theme,
     setAlert
 }) => {
 
@@ -94,8 +97,7 @@ const ProfileSetts = ({
         timezone: '',
         birthday: '',
         local_currency: '',
-        language: '',
-        dark_mode: false
+        language: ''
     }
 
     //load form data
@@ -109,8 +111,7 @@ const ProfileSetts = ({
                 timezone: user_extra.utc_offset ?? '',
                 birthday: user_extra.birthday ?? '',
                 local_currency: user_extra.local_currency ?? '',
-                language: user_extra.language ?? '',
-                dark_mode: user_extra.config?.dark_mode ?? false
+                language: user_extra.language ?? ''
             });
             setDataLoaded(true)
         }
@@ -119,26 +120,6 @@ const ProfileSetts = ({
 
     const onChangeUpdate = async (e) => {
         const { name, value } = e.target;
-
-        if (name === "dark_mode") {
-            const newDarkMode = value === "true";
-            setUpdateUserExtraData({
-                ...updateUserExtraData,
-                dark_mode: newDarkMode
-            });
-
-            // Immediately apply dark mode config update
-            const currentConfig = user_extra?.config || {};
-            const newConfig = { ...currentConfig, dark_mode: newDarkMode };
-            const updatedConfig = await update_user_config(newConfig);
-            if (updatedConfig) {
-                get_user_extra_data();
-                setAlert("Tema actualizado", true, "text-white", "bg-green-500", 3000);
-            } else {
-                setAlert("Error al actualizar el tema", false, "text-white", "bg-red-500", 3000);
-            }
-            return;
-        }
 
         setUpdateUserExtraData({
             ...updateUserExtraData,
@@ -237,17 +218,16 @@ const ProfileSetts = ({
             <div className="mt-8 px-1 md:px-0 pb-20">
                 <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-6 pl-2 tracking-tight">Preferencias Visuales y Experiencia</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <CustomSelect
-                        name="dark_mode"
-                        value={updateUserExtraData.dark_mode ? "true" : "false"}
-                        onChange={onChangeUpdate}
-                        Icon={updateUserExtraData.dark_mode ? MoonIcon : SunIcon}
-                        options={[
-                            { value: "false", label: "Claro (Light Mode)", label_top: "Tema" },
-                            { value: "true", label: "Oscuro (Dark Mode)", label_top: "Tema" }
-                        ]}
-                        menuUp={true}
-                    />
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3 shadow-sm">
+                        <p className="text-xs font-medium text-ink-2 dark:text-gray-400 mb-2">Tema</p>
+                        <ThemeSwitch
+                            value={themePreference(user_extra?.config)}
+                            onChange={async (t) => {
+                                const ok = await set_theme(t);
+                                if (!ok) setAlert("Error al actualizar el tema", false, "text-white", "bg-red-500", 3000);
+                            }}
+                        />
+                    </div>
 
                     {!user_extra.onboarding_completed && (
                         <div className="flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3 shadow-sm">
@@ -280,5 +260,6 @@ export default connect(mapStateToProps, {
     get_user_extra_data,
     update_user_extra_data,
     update_user_config,
+    set_theme,
     setAlert
 })(ProfileSetts)

@@ -293,6 +293,20 @@ export const toggle_dark_mode = () => async (dispatch, getState) => {
     return ok;
 };
 
+// Tema: 'light' | 'dark' | 'system'. Igual que toggle_dark_mode: optimista y se revierte si falla.
+// dark_mode se mantiene para quien lo lea; `theme` es lo que manda (ver ui/theme.js).
+export const set_theme = (theme) => async (dispatch, getState) => {
+    const prev = getState().Auth.user_extra_data;
+    if (!prev) return false;
+    const nextConfig = { ...(prev.config || {}), theme, dark_mode: theme === 'dark' };
+    dispatch({ type: GET_USER_EXTRA_SUCESS, payload: { data: { ...prev, config: nextConfig } } });
+    const ok = await dispatch(update_user_config(nextConfig));
+    if (!ok) {
+        dispatch({ type: GET_USER_EXTRA_SUCESS, payload: { data: prev } });
+    }
+    return ok;
+};
+
 export const login = (email, password) => async dispatch => {
     dispatch({
         type: SET_AUTH_LOADING

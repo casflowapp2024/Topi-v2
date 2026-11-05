@@ -29,14 +29,14 @@ const AAGenDashboard = ({
     }, [current_Month, current_Year, get_financial_report]);
 
     return (
-        <div className="flex flex-col gap-2 lg:gap-6 px-2 lg:px-0 pb-3 md:max-w-[560px] md:mx-auto lg:max-w-none">
+        <div className="flex flex-col gap-2 lg:gap-6 pb-3 md:max-w-[560px] md:mx-auto lg:max-w-none">
             {/*
                 Una sola versión para todos los tamaños (antes había un bloque PC y otro móvil,
                 y cada componente se montaba y pedía sus datos dos veces).
                 En móvil las filas y columnas usan `contents`, así sus hijos entran directo en la pila
                 y `order-*` define el orden; en PC (lg) vuelven a ser filas y columnas.
             */}
-            <div className="contents lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)_320px] xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)_300px] lg:gap-6">
+            <div className="contents lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)_minmax(0,6.5fr)] xl:grid-cols-[minmax(0,6fr)_minmax(0,4fr)_minmax(0,5fr)] lg:gap-6">
                 <div className="order-1 lg:order-none min-w-0">
                     <HomePaceCard loading={loadingReport} />
                 </div>

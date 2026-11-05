@@ -10,7 +10,9 @@ module.exports = {
     extend: {
       // Tokens de color (propuesta UX v1). Usar estos en vez de hex sueltos.
       colors: {
-        topi: { 50: '#EEF0FE', 500: '#5266EB', 600: '#4354D6' },
+        topi: { 50: '#EEF0FE', 100: '#DDE1FD', 200: '#C3CAFA', 500: '#5266EB', 600: '#4354D6' },
+        // Superficies: tarjetas y paneles (raised = panel de hojas y modales en oscuro; sunken = fondo de la app en oscuro)
+        surface: { DEFAULT: '#FFFFFF', raised: '#151C2C', sunken: '#0B0F19' },
         data: { balance: '#5266EB', ingreso: '#12A877', gasto: '#F2664A', ahorro: '#9B5DE5', inversion: '#0E9AA7', transfer: '#64748B' },
         money: { in: '#0B7A55', out: '#C2412A', 'in-dark': '#34D399', 'out-dark': '#FF8A70' },
         status: {

@@ -10,7 +10,8 @@ const MONTHS_LONG = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'jul
  * Selector de periodo global (mes/año) para todo el dashboard.
  * Flechas para mes anterior/siguiente (cruzan de año solas) y una hoja con los 12 meses.
  */
-const PeriodSelector = ({ current_Month, current_Year, set_period, compact = false, className = '' }) => {
+/** plain: sin borde ni fondo (en la barra superior el periodo pesa menos que la navegación). */
+const PeriodSelector = ({ current_Month, current_Year, set_period, compact = false, plain = false, className = '' }) => {
   const now = new Date();
   const thisYear = now.getFullYear();
   const thisMonth = now.getMonth() + 1;
@@ -21,10 +22,13 @@ const PeriodSelector = ({ current_Month, current_Year, set_period, compact = fal
     set_period(Math.floor(idx / 12), (idx % 12) + 1);
   };
 
-  const btn = `${compact ? 'w-7' : 'w-8'} h-8 flex items-center justify-center rounded-xl text-gray-500 dark:text-gray-400 hover:text-topi-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors`;
+  const btn = `${compact ? 'w-7' : 'w-8'} h-8 flex items-center justify-center rounded-xl text-gray-500 dark:text-gray-400 hover:text-topi-500 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 transition-colors`;
+  const frame = plain
+    ? 'flex items-center gap-0.5'
+    : 'flex items-center gap-0.5 p-0.5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm';
 
   return (
-    <div className={`flex items-center gap-0.5 p-0.5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm ${className}`}>
+    <div className={`${frame} ${className}`}>
       <button type="button" className={btn} onClick={() => shift(-1)} aria-label="Mes anterior">
         <ChevronLeftIcon className="w-5 h-5" aria-hidden="true" />
       </button>
@@ -78,7 +82,7 @@ const PeriodSelector = ({ current_Month, current_Year, set_period, compact = fal
               as="button"
               type="button"
               onClick={() => set_period(thisYear, thisMonth)}
-              className="mt-2 w-full h-8 rounded-xl text-sm font-medium text-topi-600 dark:text-indigo-300 hover:bg-topi-50 dark:hover:bg-gray-700 transition-colors"
+              className="mt-2 w-full h-8 rounded-xl text-sm font-medium text-topi-600 dark:text-topi-200 hover:bg-topi-50 dark:hover:bg-gray-700 transition-colors"
             >
               Ir al mes actual
             </CloseButton>

@@ -320,7 +320,7 @@ const Transactions = ({
         <>
 
             <div className="top-0 flex justify-center">
-                <div className="w-full px-2 lg:px-0 top-0">
+                <div className="w-full top-0">
                     <div className="">
 
                         <div className="top-0 rounded-2xl shadow-md bg-white dark:bg-gray-800 w-full transition-colors duration-300">

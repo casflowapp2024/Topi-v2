@@ -6,7 +6,7 @@ import { connect } from 'react-redux';
 import { load_user, logout } from '../redux/actions/auth';
 import { get_user_accounts, get_user_categories, get_user_transactions, get_account_types } from '../redux/actions/cashflow';
 import { get_automated_emails, onboarding_reset_read_email } from '../redux/actions/conexions';
-import { request_init_categories, get_user_extra_data, add_user_extra_data, update_user_extra_data, update_user_config, toggle_dark_mode } from '../redux/actions/auth';
+import { request_init_categories, get_user_extra_data, add_user_extra_data, update_user_extra_data, update_user_config, set_theme } from '../redux/actions/auth';
 import { get_banks, get_official_banks } from '../redux/actions/cashflow';
 import { open_settings_modal, close_settings_modal } from '../redux/actions/ui';
 //Components
@@ -17,18 +17,25 @@ import Warnings from '../components/navigation/Warnings';
 import PeriodSelector from '../components/navigation/PeriodSelector';
 import { connectEmailAction, wasPromptedThisSession, markPromptedThisSession } from '../components/conexions/emailConnection';
 import AccountSettings from '../containers/AccountSettings';
+import PageContainer from '../components/ui/PageContainer';
+import UserMenu from '../components/ui/UserMenu';
+import { themePreference, useResolvedDark } from '../components/ui/theme';
 import { ReactComponent as Cflogo } from '../assets/logos/T1.svg';
 import {
   HomeIcon,
   BanknotesIcon,
   CreditCardIcon,
-  ArrowsRightLeftIcon,
-  SunIcon,
-  MoonIcon,
-  Cog6ToothIcon
+  ArrowsRightLeftIcon
 } from '@heroicons/react/20/solid';
 //UX
 import { Oval } from 'react-loader-spinner';
+
+const NAV = [
+  { tab: 'general', to: '/dashboard', label: 'General', short: 'Inicio', icon: HomeIcon },
+  { tab: 'budgets', to: '/dashboard/budgets', label: 'Presupuestos', short: 'Presup.', icon: BanknotesIcon },
+  { tab: 'accounts', to: '/dashboard/accounts', label: 'Cuentas', short: 'Cuentas', icon: CreditCardIcon },
+  { tab: 'transactions', to: '/dashboard/transactions', label: 'Transacciones', short: 'Transac.', icon: ArrowsRightLeftIcon },
+];
 
 const Layout = ({
   children,
@@ -46,7 +53,7 @@ const Layout = ({
   add_user_extra_data,
   update_user_extra_data,
   update_user_config,
-  toggle_dark_mode,
+  set_theme,
   //state
   user_found,
   categories,
@@ -81,7 +88,8 @@ const Layout = ({
   const pathSegments = location.pathname.split('/').filter(Boolean);
   const activeTab = pathSegments.length > 1 ? pathSegments[1] : 'general';
 
-  const isDark = Boolean(user_extra_data?.config?.dark_mode);
+  const themePref = themePreference(user_extra_data?.config);
+  const isDark = useResolvedDark(themePref);
   // Selector de periodo (móvil, en la barra superior): solo en las vistas que dependen del mes
   const showPeriod = location.pathname.startsWith('/dashboard') && ['general', 'budgets', 'accounts'].includes(activeTab);
 
@@ -192,10 +200,10 @@ const Layout = ({
   }, [user, user_extra_data, first_steps.retrieved_email, automated_emails, location.pathname, navigate])
 
   return (
-    <div className={`min-h-screen font-Inter flex flex-col overflow-x-clip transition-colors duration-300 ${isDark ? 'dark bg-[#0B0F19]' : 'bg-gray-100'}`}>
+    <div className={`min-h-screen font-Inter flex flex-col overflow-x-clip transition-colors duration-300 ${isDark ? 'dark bg-surface-sunken' : 'bg-gray-100'}`}>
       {!user_found && (
-        <div className="flex items-center justify-center h-screen">
-          <Oval height={80} width={80} color="#5266EB" visible={true} ariaLabel='oval-loading' secondaryColor="#5266EB" strokeWidth={2} strokeWidthSecondary={2} />
+        <div className="flex items-center justify-center h-screen text-topi-500">
+          <Oval height={80} width={80} color="currentColor" visible={true} ariaLabel='oval-loading' secondaryColor="currentColor" strokeWidth={2} strokeWidthSecondary={2} />
         </div>
       )}
 
@@ -203,58 +211,46 @@ const Layout = ({
         <div className='flex flex-col flex-grow relative'>
           {user_extra_data ? (
             <div className='flex flex-col w-full relative pb-20 lg:pb-0'>
-              <div className="w-full text-gray-700 dark:text-gray-300 flex flex-col items-center bg-gray-100 dark:bg-[#0B0F19] relative transition-colors duration-300">
-                <div className="fixed top-0 left-0 right-0 z-40 flex justify-center bg-gray-100/80 dark:bg-[#0B0F19]/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50 transition-colors duration-300">
-                  <div className="px-2 py-2 md:py-3 gap-2 flex flex-row justify-between items-center w-full lg:grid lg:grid-cols-[1fr_auto_1fr] lg:px-4 lg:max-w-[1200px]">
-                    <div className='flex items-center gap-2'>
-                      <div className="w-8 h-8 rounded-xl bg-[#5266EB]/10 flex items-center justify-center">
-                        <Cflogo className="w-5 h-5" />
-                      </div>
-                      <span className="hidden min-[380px]:inline font-bold text-[#5266EB] text-lg">Topi</span>
+              <div className="w-full text-gray-700 dark:text-gray-300 flex flex-col items-center bg-gray-100 dark:bg-surface-sunken relative transition-colors duration-300">
+                <header className="fixed top-0 left-0 right-0 z-40 bg-gray-100/80 dark:bg-surface-sunken/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50 transition-colors duration-300">
+                  {/* Alto fijo (52/61px + borde): el espaciador y los encabezados pegajosos dependen de él */}
+                  <PageContainer className="h-[52px] md:h-[61px] flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 lg:gap-6 min-w-0">
+                      {/* El logo siempre lleva al Inicio */}
+                      <Link to="/dashboard" aria-label="Topi, ir al Inicio"
+                        className="flex items-center gap-2 shrink-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500">
+                        <span className="w-8 h-8 rounded-xl bg-topi-500/10 flex items-center justify-center">
+                          <Cflogo className="w-5 h-5" aria-hidden="true" />
+                        </span>
+                        <span className="hidden min-[380px]:inline font-bold text-topi-500 dark:text-topi-200 text-lg">Topi</span>
+                      </Link>
+                      <nav aria-label="Principal" className="hidden lg:flex items-center gap-1">
+                        {NAV.map(({ tab, to, label, icon: Icon }) => {
+                          const active = activeTab === tab;
+                          return (
+                            <Link key={tab} to={to} aria-current={active ? 'page' : undefined}
+                              className={`h-9 px-3 rounded-xl flex items-center gap-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 ${active
+                                ? 'bg-topi-50 text-topi-600 dark:bg-topi-500/15 dark:text-topi-200'
+                                : 'text-ink-2 hover:text-ink hover:bg-gray-200/60 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800'}`}>
+                              <Icon className="w-5 h-5" aria-hidden="true" />
+                              {label}
+                            </Link>
+                          );
+                        })}
+                      </nav>
                     </div>
-                    <div className='gap-2 hidden lg:flex flex-row'>
-                      <Link to="/dashboard" className={`${activeTab === 'general' ? "bg-[#5266EB] text-white shadow-lg border-[#5266EB]" : "text-gray-400 bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm"} cursor-pointer px-3 xl:px-4 py-2 border border-gray-200 rounded-2xl flex items-center gap-2 text-sm transition-colors duration-300`}>
-                        <HomeIcon className="w-5 h-5" />
-                        General
-                      </Link>
-                      <Link to="/dashboard/budgets" className={`${activeTab === 'budgets' ? "bg-[#5266EB] text-white shadow-lg border-[#5266EB]" : "text-gray-400 bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm"} cursor-pointer px-3 xl:px-4 py-2 border border-gray-200 rounded-2xl flex items-center gap-2 text-sm transition-colors duration-300`}>
-                        <BanknotesIcon className="w-5 h-5" />
-                        Presupuestos
-                      </Link>
-                      <Link to="/dashboard/accounts" className={`${activeTab === 'accounts' ? "bg-[#5266EB] text-white shadow-lg border-[#5266EB]" : "text-gray-400 bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm"} cursor-pointer px-3 xl:px-4 py-2 border border-gray-200 rounded-2xl flex items-center gap-2 text-sm transition-colors duration-300`}>
-                        <CreditCardIcon className="w-5 h-5" />
-                        Cuentas
-                      </Link>
-                      <Link to="/dashboard/transactions" className={`${activeTab === 'transactions' ? "bg-[#5266EB] text-white shadow-lg border-[#5266EB]" : "text-gray-400 bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm"} cursor-pointer px-3 xl:px-4 py-2 border border-gray-200 rounded-2xl flex items-center gap-2 text-sm transition-colors duration-300`}>
-                        <ArrowsRightLeftIcon className="w-5 h-5" />
-                        Transacciones
-                      </Link>
+                    <div className="flex items-center justify-end gap-1 sm:gap-3 min-w-0">
+                      {showPeriod && <PeriodSelector compact plain />}
+                      <UserMenu
+                        user={user}
+                        theme={themePref}
+                        onThemeChange={set_theme}
+                        onOpenSettings={open_settings_modal}
+                        onLogout={handleLogout}
+                      />
                     </div>
-                    <div className='flex flex-row items-center justify-end gap-2'>
-                      <button
-                        type="button"
-                        onClick={() => toggle_dark_mode()}
-                        aria-label={isDark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
-                        title={isDark ? 'Tema claro' : 'Tema oscuro'}
-                        className="w-9 h-9 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center text-gray-600 dark:text-amber-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-topi-500 active:scale-95 transition-all"
-                      >
-                        {isDark
-                          ? <SunIcon className="w-5 h-5 transition-transform duration-300 rotate-0 motion-reduce:transition-none" aria-hidden="true" />
-                          : <MoonIcon className="w-5 h-5 transition-transform duration-300 motion-reduce:transition-none" aria-hidden="true" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => open_settings_modal('profile')}
-                        aria-label="Abrir ajustes y perfil"
-                        title="Ajustes"
-                        className="w-9 h-9 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-topi-500 active:scale-95 transition-all"
-                      >
-                        <Cog6ToothIcon className="w-5 h-5" aria-hidden="true" />
-                      </button>
-                      {showPeriod && <PeriodSelector compact />}
-                    </div>
-                  </div>
-                </div>
+                  </PageContainer>
+                </header>
 
                 {/* Spacer for fixed header */}
                 <div className="h-[53px] md:h-[62px] w-full"></div>
@@ -268,39 +264,31 @@ const Layout = ({
                 <NextStepsPopover open={openNextSteps} setOpen={setOpenNextSteps} />
 
 
-                <div className="w-full flex justify-center">
-                  <div className="md:py-1 w-full lg:w-[806px] xl:w-[930px]">
-                    {children}
-                  </div>
-                </div>
+                <PageContainer as="main" className="md:py-1">
+                  {children}
+                </PageContainer>
 
                 {/* Fixed Bottom Navigation for Mobile */}
                 <div className="fixed bottom-6 left-4 right-4 z-40 flex lg:hidden">
-                  <div className="bg-[#5266EB] w-full rounded-full px-2 py-2 flex flex-row justify-between items-center shadow-2xl">
-                    <Link to="/dashboard" className={`flex flex-row items-center justify-center rounded-full transition-all duration-300 overflow-hidden ${activeTab === 'general' ? 'bg-white text-[#5266EB] px-3 py-2 flex-grow' : 'bg-transparent text-white/80 p-2 w-12 flex-shrink-0'}`}>
-                      <HomeIcon className="w-5 h-5 shrink-0" />
-                      {activeTab === 'general' && <span className="ml-1 text-sm font-semibold whitespace-nowrap">Inicio</span>}
-                    </Link>
-                    <Link to="/dashboard/budgets" className={`flex flex-row items-center justify-center rounded-full transition-all duration-300 overflow-hidden ${activeTab === 'budgets' ? 'bg-white text-[#5266EB] px-3 py-2 flex-grow' : 'bg-transparent text-white/80 p-2 w-12 flex-shrink-0'}`}>
-                      <BanknotesIcon className="w-5 h-5 shrink-0" />
-                      {activeTab === 'budgets' && <span className="ml-1 text-sm font-semibold whitespace-nowrap">Presup.</span>}
-                    </Link>
-                    <Link to="/dashboard/accounts" className={`flex flex-row items-center justify-center rounded-full transition-all duration-300 overflow-hidden ${activeTab === 'accounts' ? 'bg-white text-[#5266EB] px-3 py-2 flex-grow' : 'bg-transparent text-white/80 p-2 w-12 flex-shrink-0'}`}>
-                      <CreditCardIcon className="w-5 h-5 shrink-0" />
-                      {activeTab === 'accounts' && <span className="ml-1 text-sm font-semibold whitespace-nowrap">Cuentas</span>}
-                    </Link>
-                    <Link to="/dashboard/transactions" className={`flex flex-row items-center justify-center rounded-full transition-all duration-300 overflow-hidden ${activeTab === 'transactions' ? 'bg-white text-[#5266EB] px-3 py-2 flex-grow' : 'bg-transparent text-white/80 p-2 w-12 flex-shrink-0'}`}>
-                      <ArrowsRightLeftIcon className="w-5 h-5 shrink-0" />
-                      {activeTab === 'transactions' && <span className="ml-1 text-sm font-semibold whitespace-nowrap">Transac.</span>}
-                    </Link>
-                  </div>
+                  <nav aria-label="Principal" className="bg-topi-500 w-full rounded-full px-2 py-2 flex flex-row justify-between items-center shadow-2xl">
+                    {NAV.map(({ tab, to, label, short, icon: Icon }) => {
+                      const active = activeTab === tab;
+                      return (
+                        <Link key={tab} to={to} aria-label={label} aria-current={active ? 'page' : undefined}
+                          className={`flex flex-row items-center justify-center rounded-full transition-all duration-300 overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-white ${active ? 'bg-white text-topi-500 px-3 py-2 flex-grow' : 'bg-transparent text-white/80 p-2 w-12 flex-shrink-0'}`}>
+                          <Icon className="w-5 h-5 shrink-0" aria-hidden="true" />
+                          {active && <span className="ml-1 text-sm font-semibold whitespace-nowrap" aria-hidden="true">{short}</span>}
+                        </Link>
+                      );
+                    })}
+                  </nav>
                 </div>
 
               </div>
             </div>
           ) : (
-            <div className="flex-grow flex items-center justify-center">
-              <Oval height={40} width={40} color="#5266EB" visible={true} ariaLabel='oval-loading' />
+            <div className="flex-grow flex items-center justify-center text-topi-500">
+              <Oval height={40} width={40} color="currentColor" visible={true} ariaLabel='oval-loading' />
             </div>
           )}
 
@@ -348,7 +336,7 @@ export default connect(mapStateToProps, {
   add_user_extra_data,
   update_user_extra_data,
   update_user_config,
-  toggle_dark_mode,
+  set_theme,
   onboarding_reset_read_email,
   open_settings_modal,
   close_settings_modal

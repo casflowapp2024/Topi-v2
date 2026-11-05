@@ -79,7 +79,7 @@ const AAAcountsDashboard = ({
 
     return (
         <>
-            <div className="flex flex-col gap-2 lg:gap-6 px-2 lg:px-0 pb-4 md:max-w-[560px] md:mx-auto lg:max-w-none lg:w-full">
+            <div className="flex flex-col gap-2 lg:gap-6 pb-4 md:max-w-[560px] md:mx-auto lg:max-w-none lg:w-full">
                 <AccountGroupCard group={group} onGroupChange={handleGroupChange} onCreate={() => setOpenCreateBox(true)} />
 
                 {showDetail && (
