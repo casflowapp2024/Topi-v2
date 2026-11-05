@@ -46,13 +46,28 @@ const QUICK = [
     { id: 'transfer', label: 'Transferencias', icon: ArrowsRightLeftIcon },
 ];
 
+// En PC la lista es una tabla: ícono · descripción · categoría · cuenta · monto · estado. Así el espacio lleva datos
+// y el monto queda junto a la cuenta en vez de al otro extremo de la fila. Encabezado, días y filas comparten columnas.
+export const TX_COLUMNS = 'lg:grid lg:grid-cols-[1.5rem_minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_1rem] lg:gap-x-4';
+
+const TransactionsHeader = () => (
+    <div aria-hidden="true" className={`hidden ${TX_COLUMNS} px-4 py-2 border-t border-gray-200 dark:border-gray-700 text-xs font-medium text-ink-2 dark:text-gray-400`}>
+        <span />
+        <span>Descripción</span>
+        <span>Categoría</span>
+        <span>Cuenta</span>
+        <span className="text-right">Monto</span>
+        <span />
+    </div>
+);
+
 // Fila de un movimiento. Las transferencias van neutrales: ícono ↔ y monto sin signo ni color de flujo.
 const TransactionRow = ({ tx, onOpen }) => {
     const neutral = isNeutral(tx);
     return (
         <li>
             <button type="button" onClick={() => onOpen(tx.id)}
-                className="w-full px-3 md:px-4 py-2 flex items-center gap-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-topi-500 transition-colors duration-150">
+                className={`w-full px-3 md:px-4 py-2 flex items-center gap-3 ${TX_COLUMNS} lg:items-center text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-topi-500 transition-colors duration-150`}>
                 <span className="w-6 h-6 shrink-0 flex items-center justify-center">
                     {tx.transfer_group_id ? (
                         <span title="Transferencia entre tus cuentas" className="text-data-transfer dark:text-slate-300"><ArrowsRightLeftIcon className="w-5 h-5" aria-hidden="true" /><span className="sr-only">Transferencia</span></span>
@@ -62,12 +77,16 @@ const TransactionRow = ({ tx, onOpen }) => {
                 </span>
                 <span className="flex-1 min-w-0 flex flex-col">
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>
-                    <span className="text-xs text-ink-2 dark:text-gray-400 truncate">{capitalizeWords(tx.category?.name)} · {tx.account?.name}</span>
+                    <span className="lg:hidden text-xs text-ink-2 dark:text-gray-400 truncate">{capitalizeWords(tx.category?.name)} · {tx.account?.name}</span>
                 </span>
-                <span className="shrink-0 flex items-center gap-1.5">
+                <span className="hidden lg:block min-w-0 text-sm text-ink-2 dark:text-gray-300 truncate">{capitalizeWords(tx.category?.name)}</span>
+                <span className="hidden lg:block min-w-0 text-sm text-ink-2 dark:text-gray-300 truncate">{tx.account?.name}</span>
+                <span className="shrink-0 flex items-center gap-1.5 lg:contents">
+                    <span className="lg:flex lg:justify-end lg:min-w-0">
                     <Money amount={tx.amount} currency={tx.currency} base={tx.amount_base} note={installmentsNote(tx)}
                         sign={neutral ? '' : tx.expense ? '-' : '+'}
                         className={`text-sm font-semibold tabular-nums ${neutral ? 'text-data-transfer dark:text-slate-300' : tx.expense ? 'text-gray-900 dark:text-gray-100' : 'text-money-in dark:text-money-in-dark'}`} />
+                    </span>
                     <span className="w-4 flex justify-center">
                         {tx.needs_counterpart ? (
                             <span title="Falta elegir la cuenta con que pagaste" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Falta elegir la cuenta con que pagaste</span></span>
@@ -409,6 +428,8 @@ const Transactions = ({
                                 </div>
                             </div>
 
+                            {user_transactions.total > 0 && <TransactionsHeader />}
+
                             <CreateTransaction
                                 openCreatePopUp={openCreatePopUp}
                                 SetOpenCreatePopUp={handleCloseCreatePopUp}
@@ -442,10 +463,10 @@ const Transactions = ({
                                     const net = cut ? null : dayNet(items);
                                     return (
                                         <section key={date} aria-labelledby={`date-${date}`} className="border-t border-gray-200 dark:border-gray-700">
-                                            <div className="px-3 md:px-4 py-1.5 flex items-center justify-between gap-2 bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-                                                <h3 id={`date-${date}`} className="text-xs md:text-sm font-semibold text-ink-2 dark:text-gray-300">{dayLabel(date)}</h3>
+                                            <div className={`px-3 md:px-4 py-1.5 flex items-center justify-between gap-2 ${TX_COLUMNS} bg-gray-50 dark:bg-gray-900 transition-colors duration-300`}>
+                                                <h3 id={`date-${date}`} className="lg:col-span-4 text-xs md:text-sm font-semibold text-ink-2 dark:text-gray-300">{dayLabel(date)}</h3>
                                                 {net !== null && (
-                                                    <span className={`text-xs md:text-sm font-semibold tabular-nums ${net > 0 ? 'text-money-in dark:text-money-in-dark' : net < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-ink-2 dark:text-gray-400'}`}>
+                                                    <span className={`lg:col-start-5 lg:text-right text-xs md:text-sm font-semibold tabular-nums ${net > 0 ? 'text-money-in dark:text-money-in-dark' : net < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-ink-2 dark:text-gray-400'}`}>
                                                         <span className="sr-only">Neto del día: </span>{net > 0 ? '+' : ''}{formatMoney(net)}
                                                     </span>
                                                 )}

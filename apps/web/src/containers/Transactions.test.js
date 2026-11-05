@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { createStore, applyMiddleware } from 'redux';
 import { thunk } from 'redux-thunk';
-import Transactions from './Transactions';
+import Transactions, { TX_COLUMNS } from './Transactions';
 import { dayLabel, dayNet, groupByDay, installmentsNote } from '../components/transactions/transactionDays';
 import { formatMoney } from '../components/helpers';
 
@@ -101,6 +101,24 @@ test('Lista por día con neto, transferencias neutrales y Agregar sin relleno', 
   expect(transfer.querySelector('.text-data-transfer')).not.toBeNull();
   const add = el.querySelector('[aria-label="Agregar movimiento"]');
   expect(add.className).not.toContain('bg-topi-500');
+  await act(async () => root.unmount());
+});
+
+test('En PC la lista es una tabla: encabezado, días y filas comparten columnas', async () => {
+  const { el, root } = await mount(state());
+  const header = [...el.querySelectorAll('div[aria-hidden="true"]')].find(d => d.textContent.includes('Descripción'));
+  expect([...header.children].map(c => c.textContent)).toEqual(['', 'Descripción', 'Categoría', 'Cuenta', 'Monto', '']);
+  expect(header.className).toContain('hidden');
+  expect(header.className).toContain(TX_COLUMNS);
+  const row = [...el.querySelectorAll('li')].find(li => li.textContent.includes('Mov 1')).querySelector('button');
+  expect(row.className).toContain(TX_COLUMNS);
+  // en PC la categoría y la cuenta van en su columna; en móvil, debajo de la descripción
+  const cells = [...row.querySelectorAll('.hidden.lg\\:block')].map(c => c.textContent);
+  expect(cells).toEqual(['Mercado', 'Nómina']);
+  expect(row.querySelector('.lg\\:hidden').textContent).toBe('Mercado · Nómina');
+  // el neto del día cae en la columna del monto
+  expect(el.querySelector('section > div').className).toContain(TX_COLUMNS);
+  expect(el.querySelector('section > div > span').className).toContain('lg:col-start-5');
   await act(async () => root.unmount());
 });
 
