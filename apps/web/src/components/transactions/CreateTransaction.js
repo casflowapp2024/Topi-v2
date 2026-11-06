@@ -190,7 +190,7 @@ function CreateTransaction({
                             leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                         >
                             {/**/}
-                            <DialogPanel className="relative transform overflow-hidden rounded-3xl bg-white dark:bg-[#151C2C] text-left shadow-2xl transition-all w-full max-w-lg">
+                            <DialogPanel className="relative transform overflow-hidden rounded-3xl bg-white dark:bg-surface-raised text-left shadow-2xl transition-all w-full max-w-lg">
                                 <div>
                                     <div className="px-6 py-6 sm:px-8 sm:py-8">
                                         {/* titulo y cerrar */}

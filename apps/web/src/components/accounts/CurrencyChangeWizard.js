@@ -189,7 +189,7 @@ const CurrencyChangeWizard = ({ open, onClose, account, net_worth, user_categori
             <div className="fixed inset-0 bg-black/70 backdrop-blur-md" aria-hidden="true" />
             <div className="fixed inset-0 z-10 overflow-y-auto">
                 <div className="flex min-h-full items-end sm:items-center justify-center p-4">
-                    <DialogPanel className="w-full max-w-lg rounded-3xl bg-white dark:bg-[#151C2C] p-5 shadow-2xl ring-1 ring-black/5 dark:ring-white/15 text-left">
+                    <DialogPanel className="w-full max-w-lg rounded-3xl bg-white dark:bg-surface-raised p-5 shadow-2xl ring-1 ring-black/5 dark:ring-white/15 text-left">
                         <div className="flex items-center justify-between mb-3">
                             <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
                                 <ArrowPathIcon className="w-5 h-5 text-topi-500" aria-hidden="true" />

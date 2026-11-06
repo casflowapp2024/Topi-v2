@@ -61,7 +61,7 @@ const AccountSettings = ({
     const content = (
         <div className="max-w-5xl mx-auto font-sans relative flex flex-col h-full w-full">
             {/* Header anclado (Sticky) */}
-            <div className="sticky top-0 z-20 bg-white/90 dark:bg-[#151C2C]/90 backdrop-blur-md pt-3 px-6 pb-2">
+            <div className="sticky top-0 z-20 bg-white/90 dark:bg-surface-raised/90 backdrop-blur-md pt-3 px-6 pb-2">
                 {/* Header */}
                 <h2 className="text-2xl font-bold mr-5 pb-2 text-gray-900 dark:text-white">Configuraciones</h2>
 
@@ -95,10 +95,10 @@ const AccountSettings = ({
 
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-2 sm:px-4 py-6 md:py-10">
-                <div className="bg-white dark:bg-[#151C2C] rounded-3xl shadow-2xl w-full max-w-[930px] h-full max-h-[774px] flex flex-col overflow-hidden relative">
+                <div className="bg-white dark:bg-surface-raised rounded-3xl shadow-2xl w-full max-w-[930px] h-full max-h-[774px] flex flex-col overflow-hidden relative">
 
                     {/* Fixed Header */}
-                    <div className="flex-shrink-0 pt-6 px-6 bg-white dark:bg-[#151C2C] border-b border-gray-100 dark:border-gray-800 z-10 flex justify-between items-start">
+                    <div className="flex-shrink-0 pt-6 px-6 bg-white dark:bg-surface-raised border-b border-gray-100 dark:border-gray-800 z-10 flex justify-between items-start">
                         <div className="w-full">
                             <h2 className="text-2xl font-bold mr-5 pb-2 text-gray-900 dark:text-white">Configuraciones</h2>
                             {/* Navigation Tabs */}
@@ -117,7 +117,7 @@ const AccountSettings = ({
                     </div>
 
                     {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto hide-scrollbar p-6 bg-white dark:bg-[#151C2C] z-0">
+                    <div className="flex-1 overflow-y-auto hide-scrollbar p-6 bg-white dark:bg-surface-raised z-0">
                         {activeTab === 'profile' && <ProfileSetts />}
                         {activeTab === 'connections' && <ConexionesSetts />}
                         {activeTab === 'membership' && <Membership />}
@@ -131,7 +131,7 @@ const AccountSettings = ({
                     </div>
 
                     {/* Fixed Footer */}
-                    <div className="flex-shrink-0 pb-6 px-6 pt-4 flex flex-col border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#151C2C] z-10">
+                    <div className="flex-shrink-0 pb-6 px-6 pt-4 flex flex-col border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-surface-raised z-10">
                         <div className='w-full h-auto rounded-lg mb-2 overflow-hidden flex-shrink-0 min-h-[1.5rem]'>
                             <Alert />
                         </div>

@@ -19,7 +19,7 @@ const Sheet = ({ open, onClose, title, description, children, footer, size = 'md
         <TransitionChild as={Fragment}
           enter="ease-out duration-300 motion-reduce:duration-0" enterFrom="translate-y-full sm:translate-y-0 sm:translate-x-full" enterTo="translate-y-0 sm:translate-x-0"
           leave="ease-in duration-200 motion-reduce:duration-0" leaveFrom="translate-y-0 sm:translate-x-0" leaveTo="translate-y-full sm:translate-y-0 sm:translate-x-full">
-          <DialogPanel className={`w-full ${size === 'lg' ? 'sm:max-w-lg' : 'sm:max-w-md'} max-h-[88vh] sm:max-h-none sm:h-full flex flex-col bg-white dark:bg-[#151C2C] text-gray-900 dark:text-gray-100 rounded-t-3xl sm:rounded-none sm:rounded-l-3xl shadow-2xl`}>
+          <DialogPanel className={`w-full ${size === 'lg' ? 'sm:max-w-lg' : 'sm:max-w-md'} max-h-[88vh] sm:max-h-none sm:h-full flex flex-col bg-white dark:bg-surface-raised text-gray-900 dark:text-gray-100 rounded-t-3xl sm:rounded-none sm:rounded-l-3xl shadow-2xl`}>
             {/* agarradera en móvil */}
             <div className="sm:hidden flex justify-center pt-2" aria-hidden="true">
               <span className="w-10 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />

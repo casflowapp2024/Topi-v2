@@ -60,7 +60,7 @@ const ConnectEmail = ({
 
     return (
         <div className="w-full flex justify-center px-2 py-4 md:py-8" data-testid="connect-email">
-            <div className="w-full max-w-2xl bg-white dark:bg-[#151C2C] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 md:p-8 flex flex-col gap-4">
+            <div className="w-full max-w-2xl bg-white dark:bg-surface-raised rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 md:p-8 flex flex-col gap-4">
 
                 <div className="flex flex-row items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-[#5266EB]/10 flex items-center justify-center shrink-0">

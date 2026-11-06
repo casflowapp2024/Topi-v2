@@ -65,7 +65,7 @@ const InstallPwaModal = () => {
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm shadow-2xl transition-opacity">
-            <div className="bg-white dark:bg-[#151C2C] rounded-3xl shadow-2xl w-full max-w-sm flex flex-col relative overflow-hidden transform transition-all">
+            <div className="bg-white dark:bg-surface-raised rounded-3xl shadow-2xl w-full max-w-sm flex flex-col relative overflow-hidden transform transition-all">
 
                 {/* Decorative Header Area */}
                 <div className="h-32 bg-gradient-to-br from-[#5266EB] to-purple-600 flex items-center justify-center relative">
@@ -76,7 +76,7 @@ const InstallPwaModal = () => {
                     >
                         <XMarkIcon className="w-5 h-5" />
                     </button>
-                    <div className="w-20 h-20 bg-white dark:bg-gray-800 rounded-2xl shadow-lg flex items-center justify-center p-2 absolute -bottom-10 border-4 border-white dark:border-[#151C2C]">
+                    <div className="w-20 h-20 bg-white dark:bg-gray-800 rounded-2xl shadow-lg flex items-center justify-center p-2 absolute -bottom-10 border-4 border-white dark:border-surface-raised">
                         {/* Placeholder for App Logo - Ideally replace with your actual transparent logo */}
                         <img src="/icons/icon-192x192.png" alt="Topi Logo" className="w-full h-full object-contain rounded-xl" onError={(e) => {
                             // Fallback if logo not found

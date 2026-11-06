@@ -269,7 +269,7 @@ const ConexionesSetts = ({
                 <div className='relative'>
                     {openCreateBox ?
                         <>
-                            <div className='absolute top-0 w-full z-20 border border-gray-300 dark:border-gray-700 rounded-2xl bg-white dark:bg-[#151C2C] shadow-xl'>
+                            <div className='absolute top-0 w-full z-20 border border-gray-300 dark:border-gray-700 rounded-2xl bg-white dark:bg-surface-raised shadow-xl'>
                                 <div ref={listDropRef} className='p-4 flex flex-col'>
 
                                     <LinkTransEmailForm
@@ -292,7 +292,7 @@ const ConexionesSetts = ({
                 <div className='relative'>
                     {openDeleteEmail ?
                         <>
-                            <div ref={listDropRef2} className='absolute top-0 w-full z-20 border border-gray-300 dark:border-gray-700 rounded-2xl bg-white dark:bg-[#151C2C] shadow-xl'>
+                            <div ref={listDropRef2} className='absolute top-0 w-full z-20 border border-gray-300 dark:border-gray-700 rounded-2xl bg-white dark:bg-surface-raised shadow-xl'>
                                 <div className='p-4 flex flex-col'>
                                     <div className="flex flex-row justify-between items-center">
                                         <h2 as="h3" className="text-lg font-medium leading-6 text-zinc-900 dark:text-white">
@@ -397,7 +397,7 @@ const ConexionesSetts = ({
                     {openWhatsappForm && (
 
                         <>
-                            <div className="absolute top-[140px] w-full z-20 border border-gray-300 dark:border-gray-700 rounded-2xl bg-white dark:bg-[#151C2C] shadow-xl">
+                            <div className="absolute top-[140px] w-full z-20 border border-gray-300 dark:border-gray-700 rounded-2xl bg-white dark:bg-surface-raised shadow-xl">
                                 <div className="p-4 flex flex-col gap-1" ref={whatsappFormRef}>
                                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Número de WhatsApp</label>
                                     <div className="flex flex-row gap-2 items-center">
