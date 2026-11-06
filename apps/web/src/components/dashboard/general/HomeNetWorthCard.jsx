@@ -45,7 +45,7 @@ const HomeNetWorthCard = ({ net_worth, set_dash_account_activated, history = nul
 
   return (
     <Card as="button" type="button" onClick={openAccounts} aria-label="Patrimonio: ver cuentas"
-      className="group w-full flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6 text-left hover:border-topi-500/40 active:scale-[0.99] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500">
+      className="group relative w-full lg:h-full flex flex-col gap-3 text-left hover:border-topi-500/40 active:scale-[0.99] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500">
       {!net_worth ? (
         <span className="flex flex-col gap-2 w-full"><Skeleton className="h-7 w-1/2" /><Skeleton className="h-2.5 w-full rounded-full" /></span>
       ) : (
@@ -72,7 +72,7 @@ const HomeNetWorthCard = ({ net_worth, set_dash_account_activated, history = nul
                 label: s.id === 'credit' ? `${s.label} (aprox.)` : s.label,
               }))} />
           </span>
-          <ChevronRightIcon className="hidden lg:block w-4 h-4 shrink-0 text-gray-300 group-hover:text-topi-500 transition-colors" aria-hidden="true" />
+          <ChevronRightIcon className="hidden lg:block absolute top-4 right-4 w-4 h-4 text-gray-300 group-hover:text-topi-500 transition-colors" aria-hidden="true" />
         </>
       )}
     </Card>

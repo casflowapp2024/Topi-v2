@@ -36,33 +36,39 @@ const AAGenDashboard = ({
                 En móvil las filas y columnas usan `contents`, así sus hijos entran directo en la pila
                 y `order-*` define el orden; en PC (lg) vuelven a ser filas y columnas.
             */}
-            <div className="contents lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)_minmax(0,6.5fr)] xl:grid-cols-[minmax(0,6fr)_minmax(0,4fr)_minmax(0,5fr)] lg:gap-6">
-                <div className="order-1 lg:order-none min-w-0">
+            {/*
+                PC: grilla de 12 columnas.
+                Fila 1: Ritmo · Flujo · Patrimonio (4/4/4). Fila 2: gráficas (8) y al lado Por revisar y
+                Presupuestos (4). Cuentas abajo a lo ancho.
+                La fila 2 la mide la gráfica (alto mínimo) o la bandeja más un mínimo para Presupuestos;
+                Presupuestos llena lo que quede y se desplaza por dentro.
+            */}
+            <div className="contents lg:grid lg:grid-cols-12 lg:gap-6">
+                <div className="order-1 lg:order-none lg:col-span-4 min-w-0">
                     <HomePaceCard loading={loadingReport} />
                 </div>
-                <div className="order-2 lg:order-none min-w-0">
+                <div className="order-2 lg:order-none lg:col-span-4 min-w-0">
                     <HomeFlowCard loading={loadingReport} />
                 </div>
-                <div className="order-3 lg:order-none min-w-0">
-                    <ReviewInbox />
+                <div className="order-4 lg:order-none lg:col-span-4 min-w-0">
+                    <HomeNetWorthCard />
                 </div>
-                <div className="contents lg:col-span-2 lg:flex lg:flex-col lg:gap-6 lg:min-w-0">
-                    <div className="order-4 lg:order-none">
-                        <HomeNetWorthCard />
+                <div className="order-5 lg:order-none lg:col-span-8 min-w-0">
+                    <MultiChartDash />
+                </div>
+                <div className="contents lg:col-span-4 lg:flex lg:flex-col lg:gap-6 lg:min-w-0">
+                    <div className="order-3 lg:order-none">
+                        <ReviewInbox />
                     </div>
-                    <div className="order-5 lg:order-none">
-                        <MultiChartDash />
+                    <div className="order-6 lg:order-none lg:flex-1 lg:min-h-[240px] lg:relative">
+                        <div className="lg:absolute lg:inset-0">
+                            <DashPlan />
+                        </div>
                     </div>
                 </div>
-                {/* En PC Presupuestos llena el alto de Patrimonio y las gráficas */}
-                <div className="order-6 lg:order-none lg:relative">
-                    <div className="lg:absolute lg:inset-0">
-                        <DashPlan />
-                    </div>
+                <div className="order-7 lg:order-none lg:col-span-12">
+                    <DashAccounts />
                 </div>
-            </div>
-            <div className="order-7 lg:order-none">
-                <DashAccounts />
             </div>
         </div>
     )

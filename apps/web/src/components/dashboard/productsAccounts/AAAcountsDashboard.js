@@ -90,8 +90,8 @@ const AAAcountsDashboard = ({
                         </AccountSwitcher>
 
                         {/* Cifras + gráfica a la izquierda, movimientos a la derecha */}
-                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 lg:gap-6">
-                            <div className="lg:col-span-3 flex flex-col gap-2 lg:gap-6 min-w-0">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-6">
+                            <div className="lg:col-span-7 flex flex-col gap-2 lg:gap-6 min-w-0">
                                 {cls === 'credit' ? (
                                     <CreditCardPanel account={account_activated} data={account_activated_stats} />
                                 ) : cls === 'investment' ? (
@@ -109,7 +109,7 @@ const AAAcountsDashboard = ({
                                 </section>
                             </div>
                             {/* En PC los movimientos toman el alto de la columna izquierda y se desplazan por dentro */}
-                            <div className="lg:col-span-2 min-w-0 lg:relative">
+                            <div className="lg:col-span-5 min-w-0 lg:relative">
                                 <div className="lg:absolute lg:inset-0">
                                     <AccTransPeriod />
                                 </div>
