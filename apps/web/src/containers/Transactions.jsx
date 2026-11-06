@@ -12,7 +12,8 @@ import {
 //components
 //import Layout from "../hocs/Layout"
 import TransactionDetail from "../components/transactions/TransactionDetail2";
-import { formatMoney, formatDate, capitalizeWords } from "../components/helpers";
+import { formatMoney, formatDate, capitalizeWords, accountClass } from "../components/helpers";
+import { ACCOUNT_GROUPS } from "../components/dashboard/productsAccounts/accountGroups";
 import { groupByDay, dayLabel, dayNet, installmentsNote, isNeutral } from "../components/transactions/transactionDays";
 
 import TransactionFilterSheet, { countPanelFilters } from "../components/transactions/TransactionFilterSheet";
@@ -47,47 +48,63 @@ const QUICK = [
 ];
 
 // En PC la lista es una tabla: ícono · descripción · categoría · cuenta · monto · estado. Así el espacio lleva datos
-// y el monto queda junto a la cuenta en vez de al otro extremo de la fila. Encabezado, días y filas comparten columnas.
-export const TX_COLUMNS = 'lg:grid lg:grid-cols-[1.5rem_minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_1rem] lg:gap-x-4';
+// y el monto va pegado a la descripción (con su estado al lado) en vez de al otro extremo de la fila.
+// Orden en PC: ícono · descripción · monto · estado · categoría · cuenta. Encabezado, días y filas comparten columnas.
+export const TX_COLUMNS = 'lg:grid lg:grid-cols-[1.5rem_minmax(0,2fr)_minmax(7.5rem,0.8fr)_1rem_minmax(0,1fr)_minmax(0,1fr)] lg:gap-x-4';
+
+// Tipo de cuenta con el mismo ícono de la vista Cuentas (efectivo, tarjeta, inversión)
+const AccountTypeIcon = ({ account }) => {
+    const group = ACCOUNT_GROUPS.find(g => g.id === accountClass(account));
+    if (!group) return null;
+    const Icon = group.Icon;
+    return (
+        <span title={group.label} className="shrink-0 inline-flex text-gray-400 dark:text-gray-500">
+            <Icon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">{group.label}: </span>
+        </span>
+    );
+};
 
 const TransactionsHeader = () => (
     <div aria-hidden="true" className={`hidden ${TX_COLUMNS} px-4 py-2 border-t border-gray-200 dark:border-gray-700 text-xs font-medium text-ink-2 dark:text-gray-400`}>
         <span />
         <span>Descripción</span>
-        <span>Categoría</span>
-        <span>Cuenta</span>
         <span className="text-right">Monto</span>
         <span />
+        <span>Categoría</span>
+        <span>Cuenta</span>
     </div>
 );
 
 // Fila de un movimiento. Las transferencias van neutrales: ícono ↔ y monto sin signo ni color de flujo.
-const TransactionRow = ({ tx, onOpen }) => {
+const TransactionRow = ({ tx, onOpen, account }) => {
     const neutral = isNeutral(tx);
     return (
         <li>
             <button type="button" onClick={() => onOpen(tx.id)}
                 className={`w-full px-3 md:px-4 py-2 flex items-center gap-3 ${TX_COLUMNS} lg:items-center text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-topi-500 transition-colors duration-150`}>
-                <span className="w-6 h-6 shrink-0 flex items-center justify-center">
+                <span className="lg:order-1 w-6 h-6 shrink-0 flex items-center justify-center">
                     {tx.transfer_group_id ? (
                         <span title="Transferencia entre tus cuentas" className="text-data-transfer dark:text-slate-300"><ArrowsRightLeftIcon className="w-5 h-5" aria-hidden="true" /><span className="sr-only">Transferencia</span></span>
                     ) : tx.category?.emoji ? (
                         <Emoji unified={tx.category.emoji.toLowerCase()} emojiStyle="apple" size={20} />
                     ) : null}
                 </span>
-                <span className="flex-1 min-w-0 flex flex-col">
+                <span className="lg:order-2 flex-1 min-w-0 flex flex-col">
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>
                     <span className="lg:hidden text-xs text-ink-2 dark:text-gray-400 truncate">{capitalizeWords(tx.category?.name)} · {tx.account?.name}</span>
                 </span>
-                <span className="hidden lg:block min-w-0 text-sm text-ink-2 dark:text-gray-300 truncate">{capitalizeWords(tx.category?.name)}</span>
-                <span className="hidden lg:block min-w-0 text-sm text-ink-2 dark:text-gray-300 truncate">{tx.account?.name}</span>
+                <span className="hidden lg:block lg:order-5 min-w-0 text-sm text-ink-2 dark:text-gray-300 truncate">{capitalizeWords(tx.category?.name)}</span>
+                <span className="hidden lg:flex lg:order-6 min-w-0 items-center gap-1.5 text-sm text-ink-2 dark:text-gray-300">
+                    <AccountTypeIcon account={account || tx.account} />
+                    <span className="truncate">{tx.account?.name}</span>
+                </span>
                 <span className="shrink-0 flex items-center gap-1.5 lg:contents">
-                    <span className="lg:flex lg:justify-end lg:min-w-0">
+                    <span className="lg:order-3 lg:flex lg:justify-end lg:min-w-0">
                     <Money amount={tx.amount} currency={tx.currency} base={tx.amount_base} note={installmentsNote(tx)}
                         sign={neutral ? '' : tx.expense ? '-' : '+'}
                         className={`text-sm font-semibold tabular-nums ${neutral ? 'text-data-transfer dark:text-slate-300' : tx.expense ? 'text-gray-900 dark:text-gray-100' : 'text-money-in dark:text-money-in-dark'}`} />
                     </span>
-                    <span className="w-4 flex justify-center">
+                    <span className="lg:order-4 w-4 flex justify-center">
                         {tx.needs_counterpart ? (
                             <span title="Falta elegir la cuenta con que pagaste" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Falta elegir la cuenta con que pagaste</span></span>
                         ) : tx.should_verify === true ? (
@@ -334,6 +351,8 @@ const Transactions = ({
     //transactions by date
 
     const days = useMemo(() => groupByDay(user_transactions.items), [user_transactions.items]);
+    // para el ícono del tipo de cuenta en cada fila (la transacción trae solo id y nombre de la cuenta)
+    const accountsById = useMemo(() => new Map((user_accounts?.items || []).map(a => [String(a.id), a])), [user_accounts]);
 
     return (
         <>
@@ -464,15 +483,15 @@ const Transactions = ({
                                     return (
                                         <section key={date} aria-labelledby={`date-${date}`} className="border-t border-gray-200 dark:border-gray-700">
                                             <div className={`px-3 md:px-4 py-1.5 flex items-center justify-between gap-2 ${TX_COLUMNS} bg-gray-50 dark:bg-gray-900 transition-colors duration-300`}>
-                                                <h3 id={`date-${date}`} className="lg:col-span-4 text-xs md:text-sm font-semibold text-ink-2 dark:text-gray-300">{dayLabel(date)}</h3>
+                                                <h3 id={`date-${date}`} className="lg:col-span-2 text-xs md:text-sm font-semibold text-ink-2 dark:text-gray-300">{dayLabel(date)}</h3>
                                                 {net !== null && (
-                                                    <span className={`lg:col-start-5 lg:text-right text-xs md:text-sm font-semibold tabular-nums ${net > 0 ? 'text-money-in dark:text-money-in-dark' : net < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-ink-2 dark:text-gray-400'}`}>
+                                                    <span className={`lg:col-start-3 lg:text-right text-xs md:text-sm font-semibold tabular-nums ${net > 0 ? 'text-money-in dark:text-money-in-dark' : net < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-ink-2 dark:text-gray-400'}`}>
                                                         <span className="sr-only">Neto del día: </span>{net > 0 ? '+' : ''}{formatMoney(net)}
                                                     </span>
                                                 )}
                                             </div>
                                             <ul className="divide-y divide-gray-100 dark:divide-gray-700">
-                                                {items.map(tx => <TransactionRow key={tx.id} tx={tx} onOpen={handleOpenTransDetail} />)}
+                                                {items.map(tx => <TransactionRow key={tx.id} tx={tx} onOpen={handleOpenTransDetail} account={accountsById.get(String(tx.account?.id))} />)}
                                             </ul>
                                         </section>
                                     );

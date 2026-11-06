@@ -1,5 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
-import { Transition, Dialog, TransitionChild, DialogPanel } from '@headlessui/react'
+import { useEffect, useState } from 'react'
 //redux
 import { connect } from 'react-redux'
 import { delete_transaction, get_user_transactions, update_transaction, update_transaction_local } from '../../redux/actions/cashflow';
@@ -17,11 +16,11 @@ import Alert from '../alert';
 /* This example requires Tailwind CSS v2.0+ */
 import {
     CheckIcon,
-    XMarkIcon,
     TrashIcon,
     PencilSquareIcon
 } from '@heroicons/react/20/solid'
 import Button from '../ui/Button';
+import Sheet from '../ui/Sheet';
 
 function TransactionDetail({
     //props
@@ -330,134 +329,98 @@ function TransactionDetail({
         console.log("closing/opening Edit ", editCreateData); 
     }, [openEditTrans]); */
 
+    // Detalle de una transacción: hoja lateral (acompaña la lista). Estados: detalle → editar | eliminar → eliminada.
+    const view = !detailInfo ? 'detail' : deleteSuccess ? 'deleted' : openDeleteBox ? 'delete' : openEditTrans ? 'edit' : 'detail';
+    const TITLES = { detail: 'Transacción', edit: 'Editar transacción', delete: '¿Eliminar esta transacción?', deleted: 'Transacción eliminada' };
+    const footers = {
+        detail: (
+            <div className="flex items-center justify-between gap-2">
+                <Button variant="ghost" className="!text-status-crit-text dark:!text-red-400 hover:!bg-status-crit-soft dark:hover:!bg-red-500/10"
+                    icon={TrashIcon} onClick={() => setOpenDeleteBox(true)}>
+                    Eliminar
+                </Button>
+                <Button icon={PencilSquareIcon} onClick={() => handleOpenEditTransaction()}>Editar</Button>
+            </div>
+        ),
+        edit: (
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                <Button variant="ghost" onClick={() => setOpenEditTrans(false)} disabled={loadingUpdate}>Cancelar</Button>
+                <Button type="submit" form="edit-transaction-form" icon={CheckIcon} loading={loadingUpdate}>Guardar cambios</Button>
+            </div>
+        ),
+        delete: (
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                <Button variant="ghost" onClick={() => setOpenDeleteBox(false)} disabled={loadingDelete}>Cancelar</Button>
+                <Button variant="danger" icon={TrashIcon} loading={loadingDelete}
+                    onClick={() => handleDeleteTransaction(detailInfo.id)}>
+                    Sí, eliminar
+                </Button>
+            </div>
+        ),
+        deleted: (
+            <div className="flex sm:justify-end">
+                <Button variant="secondary" className="w-full sm:w-auto" onClick={() => handleClosePopover()}>Cerrar</Button>
+            </div>
+        ),
+    };
+
     return (
-
-        <Transition show={openTransDetail} as={Fragment}>
-            <Dialog as="div" className="relative z-40 font-Inter" onClose={handleClosePopover}>
-                <TransitionChild
-                    as={Fragment}
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                >
-                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" />
-                </TransitionChild>
-
-                <div className="fixed inset-0 z-20 overflow-y-auto w-screen">
-                    <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-                        <TransitionChild
-                            as={Fragment}
-                            enter="ease-out duration-300"
-                            enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                            enterTo="opacity-100 translate-y-0 sm:scale-100"
-                            leave="ease-in duration-200"
-                            leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                            leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                        >
-                            {/**/}
-                            <DialogPanel className="relative transform overflow-visible rounded-3xl bg-white dark:bg-surface-raised text-left shadow-2xl transition-all w-full max-w-md">
-                                {detailInfo && (
-                                    <div className="relative p-6 sm:p-8">
-                                        {/* Cerrar (en todos los estados) */}
-                                        <button
-                                            type="button"
-                                            onClick={() => handleClosePopover()}
-                                            className="absolute top-4 right-4 rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500"
-                                            aria-label="Cerrar"
-                                        >
-                                            <XMarkIcon className="w-6 h-6" aria-hidden="true" />
-                                        </button>
-
-                                        {deleteSuccess ? (
-                                            /* ELIMINADA */
-                                            <div className="flex flex-col items-center text-center gap-3 py-6" role="status">
-                                                <span className="w-14 h-14 rounded-full bg-status-ok-soft dark:bg-emerald-500/15 text-status-ok flex items-center justify-center">
-                                                    <CheckIcon className="w-8 h-8" aria-hidden="true" />
-                                                </span>
-                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Transacción eliminada</h3>
-                                                <p className="text-sm text-ink-2 dark:text-gray-400">Tus saldos y reportes ya se actualizaron.</p>
-                                                <Button variant="secondary" className="mt-2 min-w-[140px]" onClick={() => handleClosePopover()}>Cerrar</Button>
-                                            </div>
-                                        ) : openDeleteBox ? (
-                                            /* CONFIRMAR ELIMINACIÓN */
-                                            <div className="flex flex-col items-center text-center gap-3 pt-4">
-                                                <span className="w-14 h-14 rounded-full bg-status-crit-soft dark:bg-red-500/15 text-status-crit flex items-center justify-center">
-                                                    <TrashIcon className="w-7 h-7" aria-hidden="true" />
-                                                </span>
-                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">¿Eliminar esta transacción?</h3>
-                                                <div className="w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-4 py-3 flex items-center justify-between gap-3 text-left">
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{detailInfo.description}</p>
-                                                        <p className="text-xs text-ink-2 dark:text-gray-400 truncate">
-                                                            {formatDate(detailInfo.date)} · {detailInfo.account?.name}
-                                                        </p>
-                                                    </div>
-                                                    <span className={`shrink-0 text-sm font-bold tabular-nums ${detailInfo.transfer_group_id ? 'text-gray-700 dark:text-gray-200' : detailInfo.expense ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}`}>
-                                                        {detailInfo.transfer_group_id ? '' : detailInfo.expense ? '−' : '+'}{formatMoney(detailInfo.amount, detailInfo.currency)}
-                                                    </span>
-                                                </div>
-                                                <p className="text-sm text-ink-2 dark:text-gray-400">
-                                                    Se borra para siempre y deja de contar en tus saldos y presupuestos.
-                                                </p>
-                                                <div className="w-full flex flex-col-reverse sm:flex-row gap-2 pt-2">
-                                                    <Button variant="secondary" className="flex-1" onClick={() => setOpenDeleteBox(false)} disabled={loadingDelete}>
-                                                        Cancelar
-                                                    </Button>
-                                                    <Button variant="danger" className="flex-1" icon={TrashIcon} loading={loadingDelete}
-                                                        onClick={() => handleDeleteTransaction(detailInfo.id)}>
-                                                        Sí, eliminar
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        ) : openEditTrans ? (
-                                            /* EDITAR */
-                                            <div className="w-full">
-                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pr-10">Editar transacción</h3>
-                                                <FormEditCreateTrans
-                                                    editCreateData={editCreateData}
-                                                    onChangeCreate={onChangeCreate}
-                                                    user_categories={user_categories}
-                                                    user_accounts={user_accounts}
-                                                    date={date}
-                                                    setDate={setDate}
-                                                />
-                                                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
-                                                    <Button variant="secondary" onClick={() => setOpenEditTrans(false)} disabled={loadingUpdate}>Cancelar</Button>
-                                                    <Button icon={CheckIcon} loading={loadingUpdate} onClick={(e) => onSubmitUpdate(e)}>Guardar cambios</Button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            /* DETALLE */
-                                            <div>
-                                                <TransSumm detailInfo={detailInfo} />
-                                                <FxRateEditor detailInfo={detailInfo} setDetailInfo={setDetailInfo} contextWindow={contextWindow} />
-                                                <TransferLinkSection detailInfo={detailInfo} setDetailInfo={setDetailInfo} onChanged={refreshViews} />
-                                                <div className="flex flex-row justify-between items-center gap-2 mt-6">
-                                                    <Button variant="ghost" className="text-status-crit-text dark:text-red-400 hover:bg-status-crit-soft dark:hover:bg-red-500/10"
-                                                        icon={TrashIcon} onClick={() => setOpenDeleteBox(true)}>
-                                                        Eliminar
-                                                    </Button>
-                                                    <Button icon={PencilSquareIcon} onClick={() => handleOpenEditTransaction()}>Editar</Button>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {!deleteSuccess && (
-                                            <div className="overflow-hidden rounded-2xl mt-3 empty:hidden">
-                                                <Alert />
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </DialogPanel>
-                        </TransitionChild>
-                    </div>
-                </div>
-            </Dialog>
-        </Transition>
-
+        <Sheet open={Boolean(openTransDetail)} onClose={handleClosePopover} title={TITLES[view]} footer={detailInfo ? footers[view] : null}>
+            {detailInfo && (
+                <>
+                    {view === 'deleted' ? (
+                        <div className="flex flex-col items-center text-center gap-3 py-6" role="status">
+                            <span className="w-14 h-14 rounded-full bg-status-ok-soft dark:bg-emerald-500/15 text-status-ok flex items-center justify-center">
+                                <CheckIcon className="w-8 h-8" aria-hidden="true" />
+                            </span>
+                            <p className="text-sm text-ink-2 dark:text-gray-400">Tus saldos y reportes ya se actualizaron.</p>
+                        </div>
+                    ) : view === 'delete' ? (
+                        <div className="flex flex-col items-center text-center gap-3 pt-2">
+                            <span className="w-14 h-14 rounded-full bg-status-crit-soft dark:bg-red-500/15 text-status-crit flex items-center justify-center">
+                                <TrashIcon className="w-7 h-7" aria-hidden="true" />
+                            </span>
+                            <div className="w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-4 py-3 flex items-center justify-between gap-3 text-left">
+                                <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{detailInfo.description}</p>
+                                    <p className="text-xs text-ink-2 dark:text-gray-400 truncate">
+                                        {formatDate(detailInfo.date)} · {detailInfo.account?.name}
+                                    </p>
+                                </div>
+                                <span className={`shrink-0 text-sm font-bold tabular-nums ${detailInfo.transfer_group_id ? 'text-gray-700 dark:text-gray-200' : detailInfo.expense ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}`}>
+                                    {detailInfo.transfer_group_id ? '' : detailInfo.expense ? '−' : '+'}{formatMoney(detailInfo.amount, detailInfo.currency)}
+                                </span>
+                            </div>
+                            <p className="text-sm text-ink-2 dark:text-gray-400">
+                                Se borra para siempre y deja de contar en tus saldos y presupuestos.
+                            </p>
+                        </div>
+                    ) : view === 'edit' ? (
+                        <form id="edit-transaction-form" onSubmit={(e) => onSubmitUpdate(e)} noValidate>
+                            <FormEditCreateTrans
+                                editCreateData={editCreateData}
+                                onChangeCreate={onChangeCreate}
+                                user_categories={user_categories}
+                                user_accounts={user_accounts}
+                                date={date}
+                                setDate={setDate}
+                            />
+                        </form>
+                    ) : (
+                        <div>
+                            <TransSumm detailInfo={detailInfo} />
+                            <FxRateEditor detailInfo={detailInfo} setDetailInfo={setDetailInfo} contextWindow={contextWindow} />
+                            <TransferLinkSection detailInfo={detailInfo} setDetailInfo={setDetailInfo} onChanged={refreshViews} />
+                        </div>
+                    )}
+                    {view !== 'deleted' && (
+                        <div className="overflow-hidden rounded-2xl mt-3 empty:hidden">
+                            <Alert />
+                        </div>
+                    )}
+                </>
+            )}
+        </Sheet>
     )
 }
 

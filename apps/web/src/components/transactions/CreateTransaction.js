@@ -1,5 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
-import { Transition, Dialog, TransitionChild, DialogPanel } from '@headlessui/react'
+import { useEffect, useState } from 'react'
 //redux
 import { connect } from 'react-redux'
 import {
@@ -10,11 +9,10 @@ import { setAlert } from '../../redux/actions/alert';
 //components
 import { formatDate, formatMoney, formatMoneyCompact, formatedCurrToNumber, findElmentById, parseDatetimetoDateStrFormat, isOpenAccount, isCreditAccount } from '../helpers';
 import 'react-datepicker/dist/react-datepicker.css'
-import { ThreeDots } from 'react-loader-spinner';
 import FormEditCreateTrans from './FormEditCreateTrans';
 import Alert from '../alert';
-//icons
-import { XMarkIcon } from '@heroicons/react/24/solid';
+import Modal from '../ui/Modal';
+import Button from '../ui/Button';
 
 
 function CreateTransaction({
@@ -163,103 +161,33 @@ function CreateTransaction({
     }, [createTransData,date]); */
 
 
+    // Agregar es secundario (las transacciones llegan solas por correo): el modal es un formulario corto,
+    // sin nada que lo haga más visible desde afuera.
     return (
-        <Transition show={openCreatePopUp} as={Fragment}>
-            <Dialog as="div" className="relative z-40 font-Inter" onClose={handleClosePopover}>
-                <TransitionChild
-                    as={Fragment}
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                >
-                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" />
-                </TransitionChild>
-
-                <div className="fixed inset-0 z-10 overflow-y-auto w-screen">
-                    <div className="flex min-h-full items-center justify-center text-center p-4 sm:p-0">
-                        <TransitionChild
-                            as={Fragment}
-                            enter="ease-out duration-300"
-                            enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                            enterTo="opacity-100 translate-y-0 sm:scale-100"
-                            leave="ease-in duration-200"
-                            leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                            leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                        >
-                            {/**/}
-                            <DialogPanel className="relative transform overflow-hidden rounded-3xl bg-white dark:bg-surface-raised text-left shadow-2xl transition-all w-full max-w-lg">
-                                <div>
-                                    <div className="px-6 py-6 sm:px-8 sm:py-8">
-                                        {/* titulo y cerrar */}
-                                        <div className="flex justify-between items-center mb-6">
-                                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                                                Crear Transacción
-                                            </h3>
-                                            <button
-                                                type="button"
-                                                onClick={handleClosePopover}
-                                                className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-white transition-colors focus:outline-none"
-                                            >
-                                                <XMarkIcon className="w-6 h-6" />
-                                                <span className="sr-only">Cerrar modal</span>
-                                            </button>
-                                        </div>
-
-                                        {/* formulario */}
-                                        <FormEditCreateTrans
-                                            editCreateData={createTransData}
-                                            onChangeCreate={onChangeCreate}
-                                            user_categories={user_categories}
-                                            user_accounts={user_accounts}
-                                            date={date}
-                                            setDate={setDate}
-                                        />
-
-                                        {/* boton crear y cerrar */}
-                                        <div className="flex justify-end gap-2 mt-2 p-2">
-                                            {loadingCreate ?
-                                                <div
-                                                    class="bg-[#5266EB] text-white px-4 py-2 rounded-lg w-28">
-                                                    <div className='flex justify-center items-center'>
-                                                        <ThreeDots
-                                                            height="20"
-                                                            width="20"
-                                                            color="white"
-                                                            ariaLabel="loading"
-                                                        />
-                                                    </div>
-                                                </div>
-                                                :
-                                                <button
-                                                    onClick={onSubmitCreate}
-                                                    className="bg-[#5266EB] text-white px-4 py-2 rounded-lg hover:bg-blue-600 w-28"
-                                                >
-                                                    Crear
-                                                </button>
-                                            }
-                                        </div>
-                                    </div>
-                                    <div className='overflow-hidden rounded-b-3xl'>
-                                        <Alert />
-                                    </div>
-                                </div>
-
-
-
-                            </DialogPanel>
-                        </TransitionChild>
-                    </div>
-                </div>
-            </Dialog>
-        </Transition>
-
-
-
-
-
+        <Modal
+            open={openCreatePopUp}
+            onClose={handleClosePopover}
+            title="Nuevo movimiento"
+            size="lg"
+            footer={<>
+                <Button variant="ghost" onClick={handleClosePopover} disabled={loadingCreate}>Cancelar</Button>
+                <Button type="submit" form="create-transaction-form" loading={loadingCreate}>Crear</Button>
+            </>}
+        >
+            <form id="create-transaction-form" onSubmit={onSubmitCreate} noValidate>
+                <FormEditCreateTrans
+                    editCreateData={createTransData}
+                    onChangeCreate={onChangeCreate}
+                    user_categories={user_categories}
+                    user_accounts={user_accounts}
+                    date={date}
+                    setDate={setDate}
+                />
+            </form>
+            <div className="overflow-hidden rounded-2xl mt-3 empty:hidden">
+                <Alert />
+            </div>
+        </Modal>
     )
 }
 

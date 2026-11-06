@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
-import { XMarkIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/solid';
+import { ArrowsRightLeftIcon } from '@heroicons/react/20/solid';
 import moment from 'moment-timezone';
 //redux
 import { connect } from 'react-redux';
@@ -10,10 +9,10 @@ import { setAlert } from '../../redux/actions/alert';
 //components
 import InputMoneyInt2Decs from '../InputMoneyInt2Decs';
 import Button from '../ui/Button';
+import Modal from '../ui/Modal';
+import Field, { Input, Select } from '../ui/Field';
 import { formatMoney, formatedCurrToNumber, getCurrency, isOpenAccount } from '../helpers';
 
-const fieldClass = 'bg-gray-50 p-2 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white';
-const labelClass = 'block mb-1 text-sm font-medium text-gray-900 dark:text-white';
 
 const toNumber = (value) => {
     if (typeof value === 'number') return value;
@@ -116,110 +115,83 @@ const TransferModal = ({ open, onClose, user_accounts, user_categories, default_
         onClose();
     };
 
+    const canTransfer = accounts.length >= 2;
     return (
-        <Dialog open={open} onClose={onClose} className="relative z-40 font-Inter">
-            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" aria-hidden="true" />
-            <div className="fixed inset-0 z-10 overflow-y-auto">
-                <div className="flex min-h-full items-end sm:items-center justify-center p-4">
-                    <DialogPanel className="w-full max-w-md rounded-3xl bg-white dark:bg-surface-raised p-5 shadow-2xl ring-1 ring-black/5 dark:ring-white/15">
-                        <div className="flex items-center justify-between mb-4">
-                            <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
-                                <ArrowsRightLeftIcon className="w-5 h-5 text-topi-500" aria-hidden="true" />
-                                Transferir entre cuentas
-                            </DialogTitle>
-                            <button type="button" onClick={onClose} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
-                                <XMarkIcon className="w-6 h-6" aria-hidden="true" />
-                                <span className="sr-only">Cerrar</span>
-                            </button>
+        <Modal open={open} onClose={onClose} title="Transferir entre cuentas"
+            description="Se crean dos movimientos ligados; no cuentan como ingreso ni como gasto."
+            size="lg"
+            footer={canTransfer ? <>
+                <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+                <Button type="submit" form="transfer-form" disabled={!valid} loading={saving} icon={ArrowsRightLeftIcon}>Transferir</Button>
+            </> : null}>
+            {!canTransfer ? (
+                <p className="text-sm text-gray-600 dark:text-gray-300">Necesitas al menos dos cuentas para transferir.</p>
+            ) : (
+                <form id="transfer-form" onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field label="Desde" id="transferFrom">
+                        <Select value={form.fromId} onChange={e => set({ fromId: e.target.value, receivedTouched: false })}>
+                            {accounts.map(a => <option key={a.id} value={a.id}>{a.name} ••{a.last_four_digits} · {a.currency || 'COP'}</option>)}
+                        </Select>
+                    </Field>
+                    <Field label="Hacia" id="transferTo">
+                        <Select value={form.toId} onChange={e => set({ toId: e.target.value, receivedTouched: false })}>
+                            {accounts.map(a => <option key={a.id} value={a.id} disabled={String(a.id) === String(form.fromId)}>
+                                {a.name} ••{a.last_four_digits} · {a.currency || 'COP'}</option>)}
+                        </Select>
+                    </Field>
+
+                    <div className={`flex flex-col gap-1.5 ${crossCurrency ? '' : 'sm:col-span-2'}`}>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{crossCurrency ? 'Monto enviado' : 'Monto'}</span>
+                        <InputMoneyInt2Decs name="sent" id="transferSent" currency={fromCur}
+                            ariaLabel={crossCurrency ? 'Monto enviado' : 'Monto'}
+                            number={form.sent}
+                            onChangeCreate={e => set({ sent: e.target.value })} />
+                    </div>
+                    {crossCurrency && (
+                        <div className="flex flex-col gap-1.5">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Monto recibido</span>
+                            <InputMoneyInt2Decs name="received" id="transferReceived" currency={toCur}
+                                ariaLabel="Monto recibido"
+                                number={form.receivedTouched ? form.received : prefilled}
+                                onChangeCreate={e => {
+                                    // el input avisa también al montarse: solo cuenta si cambió el valor
+                                    if (toNumber(e.target.value) !== prefilled) set({ received: e.target.value, receivedTouched: true });
+                                }} />
                         </div>
+                    )}
 
-                        {accounts.length < 2 ? (
-                            <p className="text-sm text-gray-600 dark:text-gray-300">Necesitas al menos dos cuentas para transferir.</p>
-                        ) : (
-                            <form onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="transferFrom" className={labelClass}>Desde</label>
-                                    <select id="transferFrom" value={form.fromId} className={fieldClass}
-                                        onChange={e => set({ fromId: e.target.value, receivedTouched: false })}>
-                                        {accounts.map(a => <option key={a.id} value={a.id}>{a.name} ••{a.last_four_digits} · {a.currency || 'COP'}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label htmlFor="transferTo" className={labelClass}>Hacia</label>
-                                    <select id="transferTo" value={form.toId} className={fieldClass}
-                                        onChange={e => set({ toId: e.target.value, receivedTouched: false })}>
-                                        {accounts.map(a => <option key={a.id} value={a.id} disabled={String(a.id) === String(form.fromId)}>
-                                            {a.name} ••{a.last_four_digits} · {a.currency || 'COP'}</option>)}
-                                    </select>
-                                </div>
-
-                                <div className={crossCurrency ? '' : 'sm:col-span-2'}>
-                                    <span className={labelClass}>{crossCurrency ? 'Monto enviado' : 'Monto'}</span>
-                                    <InputMoneyInt2Decs name="sent" id="transferSent" currency={fromCur}
-                                        ariaLabel={crossCurrency ? 'Monto enviado' : 'Monto'}
-                                        number={form.sent}
-                                        onChangeCreate={e => set({ sent: e.target.value })} />
-                                </div>
-                                {crossCurrency && (
-                                    <div>
-                                        <span className={labelClass}>Monto recibido</span>
-                                        <InputMoneyInt2Decs name="received" id="transferReceived" currency={toCur}
-                                            ariaLabel="Monto recibido"
-                                            number={form.receivedTouched ? form.received : prefilled}
-                                            onChangeCreate={e => {
-                                                // el input avisa también al montarse: solo cuenta si cambió el valor
-                                                if (toNumber(e.target.value) !== prefilled) set({ received: e.target.value, receivedTouched: true });
-                                            }} />
-                                    </div>
-                                )}
-
-                                {crossCurrency && (
-                                    <div className="sm:col-span-2 rounded-xl bg-slate-50 dark:bg-gray-800 p-3 text-xs text-gray-600 dark:text-gray-300" aria-live="polite">
-                                        {effectiveRate ? (
-                                            <p>Tasa efectiva: <b className="text-gray-900 dark:text-white">{rateLabel(effectiveRate, fromCur, toCur)}</b></p>
-                                        ) : <p>Escribe los montos para ver la tasa efectiva.</p>}
-                                        {marketRate ? (
-                                            <p>Tasa de mercado del día: {rateLabel(marketRate, fromCur, toCur)}
-                                                {spread !== null && Math.abs(spread) >= 0.01 && (
-                                                    <> · <span className={spread < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}>
-                                                        {spread > 0 ? '+' : ''}{spread.toFixed(2).replace('.', ',')} %</span></>
-                                                )}
-                                            </p>
-                                        ) : <p>Aún no hay tasa de mercado {fromCur}→{toCur} para esa fecha.</p>}
-                                    </div>
-                                )}
-
-                                <div>
-                                    <label htmlFor="transferDate" className={labelClass}>Fecha</label>
-                                    <input id="transferDate" type="date" value={form.date} max={moment().format('YYYY-MM-DD')}
-                                        onChange={e => set({ date: e.target.value })} className={fieldClass} required />
-                                </div>
-                                <div>
-                                    <label htmlFor="transferCategory" className={labelClass}>Categoría</label>
-                                    <select id="transferCategory" value={form.categoryId} className={fieldClass}
-                                        onChange={e => set({ categoryId: e.target.value })}>
-                                        {categories.map(c => <option key={c.id} value={c.id}>{emojiChar(c.emoji)} {c.name}</option>)}
-                                    </select>
-                                </div>
-                                <div className="sm:col-span-2">
-                                    <label htmlFor="transferDescription" className={labelClass}>Descripción (opcional)</label>
-                                    <input id="transferDescription" type="text" maxLength={255} value={form.description}
-                                        placeholder="Transferencia" onChange={e => set({ description: e.target.value })} className={fieldClass} />
-                                </div>
-
-                                <p className="sm:col-span-2 text-xs text-gray-500 dark:text-gray-400">
-                                    Se crean dos movimientos ligados (una salida y una entrada); no cuentan como ingreso ni como gasto.
+                    {crossCurrency && (
+                        <div className="sm:col-span-2 rounded-xl bg-gray-50 dark:bg-gray-800 p-3 text-xs text-gray-600 dark:text-gray-300" aria-live="polite">
+                            {effectiveRate ? (
+                                <p>Tasa efectiva: <b className="text-gray-900 dark:text-white">{rateLabel(effectiveRate, fromCur, toCur)}</b></p>
+                            ) : <p>Escribe los montos para ver la tasa efectiva.</p>}
+                            {marketRate ? (
+                                <p>Tasa de mercado del día: {rateLabel(marketRate, fromCur, toCur)}
+                                    {spread !== null && Math.abs(spread) >= 0.01 && (
+                                        <> · <span className={spread < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}>
+                                            {spread > 0 ? '+' : ''}{spread.toFixed(2).replace('.', ',')} %</span></>
+                                    )}
                                 </p>
-                                <div className="sm:col-span-2 flex justify-end gap-2">
-                                    <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-                                    <Button type="submit" disabled={!valid} loading={saving} icon={ArrowsRightLeftIcon}>Transferir</Button>
-                                </div>
-                            </form>
-                        )}
-                    </DialogPanel>
-                </div>
-            </div>
-        </Dialog>
+                            ) : <p>Aún no hay tasa de mercado {fromCur}→{toCur} para esa fecha.</p>}
+                        </div>
+                    )}
+
+                    <Field label="Fecha" id="transferDate">
+                        <Input type="date" value={form.date} max={moment().format('YYYY-MM-DD')}
+                            onChange={e => set({ date: e.target.value })} required />
+                    </Field>
+                    <Field label="Categoría" id="transferCategory">
+                        <Select value={form.categoryId} onChange={e => set({ categoryId: e.target.value })}>
+                            {categories.map(c => <option key={c.id} value={c.id}>{emojiChar(c.emoji)} {c.name}</option>)}
+                        </Select>
+                    </Field>
+                    <Field label="Descripción (opcional)" id="transferDescription" className="sm:col-span-2">
+                        <Input type="text" maxLength={255} value={form.description}
+                            placeholder="Transferencia" onChange={e => set({ description: e.target.value })} />
+                    </Field>
+                </form>
+            )}
+        </Modal>
     );
 };
 

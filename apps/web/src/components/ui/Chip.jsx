@@ -1,7 +1,7 @@
 // Chip seleccionable (filtros, categorías). selected cambia el estilo y aria-pressed.
 const Chip = ({ selected = false, onClick, icon: Icon, children, count, tone = 'default', className = '', ...props }) => {
   const toneOff = tone === 'accent'
-    ? 'border-topi-500/60 text-topi-600 dark:text-indigo-300 hover:bg-topi-50 dark:hover:bg-indigo-500/10'
+    ? 'border-topi-500/60 text-topi-600 dark:text-topi-200 hover:bg-topi-50 dark:hover:bg-topi-500/10'
     : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700';
   return (
     <button

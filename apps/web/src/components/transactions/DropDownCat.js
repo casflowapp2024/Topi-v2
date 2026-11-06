@@ -213,8 +213,8 @@ const DropDownCat = ({
                 key={0}
                 onClick={() => onClickAddCat(true)}
                 >
-                    <PlusIcon className="w-4 h-4 text-topi-600 dark:text-indigo-300" />
-                    <span className="text-topi-600 dark:text-indigo-300">
+                    <PlusIcon className="w-4 h-4 text-topi-600 dark:text-topi-200" />
+                    <span className="text-topi-600 dark:text-topi-200">
                         Crear nueva Categoría
                     </span>
                 </div>  

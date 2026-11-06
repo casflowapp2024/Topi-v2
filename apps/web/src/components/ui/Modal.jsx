@@ -1,6 +1,7 @@
-import { Fragment } from 'react';
+import { Fragment, useRef } from 'react';
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/20/solid';
+import useKeepFocusInside from './useKeepFocusInside';
 
 const SIZES = {
   sm: 'sm:max-w-sm',
@@ -26,7 +27,10 @@ const noop = () => {};
 const Modal = ({
   open, onClose, title, description, children, footer, size = 'md',
   dismissible = true, hideTitle = false, bodyClassName = 'px-5 py-4', className = '',
-}) => (
+}) => {
+  const panelRef = useRef(null);
+  useKeepFocusInside(Boolean(open), panelRef);
+  return (
   <Transition show={Boolean(open)} as={Fragment}>
     <Dialog as="div" className="relative z-50 font-Inter" onClose={dismissible ? onClose : noop}>
       <TransitionChild as={Fragment}
@@ -39,7 +43,7 @@ const Modal = ({
         <TransitionChild as={Fragment}
           enter="ease-out duration-300 motion-reduce:duration-0" enterFrom="translate-y-full sm:translate-y-0 sm:opacity-0 sm:scale-95" enterTo="translate-y-0 sm:opacity-100 sm:scale-100"
           leave="ease-in duration-200 motion-reduce:duration-0" leaveFrom="translate-y-0 sm:opacity-100 sm:scale-100" leaveTo="translate-y-full sm:translate-y-0 sm:opacity-0 sm:scale-95">
-          <DialogPanel className={`w-full ${SIZES[size] || SIZES.md} max-h-[92dvh] sm:max-h-[90vh] flex flex-col bg-white dark:bg-surface-raised text-gray-900 dark:text-gray-100 rounded-t-3xl sm:rounded-3xl shadow-2xl ${className}`}>
+          <DialogPanel ref={panelRef} tabIndex={-1} className={`w-full ${SIZES[size] || SIZES.md} max-h-[92dvh] sm:max-h-[90vh] flex flex-col focus:outline-none bg-white dark:bg-surface-raised text-gray-900 dark:text-gray-100 rounded-t-3xl sm:rounded-3xl shadow-2xl ${className}`}>
             {/* agarradera en móvil */}
             <div className="sm:hidden flex justify-center pt-2" aria-hidden="true">
               <span className="w-10 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />
@@ -67,6 +71,7 @@ const Modal = ({
       </div>
     </Dialog>
   </Transition>
-);
+  );
+};
 
 export default Modal;

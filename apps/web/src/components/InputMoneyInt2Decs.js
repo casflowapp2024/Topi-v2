@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { formatMoneyInput, getBaseCurrency, getCurrency } from "./helpers";
+import { controlClass } from "./ui/Field";
+
+// size: md (formularios) | lg (monto protagonista, p. ej. al crear una transacción)
+const SIZE = {
+  md: { wrap: "mt-2 text-sm", int: "h-11 px-3 text-right", dec: "h-11 px-2" },
+  lg: { wrap: "text-3xl font-bold", int: "h-16 px-4 text-center text-3xl font-bold tabular-nums", dec: "h-16 px-2 text-3xl font-bold tabular-nums" },
+};
 
 // FormatMoneyShowDecs.jsx
 const InputMoneyInt2Decs = ({
@@ -9,7 +16,10 @@ const InputMoneyInt2Decs = ({
   number, // float or numeric string
   currency = getBaseCurrency(), // ISO 4217: el símbolo que se muestra
   ariaLabel,
+  size = "md",
+  invalid = false,
 }) => {
+  const sz = SIZE[size] || SIZE.md;
   const symbol = getCurrency(currency).symbol;
   const [integerPart, setIntegerPart] = useState("");
   const [decimalPart, setDecimalPart] = useState("");
@@ -145,7 +155,7 @@ const InputMoneyInt2Decs = ({
     }, [integerPart, decimalPart]);
 
   return (
-    <div className="flex flex-row items-center justify-end mt-2 text-sm">
+    <div className={`flex flex-row items-center justify-end ${sz.wrap}`}>
       <input
         ref={integerRef}
         type="text"
@@ -154,12 +164,13 @@ const InputMoneyInt2Decs = ({
         inputMode="decimal"
         aria-label={ariaLabel ? `${ariaLabel} en ${getCurrency(currency).name}` : `Monto en ${getCurrency(currency).name}`}
         onFocus={handleFocus}
-        className={`${showDecimals ? "rounded-l-md w-[85%]" : "rounded-lg w-full"} bg-gray-50 px-2 py-1 md:py-2 border border-gray-300 text-right text-gray-900 placeholder-gray-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
+        aria-invalid={invalid || undefined}
+        className={controlClass({ invalid, className: `${sz.int} ${showDecimals ? "!w-[80%]" : ""}` })}
       />
 
       {showDecimals && (
         <>
-          <span className="px-1 select-none">.</span>
+          <span className="px-1 select-none" aria-hidden="true">.</span>
           <input
             ref={decimalRef}
             type="text"
@@ -168,7 +179,7 @@ const InputMoneyInt2Decs = ({
             inputMode="numeric"
             aria-label="Centavos"
             onKeyDown={handleBackspace}
-            className="bg-gray-50 px-1 py-1 md:py-2 rounded-r-md border border-gray-300 w-[15%] text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            className={controlClass({ className: `${sz.dec} !w-[18%]` })}
           />
         </>
       )}

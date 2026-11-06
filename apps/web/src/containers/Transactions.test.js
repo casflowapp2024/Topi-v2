@@ -104,21 +104,34 @@ test('Lista por día con neto, transferencias neutrales y Agregar sin relleno', 
   await act(async () => root.unmount());
 });
 
-test('En PC la lista es una tabla: encabezado, días y filas comparten columnas', async () => {
-  const { el, root } = await mount(state());
+test('En PC la lista es una tabla: el monto va junto a la descripción y la cuenta dice su tipo', async () => {
+  const accounts = { items: [{ id: 1, name: 'Nómina', type: { id: 1, class: 'deposit' } }, { id: 4, name: 'Visa', type: { id: 4, class: 'credit' } }] };
+  const list = [...items, tx(5, '2026-10-27', 30000, { account: { id: 4, name: 'Visa' } })];
+  const { el, root } = await mount(state({ user_accounts: accounts, user_transactions: { items: list, total: list.length, default_limit: 30 } }));
   const header = [...el.querySelectorAll('div[aria-hidden="true"]')].find(d => d.textContent.includes('Descripción'));
-  expect([...header.children].map(c => c.textContent)).toEqual(['', 'Descripción', 'Categoría', 'Cuenta', 'Monto', '']);
+  expect([...header.children].map(c => c.textContent)).toEqual(['', 'Descripción', 'Monto', '', 'Categoría', 'Cuenta']);
   expect(header.className).toContain('hidden');
   expect(header.className).toContain(TX_COLUMNS);
-  const row = [...el.querySelectorAll('li')].find(li => li.textContent.includes('Mov 1')).querySelector('button');
+  const rowOf = (text) => [...el.querySelectorAll('li')].find(li => li.textContent.includes(text)).querySelector('button');
+  const row = rowOf('Mov 1');
   expect(row.className).toContain(TX_COLUMNS);
-  // en PC la categoría y la cuenta van en su columna; en móvil, debajo de la descripción
-  const cells = [...row.querySelectorAll('.hidden.lg\\:block')].map(c => c.textContent);
-  expect(cells).toEqual(['Mercado', 'Nómina']);
+  // en PC el orden lo da lg:order: ícono · descripción · monto · estado · categoría · cuenta
+  const orderOf = (node) => Number(node.className.match(/lg:order-(\d)/)[1]);
+  const money = row.querySelector('[aria-label]').closest('[class*="lg:order-"]');
+  const desc = [...row.querySelectorAll('span')].find(sp => sp.textContent === 'Mov 1').parentElement;
+  const category = row.querySelector('.hidden.lg\\:block');
+  const account = row.querySelector('.hidden.lg\\:flex');
+  expect([desc, money, category, account].map(orderOf)).toEqual([2, 3, 5, 6]);
+  expect(category.textContent).toBe('Mercado');
+  // la cuenta lleva el ícono de su tipo (con nombre para lectores de pantalla)
+  expect(account.textContent).toBe('Efectivo: Nómina');
+  expect(account.querySelector('svg')).not.toBeNull();
+  expect(rowOf('Mov 5').querySelector('.hidden.lg\\:flex').textContent).toBe('Tarjetas: Visa');
+  // en móvil, categoría y cuenta debajo de la descripción, como antes
   expect(row.querySelector('.lg\\:hidden').textContent).toBe('Mercado · Nómina');
   // el neto del día cae en la columna del monto
   expect(el.querySelector('section > div').className).toContain(TX_COLUMNS);
-  expect(el.querySelector('section > div > span').className).toContain('lg:col-start-5');
+  expect(el.querySelector('section > div > span').className).toContain('lg:col-start-3');
   await act(async () => root.unmount());
 });
 

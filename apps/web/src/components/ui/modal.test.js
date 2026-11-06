@@ -2,6 +2,7 @@
 import { act, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Modal from './Modal';
+import Sheet from './Sheet';
 import Field, { Input, Select } from './Field';
 import Button from './Button';
 
@@ -66,6 +67,19 @@ test('Modal: Esc y el botón Cerrar cierran; el foco queda dentro', async () => 
   await act(async () => dialog().querySelector('button[aria-label="Cerrar"]').click());
   expect(onClose2).toHaveBeenCalledTimes(1);
   await m2.unmount();
+});
+
+test('Modal y Sheet: si el foco cae fuera (p. ej. el Menu que lo abrió lo devuelve a su botón), vuelve al panel', async () => {
+  for (const Kind of [Modal, Sheet]) {
+    const outside = document.createElement('button');
+    outside.textContent = 'Agregar';
+    document.body.appendChild(outside);
+    const m = await mount(<Kind open onClose={() => {}} title="x"><input aria-label="Monto" /></Kind>);
+    await act(async () => { outside.focus(); });
+    expect(dialog().contains(document.activeElement)).toBe(true);
+    await m.unmount();
+    outside.remove();
+  }
 });
 
 test('Modal no descartable (onboarding): Esc no cierra y no hay botón Cerrar', async () => {

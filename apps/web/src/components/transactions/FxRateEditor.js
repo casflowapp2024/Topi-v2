@@ -89,7 +89,7 @@ const FxRateEditor = ({ detailInfo, setDetailInfo, contextWindow, update_transac
                 </div>
                 {!editing && (
                     <button type="button" onClick={startEditing}
-                        className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-[#5266EB] hover:bg-slate-50 dark:hover:bg-gray-800">
+                        className="shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium text-topi-600 dark:text-topi-200 hover:bg-topi-50 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500">
                         Editar tasa
                     </button>
                 )}
@@ -109,7 +109,7 @@ const FxRateEditor = ({ detailInfo, setDetailInfo, contextWindow, update_transac
                         />
                     </label>
                     <button type="submit" disabled={!valid || saving}
-                        className="rounded-lg bg-[#5266EB] px-3 py-2 text-xs font-medium text-white disabled:opacity-50">
+                        className="rounded-xl bg-topi-500 hover:bg-topi-600 px-3 py-2 text-xs font-medium text-white disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 focus-visible:ring-offset-2">
                         {saving ? 'Guardando…' : 'Guardar'}
                     </button>
                     <button type="button" onClick={() => setEditing(false)}
