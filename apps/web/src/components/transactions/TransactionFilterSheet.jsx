@@ -87,7 +87,7 @@ const TransactionFilterSheet = ({ open, onClose, onApply, trans_filters_activate
         </Section>
 
         <Section title="Fecha" action={(draft.iniDate || draft.endDate) &&
-          <button type="button" className="text-xs font-medium text-topi-600 dark:text-indigo-300" onClick={() => set({ iniDate: '', endDate: '' })}>Quitar</button>}>
+          <button type="button" className="text-xs font-medium text-topi-600 dark:text-topi-200" onClick={() => set({ iniDate: '', endDate: '' })}>Quitar</button>}>
           <div className="flex flex-wrap gap-2 mb-3">
             {PRESETS.map(p => (
               <Chip key={p.id} selected={activePreset === p.id}
@@ -103,7 +103,7 @@ const TransactionFilterSheet = ({ open, onClose, onApply, trans_filters_activate
         </Section>
 
         <Section title="Cuentas" action={draft.selectedAccounts?.length > 0 &&
-          <button type="button" className="text-xs font-medium text-topi-600 dark:text-indigo-300" onClick={() => set({ selectedAccounts: [] })}>Quitar</button>}>
+          <button type="button" className="text-xs font-medium text-topi-600 dark:text-topi-200" onClick={() => set({ selectedAccounts: [] })}>Quitar</button>}>
           <div className="flex flex-wrap gap-2">
             {accounts.map(a => (
               <Chip key={a.id} selected={draft.selectedAccounts?.includes(a.id)} onClick={() => toggleIn('selectedAccounts', a.id)}
@@ -115,7 +115,7 @@ const TransactionFilterSheet = ({ open, onClose, onApply, trans_filters_activate
         </Section>
 
         <Section title="Categorías" action={draft.selectedCategories?.length > 0 &&
-          <button type="button" className="text-xs font-medium text-topi-600 dark:text-indigo-300" onClick={() => set({ selectedCategories: [] })}>Quitar</button>}>
+          <button type="button" className="text-xs font-medium text-topi-600 dark:text-topi-200" onClick={() => set({ selectedCategories: [] })}>Quitar</button>}>
           {(user_categories?.items?.length || 0) > 10 && (
             <input
               type="search"

@@ -6,6 +6,10 @@ import DropDownBanks from "./DropDownBanks";
 import InputMoneyInt2Decs from "../InputMoneyInt2Decs";
 import CurrencySelect from "../ui/CurrencySelect";
 import { fetch_fx_rate } from "../../redux/actions/fx";
+import Field, { Input, Select } from "../ui/Field";
+import { InformationCircleIcon } from "@heroicons/react/20/solid";
+
+const LABEL = "text-sm font-medium text-gray-700 dark:text-gray-300";
 
 const EditCreateFinAccountForm = ({
     createAccountData,
@@ -77,7 +81,6 @@ const EditCreateFinAccountForm = ({
             gmailPersonalEmail: emailSelected
         });
 
-        console.log(emailSelected)
 
     }, [emailSelected]);
 
@@ -91,68 +94,42 @@ const EditCreateFinAccountForm = ({
 
     return (
 
-        <div className={`grid gap-4 mb-4  ${contexWindow === 'onboarding' ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
+        <div className={`grid gap-4 ${contexWindow === 'onboarding' ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
             {/* Tipo */}
-            <div>
-                <label for="accountType" class="block mb-0.5 md:mb-2 text-sm font-medium text-gray-900 dark:text-white">Tipo de Producto</label>
-                <select
-                    id="accountType"
-                    name="accountType"
-                    value={createAccountData.accountType}
-                    onChange={e => onChangeCreate(e)}
-                    required
-                    class="bg-gray-50 p-1 md:p-2.5 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                    {accountTypesOptions.items && accountTypesOptions.items.map((accountT, index) => (
+            <Field label="Tipo de producto" id="accountType">
+                <Select name="accountType" value={createAccountData.accountType} onChange={e => onChangeCreate(e)} required>
+                    {accountTypesOptions.items && accountTypesOptions.items.map((accountT) => (
                         <option key={accountT.id} value={accountT.id}>
                             {accountT.name}
                         </option>
-
                     ))}
-                </select>
-            </div>
+                </Select>
+            </Field>
             {/* Banco */}
-            <div>
-                <label for="bankId" class="block mb-0.5 md:mb-2 text-sm font-medium text-gray-900 dark:text-white">Banco</label>
+            <div className="flex flex-col gap-1.5">
+                <span className={LABEL}>Banco</span>
                 <DropDownBanks
                     options={banks}
                     selected={createAccountData.bankId}
                     onChange={e => onChangeCreate(e)}
-                    placeholder='Seleccciona un banco'
+                    placeholder='Selecciona un banco'
                 />
             </div>
 
             {/* Nombre */}
-
             {contexWindow !== 'onboarding' && (
-                <div class="sm:col-span-2">
-                    <label for="name" class="block mb-0.5 md:mb-2 text-sm font-medium text-gray-900 dark:text-white">Nombre de la cuenta</label>
-                    <input
-                        type="text"
-                        name="name"
-                        id="name"
-                        value={name}
-                        onChange={e => onChangeCreate(e)}
-                        class="bg-gray-50 pl-2 p-1 md:p-2.5 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                        placeholder="Escribe el nombre con el que identificas esta cuenta."
-                        required />
-                </div>
+                <Field label="Nombre de la cuenta" id="name" className="sm:col-span-2">
+                    <Input type="text" name="name" value={name} onChange={e => onChangeCreate(e)}
+                        placeholder="El nombre con el que identificas esta cuenta" required />
+                </Field>
             )}
 
             {/* digitos */}
-            <div>
-                <label for="lastFourDigits" class="block mb-0.5 md:mb-2 text-sm font-medium text-gray-900 dark:text-white">Ultimos cuatro dígitos de la cuenta</label>
-                <input
-                    type="text"
-                    name="last_four_digits"
-                    id="lastFourDigits"
-                    value={last_four_digits}
-                    onChange={e => onChangeCreate(e)}
-                    class="bg-gray-50 pl-2 p-1 md:p-2.5 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                    placeholder={last_four_digits ? last_four_digits : "1234"}
-                    minlength="4"
-                    maxlength="4"
-                    required />
-            </div>
+            <Field label="Últimos cuatro dígitos" id="lastFourDigits">
+                <Input type="text" inputMode="numeric" name="last_four_digits" value={last_four_digits}
+                    onChange={e => onChangeCreate(e)} placeholder={last_four_digits ? last_four_digits : "1234"}
+                    minLength={4} maxLength={4} required />
+            </Field>
 
             {/* moneda */}
             {contexWindow !== 'onboarding' && (
@@ -166,14 +143,10 @@ const EditCreateFinAccountForm = ({
 
             {/* monto inicial */}
             {contexWindow !== 'onboarding' && (
-                <div>
-                    <label for="initia_balance_amount" class="block mb-0.5 md:mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                        {accountType === '4' ?
-                            <>Deuda Inicial</>
-                            :
-                            <>Monto Inicial</>
-                        }
-                    </label>
+                <div className="flex flex-col gap-1.5">
+                    <span className={LABEL}>
+                        {accountType === '4' ? 'Deuda inicial' : 'Monto inicial'}
+                    </span>
                     <InputMoneyInt2Decs
                         name="initia_balance_amount"
                         id="initia_balance_amount"
@@ -183,7 +156,7 @@ const EditCreateFinAccountForm = ({
                         ariaLabel={accountType === '4' ? 'Deuda inicial' : 'Monto inicial'}
                     />
                     {currency !== baseCurrency && (
-                        <p className="mt-1 text-xs text-right text-gray-500 dark:text-gray-400" aria-live="polite">
+                        <p className="text-xs text-right text-ink-2 dark:text-gray-400" aria-live="polite">
                             {todayRate === null && 'Buscando la tasa de hoy…'}
                             {todayRate === 'none' && `Aún no hay tasa ${currency}→${baseCurrency}.`}
                             {todayRate && todayRate !== 'none' && (
@@ -192,14 +165,6 @@ const EditCreateFinAccountForm = ({
                             )}
                         </p>
                     )}
-                    {/* <input 
-                type="text" 
-                name="initia_balance_amount" 
-                id="initia_balance_amount" 
-                value={initia_balance_amount}
-                onChange={e=>onChangeCreate(e)}
-                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"  
-                required/> */}
                 </div>
             )}
 
@@ -210,9 +175,9 @@ const EditCreateFinAccountForm = ({
                         <>
                             {/* automatizada */}
                             <div className="sm:col-span-2">
-                                <label htmlFor="automated" className="inline-flex items-center cursor-pointer">
-                                    <span className="mr-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-                                        Lectura automatizada de Transacciones?
+                                <label htmlFor="automated" className="inline-flex items-center gap-3 cursor-pointer">
+                                    <span className={LABEL}>
+                                        ¿Leer sus transacciones del correo?
                                     </span>
 
                                     <input
@@ -224,15 +189,15 @@ const EditCreateFinAccountForm = ({
                                         className="sr-only peer"
                                     />
 
-                                    <div className="relative w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800">
+                                    <div className="relative w-11 h-6 shrink-0 bg-gray-300 dark:bg-gray-600 rounded-full peer-checked:bg-topi-500 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-topi-500 peer-focus-visible:ring-offset-2 dark:peer-focus-visible:ring-offset-gray-900">
                                         <span
                                             className={`absolute top-[2px] w-5 h-5 bg-white rounded-full transition-all duration-300 ${automated ? 'right-[2px]' : 'left-[2px]'}`}></span>
                                     </div>
                                 </label>
                             </div>
 
-                            <div className={`${automated === true ? 'sm:col-span-2' : 'hidden'}`}>
-                                <label for="gmailPersonalEmail" class="block mb-0.5 md:mb-2 text-xs font-medium text-gray-900 dark:text-white">Correo Transacciones</label>
+                            <div className={`${automated === true ? 'sm:col-span-2 flex flex-col gap-1.5' : 'hidden'}`}>
+                                <span className={LABEL}>Correo donde llegan las notificaciones</span>
                                 <DropDownEmails
                                     options={automatedEmails}
                                     selected={createAccountData.gmailPersonalEmail}
@@ -243,9 +208,10 @@ const EditCreateFinAccountForm = ({
 
 
                         </> :
-                        <div className="sm:col-span-2">
-                            <span className="text-gray-600">
-                                Este banco no permite la lectura automatizada de transacciones, por lo que deberás ingresar las transacciones manualmente.
+                        <div className="sm:col-span-2 flex items-start gap-2 rounded-xl bg-gray-50 dark:bg-gray-800 p-3 text-sm text-gray-600 dark:text-gray-300">
+                            <InformationCircleIcon className="w-5 h-5 shrink-0 text-ink-2 dark:text-gray-400" aria-hidden="true" />
+                            <span>
+                                Este banco no permite leer sus transacciones del correo: tendrás que registrarlas tú.
                             </span>
 
                         </div>

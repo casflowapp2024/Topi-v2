@@ -75,7 +75,7 @@ const DropDownEmails = ({
                         <div
                             type="button"
                             onClick={() => handleCloseOpenDropDown()}
-                            className="w-full px-2 py-2 flex justify-between items-center text-xs text-gray-500  bg-gray-100 border border-gray-300 rounded-lg shadow-sm hover:border-blue-500 focus:outline-none text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            className="w-full px-2 py-2 flex justify-between items-center text-xs text-gray-500  bg-white border border-gray-200 rounded-xl hover:border-topi-500 focus:outline-none text-gray-900 dark:bg-gray-900 dark:border-gray-700 dark:text-white focus-visible:ring-2 focus-visible:ring-topi-500"
                         >
                             <div className="flex items-center gap-2">
                                 {selected.email || placeholder}
@@ -86,13 +86,13 @@ const DropDownEmails = ({
                         {isOpen && (
                             <>
                                 
-                                <ul className="absolute z-40 w-full text-sm bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">   
+                                <ul className="absolute z-40 w-full text-sm bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto text-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">   
                                 <div 
                                 className="cursor-pointer w-full flex flex-row gap-2 items-center py-1 px-2 border-b-2 border-gray-40 hover:bg-gray-200 dark:hover:bg-gray-700" 
                                 onClick={() => onClickAddEmail(true)}
                                 >
-                                    <PlusIcon className="w-4 h-4 text-[#5266EB]" />
-                                    <span className="text-[#5266EB]">
+                                    <PlusIcon className="w-4 h-4 text-topi-600 dark:text-topi-200" />
+                                    <span className="text-topi-600 dark:text-topi-200">
                                         Vincula nuevo email a CashFlow
                                     </span>
                                 </div>  
@@ -119,7 +119,7 @@ const DropDownEmails = ({
                         )}
             
                         {conectBox && (
-                            <div className='absolute p-4 z-10 w-full text-sm bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'>
+                            <div className='absolute p-4 z-10 w-full text-sm bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto text-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100'>
             
                             <LinkTransEmailForm
                             closedForm= {conectBox}

@@ -78,7 +78,7 @@ const AccountCurrencyTools = ({ account, setDetailInfo, onCurrencyChanged, get_u
                 <p className="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
                     Último cambio de moneda: {lastChange.old_currency} → {lastChange.new_currency}{' '}
                     ({lastChange.mode === 'convert' ? 'conversión' : 'solo la moneda'}, {moment(lastChange.created_at).format('DD-MM-YYYY')})
-                    <button type="button" onClick={undo} disabled={busy} className="font-medium text-topi-600 dark:text-indigo-300 hover:underline">
+                    <button type="button" onClick={undo} disabled={busy} className="font-medium text-topi-600 dark:text-topi-200 hover:underline">
                         Deshacer
                     </button>
                 </p>

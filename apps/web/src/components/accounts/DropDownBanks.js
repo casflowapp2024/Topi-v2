@@ -249,7 +249,7 @@ const DropDownBanks = ({
         <button
             type="button"
             onClick={() => handleOpenCloseWholeDropDown()}
-            className="w-full pl-2 pr-1 py-1 md:py-2 flex justify-between items-center text-gray-900  bg-gray-100 border border-gray-300 rounded-lg shadow-sm hover:border-blue-500 focus:outline-none text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            className="w-full pl-2 pr-1 py-1 md:py-2 flex justify-between items-center text-gray-900  bg-white border border-gray-200 rounded-xl hover:border-topi-500 focus:outline-none text-gray-900 dark:bg-gray-900 dark:border-gray-700 dark:text-white focus-visible:ring-2 focus-visible:ring-topi-500"
         >   
             <div className='flex flex-row gap-2 justify-start items-center text-sm'>
                 {selectedBank?
@@ -268,7 +268,7 @@ const DropDownBanks = ({
         {isOpen && (
             <>
                 {/* LIST OF BANKS */}
-                <ul className="absolute z-10 w-full text-sm  bg-white border border-gray-300 rounded-lg shadow-lg max-h-[210px] overflow-y-auto text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">   
+                <ul className="absolute z-10 w-full text-sm  bg-white border border-gray-200 rounded-xl shadow-lg max-h-[210px] overflow-y-auto text-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">   
                   
                 {options?
                     <>
@@ -288,10 +288,10 @@ const DropDownBanks = ({
                             </span>
                             <div className='flex flex-row gap-1 py-1'>
                                 <div 
-                                className='px-0.5 cursor-pointer border border-gray-100 text-blue-600 flex items-center justify-center rounded-md hover:bg-gray-300'
+                                className='px-0.5 cursor-pointer border border-gray-100 text-topi-600 flex items-center justify-center rounded-md hover:bg-gray-300'
                                 onClick={()=>handleClickUpdateBank(bank.id)}
                                 >
-                                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M21.2799 6.40005L11.7399 15.94C10.7899 16.89 7.96987 17.33 7.33987 16.7C6.70987 16.07 7.13987 13.25 8.08987 12.3L17.6399 2.75002C17.8754 2.49308 18.1605 2.28654 18.4781 2.14284C18.7956 1.99914 19.139 1.92124 19.4875 1.9139C19.8359 1.90657 20.1823 1.96991 20.5056 2.10012C20.8289 2.23033 21.1225 2.42473 21.3686 2.67153C21.6147 2.91833 21.8083 3.21243 21.9376 3.53609C22.0669 3.85976 22.1294 4.20626 22.1211 4.55471C22.1128 4.90316 22.0339 5.24635 21.8894 5.5635C21.7448 5.88065 21.5375 6.16524 21.2799 6.40005V6.40005Z" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M11 4H6C4.93913 4 3.92178 4.42142 3.17163 5.17157C2.42149 5.92172 2 6.93913 2 8V18C2 19.0609 2.42149 20.0783 3.17163 20.8284C3.92178 21.5786 4.93913 22 6 22H17C19.21 22 20 20.2 20 18V13" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
+                                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M21.2799 6.40005L11.7399 15.94C10.7899 16.89 7.96987 17.33 7.33987 16.7C6.70987 16.07 7.13987 13.25 8.08987 12.3L17.6399 2.75002C17.8754 2.49308 18.1605 2.28654 18.4781 2.14284C18.7956 1.99914 19.139 1.92124 19.4875 1.9139C19.8359 1.90657 20.1823 1.96991 20.5056 2.10012C20.8289 2.23033 21.1225 2.42473 21.3686 2.67153C21.6147 2.91833 21.8083 3.21243 21.9376 3.53609C22.0669 3.85976 22.1294 4.20626 22.1211 4.55471C22.1128 4.90316 22.0339 5.24635 21.8894 5.5635C21.7448 5.88065 21.5375 6.16524 21.2799 6.40005V6.40005Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M11 4H6C4.93913 4 3.92178 4.42142 3.17163 5.17157C2.42149 5.92172 2 6.93913 2 8V18C2 19.0609 2.42149 20.0783 3.17163 20.8284C3.92178 21.5786 4.93913 22 6 22H17C19.21 22 20 20.2 20 18V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
                                 
                                 </div>
 
@@ -317,8 +317,8 @@ const DropDownBanks = ({
                     key={0}
                     onClick={() => onClickAddBank(true)}
                     >
-                        <PlusIcon className="w-4 h-4 text-[#5266EB]" />
-                        <span className="text-[#5266EB]">
+                        <PlusIcon className="w-4 h-4 text-topi-600 dark:text-topi-200" />
+                        <span className="text-topi-600 dark:text-topi-200">
                             Crear banco
                         </span>
                     </div>
@@ -354,15 +354,15 @@ const DropDownBanks = ({
                 {openBoxDeleteBank && bankToDelete && (
 
                     <div className='relative'>
-                        <div className='absolute top-0 z-30 w-full bg-white border border-gray-300 rounded-lg shadow-lg min-h-[210px] text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'>
+                        <div className='absolute top-0 z-30 w-full bg-white border border-gray-200 rounded-xl shadow-lg min-h-[210px] text-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100'>
                             
                             {loading ?
                                 
-                               <div className='mt-20 flex justify-center items-center'>
+                               <div className='mt-20 flex justify-center items-center text-topi-500'>
                                     <ThreeDots
                                     height="40"
                                     width="40"
-                                    color="#5266EB"
+                                    color="currentColor"
                                     ariaLabel="loading"
                                     />
                                 </div>:
@@ -420,15 +420,15 @@ const DropDownBanks = ({
                 {openBoxUpdateBank && bankToUpdate && (
 
                     <div className='relative'>
-                        <div className='absolute top-0 z-30 w-full bg-white border border-gray-300 rounded-lg shadow-lg min-h-[210px] text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'>
+                        <div className='absolute top-0 z-30 w-full bg-white border border-gray-200 rounded-xl shadow-lg min-h-[210px] text-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100'>
                             
                             {loading ?
                                 
-                               <div className='mt-20 flex justify-center items-center'>
+                               <div className='mt-20 flex justify-center items-center text-topi-500'>
                                     <ThreeDots
                                     height="40"
                                     width="40"
-                                    color="#5266EB"
+                                    color="currentColor"
                                     ariaLabel="loading"
                                     />
                                 </div>:
@@ -479,7 +479,7 @@ const DropDownBanks = ({
         )}
 
         {createBox && (
-            <div className='absolute py-2 px-2 z-10 w-full text-sm bg-white border border-gray-300 rounded-lg shadow-lg overflow-y-auto text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'>      
+            <div className='absolute py-2 px-2 z-10 w-full text-sm bg-white border border-gray-200 rounded-xl shadow-lg overflow-y-auto text-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100'>      
                 <EditCreateBankForm
                 bankData = {createBankData}
                 onChangeCreate = {onChangeCreate}

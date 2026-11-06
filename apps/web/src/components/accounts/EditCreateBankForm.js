@@ -97,7 +97,7 @@ const EditCreateBankForm = ({
                                 )}
                             </div>
                         ))}
-                        <button onClick={addEmailInput} className="mt-2 text-sm text-blue-600 hover:underline dark:text-blue-500">
+                        <button onClick={addEmailInput} className="mt-2 text-sm text-topi-600 hover:underline dark:text-topi-200">
                             + Agregar otro email
                         </button>
                     </div>
@@ -111,7 +111,7 @@ const EditCreateBankForm = ({
                 
                 {loadingCreate?
                 <div
-                className="bg-[#5266EB] text-white px-4 py-2 rounded-lg w-28">
+                className="bg-topi-500 text-white px-4 py-2 rounded-lg w-28">
                     <div className='flex justify-center items-center'>
                         <ThreeDots
                         height="20"
@@ -126,13 +126,13 @@ const EditCreateBankForm = ({
                 {contextEditCreate === "create"?
                     <button
                         onClick={onSubmitEditCreate}
-                        className="bg-[#5266EB] text-white px-4 py-2 rounded-lg hover:bg-blue-600 w-28"
+                        className="bg-topi-500 text-white px-4 py-2 rounded-lg hover:bg-topi-600 w-28"
                     >
                         Crear
                     </button>:
                     <button
                         onClick={onSubmitEditCreate}
-                        className="bg-[#5266EB] text-white px-4 py-2 rounded-lg hover:bg-blue-600 w-28"
+                        className="bg-topi-500 text-white px-4 py-2 rounded-lg hover:bg-topi-600 w-28"
                     >
                         Actualizar
                     </button>

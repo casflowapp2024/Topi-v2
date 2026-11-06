@@ -8,7 +8,8 @@ import { setAlert } from '../../redux/actions/alert';
 import { findElmentById, formatedCurrToNumber } from '../helpers';
 import EditCreateFinAccountForm from './EditCreateFinAccountForm';
 import AccountCurrencyTools from './AccountCurrencyTools';
-import { ThreeDots } from 'react-loader-spinner';
+import Button from '../ui/Button';
+import { CheckIcon } from '@heroicons/react/20/solid';
 import Alert2 from '../alert2';
 /* This example requires Tailwind CSS v2.0+ */
 
@@ -213,34 +214,9 @@ function EditAccounts({
               />
               <AccountCurrencyTools account={detailInfo} setDetailInfo={setDetailInfo} onCurrencyChanged={onCurrencyChanged} />
 
-              <div className="w-ful mt-12 justify-items-center items-center flex flex-row justify-around" >
-                {loadingUpdate ?
-                  <div className='flex justify-center items-center'>
-                    <ThreeDots
-                      height="70"
-                      width="70"
-                      color="#5266EB"
-                      ariaLabel="loading"
-                    />
-                  </div>
-                  :
-                  <>
-                    <button
-                      onClick={e => onSubmitUpdate(e)}
-                      className='text-white bg-[#5266EB] hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800'>
-                      Actualizar
-                    </button>
-                    <button
-                      onClick={e => setOpenEditAcc(false)}
-                      className='rounded-lg w-10 shadow-sm shadow-zinc-400 h-10 flex justify-center items-center border border-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 dark:text-gray-300 transition-colors'>
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
-                      </svg>
-
-                    </button>
-                  </>
-                }
-
+              <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                <Button variant="ghost" onClick={() => setOpenEditAcc(false)} disabled={loadingUpdate}>Cancelar</Button>
+                <Button icon={CheckIcon} loading={loadingUpdate} onClick={e => onSubmitUpdate(e)}>Guardar cambios</Button>
               </div>
             </>
           }

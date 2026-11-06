@@ -18,7 +18,7 @@ const AccCard = ({
 
 
     return(
-        <div className="flex-shrink-0 block h-[150px] w-[270px] bg-gradient-to-r from-[#9fa7da] from-0% to-gray-200 to-95% p-3 border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700" >
+        <div className="flex-shrink-0 block h-[150px] w-[270px] bg-gradient-to-r from-topi-100 to-gray-100 dark:from-topi-500/30 dark:to-gray-800 p-3 rounded-2xl shadow-sm text-gray-900 dark:text-gray-100" >
             <div className='h-1/2'>
                 <h5 className=" text-md font-medium leading-tight ">
                     {name===""?
@@ -26,14 +26,14 @@ const AccCard = ({
                     <>{name}</>
                     }
                 </h5>
-                <h6 className="mb-1 text-sm leading-tight text-[#3b3e44]">
+                <h6 className="mb-1 text-sm leading-tight text-gray-600 dark:text-gray-300">
                     {accountTypesOptions.items?
                     <>{findElmentNameById(accountTypesOptions.items,parseInt(accountType))}</>
                     :<></>
                     }              
                 
                 </h6>
-                <h6 className="mb-2 text-sm leading-tight text-[#3b3e44]">   
+                <h6 className="mb-2 text-sm leading-tight text-gray-600 dark:text-gray-300">   
                     {banks&&banks?
                     <>{findElmentNameById(banks,parseInt(bankId))}</>
                     :<></>

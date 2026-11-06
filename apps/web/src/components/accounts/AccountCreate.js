@@ -1,14 +1,14 @@
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 //components
-import { Transition, Dialog, TransitionChild, DialogPanel } from '@headlessui/react'
 import { ThreeDots } from 'react-loader-spinner';
 import Alert from '../alert';
 import Alert2 from "../alert2";
 import AccCard from "./AccCard";
 import EditCreateFinAccountForm from "./EditCreateFinAccountForm";
 import { formatedCurrToNumber, findElmentById } from '../helpers';
-import { XMarkIcon } from '@heroicons/react/24/solid';
+import Modal from '../ui/Modal';
+import Button from '../ui/Button';
 //redux
 import { connect } from 'react-redux';
 import { get_user_accounts, create_f_account } from "../../redux/actions/cashflow";
@@ -221,172 +221,65 @@ const AccountCreate = ({
         }, [createAccountData]); */
 
 
+    const card = (
+        <div className="flex justify-center">
+            <AccCard
+                name={createAccountData.name}
+                accountTypesOptions={accountTypesOptions}
+                accountType={createAccountData.accountType}
+                banks={banks}
+                bankId={createAccountData.bankId}
+                initia_balance_amount={parseFloat(formatedCurrToNumber(createAccountData.initia_balance_amount))}
+                currency={createAccountData.currency}
+                lastFourDigits={createAccountData.last_four_digits}
+            />
+        </div>
+    );
+
+    // Estados: formulario → creando → creada. Al terminar, "Listo" cierra y limpia (handleReturnToForm).
+    const footer = loadingCreate ? null : accCreated ? (
+        <Button onClick={() => handleReturnToForm()}>Listo</Button>
+    ) : (
+        <>
+            <Button variant="ghost" onClick={handleClosePopover}>Cancelar</Button>
+            <Button type="submit" form="create-account-form">Crear cuenta</Button>
+        </>
+    );
+
     return (
-        <Transition show={openCreateBox} as={Fragment}>
-            <Dialog as="div" className="relative z-40 font-Inter" onClose={handleClosePopover}>
-                <TransitionChild
-                    as={Fragment}
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                >
-                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" />
-                </TransitionChild>
-
-                <div className="fixed inset-0 z-10 overflow-y-auto w-screen">
-                    <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-                        <TransitionChild
-                            as={Fragment}
-                            enter="ease-out duration-300"
-                            enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                            enterTo="opacity-100 translate-y-0 sm:scale-100"
-                            leave="ease-in duration-200"
-                            leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                            leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                        >
-                            {/**/}
-                            <DialogPanel className="relative transform overflow-hidden rounded-3xl bg-white dark:bg-surface-raised text-left shadow-2xl transition-all w-full max-w-lg">
-                                <div className="px-6 py-6 sm:px-8 sm:py-8">
-                                    {loadingCreate ?
-                                        <div className="h-auto">
-                                            {/* card */}
-                                            <div className="flex justify-center items-center mb-3">
-                                                <AccCard
-                                                    name={createAccountData.name}
-                                                    accountTypesOptions={accountTypesOptions}
-                                                    accountType={createAccountData.accountType}
-                                                    banks={banks}
-                                                    bankId={createAccountData.bankId}
-                                                    initia_balance_amount={parseFloat(formatedCurrToNumber(createAccountData.initia_balance_amount))}
-                                                    currency={createAccountData.currency}
-                                                    last_four_digits={createAccountData.last_four_digits}
-                                                />
-                                            </div>
-                                            <div>
-                                                <div className='flex justify-center items-center'>
-                                                    <ThreeDots
-                                                        height="70"
-                                                        width="70"
-                                                        color="#5266EB"
-                                                        ariaLabel="loading"
-                                                    />
-                                                </div>
-                                                <h4 className="pb-5 text-xl text-center">
-                                                    Espera un momento, Estamos creando tu producto...
-                                                </h4>
-                                            </div>
-                                        </div>
-                                        :
-                                        <>
-                                            {accCreated ?
-                                                <>
-                                                    {/* titulo y cerrar */}
-                                                    <div className="flex justify-between items-center mb-6">
-                                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                                                            Vincular Producto
-                                                        </h3>
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleClosePopover}
-                                                            className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-white transition-colors focus:outline-none"
-                                                        >
-                                                            <XMarkIcon className="w-6 h-6" />
-                                                            <span className="sr-only">Cerrar modal</span>
-                                                        </button>
-                                                    </div>
-                                                    <div className="flex flex-col justify-center items-center">
-                                                        {/* titulo y cerrar */}
-                                                        <Alert2 />
-                                                        <button
-                                                            onClick={() => handleReturnToForm()}
-                                                            className='rounded-lg  w-10 shadow-sm shadow-zinc-400 h-10 flex justify-center items-center border border-zinc-700 hover:bg-zinc-300'>
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
-                                                </>
-                                                :
-                                                <>
-                                                    {/* vista normal */}
-                                                    <div className="flex justify-between items-center mb-6">
-                                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                                                            Vincular Producto
-                                                        </h3>
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleClosePopover}
-                                                            className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-white transition-colors focus:outline-none"
-                                                        >
-                                                            <XMarkIcon className="w-6 h-6" />
-                                                            <span className="sr-only">Cerrar modal</span>
-                                                        </button>
-                                                    </div>
-                                                    {/* card */}
-                                                    <div className="flex justify-center items-center mb-3">
-                                                        <AccCard
-                                                            name={createAccountData.name}
-                                                            accountTypesOptions={accountTypesOptions}
-                                                            accountType={createAccountData.accountType}
-                                                            banks={banks}
-                                                            bankId={createAccountData.bankId}
-                                                            initia_balance_amount={parseFloat(formatedCurrToNumber(createAccountData.initia_balance_amount))}
-                                                    currency={createAccountData.currency}
-                                                            lastFourDigits={createAccountData.last_four_digits}
-                                                        />
-                                                    </div>
-                                                    <div className="border-b border-gray-300 mb-4">
-                                                    </div>
-
-                                                    <div className="mb-2 rounded-md w-full overflow-hidden">
-                                                        <Alert />
-                                                    </div>
-
-
-                                                    {/* FORMULARIO */}
-                                                    <form className="flex flex-col">
-
-
-                                                        <EditCreateFinAccountForm
-                                                            createAccountData={createAccountData}
-                                                            setCreateAccountData={setCreateAccountData}
-                                                            onChangeCreate={onChangeCreate}
-                                                            banks={banks}
-                                                            accountTypesOptions={accountTypesOptions}
-                                                            automatedEmails={automatedEmails}
-
-                                                        />
-
-                                                        <div className="flex justify-end gap-2 mt-2">
-
-                                                            <button
-                                                                onClick={onSubmitCreate}
-                                                                className="bg-[#5266EB] text-white px-4 py-2 rounded-lg hover:bg-blue-600 w-28"
-                                                            >
-                                                                Crear
-                                                            </button>
-
-
-
-                                                        </div>
-
-                                                    </form>
-                                                </>
-                                            }
-                                        </>
-                                    }
-                                </div>
-
-
-                            </DialogPanel>
-                        </TransitionChild>
-                    </div>
+        <Modal open={openCreateBox} onClose={handleClosePopover} title="Agregar cuenta" size="lg" footer={footer}>
+            {loadingCreate ? (
+                <div className="flex flex-col items-center gap-3 py-2" role="status">
+                    {card}
+                    <span className="text-topi-500">
+                        <ThreeDots height="48" width="48" color="currentColor" ariaLabel="Creando la cuenta" />
+                    </span>
+                    <p className="text-sm text-ink-2 dark:text-gray-400">Estamos creando tu cuenta…</p>
                 </div>
-            </Dialog>
-        </Transition>
+            ) : accCreated ? (
+                <div className="flex flex-col items-center gap-3 py-2">
+                    {card}
+                    <Alert2 />
+                </div>
+            ) : (
+                <div className="flex flex-col gap-4">
+                    {card}
+                    <div className="rounded-2xl w-full overflow-hidden empty:hidden">
+                        <Alert />
+                    </div>
+                    <form id="create-account-form" onSubmit={onSubmitCreate} noValidate>
+                        <EditCreateFinAccountForm
+                            createAccountData={createAccountData}
+                            setCreateAccountData={setCreateAccountData}
+                            onChangeCreate={onChangeCreate}
+                            banks={banks}
+                            accountTypesOptions={accountTypesOptions}
+                            automatedEmails={automatedEmails}
+                        />
+                    </form>
+                </div>
+            )}
+        </Modal>
     )
 }
 

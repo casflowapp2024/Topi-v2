@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
-import { XMarkIcon, ArrowPathIcon, ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
+import { ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/20/solid';
 import moment from 'moment-timezone';
 import { connect } from 'react-redux';
 import { get_user_accounts, create_f_account } from '../../redux/actions/cashflow';
@@ -8,11 +7,14 @@ import { get_net_worth, fetch_fx_rate, create_transfer } from '../../redux/actio
 import { setAlert } from '../../redux/actions/alert';
 import { change_account_currency, undo_currency_change, close_account } from '../../redux/actions/currency';
 import Button from '../ui/Button';
+import Modal from '../ui/Modal';
+import Field, { Input, Select } from '../ui/Field';
 import InputMoneyInt2Decs from '../InputMoneyInt2Decs';
 import { formatMoney, formatedCurrToNumber, getBaseCurrency, getCurrency, currencyOptions, isCreditAccount } from '../helpers';
 
-const fieldClass = 'bg-gray-50 p-2 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white';
-const labelClass = 'block mb-1 text-sm font-medium text-gray-900 dark:text-white';
+const labelClass = 'text-sm font-medium text-gray-700 dark:text-gray-300';
+const BOX = 'rounded-xl bg-gray-50 dark:bg-gray-800 p-3';
+const noop = () => {};
 const toNumber = (value) => (typeof value === 'number' ? value : Number(formatedCurrToNumber(String(value ?? ''))));
 
 const MODES = (from, to) => [
@@ -183,59 +185,64 @@ const CurrencyChangeWizard = ({ open, onClose, account, net_worth, user_categori
     const baseDelta = Number(preview?.balance_base_delta ?? 0);
     const showBaseDelta = Math.abs(baseDelta) >= Math.max(1, Math.abs(Number(preview?.balance_before_base ?? 0)) * 0.001);
 
+    // Acciones de cada paso en el pie del Modal (secundaria primero, primaria a la derecha)
+    const footer = step === 'choose' ? (
+        <>
+            <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+            {mode === 'close'
+                ? <Button onClick={closeAndOpen} loading={busy} disabled={!newName.trim() || (balance !== 0 && !(amountReceived > 0))}>Cerrar y abrir</Button>
+                : <Button onClick={loadPreview} loading={busy}>Ver qué va a cambiar</Button>}
+        </>
+    ) : step === 'preview' && preview ? (
+        <>
+            <Button variant="ghost" onClick={() => setStep('choose')} disabled={busy}>Atrás</Button>
+            <Button onClick={apply} loading={busy} disabled={mode === 'convert' && preview.missing_rates > 0}>
+                Cambiar a {currency}
+            </Button>
+        </>
+    ) : step === 'done' && applied ? (
+        <>
+            <Button variant="ghost" onClick={undo} loading={busy}>Deshacer</Button>
+            <Button onClick={onClose} disabled={busy}>Listo</Button>
+        </>
+    ) : null;
+
+    // Se abre encima de la edición de la cuenta (Sheet): headlessui apila los diálogos.
     return (
-        <Dialog open={open} onClose={busy ? () => {} : onClose} className="relative z-50 font-Inter">
-            {/* se abre encima de la edición de la cuenta: el fondo la oscurece y difumina del todo */}
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-md" aria-hidden="true" />
-            <div className="fixed inset-0 z-10 overflow-y-auto">
-                <div className="flex min-h-full items-end sm:items-center justify-center p-4">
-                    <DialogPanel className="w-full max-w-lg rounded-3xl bg-white dark:bg-surface-raised p-5 shadow-2xl ring-1 ring-black/5 dark:ring-white/15 text-left">
-                        <div className="flex items-center justify-between mb-3">
-                            <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
-                                <ArrowPathIcon className="w-5 h-5 text-topi-500" aria-hidden="true" />
-                                Cambiar la moneda de {account.name}
-                            </DialogTitle>
-                            <button type="button" onClick={onClose} disabled={busy} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
-                                <XMarkIcon className="w-6 h-6" aria-hidden="true" />
-                                <span className="sr-only">Cerrar</span>
-                            </button>
-                        </div>
+        <Modal open={open} onClose={busy ? noop : onClose} title={`Cambiar la moneda de ${account.name}`} size="lg" footer={footer}>
 
                         {step === 'choose' && (
                             <div className="space-y-4">
-                                <div>
-                                    <label htmlFor="newCurrency" className={labelClass}>Moneda nueva (hoy: {from})</label>
-                                    <select id="newCurrency" value={currency} onChange={e => setCurrency(e.target.value)} className={fieldClass}>
+                                <Field label={`Moneda nueva (hoy: ${from})`} id="newCurrency">
+                                    <Select value={currency} onChange={e => setCurrency(e.target.value)}>
                                         {currencyOptions().filter(c => c.code !== from).map(c => (
                                             <option key={c.code} value={c.code}>{c.code} · {c.name}</option>
                                         ))}
-                                    </select>
-                                </div>
+                                    </Select>
+                                </Field>
                                 <fieldset className="space-y-2">
-                                    <legend className={labelClass}>¿Qué pasó con esta cuenta?</legend>
+                                    <legend className={`${labelClass} mb-2`}>¿Qué pasó con esta cuenta?</legend>
                                     {MODES(from, currency).map(m => (
-                                        <label key={m.id} className={`flex gap-3 rounded-xl border p-3 cursor-pointer ${mode === m.id ? 'border-topi-500 bg-topi-50/60 dark:bg-gray-800' : 'border-gray-200 dark:border-gray-700'}`}>
-                                            <input type="radio" name="currencyMode" className="mt-1" checked={mode === m.id} onChange={() => setMode(m.id)} />
+                                        <label key={m.id} className={`flex gap-3 rounded-xl border p-3 cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-topi-500 ${mode === m.id ? 'border-topi-500 bg-topi-50/60 dark:bg-topi-500/10' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                                            <input type="radio" name="currencyMode" className="mt-1 accent-topi-500" checked={mode === m.id} onChange={() => setMode(m.id)} />
                                             <span>
                                                 <span className="block text-sm font-medium text-gray-900 dark:text-white">{m.title}</span>
-                                                <span className="block text-xs text-gray-500 dark:text-gray-400">{m.detail}</span>
+                                                <span className="block text-xs text-ink-2 dark:text-gray-400">{m.detail}</span>
                                             </span>
                                         </label>
                                     ))}
                                 </fieldset>
 
                                 {mode === 'close' && (
-                                    <div className="space-y-3 rounded-xl bg-slate-50 dark:bg-gray-800 p-3">
-                                        <div>
-                                            <label htmlFor="newAccountName" className={labelClass}>Nombre de la cuenta nueva</label>
-                                            <input id="newAccountName" type="text" maxLength={255} value={newName}
-                                                onChange={e => setNewName(e.target.value)} className={fieldClass} />
-                                        </div>
+                                    <div className={`space-y-3 ${BOX}`}>
+                                        <Field label="Nombre de la cuenta nueva" id="newAccountName">
+                                            <Input type="text" maxLength={255} value={newName} onChange={e => setNewName(e.target.value)} />
+                                        </Field>
                                         <p className="text-sm text-gray-700 dark:text-gray-200">
                                             {balance < 0 ? 'Deuda de hoy' : 'Saldo de hoy'}: <b>{formatMoney(Math.abs(balance), from)}</b>
                                         </p>
                                         {balance !== 0 && (
-                                            <div>
+                                            <div className="flex flex-col gap-1.5">
                                                 <span className={labelClass}>Equivale en {currency} a{rate ? ' (tasa de hoy)' : ''}</span>
                                                 <InputMoneyInt2Decs name="received" id="closeReceived" currency={currency}
                                                     ariaLabel={`Saldo en ${currency}`}
@@ -246,32 +253,26 @@ const CurrencyChangeWizard = ({ open, onClose, account, net_worth, user_categori
                                     </div>
                                 )}
 
-                                <div className="flex justify-end gap-2">
-                                    <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-                                    {mode === 'close'
-                                        ? <Button onClick={closeAndOpen} loading={busy} disabled={!newName.trim() || (balance !== 0 && !(amountReceived > 0))}>Cerrar y abrir</Button>
-                                        : <Button onClick={loadPreview} loading={busy}>Ver qué va a cambiar</Button>}
-                                </div>
                             </div>
                         )}
 
                         {step === 'preview' && preview && (
                             <div className="space-y-4">
                                 <dl className="grid grid-cols-2 gap-3 text-sm">
-                                    <div className="rounded-xl bg-slate-50 dark:bg-gray-800 p-3">
-                                        <dt className="text-xs text-gray-500 dark:text-gray-400">Movimientos</dt>
+                                    <div className={BOX}>
+                                        <dt className="text-xs text-ink-2 dark:text-gray-400">Movimientos</dt>
                                         <dd className="font-semibold text-gray-900 dark:text-white">{preview.transactions}</dd>
                                     </div>
-                                    <div className="rounded-xl bg-slate-50 dark:bg-gray-800 p-3">
-                                        <dt className="text-xs text-gray-500 dark:text-gray-400">Saldo</dt>
+                                    <div className={BOX}>
+                                        <dt className="text-xs text-ink-2 dark:text-gray-400">Saldo</dt>
                                         <dd className="font-semibold text-gray-900 dark:text-white flex flex-wrap gap-x-1">
                                             <span>{formatMoney(preview.balance_before, from)}</span>
                                             {canCompute && <span>→ {formatMoney(preview.balance_after, currency)}</span>}
                                         </dd>
                                     </div>
                                     {canCompute && preview.balance_after_base != null && preview.balance_before_base != null && (
-                                        <div className="col-span-2 rounded-xl bg-slate-50 dark:bg-gray-800 p-3">
-                                            <dt className="text-xs text-gray-500 dark:text-gray-400">Lo que vale hoy en {base}</dt>
+                                        <div className={`col-span-2 ${BOX}`}>
+                                            <dt className="text-xs text-ink-2 dark:text-gray-400">Lo que vale hoy en {base}</dt>
                                             <dd className="font-semibold text-gray-900 dark:text-white flex flex-wrap gap-x-1">
                                                 <span>{formatMoney(preview.balance_before_base, base)}</span>
                                                 <span>→ {formatMoney(preview.balance_after_base, base)}</span>
@@ -290,8 +291,8 @@ const CurrencyChangeWizard = ({ open, onClose, account, net_worth, user_categori
                                             )}
                                         </div>
                                     )}
-                                    <div className="col-span-2 rounded-xl bg-slate-50 dark:bg-gray-800 p-3">
-                                        <dt className="text-xs text-gray-500 dark:text-gray-400">Ingresos y gastos de esta cuenta en tus reportes ({base})</dt>
+                                    <div className={`col-span-2 ${BOX}`}>
+                                        <dt className="text-xs text-ink-2 dark:text-gray-400">Ingresos y gastos de esta cuenta en tus reportes ({base})</dt>
                                         <dd className="font-semibold text-gray-900 dark:text-white">
                                             {!canCompute
                                                 ? formatMoney(preview.flows_base_before, base)
@@ -302,7 +303,7 @@ const CurrencyChangeWizard = ({ open, onClose, account, net_worth, user_categori
                                     </div>
                                 </dl>
                                 {preview.missing_rates > 0 && (
-                                    <p className={`flex gap-2 text-sm rounded-xl p-3 ${mode === 'convert' ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'}`}>
+                                    <p className={`flex gap-2 text-sm rounded-xl p-3 ${mode === 'convert' ? 'bg-status-crit-soft text-status-crit-text dark:bg-red-500/10 dark:text-red-300' : 'bg-status-warn-soft text-status-warn-text dark:bg-amber-500/10 dark:text-amber-300'}`}>
                                         <ExclamationTriangleIcon className="w-5 h-5 shrink-0" aria-hidden="true" />
                                         {mode === 'convert'
                                             ? `Faltan tasas ${from}→${currency} para convertir ${preview.missing_rates === 1 ? '1 monto' : `${preview.missing_rates} montos`} (movimientos, saldo inicial o valoraciones): no se puede convertir todavía. Las tasas se cargan solas cada día; si el aviso sigue, usa «solo corregir la moneda».`
@@ -310,18 +311,12 @@ const CurrencyChangeWizard = ({ open, onClose, account, net_worth, user_categori
                                     </p>
                                 )}
                                 {preview.replaced_rates > 0 && (
-                                    <p className="flex gap-2 text-sm rounded-xl p-3 bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                                    <p className="flex gap-2 text-sm rounded-xl p-3 bg-status-warn-soft text-status-warn-text dark:bg-amber-500/10 dark:text-amber-300">
                                         <ExclamationTriangleIcon className="w-5 h-5 shrink-0" aria-hidden="true" />
                                         {preview.replaced_rates === 1 ? '1 tasa editada a mano o de transferencia se reemplaza' : `${preview.replaced_rates} tasas editadas a mano o de transferencias se reemplazan`} por la del mercado.
                                     </p>
                                 )}
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Puedes deshacerlo mientras no agregues ni edites movimientos de esta cuenta.</p>
-                                <div className="flex justify-end gap-2">
-                                    <Button variant="secondary" onClick={() => setStep('choose')} disabled={busy}>Atrás</Button>
-                                    <Button onClick={apply} loading={busy} disabled={mode === 'convert' && preview.missing_rates > 0}>
-                                        Cambiar a {currency}
-                                    </Button>
-                                </div>
+                                <p className="text-xs text-ink-2 dark:text-gray-400">Puedes deshacerlo mientras no agregues ni edites movimientos de esta cuenta.</p>
                             </div>
                         )}
 
@@ -332,16 +327,9 @@ const CurrencyChangeWizard = ({ open, onClose, account, net_worth, user_categori
                                     La cuenta ahora es en {getCurrency(currency).name} ({currency}). Saldo: {formatMoney(applied.balance_after, currency)}
                                     {applied.balance_after_base != null && currency !== base ? ` (hoy ≈ ${formatMoney(applied.balance_after_base, base)})` : ''}.
                                 </p>
-                                <div className="flex justify-end gap-2">
-                                    <Button variant="secondary" onClick={undo} loading={busy}>Deshacer</Button>
-                                    <Button onClick={onClose} disabled={busy}>Listo</Button>
-                                </div>
                             </div>
                         )}
-                    </DialogPanel>
-                </div>
-            </div>
-        </Dialog>
+        </Modal>
     );
 };
 
