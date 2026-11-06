@@ -1,4 +1,4 @@
-import { CheckCircleIcon, ExclamationTriangleIcon, ExclamationCircleIcon } from '@heroicons/react/20/solid';
+import { CheckCircleIcon, ExclamationTriangleIcon, ExclamationCircleIcon, ClockIcon } from '@heroicons/react/20/solid';
 
 // Fracción del mes transcurrida (0..1) si el periodo es el mes actual; null si es otro mes.
 export const getMonthPace = (year, month) => {
@@ -44,13 +44,16 @@ const ICON = {
   ok: CheckCircleIcon,
   warn: ExclamationTriangleIcon,
   crit: ExclamationCircleIcon,
-  progress: null,
+  progress: ClockIcon,
 };
 
 const LABEL = {
   expense: { ok: 'Vas bien', warn: 'Atento', crit: 'Te pasaste' },
   income: { ok: 'Meta cumplida', progress: 'En progreso' },
 };
+
+// Palabra del estado (para acompañar el ícono): "Vas bien", "Atento", "Te pasaste", "Meta cumplida", "En progreso"
+export const statusLabel = (status, isIncome = false) => (isIncome ? LABEL.income : LABEL.expense)[status];
 
 // Estado con ícono y palabra (nunca solo color). children reemplaza el texto por defecto.
 export const BudgetStatusLabel = ({ status, isIncome = false, className = '', children }) => {

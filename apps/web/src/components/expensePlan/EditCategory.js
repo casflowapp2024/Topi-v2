@@ -1,5 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
-import { Transition, Dialog, DialogTitle, TransitionChild, DialogPanel } from '@headlessui/react'
+import { useEffect, useState } from 'react'
 
 //redux
 import { connect } from 'react-redux'
@@ -8,13 +7,16 @@ import { setAlert } from '../../redux/actions/alert';
 
 //components
 import DropDownEmoji from './DropDownEmoji';
-import { ThreeDots } from 'react-loader-spinner';
 import Alert from '../alert';
 import Alert2 from '../alert2';
 import { Emoji } from "emoji-picker-react";
-import { formatedCurrToNumber, formatMoneyInput } from "../helpers";
+import { formatedCurrToNumber, formatMoneyInput, formatMoney, capitalizeWords } from "../helpers";
 import { categoriesApiErrors } from "../errosMaping";
-import { XMarkIcon } from '@heroicons/react/24/solid';
+import { TrashIcon, PencilSquareIcon, CheckIcon } from '@heroicons/react/20/solid';
+import Modal from '../ui/Modal';
+import Button from '../ui/Button';
+import Field, { Input } from '../ui/Field';
+import BudgetProgress, { getMonthPace } from '../ui/BudgetProgress';
 
 /* This example requires Tailwind CSS v2.0+ */
 
@@ -28,7 +30,11 @@ function EditCategory({
     user_categories,
     update_category,
     delete_category,
-    setAlert
+    setAlert,
+    expenses_report,
+    income_report,
+    current_Month,
+    current_Year,
 }) {
 
     /////////////load detail info
@@ -40,7 +46,6 @@ function EditCategory({
     });
 
     useEffect(() => {
-        console.log(detailInfo)
         setCategoryData({
             name: detailInfo.name,
             budget: formatMoneyInput(detailInfo.budget),
@@ -140,273 +145,116 @@ function EditCategory({
     }
 
 
+    // Lo gastado (o recibido) este mes en la categoría, del mismo reporte de la vista. Con el monto que se
+    // está editando, la barra muestra cómo quedaría: para decidir con contexto.
+    const isIncome = Boolean(categoryData.isIncome);
+    const row = ((detailInfo?.income ? income_report : expenses_report) || []).find(r => String(r.category_id) === String(detailInfo?.id));
+    const spent = Math.abs(Number(row?.value || 0));
+    const budgetNow = Math.abs(Number(formatedCurrToNumber(String(categoryData.budget ?? '')) || 0));
+    const usage = budgetNow > 0 ? (spent / budgetNow) * 100 : 0;
+    const pace = getMonthPace(current_Year, current_Month);
+    const monthContext = (
+        <div className="rounded-2xl bg-gray-50 dark:bg-gray-800 p-3">
+            <p className="text-xs text-ink-2 dark:text-gray-400">{isIncome ? 'Recibido este mes' : 'Gastado este mes'}</p>
+            <p className="flex items-baseline gap-1.5 flex-wrap">
+                <span className="text-lg font-bold tabular-nums text-gray-900 dark:text-gray-100">{formatMoney(spent)}</span>
+                {budgetNow > 0 && <span className="text-sm text-ink-2 dark:text-gray-400">de {formatMoney(budgetNow)}</span>}
+            </p>
+            {budgetNow > 0
+                ? <BudgetProgress usage={usage} isIncome={isIncome} pace={isIncome ? null : pace} className="mt-2" />
+                : <p className="mt-1 text-xs text-ink-2 dark:text-gray-400">Sin presupuesto definido</p>}
+        </div>
+    );
+
+    const view = (openDeleteBox && isSuccess) ? 'deleted' : openDeleteBox ? 'delete' : activeUpdate ? 'edit' : 'detail';
+    const TITLES = { detail: 'Presupuesto', edit: 'Editar presupuesto', delete: '¿Eliminar esta categoría?', deleted: 'Categoría eliminada' };
+    const footers = {
+        detail: (
+            <div className="flex items-center justify-between gap-2 !w-full">
+                <Button variant="ghost" className="!text-status-crit-text dark:!text-red-400 hover:!bg-status-crit-soft dark:hover:!bg-red-500/10"
+                    icon={TrashIcon} onClick={() => setOpenDeleteBox(true)}>Eliminar</Button>
+                <Button icon={PencilSquareIcon} onClick={() => setActiveUpdate(true)}>Editar</Button>
+            </div>
+        ),
+        edit: <>
+            <Button variant="ghost" onClick={() => setActiveUpdate(false)} disabled={loadingUpdate}>Cancelar</Button>
+            <Button icon={CheckIcon} loading={loadingUpdate} onClick={() => onSubmitUpdate()}>Guardar cambios</Button>
+        </>,
+        delete: <>
+            <Button variant="ghost" onClick={() => setOpenDeleteBox(false)} disabled={loadingDelete}>Cancelar</Button>
+            <Button variant="danger" icon={TrashIcon} loading={loadingDelete} onClick={() => handleDeleteCat(detailInfo.id)}>Sí, eliminar</Button>
+        </>,
+        deleted: <Button variant="secondary" onClick={() => handleCloseDetail()}>Cerrar</Button>,
+    };
+
     return (
-        <>
-            <Transition show={openEditCat} as={Fragment}>
-                <Dialog as="div" className="relative z-40 font-Inter" onClose={handleCloseDetail}>
-                    <TransitionChild
-                        as={Fragment}
-                        enter="ease-out duration-300"
-                        enterFrom="opacity-0"
-                        enterTo="opacity-100"
-                        leave="ease-in duration-200"
-                        leaveFrom="opacity-100"
-                        leaveTo="opacity-0"
-                    >
-                        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" />
-                    </TransitionChild>
-
-                    <div className="fixed inset-0 z-10 overflow-y-auto w-screen">
-                        <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-                            <TransitionChild
-                                as={Fragment}
-                                enter="ease-out duration-300"
-                                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                                enterTo="opacity-100 translate-y-0 sm:scale-100"
-                                leave="ease-in duration-200"
-                                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                            >
-                                {/**/}
-                                <DialogPanel className="relative transform overflow-hidden rounded-3xl bg-white dark:bg-surface-raised text-left shadow-2xl transition-all w-full max-w-md">
-                                    {/* TARJETA RESUMEN */}
-                                    {detailInfo ?
-                                        <>
-                                            <div className='h-auto'>
-                                                <div className='p-6 sm:p-8'>
-                                                    <div className="flex flex-row justify-between items-center mb-6">
-                                                        <DialogTitle as="h3" className="text-xl font-bold leading-6 text-gray-900 dark:text-white">
-                                                            Categoría
-                                                        </DialogTitle>
-                                                        <button
-                                                            type="button"
-                                                            onClick={e => handleCloseDetail()}
-                                                            className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-white transition-colors focus:outline-none"
-                                                        >
-                                                            <XMarkIcon className="w-6 h-6" />
-                                                            <span className="sr-only">Cerrar modal</span>
-                                                        </button>
-                                                    </div>
-                                                    {/* FORMULARIO */}
-                                                    <div className="flex flex-col mt-4">
-                                                        {openDeleteBox ?
-
-                                                            <>
-                                                                {(isSuccess === true) ?
-                                                                    <Alert2 />
-                                                                    :
-                                                                    <span className='py-4'>
-                                                                        Estás seguro que quieres eliminar la categoría {categoryData.name}, con presupuesto mensual de {categoryData.budget}?
-                                                                    </span>
-                                                                }
-                                                            </>
-                                                            :
-                                                            <div className='flex flex-row gap-2'>
-                                                                {/* emoji */}
-                                                                <div className='w-1/4 flex flex-col justify-center items-center'>
-                                                                    {activeUpdate ?
-                                                                        <div className=''>
-                                                                            <DropDownEmoji
-                                                                                selectedEmoji={selectedEmoji}
-                                                                                setSelectedEmoji={setSelectedEmoji}
-                                                                            />
-                                                                        </div>
-                                                                        :
-                                                                        <div className="w-[65px] flex items-center justify-center">
-                                                                            <Emoji unified={(selectedEmoji).toLowerCase()} emojiStyle="apple" size={52} />
-                                                                        </div>
-                                                                    }
-                                                                </div>
-                                                                {/* data */}
-                                                                <div className='w-3/4 flex flex-col'>
-
-                                                                    <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                                                                        Nombre Categoría</label>
-                                                                    {activeUpdate ?
-                                                                        <input type="text" name="name" id="name"
-                                                                            value={categoryData.name}
-                                                                            onChange={e => onChangeUpdate(e)}
-                                                                            placeholder="Nombre de categoría" required
-                                                                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                                                                        /> :
-                                                                        <>
-                                                                            <span className='text-gray-900 text-sm p-2.5'>
-                                                                                {categoryData.name}
-                                                                            </span>
-
-                                                                            {categoryData.isIncome ?
-                                                                                <span className='text-xs px-2.5 text-gray-500' >Categoría marcada como ingresos</span> :
-                                                                                <></>
-                                                                            }
-                                                                        </>
-
-                                                                    }
-                                                                    <label For="budget" className="mt-4 mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                                                        {categoryData.isIncome ?
-                                                                            <span >Ingreso Mensual</span> :
-                                                                            <span >Presupuesto Mensual</span>
-                                                                        }
-                                                                    </label>
-                                                                    {activeUpdate ?
-                                                                        <input type="text" name="budget" id="budget"
-                                                                            value={categoryData.budget}
-                                                                            onChange={e => onChangeUpdate(e)}
-                                                                            placeholder="0" required
-                                                                            className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                                                                        /> :
-                                                                        <span className={` ${categoryData.isIncome ? 'text-green-700' : 'text-gray-900'}  text-sm p-2.5`}>
-                                                                            {categoryData.budget}
-                                                                        </span>
-                                                                    }
-
-                                                                    {activeUpdate ?
-                                                                        <div className='flex flex-row gap-2 mt-3 items-center'>
-                                                                            <input
-                                                                                type="checkbox"
-                                                                                id="isIncome"
-                                                                                name="isIncome"
-                                                                                checked={categoryData.isIncome}
-                                                                                onChange={e => onChangeUpdate(e)}
-                                                                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                                                                            />
-                                                                            <label
-                                                                                htmlFor="isIncome"
-                                                                                className="ml-2 text-sm text-gray-900 dark:text-gray-300"
-                                                                            >
-                                                                                Esta categoría corresponde a ingresos (como salario o ganancias)
-                                                                            </label>
-                                                                        </div> : <></>
-                                                                    }
-
-
-                                                                </div>
-                                                            </div>
-                                                        }
-                                                        {/* botones */}
-                                                        <div className="flex justify-end gap-2 mt-2">
-                                                            {/* normal */}
-                                                            {activeUpdate === false && openDeleteBox === false ?
-                                                                <div className="flex flex-row justify-around w-full">
-                                                                    <div class="flex items-center space-x-4">
-                                                                        <button type="button"
-                                                                            onClick={() => setActiveUpdate(true)}
-                                                                            class="text-white bg-[#5266EB] hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                                                                            Actualizar Categoría
-                                                                        </button>
-                                                                        <button type="button"
-                                                                            onClick={e => setOpenDeleteBox(true)}
-                                                                            class="text-red-600 inline-flex items-center hover:text-white border border-red-600 hover:bg-red-600 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900">
-                                                                            <svg class="mr-1 -ml-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
-                                                                            Eliminar
-                                                                        </button>
-                                                                    </div>
-                                                                </div> : <></>
-                                                            }
-                                                            {/* actualizar */}
-                                                            {activeUpdate && openDeleteBox === false ?
-                                                                <>
-                                                                    {loadingUpdate ?
-
-                                                                        <div className='flex justify-center items-center'>
-                                                                            <ThreeDots
-                                                                                height="40"
-                                                                                width="40"
-                                                                                color="#5266EB"
-                                                                                ariaLabel="loading"
-                                                                            />
-                                                                        </div>
-                                                                        :
-                                                                        <>
-                                                                            <button
-                                                                                onClick={() => onSubmitUpdate()}
-                                                                                className='text-white bg-[#5266EB] hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800'>
-                                                                                Actualizar
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={e => setActiveUpdate(false)}
-                                                                                className='rounded-lg  w-10 shadow-sm shadow-zinc-400 h-10 flex justify-center items-center border border-zinc-700 hover:bg-zinc-300'>
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
-                                                                                </svg>
-                                                                            </button>
-                                                                        </>
-                                                                    }
-                                                                </> :
-                                                                <>
-                                                                </>
-                                                            }
-                                                            {/* eliminar */}
-                                                            {openDeleteBox && activeUpdate === false ?
-                                                                <>
-                                                                    {loadingDelete ?
-
-                                                                        <>
-                                                                            {isSuccess ?
-                                                                                <>
-                                                                                </>
-                                                                                :
-                                                                                <div className='flex justify-center items-center'>
-                                                                                    <ThreeDots
-                                                                                        height="40"
-                                                                                        width="40"
-                                                                                        color="#5266EB"
-                                                                                        ariaLabel="loading"
-                                                                                    />
-                                                                                </div>
-                                                                            }
-                                                                        </>
-                                                                        :
-                                                                        <>
-                                                                            <button
-                                                                                onClick={() => handleDeleteCat(detailInfo.id)}
-                                                                                className='text-red-600 inline-flex items-center hover:text-white border border-red-600 hover:bg-red-600 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900'>
-                                                                                Si, Eliminar!
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={e => setOpenDeleteBox(false)}
-                                                                                className='rounded-lg  w-10 shadow-sm shadow-zinc-400 h-10 flex justify-center items-center border border-zinc-700 hover:bg-zinc-300'>
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
-                                                                                </svg>
-                                                                            </button>
-                                                                        </>
-
-                                                                    }
-                                                                </> :
-                                                                <>
-                                                                </>
-                                                            }
-
-
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className='rounded-b-3xl overflow-hidden'>
-                                                {isSuccess && loadingDelete ?
-                                                    <>
-                                                    </> :
-                                                    <Alert />
-                                                }
-                                            </div>
-                                        </>
-                                        :
-                                        <></>
-                                    }
-
-                                </DialogPanel>
-                            </TransitionChild>
+        <Modal open={Boolean(openEditCat)} onClose={handleCloseDetail} title={TITLES[view]} footer={detailInfo ? footers[view] : null}>
+            {detailInfo && (
+                <div className="flex flex-col gap-4">
+                    {view === 'deleted' ? (
+                        <Alert2 />
+                    ) : view === 'delete' ? (
+                        <p className="rounded-2xl border border-status-crit/30 bg-status-crit-soft dark:bg-red-500/10 p-3 text-sm text-gray-800 dark:text-gray-200">
+                            Se elimina <b>{capitalizeWords(categoryData.name)}</b>, con presupuesto mensual de {formatMoney(budgetNow)}.
+                        </p>
+                    ) : view === 'edit' ? (
+                        <>
+                            <div className="flex gap-4">
+                                <div className="w-24 shrink-0">
+                                    <DropDownEmoji selectedEmoji={selectedEmoji} setSelectedEmoji={setSelectedEmoji} />
+                                </div>
+                                <div className="flex-1 min-w-0 flex flex-col gap-4">
+                                    <Field label="Nombre" id="name">
+                                        <Input type="text" name="name" value={categoryData.name}
+                                            onChange={e => onChangeUpdate(e)} placeholder="Nombre de la categoría" required />
+                                    </Field>
+                                    <Field label={isIncome ? 'Ingreso mensual esperado' : 'Presupuesto mensual'} id="budget">
+                                        <Input type="text" inputMode="numeric" name="budget" value={categoryData.budget}
+                                            onChange={e => onChangeUpdate(e)} placeholder="0" required />
+                                    </Field>
+                                </div>
+                            </div>
+                            {monthContext}
+                            <label htmlFor="isIncome" className="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" id="isIncome" name="isIncome" checked={categoryData.isIncome}
+                                    onChange={e => onChangeUpdate(e)} className="mt-0.5 w-4 h-4 rounded accent-topi-500" />
+                                <span className="text-sm text-gray-700 dark:text-gray-300">Es de ingresos (como salario o ganancias)</span>
+                            </label>
+                        </>
+                    ) : (
+                        <>
+                            <div className="flex items-center gap-3">
+                                <span className="w-14 h-14 shrink-0 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                    {selectedEmoji ? <Emoji unified={selectedEmoji.toLowerCase()} emojiStyle="apple" size={32} /> : null}
+                                </span>
+                                <div className="min-w-0">
+                                    <p className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">{capitalizeWords(categoryData.name)}</p>
+                                    <p className="text-sm text-ink-2 dark:text-gray-400">
+                                        {isIncome ? 'Ingreso mensual esperado' : 'Presupuesto mensual'}: <b className="text-gray-900 dark:text-gray-100 tabular-nums">{formatMoney(budgetNow)}</b>
+                                    </p>
+                                </div>
+                            </div>
+                            {monthContext}
+                        </>
+                    )}
+                    {view !== 'deleted' && (
+                        <div className="overflow-hidden rounded-2xl empty:hidden">
+                            <Alert />
                         </div>
-                    </div>
-                </Dialog>
-            </Transition>
-        </>
+                    )}
+                </div>
+            )}
+        </Modal>
     )
 }
 
 
 const mapStateToProps = state => ({
     user_categories: state.CashFlow.user_categories,
+    expenses_report: state.Reports.expenses_report,
+    income_report: state.Reports.income_report,
+    current_Month: state.Reports.current_Month,
+    current_Year: state.Reports.current_Year,
     accountTypesOptions: state.CashFlow.account_types,
     banks: state.CashFlow.banks,
 })

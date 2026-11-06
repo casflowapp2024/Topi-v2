@@ -8,7 +8,7 @@ const SIZES = {
   md: 'sm:max-w-md',
   lg: 'sm:max-w-lg',
   xl: 'sm:max-w-2xl',
-  full: 'sm:max-w-[1168px] sm:h-[min(90vh,960px)]',
+  full: 'sm:max-w-[1168px]',
 };
 
 const noop = () => {};

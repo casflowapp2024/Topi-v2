@@ -89,7 +89,7 @@ const EditCreateBankForm = ({
                                     className={` ${windowContext === "acc" ? 'p-1' : 'p-2.5'} w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white`}
                                 />
                                 {index > 0 && (
-                                    <button onClick={() => removeEmailInput(index)} className="ml-2 text-red-500 hover:text-red-700">
+                                    <button type="button" onClick={() => removeEmailInput(index)} className="ml-2 text-red-500 hover:text-red-700">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
@@ -97,7 +97,7 @@ const EditCreateBankForm = ({
                                 )}
                             </div>
                         ))}
-                        <button onClick={addEmailInput} className="mt-2 text-sm text-topi-600 hover:underline dark:text-topi-200">
+                        <button type="button" onClick={addEmailInput} className="mt-2 text-sm text-topi-600 hover:underline dark:text-topi-200">
                             + Agregar otro email
                         </button>
                     </div>
@@ -124,13 +124,13 @@ const EditCreateBankForm = ({
                 :
                 <>
                 {contextEditCreate === "create"?
-                    <button
+                    <button type="button"
                         onClick={onSubmitEditCreate}
                         className="bg-topi-500 text-white px-4 py-2 rounded-lg hover:bg-topi-600 w-28"
                     >
                         Crear
                     </button>:
-                    <button
+                    <button type="button"
                         onClick={onSubmitEditCreate}
                         className="bg-topi-500 text-white px-4 py-2 rounded-lg hover:bg-topi-600 w-28"
                     >
@@ -138,7 +138,7 @@ const EditCreateBankForm = ({
                     </button>
             
                 }
-                    <button 
+                    <button type="button" 
                     onClick={e=>handleCloseDetail()} 
                     className='rounded-lg  w-10 shadow-sm shadow-zinc-400 h-10 flex justify-center items-center border border-zinc-700 hover:bg-zinc-300'>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">

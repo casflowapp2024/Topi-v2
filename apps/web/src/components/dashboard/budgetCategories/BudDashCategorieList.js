@@ -70,12 +70,10 @@ const BudDashCategorieList = ({
           <Button size="sm" variant="ghost" icon={PlusIcon} onClick={() => setOpenCreateBox(true)} aria-label="Agregar presupuesto">
             <span className="hidden sm:inline">Presupuesto</span>
           </Button>
-          {!isIncome && (
-            <button type="button" onClick={() => setIsFullModalOpen(true)} title="Panorama completo" aria-label="Panorama completo"
-              className="p-2 rounded-xl text-gray-500 hover:text-topi-600 hover:bg-topi-50 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors">
-              <ArrowsPointingOutIcon className="w-5 h-5" aria-hidden="true" />
-            </button>
-          )}
+          <button type="button" onClick={() => setIsFullModalOpen(true)} title="Panorama completo" aria-label="Panorama completo"
+            className="p-2 rounded-xl text-gray-500 hover:text-topi-600 hover:bg-topi-50 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500">
+            <ArrowsPointingOutIcon className="w-5 h-5" aria-hidden="true" />
+          </button>
         </div>
       </header>
 
@@ -102,14 +100,14 @@ const BudDashCategorieList = ({
                     onClick={() => toggle(cat)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(cat); } }}
                     className={`group relative px-3 py-3 rounded-xl cursor-pointer select-none transition-colors active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 ${selected
-                      ? 'bg-topi-50 dark:bg-indigo-500/15 ring-1 ring-topi-500/50'
+                      ? 'bg-topi-50 dark:bg-topi-500/15 ring-1 ring-topi-500/50'
                       : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
                   >
                     <div className="flex items-center gap-2">
                       <span className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
                         {cat.emoji ? <Emoji unified={cat.emoji.toLowerCase()} emojiStyle="apple" size={16} /> : null}
                       </span>
-                      <span className={`flex-1 min-w-0 truncate text-sm font-semibold ${selected ? 'text-topi-600 dark:text-indigo-200' : 'text-gray-800 dark:text-gray-100'}`}>
+                      <span className={`flex-1 min-w-0 truncate text-sm font-semibold ${selected ? 'text-topi-600 dark:text-topi-200' : 'text-gray-800 dark:text-gray-100'}`}>
                         {capitalizeWords(cat.name)}
                       </span>
                       {selected && <CheckIcon className="w-4 h-4 text-topi-500 shrink-0" aria-hidden="true" />}
@@ -141,7 +139,7 @@ const BudDashCategorieList = ({
         )}
       </div>
 
-      <FullBudgetsModal isOpen={isFullModalOpen} onClose={() => setIsFullModalOpen(false)} categories={expenses_report || []} />
+      <FullBudgetsModal isOpen={isFullModalOpen} onClose={() => setIsFullModalOpen(false)} />
     </section>
   );
 };

@@ -370,7 +370,7 @@ const DropDownBanks = ({
                                  {isSuccess ?
                                 <div className='flex flex-col justify-center items-center gap-2 p-4'>
                                     <Alert2/>
-                                    <button 
+                                    <button type="button" 
                                     onClick={e=>handleGoBackDelete(e)} 
                                     className='rounded-lg  w-10 shadow-sm shadow-zinc-400 h-10 flex justify-center items-center border border-zinc-700 hover:bg-zinc-300'>
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -388,12 +388,12 @@ const DropDownBanks = ({
                                     </div>
                                     <div className='flex flex-col'>
                                         <div className=' flex flex-row gap-2 justify-end items-center p-4'>
-                                            <button
+                                            <button type="button"
                                             onClick={()=>handeleDelete(bankToDelete)}
                                             className='text-red-600 inline-flex items-center hover:text-white border border-red-600 hover:bg-red-600 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900'>
                                                 Si, Eliminar!
                                             </button>
-                                            <button 
+                                            <button type="button" 
                                             onClick={e=>handleGoBackDelete(e)} 
                                             className='rounded-lg  w-10 shadow-sm shadow-zinc-400 h-10 flex justify-center items-center border border-zinc-700 hover:bg-zinc-300'>
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -438,7 +438,7 @@ const DropDownBanks = ({
                                  {isSuccess ?
                                 <div className='flex flex-col justify-center items-center gap-2 p-4'>
                                     <Alert2/>
-                                    <button 
+                                    <button type="button" 
                                     onClick={e=>handleCloseUpdateBox(e)} 
                                     className='rounded-lg  w-10 shadow-sm shadow-zinc-400 h-10 flex justify-center items-center border border-zinc-700 hover:bg-zinc-300'>
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">

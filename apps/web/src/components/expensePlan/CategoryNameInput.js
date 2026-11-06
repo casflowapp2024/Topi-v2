@@ -1,3 +1,4 @@
+import { inputClass } from "../ui/Field";
 import { useState, useRef, useEffect } from 'react';
 //redux
 import { connect } from 'react-redux';
@@ -75,12 +76,12 @@ const CategoryNameInput = ({
         onChange={(e) => setInputValue(e.target.value)}
         onFocus={() => setShowDropdown(true)}
         placeholder="Categoría"
-        className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+        className={inputClass()}
       />
 
       {showDropdown && filteredOptions.length > 0 && (
-        <ul className="absolute z-10 mt-0 w-full max-h-60 overflow-auto rounded-md bg-white dark:bg-gray-700 shadow-lg border border-gray-300 dark:border-gray-500">
-          <h3 className='text-sm py-1 pl-4 text-gray-400 bg-gray-100 font-semibold'>Recomendadas</h3>
+        <ul className="absolute z-10 mt-1 w-full max-h-60 overflow-auto rounded-xl bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-gray-100">
+          <h3 className='text-xs py-1.5 pl-4 text-ink-2 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 font-semibold'>Recomendadas</h3>
           {filteredOptions.map((category, index) => (
             <>
             {!category.userCat?
@@ -88,7 +89,7 @@ const CategoryNameInput = ({
               key={category.id}
               value = {category.id}
               onClick={() => handleSelect(category.name, category.emoji)}
-              className="px-3 py-1 flex items-center gap-2 hover:bg-gray-100 cursor-pointer"
+              className="px-3 py-1.5 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
               >
                   <div className="w-[10%] f-full pt-1 pr-2 rounded-full md:w-6 h-6 flex justify-center items-center">
                       <Emoji unified={(category.emoji).toLowerCase()} emojiStyle="apple" size={16} />

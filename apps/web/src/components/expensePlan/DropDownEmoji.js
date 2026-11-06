@@ -78,7 +78,7 @@ function DropDownEmoji({
     <div className="w-full relative" ref={dropAccountsRef}>
       {/* Dropdown button */}
       <div className="flex flex-row justify-between items-center">
-        <div className=" flex flex-col  items-center justify-center border border-1 rounded-md">
+        <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-gray-900">
           <span className="text-4xl p-4"> 
           {selectedEmoji ? 
             <Emoji unified={selectedEmoji} emojiStyle="apple" size={52} />
@@ -89,10 +89,10 @@ function DropDownEmoji({
           <button
             id="dropdownEmojiButton"
             onClick={toggleDropdown}
-            className="w-full p-1 font-medium border-t border-gray-200 text-sm flex justify-around hover:bg-gray-200"
+            className="w-full p-1.5 font-medium border-t border-gray-200 dark:border-gray-700 text-sm flex justify-around items-center hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-topi-500"
             type="button"
           >
-            <span className="text-[10px] text-gray-400">Selecciona el Icono</span>
+            <span className="text-[11px] text-ink-2 dark:text-gray-400">Elegir ícono</span>
             <CursorArrowRaysIcon className="w-4 h-4 text-gray-400"/>
             
           </button>
@@ -104,7 +104,7 @@ function DropDownEmoji({
         <div id="dropdownEmoji" className={`${windowContext === "trans" ? '' : ''} fixed z-30 inset-0 justify-center`}>
           <div className="bg-transparent rounded-xl p-1 shadow-lg flex flex-col">
             <div className="z-50 w-full bg-white flex justify-end border-t border-x rounded-t-xl border-gray-200 overflow-hidden">
-              <button
+              <button type="button"
               className="p-1 pr-3 bg-white  text-gray-500 hover:text-black"
               onClick={toggleDropdown}
               >
