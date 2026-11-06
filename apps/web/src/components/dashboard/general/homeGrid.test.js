@@ -33,26 +33,24 @@ const mount = async () => {
   await act(async () => root.render(<Provider store={store}><AAGenDashboard /></Provider>));
   return { el, unmount: () => act(() => root.unmount()) };
 };
-// la celda de la grilla es el ancestro más cercano con col-span
-const cell = (el, name) => el.querySelector(`[data-card="${name}"]`).closest('[class*="lg:col-span-"]');
-const span = (node) => node.className.match(/lg:col-span-(\d+)/)[1];
-
-test('Inicio en PC: Ritmo · Flujo · Patrimonio arriba (4/4/4), gráficas (8) con lateral (4) y Cuentas a lo ancho', async () => {
+test('Inicio en PC: Ritmo (1,5× Flujo) · Flujo · Por revisar arriba; Patrimonio sobre las gráficas y Presupuestos al lado', async () => {
   const { el, unmount } = await mount();
-  const grid = el.querySelector('.lg\\:grid-cols-12');
+  const grid = el.querySelector('[class~="lg:grid"]');
   expect(grid).not.toBeNull();
-  expect(['ritmo', 'flujo', 'patrimonio'].map(n => span(cell(el, n)))).toEqual(['4', '4', '4']);
-  expect(span(cell(el, 'graficas'))).toBe('8');
-  // Por revisar y Presupuestos comparten la columna lateral
-  const side = cell(el, 'por-revisar');
-  expect(side).toBe(cell(el, 'presupuestos'));
-  expect(span(side)).toBe('4');
-  expect(span(cell(el, 'cuentas'))).toBe('12');
-  // en el DOM (y así en la grilla) el orden es fila 1, luego gráficas y lateral, luego cuentas
-  const order = [...el.querySelectorAll('[data-card]')].map(n => n.dataset.card);
-  expect(order).toEqual(['ritmo', 'flujo', 'patrimonio', 'graficas', 'por-revisar', 'presupuestos', 'cuentas']);
-  // sin anchos fijos en px en la grilla
+  // proporciones en fr (sin anchos fijos): Ritmo 6 : Flujo 4 en lg y en xl
+  expect(grid.className).toContain('lg:grid-cols-[minmax(0,6fr)_minmax(0,4fr)_minmax(0,6fr)]');
+  expect(grid.className).toContain('xl:grid-cols-[minmax(0,6fr)_minmax(0,4fr)_minmax(0,5fr)]');
   expect(grid.outerHTML).not.toMatch(/w-\[\d+px\]|_\d+px\]/);
+  // fila 1: tres celdas directas de la grilla
+  const cellOf = (name) => el.querySelector(`[data-card="${name}"]`).parentElement;
+  ['ritmo', 'flujo', 'por-revisar'].forEach(n => expect(cellOf(n).parentElement).toBe(grid));
+  // Patrimonio y gráficas comparten la columna doble, en ese orden
+  const double = cellOf('patrimonio').parentElement;
+  expect(double.className).toContain('lg:col-span-2');
+  expect(cellOf('graficas').parentElement).toBe(double);
+  expect([...double.querySelectorAll('[data-card]')].map(n => n.dataset.card)).toEqual(['patrimonio', 'graficas']);
+  // Presupuestos llena el alto de esa columna (absoluto dentro de su celda)
+  expect(el.querySelector('[data-card="presupuestos"]').parentElement.className).toContain('lg:absolute');
   unmount();
 });
 
