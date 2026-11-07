@@ -219,8 +219,8 @@ const Layout = ({
                       {/* El logo siempre lleva al Inicio */}
                       <Link to="/dashboard" aria-label="Topi, ir al Inicio"
                         className="flex items-center gap-2 shrink-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500">
-                        <span className="w-8 h-8 rounded-xl bg-topi-500/10 flex items-center justify-center">
-                          <Cflogo className="w-5 h-5" aria-hidden="true" />
+                        <span className="w-9 h-9 rounded-xl bg-topi-500/10 flex items-center justify-center">
+                          <Cflogo className="w-6 h-6" aria-hidden="true" />
                         </span>
                         <span className="hidden min-[380px]:inline font-bold text-topi-500 dark:text-topi-200 text-lg">Topi</span>
                       </Link>

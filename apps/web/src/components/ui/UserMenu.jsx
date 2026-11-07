@@ -1,18 +1,11 @@
 import { Menu, MenuButton, MenuItems, MenuItem, MenuSeparator } from '@headlessui/react';
-import { Cog6ToothIcon, EnvelopeIcon, ArrowRightStartOnRectangleIcon } from '@heroicons/react/20/solid';
+import { Cog6ToothIcon, EnvelopeIcon, ArrowRightStartOnRectangleIcon, UserIcon } from '@heroicons/react/20/solid';
 import { THEME_OPTIONS, segmentClass } from './ThemeSwitch';
-
-export const initials = (user) => {
-  const parts = [user?.name, user?.lastName].filter(Boolean).join(' ').trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (user?.email?.[0] || '?').toUpperCase();
-};
 
 const itemClass = 'w-full flex items-center gap-2 px-3 h-9 rounded-xl text-sm text-gray-700 dark:text-gray-200 data-[focus]:bg-gray-100 dark:data-[focus]:bg-gray-700/60 transition-colors';
 
 /**
- * Menú de usuario (avatar con iniciales): Configuración, Conexiones, tema y cerrar sesión.
+ * Menú de usuario (círculo con un muñeco, no las iniciales): Configuración, Conexiones, tema y cerrar sesión.
  * El tema son tres opciones del menú para que se recorran con las flechas; headlessui les fija role=menuitem,
  * así que la elegida se anuncia con texto ("elegido") además de verse marcada.
  */
@@ -21,8 +14,8 @@ const UserMenu = ({ user, theme, onThemeChange, onOpenSettings, onLogout }) => {
   return (
     <Menu>
       <MenuButton aria-label="Menú de usuario"
-        className="w-9 h-9 shrink-0 rounded-full bg-topi-500 text-white text-sm font-semibold flex items-center justify-center hover:bg-topi-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-100 dark:focus-visible:ring-offset-surface-sunken transition-colors">
-        <span aria-hidden="true">{initials(user)}</span>
+        className="w-9 h-9 shrink-0 rounded-full bg-topi-500 text-white flex items-center justify-center hover:bg-topi-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-100 dark:focus-visible:ring-offset-surface-sunken transition-colors">
+        <UserIcon className="w-5 h-5" aria-hidden="true" />
       </MenuButton>
       <MenuItems anchor={{ to: 'bottom end', gap: 8 }} transition
         className="z-50 w-72 max-w-[calc(100vw-2rem)] p-2 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl font-Inter focus:outline-none transition duration-150 ease-out data-[closed]:opacity-0 data-[closed]:-translate-y-1 motion-reduce:transition-none">

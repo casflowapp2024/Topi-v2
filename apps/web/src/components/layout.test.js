@@ -5,7 +5,7 @@ import { Provider } from 'react-redux';
 import { createStore, applyMiddleware } from 'redux';
 import { thunk } from 'redux-thunk';
 import axios from 'axios';
-import UserMenu, { initials } from './ui/UserMenu';
+import UserMenu from './ui/UserMenu';
 import ThemeSwitch from './ui/ThemeSwitch';
 import PageContainer from './ui/PageContainer';
 import { themePreference, useResolvedDark } from './ui/theme';
@@ -99,13 +99,13 @@ test('set_theme guarda config.theme sin perder el resto de la configuración', a
   expect(body.utc_offset).toBe(-5);
 });
 
-test('Menú de usuario: iniciales, nombre y correo, Configuración, Conexiones, tema y cerrar sesión', async () => {
-  expect(initials({ name: 'ana', lastName: 'pérez' })).toBe('AP');
-  expect(initials({ email: 'x@example.com' })).toBe('X');
+test('Menú de usuario: muñeco (sin iniciales), nombre y correo, Configuración, Conexiones, tema y cerrar sesión', async () => {
   const onTheme = jest.fn(); const onSettings = jest.fn(); const onLogout = jest.fn();
   const user = { name: 'ana', lastName: 'pérez', email: 'ana@example.com' };
   const m = mount(<UserMenu user={user} theme="system" onThemeChange={onTheme} onOpenSettings={onSettings} onLogout={onLogout} />);
-  expect(m.el.querySelector('[aria-label="Menú de usuario"]').textContent).toBe('AP');
+  const button = m.el.querySelector('[aria-label="Menú de usuario"]');
+  expect(button.textContent).toBe('');
+  expect(button.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
   await openMenu(m.el);
   const menu = document.querySelector('[role=menu]');
   expect(menu).not.toBeNull();
