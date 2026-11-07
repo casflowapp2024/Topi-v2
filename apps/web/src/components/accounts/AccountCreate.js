@@ -72,21 +72,6 @@ const AccountCreate = ({
 
     };
 
-    //handle off automated
-    useEffect(() => {
-        if (banks && banks.length === 0) {
-            const selectedBank = banks.find(bank => bank.id === parseInt(createAccountData.bankId))
-            //console.log("selectedBank",selectedBank)
-            if ((!createAccountData.automated) || (!selectedBank.is_automated)) {
-                setCreateAccountData((prevData) => ({
-                    ...prevData,
-                    automated: false,
-                    gmailPersonalEmail: "",
-                }));
-            }
-        }
-    }, [createAccountData.automated, createAccountData.bankId]);
-
     const handleClosePopover = () => {
         setOpenCreateBox(false); // Hide the popover
         setCreateAccountData({
