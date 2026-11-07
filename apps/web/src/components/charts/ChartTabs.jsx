@@ -14,7 +14,7 @@ const ChartTabs = ({ tabs, value, onChange, label, className = '' }) => {
           <button key={t.id} type="button" role="tab" aria-selected={active} tabIndex={active ? 0 : -1}
             onClick={() => onChange(t.id)} title={t.hint}
             className={`flex-1 pt-3 pb-2 -mb-px border-b-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 rounded-t-md ${active
-              ? 'border-topi-500 text-topi-600 dark:text-indigo-300'
+              ? 'border-topi-500 text-topi-600 dark:text-topi-200'
               : 'border-transparent text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}>
             {t.label}
           </button>

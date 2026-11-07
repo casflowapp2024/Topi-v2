@@ -346,7 +346,7 @@ const ReviewInbox = ({
     <Card aria-label="Por revisar" className="h-full flex flex-col">
       <CardHeader title={total > 0 ? `Por revisar · ${total}` : 'Por revisar'}
         action={total > 1 && (
-          <button type="button" onClick={seeAll} className="shrink-0 text-xs font-medium text-topi-600 dark:text-indigo-300 hover:underline">Ver todo</button>
+          <button type="button" onClick={seeAll} className="shrink-0 text-xs font-medium text-topi-600 dark:text-topi-200 hover:underline">Ver todo</button>
         )} />
       {loading ? (
         <SkeletonRows rows={3} />
@@ -364,7 +364,7 @@ const ReviewInbox = ({
                 ))}
               </span>
               <button type="button" onClick={() => { setPicking(null); setPosition(p => p + 1); }} aria-label="Ver el siguiente por revisar"
-                className="inline-flex items-center text-xs font-medium text-ink-2 dark:text-gray-400 hover:text-topi-600 dark:hover:text-indigo-300 transition-colors">
+                className="inline-flex items-center text-xs font-medium text-ink-2 dark:text-gray-400 hover:text-topi-600 dark:hover:text-topi-200 transition-colors">
                 Siguiente <ChevronRightIcon className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>

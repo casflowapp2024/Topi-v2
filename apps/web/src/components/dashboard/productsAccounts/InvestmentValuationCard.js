@@ -183,7 +183,7 @@ const InvestmentValuationCard = ({ account, iniDate, endDate, current_Month, cur
                         ))}
                     </ul>
                     {valuations.length > 4 && (
-                        <button type="button" onClick={() => setShowAll(!showAll)} className="mt-1 text-xs font-medium text-topi-600 dark:text-indigo-300">
+                        <button type="button" onClick={() => setShowAll(!showAll)} className="mt-1 text-xs font-medium text-topi-600 dark:text-topi-200">
                             {showAll ? 'Ver menos' : `Ver las ${valuations.length}`}
                         </button>
                     )}

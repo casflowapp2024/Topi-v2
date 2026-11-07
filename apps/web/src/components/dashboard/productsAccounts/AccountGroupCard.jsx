@@ -24,7 +24,7 @@ const TypeChips = ({ items, group, onChange, onCreate }) => {
         ))}
         {closed > 0 && (
           <button type="button" role="tab" aria-selected={group === 'closed'} onClick={() => onChange('closed')}
-            className={`shrink-0 h-8 px-2 text-sm font-medium rounded-full transition-colors ${group === 'closed' ? 'text-topi-600 dark:text-indigo-300 underline underline-offset-4' : 'text-ink-2 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}>
+            className={`shrink-0 h-8 px-2 text-sm font-medium rounded-full transition-colors ${group === 'closed' ? 'text-topi-600 dark:text-topi-200 underline underline-offset-4' : 'text-ink-2 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}>
             Cerradas ({closed})
           </button>
         )}

@@ -25,7 +25,7 @@ function BudDashDailySpent({ history_dash, category_activated, active_report_tab
         </h2>
         {!showProjection && (highlight ? (
           <button type="button" onClick={() => set_dash_category_activated(null)}
-            className="inline-flex items-center gap-1 max-w-[60%] h-7 pl-2.5 pr-1.5 rounded-full text-xs font-semibold bg-topi-50 text-topi-600 dark:bg-indigo-500/15 dark:text-indigo-300 hover:bg-topi-500/15 transition-colors"
+            className="inline-flex items-center gap-1 max-w-[60%] h-7 pl-2.5 pr-1.5 rounded-full text-xs font-semibold bg-topi-50 text-topi-600 dark:bg-topi-500/15 dark:text-topi-200 hover:bg-topi-500/15 transition-colors"
             aria-label={`Quitar ${category_activated.name} y ver solo el total`}>
             <span className="truncate">{capitalizeWords(category_activated.name)}</span>
             <XMarkIcon className="w-4 h-4 shrink-0" aria-hidden="true" />

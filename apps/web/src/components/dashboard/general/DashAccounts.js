@@ -19,8 +19,8 @@ import {
 
 // Tipos de cuenta (ids del catálogo account_types)
 const TYPE_STYLE = {
-  1: { Icon: BanknotesIcon, tint: 'bg-topi-50 text-topi-600 dark:bg-indigo-500/15 dark:text-indigo-300' },
-  2: { Icon: BuildingLibraryIcon, tint: 'bg-topi-50 text-topi-600 dark:bg-indigo-500/15 dark:text-indigo-300' },
+  1: { Icon: BanknotesIcon, tint: 'bg-topi-50 text-topi-600 dark:bg-topi-500/15 dark:text-topi-200' },
+  2: { Icon: BuildingLibraryIcon, tint: 'bg-topi-50 text-topi-600 dark:bg-topi-500/15 dark:text-topi-200' },
   3: { Icon: ArrowTrendingUpIcon, tint: 'bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300' },
   4: { Icon: CreditCardIcon, tint: 'bg-orange-50 text-money-out dark:bg-orange-500/15 dark:text-money-out-dark' },
 };
@@ -68,7 +68,7 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
         className="mb-0"
         title="Mis cuentas"
         action={
-          <Link to="accounts" className="text-xs font-medium text-topi-600 dark:text-indigo-300 hover:underline inline-flex items-center">
+          <Link to="accounts" className="text-xs font-medium text-topi-600 dark:text-topi-200 hover:underline inline-flex items-center">
             Ver detalle <ChevronRightIcon className="w-4 h-4" aria-hidden="true" />
           </Link>
         }
@@ -184,7 +184,7 @@ const DashAccounts = ({ user_accounts, net_worth, get_net_worth, set_dash_accoun
               <button
                 type="button"
                 onClick={() => setShowAll(true)}
-                className="w-full h-full min-h-[62px] rounded-xl border border-dashed border-gray-300 dark:border-gray-600 text-sm font-medium text-topi-600 dark:text-indigo-300 hover:bg-topi-50/60 dark:hover:bg-gray-700/60 transition-colors"
+                className="w-full h-full min-h-[62px] rounded-xl border border-dashed border-gray-300 dark:border-gray-600 text-sm font-medium text-topi-600 dark:text-topi-200 hover:bg-topi-50/60 dark:hover:bg-gray-700/60 transition-colors"
               >
                 Ver {hidden} más
               </button>

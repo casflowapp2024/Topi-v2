@@ -152,7 +152,7 @@ const CreditCardPanel = ({ account, data, setAlert, net_worth, get_net_worth, se
                                 <span className="text-status-warn-text dark:text-amber-300">{formatMoney(unrecorded, currency)}</span>
                                 <span className="block mt-1 text-xs font-normal text-gray-700 dark:text-gray-300">
                                     Suelen ser intereses o cuota de manejo sin registrar.{' '}
-                                    {!reconcile && <button type="button" onClick={() => setReconcile(true)} className="font-semibold text-topi-600 dark:text-indigo-300 underline-offset-2 hover:underline">Ajustar</button>}
+                                    {!reconcile && <button type="button" onClick={() => setReconcile(true)} className="font-semibold text-topi-600 dark:text-topi-200 underline-offset-2 hover:underline">Ajustar</button>}
                                 </span>
                             </Box>
                         ) : (

@@ -5,7 +5,7 @@
 const EmptyState = ({ icon: Icon, title, description, action, compact = false, className = '' }) => (
   <div className={`flex flex-col items-center text-center gap-2 ${compact ? 'py-4' : 'py-8'} px-4 ${className}`}>
     {Icon && (
-      <span className="w-11 h-11 rounded-2xl bg-topi-50 dark:bg-indigo-500/15 text-topi-500 dark:text-indigo-300 flex items-center justify-center">
+      <span className="w-11 h-11 rounded-2xl bg-topi-50 dark:bg-topi-500/15 text-topi-500 dark:text-topi-200 flex items-center justify-center">
         <Icon className="w-6 h-6" aria-hidden="true" />
       </span>
     )}

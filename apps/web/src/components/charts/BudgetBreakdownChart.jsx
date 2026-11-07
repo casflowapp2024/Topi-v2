@@ -99,7 +99,7 @@ const BudgetBreakdownChart = ({
       {catOk && (zoomMax < totalMax) && (
         <div className="flex justify-end px-3 -mb-1">
           <button type="button" onClick={() => setZoom(z => !z)}
-            className="inline-flex items-center gap-1 h-6 px-2 rounded-lg text-xs font-medium text-topi-600 dark:text-indigo-300 hover:bg-topi-50 dark:hover:bg-gray-700">
+            className="inline-flex items-center gap-1 h-6 px-2 rounded-lg text-xs font-medium text-topi-600 dark:text-topi-200 hover:bg-topi-50 dark:hover:bg-gray-700">
             {zoom
               ? <><MagnifyingGlassMinusIcon className="w-4 h-4" aria-hidden="true" />Escala completa</>
               : <><MagnifyingGlassPlusIcon className="w-4 h-4" aria-hidden="true" />Acercar a {catName}</>}

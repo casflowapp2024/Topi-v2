@@ -383,7 +383,7 @@ const Transactions = ({
                                         onClick={() => setOpenFilterPopUp(true)}
                                         aria-label={panelFilters ? `Filtros (${panelFilters} activos)` : 'Filtros'}
                                         className={`relative shrink-0 h-10 px-3 rounded-2xl border flex items-center gap-2 text-sm font-medium transition-colors ${panelFilters
-                                            ? 'border-topi-500 text-topi-600 dark:text-indigo-300 bg-topi-50 dark:bg-indigo-500/10'
+                                            ? 'border-topi-500 text-topi-600 dark:text-topi-200 bg-topi-50 dark:bg-topi-500/10'
                                             : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                                     >
                                         <FunnelIcon className="w-4 h-4" aria-hidden="true" />
@@ -440,7 +440,7 @@ const Transactions = ({
                                     )}
                                     {anyFilter && (
                                         <button type="button" onClick={clearAllFilters}
-                                            className="shrink-0 h-8 px-2 text-sm font-medium text-topi-600 dark:text-indigo-300 hover:underline">
+                                            className="shrink-0 h-8 px-2 text-sm font-medium text-topi-600 dark:text-topi-200 hover:underline">
                                             Quitar filtros
                                         </button>
                                     )}
@@ -473,7 +473,7 @@ const Transactions = ({
                                 ) : (
                                     <EmptyState icon={EnvelopeIcon} title="Aún no hay transacciones"
                                         description="Conecta tu correo y Topi las agrega solas."
-                                        action={<Link to="/dashboard/connect-email" className="text-sm font-medium text-topi-600 dark:text-indigo-300 hover:underline">Conectar correo</Link>} />
+                                        action={<Link to="/dashboard/connect-email" className="text-sm font-medium text-topi-600 dark:text-topi-200 hover:underline">Conectar correo</Link>} />
                                 )
                             ) : (
                                 days.map(({ date, items }, index) => {
