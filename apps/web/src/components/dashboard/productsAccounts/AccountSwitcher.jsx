@@ -120,7 +120,7 @@ const AccountSwitcher = ({ group, account_activated, account_activated_stats, in
                 ))}
               </span>
             ) : <span />}
-            <Button size="sm" variant="secondary" icon={PencilSquareIcon} onClick={() => onEdit(account_activated.id)}>
+            <Button size="sm" variant="secondary" icon={PencilSquareIcon} aria-label="Editar cuenta" onClick={() => onEdit(account_activated.id)}>
               <span className="hidden sm:inline">Editar</span>
             </Button>
           </div>

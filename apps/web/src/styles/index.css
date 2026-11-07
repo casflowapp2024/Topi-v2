@@ -20,6 +20,12 @@ html, body {
     font-family: 'Inter'
   }
 
+/* Reserva el espacio de la barra de scroll: las vistas cortas y las largas quedan con los mismos bordes
+   (y no saltan al abrir un modal, que bloquea el scroll). */
+html {
+    scrollbar-gutter: stable;
+}
+
 html[style*="padding-right"] {
     padding-right: 0 !important;
     -webkit-font-smoothing: antialiased;

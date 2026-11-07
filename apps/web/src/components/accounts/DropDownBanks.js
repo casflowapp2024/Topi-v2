@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect} from 'react';
+import { inputClass } from '../ui/Field';
 //redux
 import { connect } from 'react-redux';
 import { setAlert } from "../../redux/actions/alert";
@@ -249,7 +250,7 @@ const DropDownBanks = ({
         <button
             type="button"
             onClick={() => handleOpenCloseWholeDropDown()}
-            className="w-full pl-2 pr-1 py-1 md:py-2 flex justify-between items-center text-gray-900  bg-white border border-gray-200 rounded-xl hover:border-topi-500 focus:outline-none text-gray-900 dark:bg-gray-900 dark:border-gray-700 dark:text-white focus-visible:ring-2 focus-visible:ring-topi-500"
+            className={inputClass({ className: 'flex justify-between items-center gap-2 text-left hover:border-topi-500' })}
         >   
             <div className='flex flex-row gap-2 justify-start items-center text-sm'>
                 {selectedBank?
@@ -262,7 +263,7 @@ const DropDownBanks = ({
                     </span>
                 }
             </div>
-            <ChevronDownIcon className="w-4 h-4 text-gray-900" />
+            <ChevronDownIcon className="w-4 h-4 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden="true" />
         </button>
 
         {isOpen && (
