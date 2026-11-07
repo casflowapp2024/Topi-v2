@@ -138,6 +138,71 @@ type netWorthResponse struct {
 	Accounts         []netWorthAccountResponse `json:"accounts"`
 }
 
+type netWorthHistoryRequest struct {
+	Months int `form:"months" binding:"omitempty,min=1,max=36" example:"12"`
+}
+
+type netWorthPointResponse struct {
+	Date             string `json:"date" example:"2026-10-31"`
+	Total            string `json:"total" example:"12500000"`
+	CashTotal        string `json:"cash_total" example:"8000000"`
+	InvestmentsTotal string `json:"investments_total" example:"4500000"`
+	CreditTotal      string `json:"credit_total" example:"-500000"`
+	// InvestmentsCost: net contributions to the investments; investments_total − investments_cost is their gain
+	InvestmentsCost *string `json:"investments_cost" example:"4000000"`
+	MissingRates    bool    `json:"missing_rates" example:"false"`
+}
+
+type netWorthHistoryResponse struct {
+	BaseCurrency string                  `json:"base_currency" example:"COP"`
+	Points       []netWorthPointResponse `json:"points"`
+}
+
+// GetNetWorthHistory godoc
+//
+//	@Summary		Net worth by month
+//	@Description	The net worth at the end of each of the last months (the current one until today), oldest first, computed like the net worth of today: cards by their estimated debt at that date, investments by their valuation then, rates of that day.
+//	@Tags			Analysis
+//	@Produce		json
+//	@Param			months	query		int	false	"How many months, 1 to 36 (12 by default)"
+//	@Success		200		{object}	response{data=netWorthHistoryResponse}	"Net worth by month"
+//	@Failure		400		{object}	errorResponse	"Validation error"
+//	@Router			/analysis/net-worth/history [get]
+//	@Security		BearerAuth
+func (fh *FxHandler) GetNetWorthHistory(ctx *gin.Context) {
+	var req netWorthHistoryRequest
+	userID, err := domain.GetAuthUserID(ctx, enums.AuthorizationPayloadKey)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	if err = ctx.ShouldBindQuery(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+	if req.Months == 0 {
+		req.Months = 12
+	}
+	points, err := fh.svc.GetNetWorthHistory(ctx, *userID, req.Months)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	rsp := netWorthHistoryResponse{BaseCurrency: points.BaseCurrency, Points: make([]netWorthPointResponse, 0, len(points.Points))}
+	for _, p := range points.Points {
+		rsp.Points = append(rsp.Points, netWorthPointResponse{
+			Date: p.Date.Format("2006-01-02"), Total: p.Total.String(), CashTotal: p.CashTotal.String(),
+			InvestmentsTotal: p.InvestmentsTotal.String(), CreditTotal: p.CreditTotal.String(),
+			MissingRates: p.MissingRates,
+		})
+		if p.InvestmentsCost != nil {
+			cost := p.InvestmentsCost.String()
+			rsp.Points[len(rsp.Points)-1].InvestmentsCost = &cost
+		}
+	}
+	handleSuccess(ctx, rsp)
+}
+
 // GetNetWorth godoc
 //
 //	@Summary		Net worth

@@ -44,8 +44,8 @@ PC (`lg+`): una fila de 3 tarjetas de igual alto encima de todo. Móvil: apilada
   `ui/ChartLegend` y montos compactos (`formatMoneyCompact`).
 - Deuda de tarjetas = la deuda **estimada por cortes** (commit b2586e3), la misma que muestra Cuentas.
 - Toque → `/dashboard/accounts` con el grupo "Todo".
-- No hay historia de patrimonio en la API: **no** inventar variación. Dejar el hueco preparado
-  (prop opcional `history`) para la Fase 3.B.
+- Variación contra el cierre del mes anterior y aportes vs. valor de inversiones: hechos en la Fase 3.B
+  (ver "Historia de patrimonio" al final).
 
 ### B. Bandeja "Por revisar" (`ReviewInbox`)
 
@@ -98,8 +98,8 @@ PC:
 
 ### Fuera de alcance (pedir OK si se necesita)
 
-- **3.B (API)**: historia de patrimonio por mes, compras vs. pagos de tarjeta por mes, aportes vs. valor de
-  inversiones. Requiere migración con `down` y tests; se planea aparte.
+- **3.B (API)**: historia de patrimonio por mes y aportes vs. valor de inversiones: hechos (7-nov). Falta
+  compras vs. pagos de tarjeta por mes.
 - Fase 4: mascota con estados, rachas, logros, "Pregúntale a Topi".
 
 ## Componentes a reutilizar (no duplicar)
@@ -179,3 +179,19 @@ Reemplazan las secciones A, B y C en lo que se contradiga. Layout de PC:
 - Límites: las tarjetas sin día de corte no tienen cargos (siguen con "Pagado de más"); el cargo incluye compras
   que no llegaron por correo; una compra a cuotas registrada completa oculta los intereses hasta el bloque de cuotas.
 - Siguiente bloque: cuotas, con su propio plan.
+
+## Historia de patrimonio (3.B, 7-nov)
+
+- `net_worth_at(usuario, día)` (migración 000038) es la cuenta de `net_worth` a esa fecha: tarjetas por su deuda
+  estimada por cortes de entonces (`credit_card_status(usuario, día)`, `card_billed(..., p_until)` no ve compras
+  posteriores), inversiones por su valoración vigente ese día y la tasa de ese día. `net_worth(usuario)` es
+  `net_worth_at(usuario, hoy)`, así que hoy no cambia.
+- Entran las cuentas creadas hasta ese día o con movimientos o valoraciones hasta entonces (las cuentas creadas
+  después con movimientos viejos cuentan su saldo inicial desde el primer movimiento). Las cerradas ese día salen
+  del estado de tarjetas y vuelven a su saldo, como hoy.
+- `GET /analysis/net-worth/history?months=12` (1–36): un punto por cierre de mes, el actual hasta hoy, con
+  efectivo, inversiones, tarjetas y `investments_cost` (lo aportado: saldo inicial y entradas menos retiros, en
+  moneda base; `null` si a alguna inversión le falta el monto base). Los meses sin cuentas no salen.
+- Tarjeta Patrimonio: flecha + "Subió/Bajó $X desde el 31 oct" contra el penúltimo punto (no se muestra si falta
+  una tasa en cualquiera de los dos) y "Inversiones: aportaste $X · ganancia/pérdida $Y" con el último.
+- Límite: la historia usa los datos de hoy; una compra que llega tarde por correo cambia los meses pasados.

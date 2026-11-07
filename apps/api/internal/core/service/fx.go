@@ -34,6 +34,12 @@ func (fs *FxService) GetQuote(ctx context.Context, from, to string, date time.Ti
 	return fs.repo.GetQuote(ctx, from, to, date)
 }
 
+// GetNetWorthHistory values the accounts at the end of each of the last months (1 to 36)
+func (fs *FxService) GetNetWorthHistory(ctx context.Context, userID string, months int) (domain.NetWorthHistory, error) {
+	months = min(max(months, 1), 36)
+	return fs.repo.GetNetWorthHistory(ctx, userID, months)
+}
+
 func (fs *FxService) GetNetWorth(ctx context.Context, userID string) (domain.NetWorth, error) {
 	return fs.repo.GetNetWorth(ctx, userID)
 }

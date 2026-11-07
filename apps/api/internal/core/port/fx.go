@@ -16,6 +16,8 @@ type FxRepository interface {
 	GetQuote(ctx context.Context, from, to string, date time.Time) (domain.FxQuote, error)
 	// GetNetWorth values every account of the user today in their base currency
 	GetNetWorth(ctx context.Context, userID string) (domain.NetWorth, error)
+	// GetNetWorthHistory values the accounts at the end of each of the last months, oldest first
+	GetNetWorthHistory(ctx context.Context, userID string, months int) (domain.NetWorthHistory, error)
 }
 
 // FxService is an interface for currencies, exchange rates and net worth
@@ -24,4 +26,6 @@ type FxService interface {
 	// GetQuote validates the codes; a zero date means today
 	GetQuote(ctx context.Context, from, to string, date time.Time) (domain.FxQuote, error)
 	GetNetWorth(ctx context.Context, userID string) (domain.NetWorth, error)
+	// GetNetWorthHistory values the accounts at the end of each of the last months, oldest first
+	GetNetWorthHistory(ctx context.Context, userID string, months int) (domain.NetWorthHistory, error)
 }

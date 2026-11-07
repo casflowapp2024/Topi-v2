@@ -162,6 +162,7 @@ func (r *Routes) AnalysisRoutes() {
 	{
 		AuthAnalysis.GET("/financial-report", r.AnalysisHandler.GetFinancialReport)
 		AuthAnalysis.GET("/net-worth", r.FxHandler.GetNetWorth)
+		AuthAnalysis.GET("/net-worth/history", r.FxHandler.GetNetWorthHistory)
 		AuthAnalysis.GET("/investments", r.ValuationHandler.GetInvestments)
 		AuthAnalysis.GET("/credit-cards", r.CreditCardHandler.ListCreditCards)
 		AuthAnalysis.GET("/accounts-balance", r.AnalysisHandler.GetBalanceByAccount)

@@ -4,6 +4,8 @@ import {
     GET_NET_WORTH_SUCCESS,
     GET_NET_WORTH_FAIL,
     SET_NET_WORTH_LOADING,
+    GET_NET_WORTH_HISTORY_SUCCESS,
+    GET_NET_WORTH_HISTORY_FAIL,
 } from './types';
 import { setCurrencies } from '../../components/helpers';
 
@@ -45,6 +47,20 @@ export const get_net_worth = () => async dispatch => {
 };
 
 // Cotización 1 from = rate to (hoy si no hay fecha). Devuelve { rate, source, date } o null.
+// Patrimonio al cierre de cada mes (el actual hasta hoy), del más viejo al más nuevo
+export const get_net_worth_history = (months = 12) => async dispatch => {
+    try {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/analysis/net-worth/history?months=${months}`, authConfig());
+        if (res.status === 200) {
+            dispatch({ type: GET_NET_WORTH_HISTORY_SUCCESS, payload: res.data.data });
+            return;
+        }
+        dispatch({ type: GET_NET_WORTH_HISTORY_FAIL });
+    } catch (err) {
+        dispatch({ type: GET_NET_WORTH_HISTORY_FAIL });
+    }
+};
+
 export const fetch_fx_rate = async (from, to, date) => {
     if (!from || !to) return null;
     if (from === to) return { rate: '1', source: 'identity', date };
