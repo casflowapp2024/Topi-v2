@@ -14,8 +14,8 @@ const UserMenu = ({ user, theme, onThemeChange, onOpenSettings, onLogout }) => {
   return (
     <Menu>
       <MenuButton aria-label="Menú de usuario"
-        className="w-9 h-9 shrink-0 rounded-full bg-topi-500 text-white flex items-center justify-center hover:bg-topi-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-100 dark:focus-visible:ring-offset-surface-sunken transition-colors">
-        <UserIcon className="w-5 h-5" aria-hidden="true" />
+        className="w-8 h-8 shrink-0 rounded-full bg-topi-500 text-white flex items-center justify-center hover:bg-topi-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-100 dark:focus-visible:ring-offset-surface-sunken transition-colors">
+        <UserIcon className="w-4 h-4" aria-hidden="true" />
       </MenuButton>
       <MenuItems anchor={{ to: 'bottom end', gap: 8 }} transition
         className="z-50 w-72 max-w-[calc(100vw-2rem)] p-2 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl font-Inter focus:outline-none transition duration-150 ease-out data-[closed]:opacity-0 data-[closed]:-translate-y-1 motion-reduce:transition-none">
