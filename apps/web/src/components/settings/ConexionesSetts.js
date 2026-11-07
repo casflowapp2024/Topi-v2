@@ -208,9 +208,9 @@ const ConexionesSetts = ({
             <section>
                 <div className="flex flex-row gap-8 xl:gap-4 justify-start items-center mb-5">
                     <h3 className='font-medium dark:text-white'>Emails Vinculados</h3>
-                    <button className="h-auto text-sm px-4 flex flex-row items-center bg-slate-100 dark:bg-slate-800 dark:text-gray-200 rounded-full border border-[#5266EB] hover:bg-slate-200 dark:hover:bg-slate-700 group transition-colors duration-300"
+                    <button className="h-auto text-sm px-4 flex flex-row items-center bg-slate-100 dark:bg-slate-800 dark:text-gray-200 rounded-full border border-topi-500 hover:bg-slate-200 dark:hover:bg-slate-700 group transition-colors duration-300"
                         onClick={() => setOpenCreateBox(true)}>
-                        <PlusIcon className="w-4 h-4 mr-2 group-hover:text-[#5266EB] dark:group-hover:text-blue-400" />
+                        <PlusIcon className="w-4 h-4 mr-2 group-hover:text-topi-500 dark:group-hover:text-topi-200" />
                         <span className="pr-2">
                             Conectar nuevo Email
                         </span>
@@ -333,7 +333,7 @@ const ConexionesSetts = ({
                                                 <ThreeDots
                                                     height="30"
                                                     width="30"
-                                                    color="#dc2626"
+                                                    color="currentColor"
                                                     ariaLabel="loading"
                                                 />
                                             </div> :
@@ -370,18 +370,18 @@ const ConexionesSetts = ({
                             </span>
                             <button
                                 onClick={() => setOpenWhatsappForm(true)}
-                                className="text-sm px-4 py-2 bg-slate-100 dark:bg-slate-800 dark:text-gray-200 border border-[#5266EB] rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 flex flex-row items-center group transition-colors duration-300"
+                                className="text-sm px-4 py-2 bg-slate-100 dark:bg-slate-800 dark:text-gray-200 border border-topi-500 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 flex flex-row items-center group transition-colors duration-300"
                             >
-                                <PencilIcon className="w-4 h-4 mr-2 group-hover:text-[#5266EB] dark:group-hover:text-blue-400" />
+                                <PencilIcon className="w-4 h-4 mr-2 group-hover:text-topi-500 dark:group-hover:text-topi-200" />
                                 Editar
                             </button>
                         </div>
                     ) : (
                         <button
                             onClick={() => setOpenWhatsappForm(true)}
-                            className="xl:h-auto h-10 text-sm px-4 flex flex-row items-center bg-slate-100 dark:bg-slate-800 dark:text-gray-200 border border-[#5266EB] rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 group transition-colors duration-300 w-fit"
+                            className="xl:h-auto h-10 text-sm px-4 flex flex-row items-center bg-slate-100 dark:bg-slate-800 dark:text-gray-200 border border-topi-500 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 group transition-colors duration-300 w-fit"
                         >
-                            <PlusIcon className="w-4 h-4 mr-2 group-hover:text-[#5266EB] dark:group-hover:text-blue-400" />
+                            <PlusIcon className="w-4 h-4 mr-2 group-hover:text-topi-500 dark:group-hover:text-topi-200" />
                             <span className="pr-2">Configurar número</span>
                         </button>
                     )}
@@ -403,7 +403,7 @@ const ConexionesSetts = ({
                                     <div className="flex flex-row gap-2 items-center">
                                         {/* Country selector */}
                                         <select
-                                            className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2 transition-colors duration-300 select-none outline-none focus:ring-1 focus:ring-[#5266EB]"
+                                            className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2 transition-colors duration-300 select-none outline-none focus:ring-1 focus:ring-topi-500"
                                             value={selectedCountry}
                                             onChange={(e) => setSelectedCountry(e.target.value)}
                                         >
@@ -415,7 +415,7 @@ const ConexionesSetts = ({
                                         </select>
                                         <input
                                             type="tel"
-                                            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-300 focus:outline-none focus:ring-1 focus:ring-[#5266EB]"
+                                            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-300 focus:outline-none focus:ring-1 focus:ring-topi-500"
                                             placeholder="123456789"
                                             value={phoneNumber}
                                             onChange={(e) => setPhoneNumber(e.target.value)}
@@ -430,13 +430,13 @@ const ConexionesSetts = ({
 
                                             <div
                                                 onClick={handleSaveWhatsapp}
-                                                className="w-[80px] flex justify-center text-sm px-4 py-2 bg-[#5266EB] text-white rounded-md hover:bg-blue-600"
+                                                className="w-[80px] flex justify-center text-sm px-4 py-2 bg-topi-500 text-white rounded-md hover:bg-topi-600"
                                             >
                                                 <ThreeDots
                                                     height="20"
                                                     width="30"
                                                     radius="9"
-                                                    color="#ffffff"
+                                                    color="currentColor"
                                                     ariaLabel="three-dots-loading"
                                                     wrapperStyle={{}}
                                                     wrapperClass=""
@@ -454,7 +454,7 @@ const ConexionesSetts = ({
                                             </div>
                                             <button
                                                 onClick={handleSaveWhatsapp}
-                                                className="w-[80px] text-sm px-4 py-2 bg-[#5266EB] text-white rounded-md hover:bg-blue-600"
+                                                className="w-[80px] text-sm px-4 py-2 bg-topi-500 text-white rounded-md hover:bg-topi-600"
                                             >
                                                 Guardar
                                             </button>

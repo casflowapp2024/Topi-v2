@@ -36,11 +36,11 @@ const CustomSelect = ({ name, value, options, onChange, Icon, menuUp = false }) 
         <div ref={wrapperRef} className="relative w-full">
             <button
                 type="button"
-                className="w-full flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3.5 text-left focus:outline-none ring-1 ring-transparent focus:ring-[#5266EB]/50 transition-all duration-200 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 group"
+                className="w-full flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3.5 text-left focus:outline-none ring-1 ring-transparent focus:ring-topi-500/50 transition-all duration-200 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 group"
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <div className="flex items-center gap-4">
-                    <div className="p-2.5 bg-gray-50 dark:bg-gray-900 rounded-xl text-gray-400 group-hover:text-[#5266EB] transition-colors duration-200">
+                    <div className="p-2.5 bg-gray-50 dark:bg-gray-900 rounded-xl text-gray-400 group-hover:text-topi-500 transition-colors duration-200">
                         {Icon && <Icon className="w-[22px] h-[22px]" />}
                     </div>
                     <div>
@@ -48,8 +48,8 @@ const CustomSelect = ({ name, value, options, onChange, Icon, menuUp = false }) 
                         <span className="block text-gray-800 dark:text-gray-200 font-semibold text-sm">{selectedOption?.label}</span>
                     </div>
                 </div>
-                <div className={`p-2 rounded-lg bg-gray-50 dark:bg-gray-900 transition-transform duration-300 ${isOpen ? 'rotate-180 bg-[#5266EB]/10' : ''}`}>
-                    <ChevronDownIcon className={`w-4 h-4 text-gray-400 ${isOpen ? 'text-[#5266EB]' : ''}`} />
+                <div className={`p-2 rounded-lg bg-gray-50 dark:bg-gray-900 transition-transform duration-300 ${isOpen ? 'rotate-180 bg-topi-500/10' : ''}`}>
+                    <ChevronDownIcon className={`w-4 h-4 text-gray-400 ${isOpen ? 'text-topi-500' : ''}`} />
                 </div>
             </button>
 
@@ -63,17 +63,17 @@ const CustomSelect = ({ name, value, options, onChange, Icon, menuUp = false }) 
                         key={option.value}
                         type="button"
                         className={`w-full text-left px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between
-                            ${String(value) === String(option.value) ? 'bg-[#5266EB]/5 dark:bg-[#5266EB]/10' : ''}`}
+                            ${String(value) === String(option.value) ? 'bg-topi-500/5 dark:bg-topi-500/10' : ''}`}
                         onClick={() => {
                             onChange({ target: { name, value: option.value } });
                             setIsOpen(false);
                         }}
                     >
-                        <span className={`font-medium text-sm ${String(value) === String(option.value) ? 'text-[#5266EB] dark:text-[#7f8fff]' : 'text-gray-700 dark:text-gray-300'}`}>
+                        <span className={`font-medium text-sm ${String(value) === String(option.value) ? 'text-topi-500 dark:text-topi-200' : 'text-gray-700 dark:text-gray-300'}`}>
                             {option.label}
                         </span>
                         {String(value) === String(option.value) && (
-                            <CheckIcon className="w-5 h-5 text-[#5266EB] dark:text-[#7f8fff]" />
+                            <CheckIcon className="w-5 h-5 text-topi-500 dark:text-topi-200" />
                         )}
                     </button>
                 ))}
@@ -172,8 +172,8 @@ const ProfileSetts = ({
         <>
             <div className="px-1 md:px-0">
                 <div className="flex items-center space-x-5 p-4 md:p-6 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm">
-                    <div className="relative w-20 h-20 bg-gradient-to-tr from-[#5266EB]/20 to-[#5266EB]/5 rounded-2xl flex items-center justify-center shadow-inner">
-                        <UserIcon className="h-10 w-10 text-[#5266EB]" />
+                    <div className="relative w-20 h-20 bg-gradient-to-tr from-topi-500/20 to-topi-500/5 rounded-2xl flex items-center justify-center shadow-inner">
+                        <UserIcon className="h-10 w-10 text-topi-500" />
                     </div>
                     <div className='flex flex-col justify-center space-y-1.5'>
                         <p className="font-bold text-xl text-gray-900 dark:text-white capitalize tracking-tight">{user.name} {user.lastName} </p>
@@ -237,7 +237,7 @@ const ProfileSetts = ({
                             </div>
                             <button
                                 onClick={markOnboardingComplete}
-                                className="bg-[#5266EB] hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                                className="bg-topi-500 hover:bg-topi-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
                             >
                                 Completar
                             </button>

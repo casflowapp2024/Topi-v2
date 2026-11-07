@@ -8,6 +8,7 @@ const SIZES = {
   md: 'sm:max-w-md',
   lg: 'sm:max-w-lg',
   xl: 'sm:max-w-2xl',
+  '2xl': 'sm:max-w-[928px]',
   full: 'sm:max-w-[1168px]',
 };
 
@@ -16,7 +17,7 @@ const noop = () => {};
 /**
  * Diálogo de Topi, hermano de `Sheet` (misma API).
  * - Móvil: hoja que sube desde abajo, con agarradera y acciones fijas abajo a lo ancho.
- * - Desde sm: diálogo centrado (`size`: sm | md | lg | xl | full).
+ * - Desde sm: diálogo centrado (`size`: sm | md | lg | xl | 2xl | full).
  * Esc, clic fuera y foco atrapado los da headlessui. `dismissible={false}` solo para flujos que no se
  * pueden saltar (onboarding): no cierra con Esc ni clic fuera y no muestra el botón cerrar.
  *

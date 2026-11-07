@@ -41,7 +41,7 @@ const ChangePasswordCard = ({ change_password, setAlert }) => {
         }
     };
 
-    const inputClass = "w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#5266EB]/50";
+    const inputClass = "w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-topi-500/50";
 
     return (
         <form onSubmit={onSubmit} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-4 shadow-sm space-y-3">
@@ -64,7 +64,7 @@ const ChangePasswordCard = ({ change_password, setAlert }) => {
             <input type="password" name="confirm_password" placeholder="Confirma la nueva contraseña" required
                 value={form.confirm_password} onChange={onChange} className={inputClass} autoComplete="new-password" />
             <button type="submit" disabled={loading}
-                className="bg-[#5266EB] hover:bg-blue-600 disabled:opacity-60 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
+                className="bg-topi-500 hover:bg-topi-600 disabled:opacity-60 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
                 {loading ? "Guardando..." : "Cambiar contraseña"}
             </button>
         </form>

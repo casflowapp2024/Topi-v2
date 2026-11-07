@@ -97,7 +97,7 @@ const StepCompletion = ({
         <div className="flex flex-col gap-6 items-center w-full">
             {((user_transactions && user_transactions.read_email_onboarding === false) && status === 'idle') && (
                 <button onClick={handleStartProcess}
-                    className="my-10 bg-[#5266EB] text-white px-8 py-3 rounded-xl hover:bg-blue-600 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 font-medium text-lg">
+                    className="my-10 bg-topi-500 text-white px-8 py-3 rounded-xl hover:bg-topi-600 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 font-medium text-lg">
                     Leer últimas transacciones
                 </button>
             )}
@@ -106,23 +106,23 @@ const StepCompletion = ({
                 <div className="flex flex-col items-center">
                     {isTimeout ? (
                         <div className="flex flex-col items-center gap-4 text-center px-6">
-                            <ThreeDots color="#9ca3af" height={40} />
-                            <h3 className="text-lg font-bold text-gray-900">Nuestros servidores están ocupados</h3>
-                            <p className="text-gray-600">
+                            <ThreeDots color="currentColor" wrapperClass="text-gray-400" height={40} />
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Nuestros servidores están ocupados</h3>
+                            <p className="text-gray-600 dark:text-gray-400">
                                 En este momento nuestros servidores están procesando mucha información.
                                 <b> Puedes cerrar esta ventana</b>; tus transacciones aparecerán en cualquier momento.
                             </p>
                             <button
                                 onClick={onFinish}
-                                className="mt-4 bg-green-600 text-white px-8 py-3 rounded-xl hover:bg-green-700 shadow-lg transition-all font-medium text-lg w-full sm:w-auto"
+                                className="mt-4 bg-topi-500 text-white px-8 py-3 rounded-xl hover:bg-topi-600 shadow-lg transition-all font-medium text-lg w-full sm:w-auto"
                             >
                                 Pasos siguientes
                             </button>
                         </div>
                     ) : (
                         <>
-                            <ThreeDots color="#5266EB" />
-                            <p className="text-lg mt-4 text-gray-600 font-medium animate-pulse">
+                            <ThreeDots color="currentColor" wrapperClass="text-topi-500" />
+                            <p className="text-lg mt-4 text-gray-600 font-medium animate-pulse dark:text-gray-400">
                                 {loadingMessages[messageIndex]}
                             </p>
                             <p className="pt-2 text-sm text-gray-400">Esto puede tomar hasta un minuto. No cierres esta ventana.</p>
@@ -138,10 +138,10 @@ const StepCompletion = ({
                         {(user_transactions && user_transactions.items && user_transactions.items.length > 0) ? (
                             <div className="flex flex-col items-center gap-2 mb-6">
                                 <div className="flex items-center gap-2 px-4">
-                                    <CheckCircleIcon className="w-8 h-8 text-green-500" />
-                                    <h3 className="text-xl font-bold text-gray-900">¡Transacciones encontradas!</h3>
+                                    <CheckCircleIcon className="w-8 h-8 text-status-ok" />
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">¡Transacciones encontradas!</h3>
                                 </div>
-                                <div className="w-full bg-gray-50 rounded-xl border border-gray-200 overflow-hidden mb-6 max-h-60 overflow-y-auto">
+                                <div className="w-full bg-gray-50 rounded-xl border border-gray-200 overflow-hidden mb-6 max-h-60 overflow-y-auto dark:border-gray-700 dark:bg-gray-800">
                                     {user_transactions.items.map((tx, index) => (
                                         <div
                                             key={tx.id}
@@ -150,49 +150,49 @@ const StepCompletion = ({
                                             <div className="flex items-center gap-2">
                                                 {tx.expense === false ?
                                                     <div className="w-[24px] md:w-[32px] h-8 flex justify-center items-center">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#16a34a" class="size-5">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-5 text-money-in dark:text-money-in-dark">
                                                             <path fill-rule="evenodd" d="M8.25 3.75H19.5a.75.75 0 0 1 .75.75v11.25a.75.75 0 0 1-1.5 0V6.31L5.03 20.03a.75.75 0 0 1-1.06-1.06L17.69 5.25H8.25a.75.75 0 0 1 0-1.5Z" clip-rule="evenodd" />
                                                         </svg>
                                                     </div>
                                                     :
                                                     <div className="w-[24px] md:w-[32px] h-8 flex justify-center items-center">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#e11d48" class="size-5">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-5 text-money-out dark:text-money-out-dark">
                                                             <path fill-rule="evenodd" d="M3.97 3.97a.75.75 0 0 1 1.06 0l13.72 13.72V8.25a.75.75 0 0 1 1.5 0V19.5a.75.75 0 0 1-.75.75H8.25a.75.75 0 0 1 0-1.5h9.44L3.97 5.03a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
                                                         </svg>
                                                     </div>
                                                 }
 
                                                 <div className="flex flex-col">
-                                                    <span className="font-medium text-gray-900">{tx.description || tx.name}</span>
-                                                    <span className="text-xs text-gray-500">{tx.date}</span>
+                                                    <span className="font-medium text-gray-900 dark:text-white">{tx.description || tx.name}</span>
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400">{tx.date}</span>
                                                 </div>
                                             </div>
 
-                                            <span className={`font-semibold ${tx.expense !== true ? 'text-green-600' : 'gray-900'}`}>
+                                            <span className={`font-semibold ${tx.expense !== true ? 'text-money-in dark:text-money-in-dark' : 'text-gray-900 dark:text-white'}`}>
                                                 {formatMoney(tx.amount, tx.currency)}
                                             </span>
                                         </div>
                                     ))}
                                 </div>
 
-                                <p className="text-gray-600 text-center mb-6 text-sm">
+                                <p className="text-gray-600 text-center mb-6 text-sm dark:text-gray-400">
                                     Esto es solo el comienzo. <b>Topi</b> seguirá leyendo tus transacciones automáticamente cada hora, generará informes, te ayudará a entender tus finanzas, y lo más importante, <b>te ayudará a cumplir tus metas!</b>
                                 </p>
 
                             </div>
                         ) : (
                             <>
-                                <h3 className="text-xl font-bold text-gray-900 my-4">¡Proceso completado!</h3>
+                                <h3 className="text-xl font-bold text-gray-900 my-4 dark:text-white">¡Proceso completado!</h3>
                                 <div className="flex flex-col items-center gap-2 mb-6 justify-center">
-                                    <XCircleIcon className="w-10 h-10 text-red-500" />
-                                    <h3 className="w-2/3 text-center text-md font-bold text-gray-900">¡No hay transacciones correspondientes a la información de tu cuenta!</h3>
+                                    <XCircleIcon className="w-10 h-10 text-status-crit" />
+                                    <h3 className="w-2/3 text-center text-md font-bold text-gray-900 dark:text-white">¡No hay transacciones correspondientes a la información de tu cuenta!</h3>
                                 </div>
                             </>
                         )}
 
                         <button
                             onClick={onFinish}
-                            className="bg-green-600 text-white px-8 py-3 rounded-xl hover:bg-green-700 shadow-lg hover:shadow-xl transition-all font-medium text-lg w-full sm:w-auto"
+                            className="bg-topi-500 text-white px-8 py-3 rounded-xl hover:bg-topi-600 shadow-lg hover:shadow-xl transition-all font-medium text-lg w-full sm:w-auto"
                         >
                             Pasos siguientes
                         </button>

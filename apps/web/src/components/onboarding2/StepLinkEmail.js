@@ -18,22 +18,22 @@ const StepLinkEmail = ({
 
     return (
         <div className="flex flex-col gap-4">
-            <p className="text-gray-600 text-sm text-justify">
+            <p className="text-gray-600 text-sm text-justify dark:text-gray-400">
                 Vincula el correo electrónico donde recibes las notificaciones de tus transacciones bancarias. Topi leerá estos correos para registrar tus gastos automáticamente.
             </p>
 
-            <div className="border-t border-gray-200 my-2"></div>
+            <div className="border-t border-gray-200 my-2 dark:border-gray-700"></div>
 
             {email_done ? (
                 <div className="flex flex-col items-center justify-center py-6 gap-4">
-                    <CheckCircleIcon className="w-16 h-16 text-green-500" />
-                    <p className="text-lg font-medium text-gray-900">¡Correo vinculado exitosamente!</p>
-                    <p className="text-sm text-gray-500 text-center">
+                    <CheckCircleIcon className="w-16 h-16 text-status-ok" />
+                    <p className="text-lg font-medium text-gray-900 dark:text-white">¡Correo vinculado exitosamente!</p>
+                    <p className="text-sm text-gray-500 text-center dark:text-gray-400">
                         Ahora Topi podrá leer tus transacciones automáticamente.
                     </p>
                     <button
                         onClick={onNext}
-                        className="mt-4 flex items-center gap-2 bg-[#5266EB] text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                        className="mt-4 flex items-center gap-2 bg-topi-500 text-white px-6 py-2 rounded-lg hover:bg-topi-600 transition-colors"
                     >
                         Siguiente <ChevronRightIcon className="w-4 h-4" />
                     </button>
@@ -50,7 +50,7 @@ const StepLinkEmail = ({
                     <div className="flex justify-between mt-4">
                         <button
                             onClick={onBack}
-                            className="text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                            className="text-gray-500 hover:text-gray-700 flex items-center gap-1 dark:text-gray-400 dark:hover:text-gray-200"
                         >
                             <ChevronLeftIcon className="w-4 h-4" /> Atrás
                         </button>

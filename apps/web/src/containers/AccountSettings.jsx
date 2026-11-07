@@ -13,7 +13,14 @@ import ProfileSetts from '../components/settings/ProfileSetts';
 import ConexionesSetts from '../components/settings/ConexionesSetts';
 import Membership from '../components/settings/Membership';
 import Alert from '../components/alert';
-import { XMarkIcon, ArrowLeftOnRectangleIcon } from '@heroicons/react/24/solid';
+import { ArrowRightStartOnRectangleIcon } from '@heroicons/react/20/solid';
+import Modal from '../components/ui/Modal';
+import Button from '../components/ui/Button';
+
+export const SETTINGS_TABS = [
+    { id: 'profile', label: 'Perfil' },
+    { id: 'connections', label: 'Conexiones' },
+];
 
 const AccountSettings = ({
     user,
@@ -67,10 +74,10 @@ const AccountSettings = ({
 
                 {/* Navigation Tabs */}
                 <div className="flex space-x-6 border-b border-gray-300 dark:border-gray-700 py-2 text-sm font-semibold justify-start">
-                    <Link to="profile" className={`${pathname.includes('/profile') ? "border-b-2 border-[#5266EB] text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"} cursor-pointer`}>
+                    <Link to="profile" className={`${pathname.includes('/profile') ? "border-b-2 border-topi-500 text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"} cursor-pointer`}>
                         PERFIL
                     </Link>
-                    <Link to="connections" className={`${pathname.includes('/connections') ? "border-b-2 border-[#5266EB] text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"} cursor-pointer`}>
+                    <Link to="connections" className={`${pathname.includes('/connections') ? "border-b-2 border-topi-500 text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"} cursor-pointer`}>
                         CONEXIONES
                     </Link>
                 </div>
@@ -94,57 +101,51 @@ const AccountSettings = ({
         if (!user) return null;
 
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-2 sm:px-4 py-6 md:py-10">
-                <div className="bg-white dark:bg-surface-raised rounded-3xl shadow-2xl w-full max-w-[930px] h-full max-h-[774px] flex flex-col overflow-hidden relative">
-
-                    {/* Fixed Header */}
-                    <div className="flex-shrink-0 pt-6 px-6 bg-white dark:bg-surface-raised border-b border-gray-100 dark:border-gray-800 z-10 flex justify-between items-start">
-                        <div className="w-full">
-                            <h2 className="text-2xl font-bold mr-5 pb-2 text-gray-900 dark:text-white">Configuraciones</h2>
-                            {/* Navigation Tabs */}
-                            <div className="flex space-x-6 py-2 text-sm font-semibold justify-start">
-                                <button onClick={() => setActiveTab('profile')} className={`${activeTab === 'profile' ? "border-b-2 border-[#5266EB] text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"} cursor-pointer uppercase`}>
-                                    PERFIL
-                                </button>
-                                <button onClick={() => setActiveTab('connections')} className={`${activeTab === 'connections' ? "border-b-2 border-[#5266EB] text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"} cursor-pointer uppercase`}>
-                                    CONEXIONES
-                                </button>
-                            </div>
-                        </div>
-                        <button onClick={closeSettingsModal} className="p-2 -mr-2 -mt-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors focus:outline-none text-gray-400 hover:text-gray-900 dark:hover:text-white flex-shrink-0">
-                            <XMarkIcon className="w-6 h-6" />
-                        </button>
-                    </div>
-
-                    {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto hide-scrollbar p-6 bg-white dark:bg-surface-raised z-0">
-                        {activeTab === 'profile' && <ProfileSetts />}
-                        {activeTab === 'connections' && <ConexionesSetts />}
-                        {activeTab === 'membership' && <Membership />}
-
-                        {/*PopOver UPDATE USER DATA EXTRA*/}
-                        <UpdateSetts
-                            editField={editField}
-                            openUpdateSettsBox={openUpdateSettsBox}
-                            setOpenUpdateSettsBox={setOpenUpdateSettsBox}
-                        />
-                    </div>
-
-                    {/* Fixed Footer */}
-                    <div className="flex-shrink-0 pb-6 px-6 pt-4 flex flex-col border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-surface-raised z-10">
-                        <div className='w-full h-auto rounded-lg mb-2 overflow-hidden flex-shrink-0 min-h-[1.5rem]'>
+            <Modal open onClose={closeSettingsModal} title="Configuración" size="2xl" bodyClassName="p-0"
+                className="h-[92dvh] sm:h-[min(774px,90vh)]"
+                footer={
+                    <div className="!w-full flex flex-col gap-2">
+                        <div className="w-full overflow-hidden rounded-lg empty:hidden">
                             <Alert />
                         </div>
-                        <div className="flex justify-between items-center group">
-                            <button onClick={handleLogout} className="flex items-center gap-3 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors font-medium">
-                                <ArrowLeftOnRectangleIcon className="w-6 h-6" />
-                                <span>Cerrar sesión</span>
-                            </button>
-                            <span className="text-xs text-gray-400 dark:text-gray-500">Versión 2.0.1</span>
+                        <div className="flex items-center justify-between gap-3">
+                            <Button variant="ghost" icon={ArrowRightStartOnRectangleIcon} onClick={handleLogout}
+                                className="!px-2 -ml-2 !text-ink-2 dark:!text-gray-400 hover:!text-status-crit-text dark:hover:!text-red-400">
+                                Cerrar sesión
+                            </Button>
+                            <span className="text-xs text-ink-2 dark:text-gray-400">Versión 2.0.1</span>
                         </div>
                     </div>
+                }>
+                {/* pestañas fijas arriba del contenido */}
+                <div role="tablist" aria-label="Secciones de configuración"
+                    className="sticky top-0 z-10 flex gap-6 px-5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-surface-raised">
+                    {SETTINGS_TABS.map(t => {
+                        const on = activeTab === t.id;
+                        return (
+                            <button key={t.id} type="button" role="tab" aria-selected={on} onClick={() => setActiveTab(t.id)}
+                                className={`-mb-px py-3 text-sm font-semibold border-b-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 rounded-t ${on
+                                    ? 'border-topi-500 text-gray-900 dark:text-white'
+                                    : 'border-transparent text-ink-2 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'}`}>
+                                {t.label}
+                            </button>
+                        );
+                    })}
                 </div>
-            </div>
+
+                <div role="tabpanel" className="px-5 py-5">
+                    {activeTab === 'profile' && <ProfileSetts />}
+                    {activeTab === 'connections' && <ConexionesSetts />}
+                    {activeTab === 'membership' && <Membership />}
+                </div>
+
+                {/*PopOver UPDATE USER DATA EXTRA*/}
+                <UpdateSetts
+                    editField={editField}
+                    openUpdateSettsBox={openUpdateSettsBox}
+                    setOpenUpdateSettsBox={setOpenUpdateSettsBox}
+                />
+            </Modal>
         );
     }
 

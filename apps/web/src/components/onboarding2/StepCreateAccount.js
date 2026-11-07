@@ -184,21 +184,21 @@ const StepCreateAccount = ({
         <div className="flex flex-col gap-4">
             {accCreated || fin_account_done ? (
                 <div className="flex flex-col items-center justify-center py-6 gap-4">
-                    <CheckCircleIcon className="w-16 h-16 text-green-500" />
-                    <p className="text-lg font-medium text-gray-900">¡Cuenta creada exitosamente!</p>
-                    <p className="text-sm text-gray-500 text-center">
+                    <CheckCircleIcon className="w-16 h-16 text-status-ok" />
+                    <p className="text-lg font-medium text-gray-900 dark:text-white">¡Cuenta creada exitosamente!</p>
+                    <p className="text-sm text-gray-500 text-center dark:text-gray-400">
                         Ahora tus transacciones se asociarán a esta cuenta.
                     </p>
                     <button
                         onClick={onNext}
-                        className="mt-4 flex items-center gap-2 bg-[#5266EB] text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                        className="mt-4 flex items-center gap-2 bg-topi-500 text-white px-6 py-2 rounded-lg hover:bg-topi-600 transition-colors"
                     >
                         Siguiente <ChevronRightIcon className="w-4 h-4" />
                     </button>
                 </div>
             ) : (
                 <>
-                    <p className="text-gray-600 text-sm text-justify mb-4">
+                    <p className="text-gray-600 text-sm text-justify mb-4 dark:text-gray-400">
                         Crea tu cuenta principal. Las transacciones que lleguen al correo vinculado en el paso anterior se asociarán a esta cuenta.
                     </p>
 
@@ -207,10 +207,11 @@ const StepCreateAccount = ({
                             <ThreeDots
                                 height="70"
                                 width="70"
-                                color="#5266EB"
+                                color="currentColor"
+                                wrapperClass="text-topi-500"
                                 ariaLabel="loading"
                             />
-                            <p className="mt-4 text-gray-600">Creando tu cuenta...</p>
+                            <p className="mt-4 text-gray-600 dark:text-gray-400">Creando tu cuenta...</p>
                         </div>
                     ) : (
                         <div className="flex flex-col">
@@ -241,7 +242,7 @@ const StepCreateAccount = ({
                                     <div className="flex justify-end gap-2 mt-2">
                                         <button
                                             onClick={onSubmitCreate}
-                                            className="bg-[#5266EB] text-white px-6 py-2 rounded-lg hover:bg-blue-600"
+                                            className="bg-topi-500 text-white px-6 py-2 rounded-lg hover:bg-topi-600"
                                         >
                                             Crear Cuenta
                                         </button>
