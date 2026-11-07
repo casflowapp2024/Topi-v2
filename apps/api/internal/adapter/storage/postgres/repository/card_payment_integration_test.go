@@ -172,15 +172,18 @@ func TestCardPayments(t *testing.T) {
 	s := status[0]
 	// compras del corte: 600.000 + los 30.000 editados; pagos después del corte: 700.000
 	assert.True(t, s.StatementDebt.Equal(d("630000")), s.StatementDebt.String())
-	assert.True(t, s.PendingStatement.IsZero(), s.PendingStatement.String())
+	// lo que no se pagó del corte anterior se arrastra (card_carry, cortes desde octubre de 2026; desde noviembre
+	// de 2026 el corte del mes pasado siempre está en esa ventana): 400.000 de compras − 55.000 − 20.000 pagados
+	// en ese corte − los 70.000 pagados de más en el último = 255.000
+	assert.True(t, s.PendingStatement.Equal(d("255000")), s.PendingStatement.String())
 	assert.True(t, s.PurchasesSince.Equal(d("90000")), s.PurchasesSince.String())
-	// 90.000 de consumos − 70.000 pagados de más; el saldo acumulado diría más de un millón
-	assert.True(t, s.Debt.Equal(d("20000")), s.Debt.String())
+	// 90.000 de consumos + 255.000 que vienen de antes; el saldo acumulado diría más de un millón
+	assert.True(t, s.Debt.Equal(d("345000")), s.Debt.String())
 
 	var balance, gain string
 	require.NoError(t, db.QueryRow(ctx, `SELECT balance::text, unrealized_gain::text FROM net_worth($1)
 		WHERE account_id = $2`, userID, card).Scan(&balance, &gain))
-	assert.True(t, d(balance).Equal(d("-20000")), balance)
+	assert.True(t, d(balance).Equal(d("-345000")), balance)
 	assert.True(t, d(gain).IsZero(), gain)
 
 	cycles, err := cards.ListCreditCardCycles(ctx, userID, card)
