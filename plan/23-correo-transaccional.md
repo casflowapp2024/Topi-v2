@@ -63,16 +63,16 @@ Documentarlo en `infra/coolify/RUNBOOK.md` (sección nueva) y las variables en `
 - Migraciones con `down`. Cero secretos.
 
 ## Criterios de aceptación
-- [ ] `Mailer` con adaptadores `log` y `resend`; outbox con cuota diaria, prioridad, reintentos (tests).
-- [ ] Recuperar contraseña por código de punta a punta (tests de vencimiento, intentos, enumeración y
+- [x] `Mailer` con adaptadores `log` y `resend`; outbox con cuota diaria, prioridad, reintentos (tests).
+- [x] Recuperar contraseña por código de punta a punta (tests de vencimiento, intentos, enumeración y
       límite); sesiones viejas invalidadas.
-- [ ] `set-initial-password` ya no permite crear contraseña sin probar el control del correo.
-- [ ] Verificación de correo para usuarios nuevos sin afectar a los existentes.
-- [ ] Aviso de conexión caída con límite de 1 cada 7 días.
-- [ ] Resumen mensual con baja en un clic y `List-Unsubscribe`.
-- [ ] Webhook con firma inválida → 401; rebote suprime envíos.
-- [ ] Runbook con pasos de DNS y Resend; variables en `.env.example` y Coolify.
-- [ ] `go test ./...`, jest y `npm run build` verdes; `CLAUDE.md` actualizado.
+- [x] `set-initial-password` ya no permite crear contraseña sin probar el control del correo.
+- [x] Verificación de correo para usuarios nuevos sin afectar a los existentes.
+- [x] Aviso de conexión caída con límite de 1 cada 7 días.
+- [x] Resumen mensual con baja en un clic y `List-Unsubscribe`.
+- [x] Webhook con firma inválida → 401; rebote suprime envíos.
+- [x] Runbook con pasos de DNS y Resend; variables en `.env.example` y Coolify.
+- [x] `go test ./...`, jest y `npm run build` verdes; `CLAUDE.md` actualizado.
 
 ## Decisiones (7-nov-2026)
 - Remitente `Topi <hola@mail.topi.cash>` (subdominio `mail.topi.cash`); `MAIL_REPLY_TO=cashflowapp2024@gmail.com`.
@@ -82,3 +82,12 @@ Documentarlo en `infra/coolify/RUNBOOK.md` (sección nueva) y las variables en `
 - Usuarios sin contraseña (migrados o reseteados): el front los lleva a recuperar la contraseña con código por
   correo; `set-initial-password` sin código se cierra.
 - Migraciones: 000038 es de patrimonio (`net_worth_history`); correo usa la 000039; modelo de negocio, 000040+.
+
+## Estado (7-nov-2026, rama feat/correo)
+Criterios verificados con `go test ./...`, integración (Postgres 16 local con `schema_v17.sql`), jest, `npm run build`
+y un E2E contra la API local con `MAIL_PROVIDER=log` (40 comprobaciones: registro y verificación, recuperar sin
+enumeración, token viejo inválido, 5 intentos, límite de 3 códigos/15 min, migrado sin contraseña, aviso único de
+conexión, resumen con baja one-click, webhook 401/200 y supresión por rebote). Falta lo manual de RUNBOOK B8
+(Resend, DNS, Coolify, webhook) y probarlo en producción.
+- Vistas previas: `MAIL_PREVIEW_DIR=<dir> go test -run TestWritePreviews ./internal/adapter/mail/templates/`.
+- Swagger (`apps/api/docs`) no se regeneró: estaba desactualizado desde antes y regenerarlo mete ~9.500 líneas ajenas.
