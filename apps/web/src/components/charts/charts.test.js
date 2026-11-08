@@ -7,6 +7,7 @@ import { createStore } from 'redux';
 import MultiChartDash from '../dashboard/general/MultiChartDash';
 import BudDashDailySpent from '../dashboard/budgetCategories/BudDashDailySpent';
 import AccChartHistory from '../dashboard/productsAccounts/AccChartHistory';
+import NetWorthChart, { netWorthRows } from './NetWorthChart';
 
 // axios viene en ESM y CRA no lo transforma en jest; las gráficas no lo usan.
 jest.mock('axios', () => {
@@ -56,8 +57,17 @@ const historyDash = (budget) => ({
   },
 });
 
+const nwPoint = (date, total, extra = {}) => ({
+  date, total: String(total), cash_total: String(total), investments_total: '0', credit_total: '0', investments_cost: '0', missing_rates: false, ...extra,
+});
+const netWorthHistory = { base_currency: 'COP', points: [
+  nwPoint('2026-09-30', 6000000), nwPoint('2026-10-31', 7000000, { investments_total: '1000000', investments_cost: '900000' }),
+  nwPoint('2026-11-07', 6500000, { credit_total: '-500000' }),
+] };
+
 const makeStore = (budget, month = M) => createStore(() => ({
   UI: { active_report_tab: 'Expenses' },
+  Fx: { net_worth_history: netWorthHistory, net_worth: { total: '6500000' } },
   Reports: {
     history_dash: historyDash(budget),
     history_category: { budget: -500000, monthly: { expense: months.map(() => metric(-600000)), year: months.map(x => x.y), month: months.map(x => x.m) } },
@@ -83,10 +93,10 @@ const click = (el, text) => {
 };
 
 describe.each([[3000000, M], [0, M], [3000000, M === 1 ? 12 : M - 1]])('presupuesto %s, mes %s', (budget, month) => {
-  test('inicio: las 3 pestañas', () => {
+  test('inicio: las 4 pestañas', () => {
     const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
     const { el, root } = render(<MultiChartDash />, makeStore(budget, month));
-    for (const tab of ['Flujo', 'Gastos', 'Balance']) {
+    for (const tab of ['Flujo', 'Gastos', 'Patrimonio', 'Balance']) {
       click(el, tab);
       expect(el.querySelector('svg.recharts-surface')).not.toBeNull();
     }
@@ -112,4 +122,23 @@ test('cuentas: historial de una tarjeta en USD', () => {
   const { el, root } = render(<AccChartHistory />, makeStore(3000000));
   expect(el.textContent).toMatch(/deuda/i);
   act(() => root.unmount());
+});
+
+test('patrimonio: un punto por cierre de mes, el último es hoy y el cambio solo con tasas', () => {
+  const rows = netWorthRows(netWorthHistory);
+  expect(rows.map(r => r.label)).toEqual(['sep', 'oct', 'hoy']);
+  expect(rows.map(r => r.diff)).toEqual([null, 1000000, -500000]);
+  expect(rows[2].longLabel).toBe('Hoy, 7 de noviembre');
+  const missing = netWorthRows({ points: [nwPoint('2026-10-31', 1, { missing_rates: true }), nwPoint('2026-11-07', 2)] });
+  expect(missing[1].diff).toBeNull();
+
+  const { el, root } = render(<NetWorthChart />, makeStore(0));
+  expect(el.querySelector('svg.recharts-surface')).not.toBeNull();
+  expect(el.textContent).toMatch(/Subió desde sep/);
+  act(() => root.unmount());
+
+  const single = createStore(() => ({ Fx: { net_worth_history: { points: [nwPoint('2026-11-07', 2)] } } }));
+  const one = render(<NetWorthChart />, single);
+  expect(one.el.textContent).toContain('empieza este mes');
+  act(() => one.root.unmount());
 });
