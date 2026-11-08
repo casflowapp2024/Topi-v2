@@ -194,7 +194,8 @@ Reemplazan las secciones A, B y C en lo que se contradiga. Layout de PC:
   moneda base; `null` si a alguna inversión le falta el monto base). Los meses sin cuentas no salen.
 - Tarjeta Patrimonio: flecha + "Subió/Bajó $X desde el 31 oct" contra el penúltimo punto (no se muestra si falta
   una tasa en cualquiera de los dos) y "Inversiones: aportaste $X · ganancia/pérdida $Y" con el último.
-- Gráfica: pestaña "Patrimonio" en las gráficas del Inicio (`charts/NetWorthChart`), un punto por cierre de mes y
-  "hoy" al final, con efectivo, inversiones, aportado, tarjetas y cambio vs. mes anterior en el tooltip. No depende
-  del mes elegido. Con un solo punto dice que la historia empieza este mes.
+- Gráfica (`charts/NetWorthChart`): en Cuentas › Todo, debajo del patrimonio (decisión del usuario, 7-nov: no en las
+  gráficas del Inicio). Un punto por cierre de mes y "hoy" al final; el tooltip trae efectivo, inversiones, tarjetas y
+  el cambio vs. el mes anterior, sin lo aportado. No depende del mes elegido. Con un solo punto dice que la historia
+  empieza este mes.
 - Límite: la historia usa los datos de hoy; una compra que llega tarde por correo cambia los meses pasados.

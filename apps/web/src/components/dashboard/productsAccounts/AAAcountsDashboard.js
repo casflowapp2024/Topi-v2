@@ -11,6 +11,7 @@ import InvestmentValuationCard from "./InvestmentValuationCard";
 import AccountSwitcher from "./AccountSwitcher";
 import AccountGroupCard from "./AccountGroupCard";
 import AccountPeriodControl from "./AccountPeriodControl";
+import NetWorthChart from "../../charts/NetWorthChart";
 import { findElmentById, accountReportGroup, accountClass, isOpenAccount } from "../../helpers.js";
 import { groupOfAccount, accountsOfGroup } from "./accountGroups";
 
@@ -22,7 +23,8 @@ const CHART_TITLE = {
 
 /**
  * Cuentas, en tres niveles:
- *  1. El total del grupo elegido y, debajo, el selector de tipo y "Agregar cuenta" (en "Todo": el patrimonio).
+ *  1. El total del grupo elegido y, debajo, el selector de tipo y "Agregar cuenta" (en "Todo": el patrimonio
+ *     y su historia al cierre de cada mes).
  *  2. La cuenta que estás viendo, con flechas / deslizar / lista para pasar a las otras del grupo.
  *  3. Su detalle: periodo (mes, corte de la tarjeta o rango), sus cifras,
  *     la gráfica propia de su tipo y los movimientos del periodo.
@@ -81,6 +83,15 @@ const AAAcountsDashboard = ({
         <>
             <div className="flex flex-col gap-2 lg:gap-6 pb-4 md:max-w-[560px] md:mx-auto lg:max-w-none lg:w-full">
                 <AccountGroupCard group={group} onGroupChange={handleGroupChange} onCreate={() => setOpenCreateBox(true)} />
+
+                {group === 'all' && (
+                    <section className="h-[280px] md:h-[320px] pt-4 pb-2 bg-white dark:bg-gray-800 rounded-2xl shadow-md flex flex-col" aria-label="Patrimonio por mes">
+                        <h3 className="px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">Patrimonio <span className="font-normal text-ink-2 dark:text-gray-400">· al cierre de cada mes, últimos 12 meses</span></h3>
+                        <div className="flex-1 min-h-0">
+                            <NetWorthChart />
+                        </div>
+                    </section>
+                )}
 
                 {showDetail && (
                     <>

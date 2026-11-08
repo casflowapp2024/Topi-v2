@@ -4,16 +4,14 @@ import ChartTabs from '../../charts/ChartTabs';
 import BalanceChart from '../../charts/BalanceChart';
 import FlowChart from '../../charts/FlowChart';
 import SpendVsBudgetChart from '../../charts/SpendVsBudgetChart';
-import NetWorthChart from '../../charts/NetWorthChart';
 import { SkeletonChart } from '../../ui/Skeleton';
 
 // Gráfica del inicio. Los datos (history_dash) los pide Dashboard.jsx al cambiar de mes.
-// La proyección del mes vive en la tarjeta Ritmo del mes. Patrimonio no depende del mes elegido: va hasta hoy.
+// La proyección del mes vive en la tarjeta Ritmo del mes. La historia del patrimonio está en Cuentas › Todo.
 const TABS = [
   { id: 'balance', label: 'Balance', hint: 'Saldo en tus cuentas de efectivo' },
   { id: 'flow', label: 'Flujo', hint: 'Ingresos, gastos y ahorro neto por mes' },
   { id: 'spend', label: 'Gastos', hint: 'Gastos contra el presupuesto, con proyección del mes' },
-  { id: 'networth', label: 'Patrimonio', hint: 'Tu patrimonio al cierre de cada mes, hasta hoy' },
 ];
 
 function MultiChartDash({ history_dash }) {
@@ -24,9 +22,7 @@ function MultiChartDash({ history_dash }) {
       <ChartTabs tabs={TABS} value={tab} onChange={setTab} label="Gráficas del mes" />
 
       <div className="flex-1 min-h-0 w-full" role="tabpanel">
-        {tab === 'networth' ? (
-          <NetWorthChart />
-        ) : !history_dash ? (
+        {!history_dash ? (
           <SkeletonChart />
         ) : tab === 'balance' ? (
           <BalanceChart />

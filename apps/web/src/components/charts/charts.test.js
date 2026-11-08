@@ -93,10 +93,10 @@ const click = (el, text) => {
 };
 
 describe.each([[3000000, M], [0, M], [3000000, M === 1 ? 12 : M - 1]])('presupuesto %s, mes %s', (budget, month) => {
-  test('inicio: las 4 pestañas', () => {
+  test('inicio: las 3 pestañas', () => {
     const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
     const { el, root } = render(<MultiChartDash />, makeStore(budget, month));
-    for (const tab of ['Flujo', 'Gastos', 'Patrimonio', 'Balance']) {
+    for (const tab of ['Flujo', 'Gastos', 'Balance']) {
       click(el, tab);
       expect(el.querySelector('svg.recharts-surface')).not.toBeNull();
     }
@@ -128,7 +128,7 @@ test('patrimonio: un punto por cierre de mes, el último es hoy y el cambio solo
   const rows = netWorthRows(netWorthHistory);
   expect(rows.map(r => r.label)).toEqual(['sep', 'oct', 'hoy']);
   expect(rows.map(r => r.diff)).toEqual([null, 1000000, -500000]);
-  expect(rows[2].longLabel).toBe('Hoy, 7 de noviembre');
+  expect(rows.map(r => r.longLabel)).toEqual(['septiembre 2026', 'octubre 2026', 'noviembre 2026 · hoy']);
   const missing = netWorthRows({ points: [nwPoint('2026-10-31', 1, { missing_rates: true }), nwPoint('2026-11-07', 2)] });
   expect(missing[1].diff).toBeNull();
 
@@ -141,4 +141,10 @@ test('patrimonio: un punto por cierre de mes, el último es hoy y el cambio solo
   const one = render(<NetWorthChart />, single);
   expect(one.el.textContent).toContain('empieza este mes');
   act(() => one.root.unmount());
+});
+
+test('patrimonio por mes: no está en las gráficas del inicio', () => {
+  const home = render(<MultiChartDash />, makeStore(0));
+  expect([...home.el.querySelectorAll('[role=tab]')].map(t => t.textContent)).toEqual(['Balance', 'Flujo', 'Gastos']);
+  act(() => home.root.unmount());
 });

@@ -21,12 +21,12 @@ export const netWorthRows = (history) => {
     return {
       key: p.date,
       label: today ? 'hoy' : date.format('MMM').replace(/\./g, ''),
-      longLabel: today ? `Hoy, ${date.format('D [de] MMMM')}` : `Cierre de ${date.format('MMMM YYYY')}`,
+      // el título del tooltip pone mayúscula a cada palabra: mismo formato que las otras gráficas
+      longLabel: today ? `${date.format('MMMM YYYY')} · hoy` : date.format('MMMM YYYY'),
       value: total,
       cash: Number(p.cash_total),
       investments: Number(p.investments_total),
       credit: Number(p.credit_total),
-      cost: p.investments_cost == null ? null : Number(p.investments_cost),
       // con tasas faltantes en cualquiera de los dos meses la resta no es confiable
       diff: prev == null || p.missing_rates || points[i - 1].missing_rates ? null : total - prev,
       missing: p.missing_rates,
@@ -37,7 +37,7 @@ export const netWorthRows = (history) => {
 /**
  * Patrimonio al cierre de cada mes, hasta hoy: la misma cuenta de la tarjeta Patrimonio a cada fecha
  * (tarjetas por su deuda estimada entonces, inversiones por su valoración de entonces).
- * No depende del mes elegido en la barra superior.
+ * Va en Cuentas › Todo; no depende del mes elegido en la barra superior.
  */
 const NetWorthChart = ({ net_worth_history, net_worth_total, get_net_worth_history }) => {
   const c = useChartColors();
@@ -75,7 +75,6 @@ const NetWorthChart = ({ net_worth_history, net_worth_total, get_net_worth_histo
           { label: 'Patrimonio', value: formatMoney(p.value, base), tone: p.value < 0 ? 'out' : undefined },
           p.cash ? { label: 'Efectivo', value: formatMoney(p.cash, base), color: c.balance } : null,
           p.investments ? { label: 'Inversiones', value: formatMoney(p.investments, base), color: c.inversion } : null,
-          p.investments && p.cost != null ? { label: 'Aportado a inversiones', value: formatMoney(p.cost, base), tone: 'muted' } : null,
           p.credit ? { label: 'Tarjetas (aprox.)', value: formatMoney(p.credit, base), color: c.crit } : null,
           p.diff != null ? { label: 'Cambio vs mes anterior', value: `${p.diff > 0 ? '+' : ''}${formatMoney(p.diff, base)}`, tone: p.diff < 0 ? 'out' : 'in' } : null,
           p.missing ? { label: '* Falta alguna tasa de cambio', value: '', tone: 'muted' } : null,
