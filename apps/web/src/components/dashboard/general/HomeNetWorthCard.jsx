@@ -39,14 +39,6 @@ export const netWorthChange = (history, netWorth) => {
   return { delta: Number(netWorth.total) - Number(prev.total), since: prev.date };
 };
 
-// Lo aportado a las inversiones contra lo que valen hoy. null sin inversiones o sin costo conocido.
-export const investmentsSummary = (history) => {
-  const today = history?.points?.[history.points.length - 1];
-  if (!today || today.investments_cost == null || Number(today.investments_total) === 0) return null;
-  const cost = Number(today.investments_cost);
-  return { cost, gain: Number(today.investments_total) - cost };
-};
-
 const shortDate = (date) => moment(date, 'YYYY-MM-DD').locale('es').format('D MMM').replace(/\./g, '');
 
 /**
@@ -60,7 +52,6 @@ const HomeNetWorthCard = ({ net_worth, net_worth_history, set_dash_account_activ
   const total = net_worth?.total;
   useEffect(() => { if (total != null) get_net_worth_history(); }, [total, get_net_worth_history]);
   const change = netWorthChange(net_worth_history, net_worth);
-  const investments = investmentsSummary(net_worth_history);
   const c = useChartColors();
   const color = { cash: c.balance, investment: c.inversion, favor: c.ok, credit: c.crit };
   const base = net_worth?.base_currency || getBaseCurrency();
@@ -102,14 +93,6 @@ const HomeNetWorthCard = ({ net_worth, net_worth_history, set_dash_account_activ
                 type: 'bar', color: color[s.id], value: formatMoneyCompact(s.value, base),
                 label: s.id === 'credit' ? `${s.label} (aprox.)` : s.label,
               }))} />
-            {investments && (
-              <span className="text-xs text-ink-2 dark:text-gray-400">
-                Inversiones: aportaste {formatMoneyCompact(investments.cost, base)} ·{' '}
-                <span className={investments.gain < 0 ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}>
-                  {investments.gain < 0 ? 'pérdida' : 'ganancia'} {formatMoneyCompact(Math.abs(investments.gain), base)}
-                </span>
-              </span>
-            )}
           </span>
           <ChevronRightIcon className="hidden lg:block w-4 h-4 shrink-0 text-gray-300 group-hover:text-topi-500 transition-colors" aria-hidden="true" />
         </>

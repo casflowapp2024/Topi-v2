@@ -193,7 +193,8 @@ Reemplazan las secciones A, B y C en lo que se contradiga. Layout de PC:
   efectivo, inversiones, tarjetas y `investments_cost` (lo aportado: saldo inicial y entradas menos retiros, en
   moneda base; `null` si a alguna inversión le falta el monto base). Los meses sin cuentas no salen.
 - Tarjeta Patrimonio: flecha + "Subió/Bajó $X desde el 31 oct" contra el penúltimo punto (no se muestra si falta
-  una tasa en cualquiera de los dos) y "Inversiones: aportaste $X · ganancia/pérdida $Y" con el último.
+  una tasa en cualquiera de los dos). Lo aportado a inversiones no se muestra en la UI (decisión del usuario, 7-nov);
+  `investments_cost` queda en la API.
 - Gráfica (`charts/NetWorthChart`): en Cuentas › Todo, debajo del patrimonio (decisión del usuario, 7-nov: no en las
   gráficas del Inicio). Un punto por cierre de mes y "hoy" al final; el tooltip trae efectivo, inversiones, tarjetas y
   el cambio vs. el mes anterior, sin lo aportado. No depende del mes elegido. Con un solo punto dice que la historia

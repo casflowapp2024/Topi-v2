@@ -6,7 +6,7 @@ import { createStore, applyMiddleware } from 'redux';
 import { thunk } from 'redux-thunk';
 import HomePaceCard from './HomePaceCard';
 import HomeFlowCard, { flowBarSegments } from './HomeFlowCard';
-import HomeNetWorthCard, { investmentsSummary, netWorthChange, netWorthSegments } from './HomeNetWorthCard';
+import HomeNetWorthCard, { netWorthChange, netWorthSegments } from './HomeNetWorthCard';
 import axios from 'axios';
 import { getDailyAllowance } from '../../ui/BudgetProgress';
 import { formatMoney } from '../../helpers';
@@ -173,14 +173,6 @@ test('Patrimonio: cambio contra el cierre del mes anterior, solo con datos confi
   expect(netWorthChange(missing, today)).toBeNull();
 });
 
-test('Patrimonio: lo aportado a inversiones contra lo que valen', () => {
-  const point = (total, cost) => ({ points: [nwPoint('2026-11-07', '9000000', { investments_total: total, investments_cost: cost })] });
-  expect(investmentsSummary(point('3000000', '2500000'))).toEqual({ cost: 2500000, gain: 500000 });
-  expect(investmentsSummary(point('2000000', '2500000'))).toEqual({ cost: 2500000, gain: -500000 });
-  expect(investmentsSummary(point('0', '0'))).toBeNull();         // sin inversiones
-  expect(investmentsSummary(point('3000000', null))).toBeNull();  // costo desconocido
-});
-
 test('Patrimonio: pide la historia y muestra flecha, palabra y monto', async () => {
   const net_worth = { base_currency: 'COP', total: '7500000', cash_total: '4500000', investments_total: '3000000', credit_total: '0', accounts: [] };
   const net_worth_history = { base_currency: 'COP', points: [
@@ -193,6 +185,6 @@ test('Patrimonio: pide la historia y muestra flecha, palabra y monto', async () 
   expect(el.textContent).toContain('Bajó');
   expect(el.textContent).toContain('desde el 31 oct');
   expect(el.querySelector('svg.text-money-out')).not.toBeNull();
-  expect(el.textContent).toMatch(/aportaste .*· ganancia/);
+  expect(el.textContent).not.toMatch(/aportaste|ganancia/);
   act(() => root.unmount());
 });
