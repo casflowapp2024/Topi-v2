@@ -408,7 +408,9 @@ export const change_password = (current_password, password, confirm_password) =>
     }
 }
 
-export const logout = () => dispatch => {
+// expired=true: la sesión se cerró sola (el refresh falló), no porque el usuario pidiera salir.
+// El Layout lo usa para llevar al login en vez de quedarse con el spinner.
+export const logout = ({ expired = false } = {}) => dispatch => {
     // revoca el refresh token en la API (best effort, no bloquea el logout local)
     const refresh_token = localStorage.getItem('refresh_token');
     if (refresh_token) {
@@ -418,7 +420,7 @@ export const logout = () => dispatch => {
 
     dispatch({
         type: LOGOUT,
-
+        payload: { expired },
     });
     dispatch({
         type: REVOMVE_USER_FOUND,

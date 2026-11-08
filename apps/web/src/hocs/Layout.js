@@ -56,6 +56,7 @@ const Layout = ({
   set_theme,
   //state
   user_found,
+  session_expired,
   categories,
   default_limit,
   user_extra_data,
@@ -81,6 +82,12 @@ const Layout = ({
 
   const navigate = useNavigate();
   const location = useLocation();
+  // El interceptor cerró la sesión (el refresh falló): sin esto la vista se queda en el spinner
+  // de !user_found hasta recargar.
+  useEffect(() => {
+    if (session_expired) navigate('/login/', { replace: true });
+  }, [session_expired, navigate]);
+
   const [userDataRequested, setUserDataRequested] = useState(false);
   const [openNextSteps, setOpenNextSteps] = useState(false);
   const [forceEmailStep, setForceEmailStep] = useState(false);
@@ -311,6 +318,7 @@ const Layout = ({
 
 const mapStateToProps = state => ({
   user_found: state.Auth.user_found,
+  session_expired: state.Auth.session_expired,
   user_extra_data: state.Auth.user_extra_data,
   user: state.Auth.user,
   default_limit: state.CashFlow.user_transactions.default_limit,

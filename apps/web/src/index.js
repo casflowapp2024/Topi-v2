@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './styles/index.css';
 import App from './App';
 import store from './store';
-import { setupAuthInterceptor } from './lib/authInterceptor';
+import { setupAuthInterceptor, whenRefreshIdle } from './lib/authInterceptor';
 
 // renueva la sesión con el refresh token ante un 401
 setupAuthInterceptor(store);
@@ -19,9 +19,13 @@ if ('serviceWorker' in navigator && process.env.NODE_ENV !== 'production') {
 } else if ('serviceWorker' in navigator) {
   const hadController = Boolean(navigator.serviceWorker.controller);
   let reloaded = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
+  navigator.serviceWorker.addEventListener('controllerchange', async () => {
     if (!hadController || reloaded) return;
     reloaded = true;
+    // Tras un deploy, el SW nuevo toma el control justo al abrir la app: el mismo momento en que el
+    // token vencido dispara el refresh. Recargar a mitad del POST pierde el refresh token nuevo
+    // (la API ya rotó el viejo) y el siguiente intento cierra todas las sesiones por reuso.
+    await whenRefreshIdle();
     window.location.reload();
   });
   window.addEventListener('load', () => {

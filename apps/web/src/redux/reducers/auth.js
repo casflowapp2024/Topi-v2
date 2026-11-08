@@ -32,7 +32,9 @@ const initialState = {
     isAuthenticated: null,
     user: null,
     user_extra_data: null,
-    login_type: null
+    login_type: null,
+    // true cuando la sesión se cerró sola (refresh rechazado): el Layout manda al login
+    session_expired: false
 }
 
 export default function Auth(state = initialState, action) {
@@ -104,6 +106,7 @@ export default function Auth(state = initialState, action) {
                 isAuthenticated: true,
                 token: localStorage.getItem('token'),
                 login_type: 'normal',
+                session_expired: false,
             }
         
         case ACTIVATION_SUCCESS:
@@ -135,7 +138,8 @@ export default function Auth(state = initialState, action) {
                 token :null,
                 isAuthenticated: false,
                 user: null,
-                login_type: null
+                login_type: null,
+                session_expired: Boolean(payload?.expired)
             }
         default:
             return state
