@@ -329,6 +329,70 @@ func (uh *UserHandler) Logout(ctx *gin.Context) {
 	handleSuccess(ctx, nil)
 }
 
+// verifyEmailRequest confirms the email with the code
+type verifyEmailRequest struct {
+	Code string `json:"code" binding:"required,len=6,numeric" example:"123456"`
+}
+
+// VerifyEmail godoc
+//
+//	@Summary		Confirm the email with the code
+//	@Description	New users get a code by email at signup. Nothing is blocked while the email is not verified.
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			verifyEmailRequest	body		verifyEmailRequest	true	"Code"
+//	@Success		200					{object}	response			"Email verified"
+//	@Failure		400					{object}	errorResponse		"Validation error or expired code"
+//	@Failure		401					{object}	errorResponse		"Wrong code"
+//	@Router			/users/email/verify [post]
+func (uh *UserHandler) VerifyEmail(ctx *gin.Context) {
+	var req verifyEmailRequest
+
+	userID, err := domain.GetAuthUserID(ctx, enums.AuthorizationPayloadKey)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	if err = ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	if err = uh.svc.VerifyEmail(ctx, *userID, req.Code, requestMeta(ctx)); err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	handleCustomSuccess(ctx, enums.ConfirmedUser)
+}
+
+// SendVerification godoc
+//
+//	@Summary		Send a new email verification code
+//	@Tags			Users
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	response		"Code sent (or already verified)"
+//	@Failure		429	{object}	errorResponse	"Too many requests"
+//	@Router			/users/email/verify/resend [post]
+func (uh *UserHandler) SendVerification(ctx *gin.Context) {
+	userID, err := domain.GetAuthUserID(ctx, enums.AuthorizationPayloadKey)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	if err = uh.svc.SendVerification(ctx, *userID, requestMeta(ctx)); err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	handleCustomSuccess(ctx, enums.ResentConfirmationCode)
+}
+
 // changePasswordRequest represents the request to change the password
 type changePasswordRequest struct {
 	CurrentPassword string `json:"current_password" binding:"required" example:"Password123!"`

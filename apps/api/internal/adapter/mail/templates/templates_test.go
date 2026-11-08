@@ -12,6 +12,7 @@ import (
 // sampleData has the data each template needs (the previews use it too)
 var sampleData = map[string]map[string]any{
 	"password_code": {"code": "482913", "minutes": 10},
+	"verify_email":  {"code": "730154", "minutes": 10},
 }
 
 // amount-like text ($ 1.234, 1.234.567) must never appear in a subject

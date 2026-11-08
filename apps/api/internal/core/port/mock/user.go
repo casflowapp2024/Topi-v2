@@ -323,6 +323,20 @@ func (mr *MockUserServiceMockRecorder) ResetPassword(ctx, email, code, password,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*MockUserService)(nil).ResetPassword), ctx, email, code, password, meta)
 }
 
+// SendVerification mocks base method.
+func (m *MockUserService) SendVerification(ctx context.Context, userID string, meta domain.RequestMeta) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendVerification", ctx, userID, meta)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendVerification indicates an expected call of SendVerification.
+func (mr *MockUserServiceMockRecorder) SendVerification(ctx, userID, meta interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendVerification", reflect.TypeOf((*MockUserService)(nil).SendVerification), ctx, userID, meta)
+}
+
 // SetInitialPassword mocks base method.
 func (m *MockUserService) SetInitialPassword(ctx context.Context, email, password string, meta domain.RequestMeta) (*domain.AuthTokens, error) {
 	m.ctrl.T.Helper()
@@ -351,4 +365,18 @@ func (m *MockUserService) UpdateUser(ctx *gin.Context, user domain.User) (*domai
 func (mr *MockUserServiceMockRecorder) UpdateUser(ctx, user interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*MockUserService)(nil).UpdateUser), ctx, user)
+}
+
+// VerifyEmail mocks base method.
+func (m *MockUserService) VerifyEmail(ctx context.Context, userID, code string, meta domain.RequestMeta) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VerifyEmail", ctx, userID, code, meta)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// VerifyEmail indicates an expected call of VerifyEmail.
+func (mr *MockUserServiceMockRecorder) VerifyEmail(ctx, userID, code, meta interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyEmail", reflect.TypeOf((*MockUserService)(nil).VerifyEmail), ctx, userID, code, meta)
 }

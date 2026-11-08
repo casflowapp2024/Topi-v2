@@ -65,6 +65,8 @@ func (r *Routes) UserRoutes() {
 		authUser.GET("/", r.UserHandler.GetUser)
 		authUser.PUT("/", r.UserHandler.UpdateUser)
 		authUser.PUT("/password", r.UserHandler.ChangePassword)
+		authUser.POST("/email/verify", r.UserHandler.VerifyEmail)
+		authUser.POST("/email/verify/resend", r.UserHandler.SendVerification)
 	}
 }
 

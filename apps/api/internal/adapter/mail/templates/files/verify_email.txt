@@ -1,0 +1,13 @@
+{{define "subject"}}Confirma tu correo en Topi{{end}}
+{{define "text"}}¡Hola! Gracias por crear tu cuenta en Topi.
+
+Para confirmar que este correo es tuyo, escribe este código en la app:
+
+{{.code}}
+
+Vence en {{.minutes}} minutos. Si venció, en la app puedes pedir otro.
+
+Si no creaste una cuenta en Topi, ignora este correo.
+
+— Topi
+{{.app_url}}{{end}}

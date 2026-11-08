@@ -33,6 +33,10 @@ type UserService interface {
 	ForgotPassword(ctx context.Context, email string, meta domain.RequestMeta) error
 	// ResetPassword sets a new password with the code, closes every session and logs in
 	ResetPassword(ctx context.Context, email, code, password string, meta domain.RequestMeta) (*domain.AuthTokens, error)
+	// SendVerification emails a code to confirm the email (nothing if it is already verified)
+	SendVerification(ctx context.Context, userID string, meta domain.RequestMeta) error
+	// VerifyEmail checks the code and marks the email as verified
+	VerifyEmail(ctx context.Context, userID, code string, meta domain.RequestMeta) error
 	Refresh(ctx context.Context, refreshToken string, meta domain.RequestMeta) (*domain.AuthTokens, error)
 	Logout(ctx context.Context, refreshToken string) error
 	ChangePassword(ctx context.Context, userID, currentPassword, newPassword string, meta domain.RequestMeta) (*domain.AuthTokens, error)

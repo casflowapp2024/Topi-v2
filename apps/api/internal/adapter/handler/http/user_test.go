@@ -245,3 +245,34 @@ func TestUserHandler_DeprecatedAndRemovedRoutes(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, postJSON(router, http.MethodPut, "/users/forgot-password/confirm", map[string]string{}).Code)
 	assert.Equal(t, http.StatusNotFound, postJSON(router, http.MethodGet, "/users/social-auth-url", nil).Code)
 }
+
+func TestUserHandler_VerifyEmail(t *testing.T) {
+	authed := func(method, path string, body any) *http.Request {
+		raw, _ := json.Marshal(body)
+		req := httptest.NewRequest(method, path, bytes.NewBuffer(raw))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer jwt")
+		return req
+	}
+
+	router, svc := newUserRouter(t)
+	svc.EXPECT().Authorize(gomock.Any(), "jwt").Return(&domain.TokenPayload{UserID: "u1", Groups: map[string]bool{}}, nil).AnyTimes()
+	svc.EXPECT().VerifyEmail(gomock.Any(), "u1", "123456", gomock.Any()).Return(nil)
+	svc.EXPECT().SendVerification(gomock.Any(), "u1", gomock.Any()).Return(domain.ErrLimitExceededException)
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, authed(http.MethodPost, "/users/email/verify", verifyEmailRequest{Code: "123456"}))
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, authed(http.MethodPost, "/users/email/verify", verifyEmailRequest{Code: "12"}))
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, authed(http.MethodPost, "/users/email/verify/resend", nil))
+	assert.Equal(t, http.StatusTooManyRequests, w.Code)
+
+	// without token
+	w = postJSON(router, http.MethodPost, "/users/email/verify", verifyEmailRequest{Code: "123456"})
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}

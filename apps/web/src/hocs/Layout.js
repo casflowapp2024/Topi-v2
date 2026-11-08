@@ -14,6 +14,7 @@ import Onboarding2 from './Onboarding2';
 import NextStepsPopover from '../components/onboarding2/NextStepsPopover';
 import InstallPwaModal from '../components/ui/InstallPwaModal';
 import Warnings from '../components/navigation/Warnings';
+import VerifyEmailBanner from '../components/navigation/VerifyEmailBanner';
 import PeriodSelector from '../components/navigation/PeriodSelector';
 import { connectEmailAction, wasPromptedThisSession, markPromptedThisSession } from '../components/conexions/emailConnection';
 import AccountSettings from '../containers/AccountSettings';
@@ -256,6 +257,7 @@ const Layout = ({
                 <div className="h-[53px] md:h-[62px] w-full"></div>
 
                 <Warnings />
+                <VerifyEmailBanner />
 
                 {user_extra_data.onboarding_completed === false && (
                   <Onboarding2 NextStepsPopoverOnboarding={NextStepsPopoverOnboarding} forceEmailStep={forceEmailStep} />

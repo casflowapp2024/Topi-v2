@@ -1,0 +1,10 @@
+{{define "content"}}
+<p style="margin:0 0 16px 0;font-size:18px;font-weight:700;color:#111827;">Confirma tu correo</p>
+<p style="margin:0 0 20px 0;color:#374151;">Gracias por crear tu cuenta en Topi. Para confirmar que este correo es tuyo, escribe este código en la app:</p>
+<p style="margin:0 0 20px 0;text-align:center;">
+  <span style="display:inline-block;padding:14px 22px;background:#eef0fd;border-radius:12px;font-size:30px;font-weight:800;letter-spacing:8px;color:#5266EB;font-family:'SFMono-Regular',Consolas,monospace;">{{.code}}</span>
+</p>
+<p style="margin:0 0 8px 0;color:#374151;">Vence en {{.minutes}} minutos. Si venció, en la app puedes pedir otro.</p>
+<p style="margin:0 0 20px 0;"><a href="{{.app_url}}/dashboard" style="color:#5266EB;font-weight:600;">Abrir Topi</a></p>
+<p style="margin:0;color:#6b7280;font-size:13px;">Si no creaste una cuenta en Topi, ignora este correo.</p>
+{{end}}

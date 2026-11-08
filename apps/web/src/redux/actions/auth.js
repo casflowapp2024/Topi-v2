@@ -391,6 +391,37 @@ export const reset_password = (email, code, password, confirm_password) => async
     }
 }
 
+// Verificar el correo (usuarios nuevos): no bloquea nada, solo quita el aviso
+const authedJSON = () => ({
+    headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+    }
+});
+
+export const verify_email = (code) => async dispatch => {
+    try {
+        const res = await axios.post(`${process.env.REACT_APP_API_URL}/users/email/verify`, JSON.stringify({ code }), authedJSON());
+        if (res.status === 200) {
+            await dispatch(load_user());
+            return true
+        }
+        return res.data.messages
+    } catch (err) {
+        return err.response?.data?.messages || ['network error']
+    }
+}
+
+export const resend_verification = () => async () => {
+    try {
+        const res = await axios.post(`${process.env.REACT_APP_API_URL}/users/email/verify/resend`, null, authedJSON());
+        if (res.status === 200) return true
+        return res.data.messages
+    } catch (err) {
+        return err.response?.data?.messages || ['network error']
+    }
+}
+
 // Cambiar contraseña (Ajustes > Perfil). La API cierra las demás sesiones y devuelve tokens nuevos.
 export const change_password = (current_password, password, confirm_password) => async dispatch => {
     const config = {

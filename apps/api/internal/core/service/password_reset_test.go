@@ -334,3 +334,88 @@ func TestUserService_ResetPassword(t *testing.T) {
 		assert.ErrorIs(t, err, domain.ErrLimitExceededException)
 	})
 }
+
+// ---------------------------------------------------------------------------
+// Email verification (new users; existing ones are verified by the migration)
+// ---------------------------------------------------------------------------
+
+func newUser() *domain.User {
+	return &domain.User{ID: "new-1", Email: "nuevo@example.com", Role: domain.RoleUser, Verified: true,
+		PasswordHash: strPtr("hash:" + validPassword)}
+}
+
+func TestUserService_RegisterSendsVerificationCode(t *testing.T) {
+	env := newResetEnv(t)
+	env.repo.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Return(nil)
+
+	_, err := env.svc.Register(context.Background(), &domain.User{Email: "Nuevo@Example.com", Password: validPassword}, meta)
+
+	require.NoError(t, err)
+	require.Len(t, env.mail.secrets, 1)
+	assert.Equal(t, domain.TemplateVerifyEmail, env.mail.secrets[0].email.Template)
+	assert.Equal(t, "nuevo@example.com", env.mail.secrets[0].email.To)
+	assert.Equal(t, domain.CodeVerifyEmail, env.codes.codes[0].Purpose)
+}
+
+func TestUserService_VerifyEmail(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("resend + verify", func(t *testing.T) {
+		env := newResetEnv(t)
+		env.repo.EXPECT().GetUserByID(gomock.Any(), "new-1").Return(newUser(), nil).Times(2)
+		env.repo.EXPECT().MarkEmailVerified(gomock.Any(), "new-1").Return(nil)
+
+		require.NoError(t, env.svc.SendVerification(ctx, "new-1", meta))
+		code := env.mail.lastCode(t)
+
+		require.NoError(t, env.svc.VerifyEmail(ctx, "new-1", code, meta))
+		assert.Contains(t, env.events.names(), domain.EventEmailVerified)
+	})
+
+	t.Run("wrong code", func(t *testing.T) {
+		env := newResetEnv(t)
+		env.repo.EXPECT().GetUserByID(gomock.Any(), "new-1").Return(newUser(), nil).Times(2)
+		require.NoError(t, env.svc.SendVerification(ctx, "new-1", meta))
+		code := env.mail.lastCode(t)
+		wrong := "000000"
+		if code == wrong {
+			wrong = "111111"
+		}
+
+		err := env.svc.VerifyEmail(ctx, "new-1", wrong, meta)
+		assert.ErrorIs(t, err, domain.ErrCodeMismatchException)
+	})
+
+	t.Run("a reset code does not verify the email (separate purposes)", func(t *testing.T) {
+		env := newResetEnv(t)
+		user := newUser()
+		env.repo.EXPECT().GetUserByEmail(gomock.Any(), "nuevo@example.com").Return(user, nil)
+		require.NoError(t, env.svc.ForgotPassword(ctx, "nuevo@example.com", meta))
+		resetCode := env.mail.lastCode(t)
+
+		env.repo.EXPECT().GetUserByID(gomock.Any(), "new-1").Return(user, nil)
+		err := env.svc.VerifyEmail(ctx, "new-1", resetCode, meta)
+		assert.ErrorIs(t, err, domain.ErrCodeMismatchException)
+	})
+
+	t.Run("already verified: nothing is sent", func(t *testing.T) {
+		env := newResetEnv(t)
+		user := newUser()
+		verified := env.now
+		user.EmailVerifiedAt = &verified
+		env.repo.EXPECT().GetUserByID(gomock.Any(), "new-1").Return(user, nil).Times(2)
+
+		require.NoError(t, env.svc.SendVerification(ctx, "new-1", meta))
+		require.NoError(t, env.svc.VerifyEmail(ctx, "new-1", "123456", meta))
+		assert.Empty(t, env.mail.secrets)
+	})
+
+	t.Run("resend is limited", func(t *testing.T) {
+		env := newResetEnv(t)
+		env.codeLimiter.blocked["verify:code:nuevo@example.com"] = true
+		env.repo.EXPECT().GetUserByID(gomock.Any(), "new-1").Return(newUser(), nil)
+
+		err := env.svc.SendVerification(ctx, "new-1", meta)
+		assert.ErrorIs(t, err, domain.ErrLimitExceededException)
+	})
+}

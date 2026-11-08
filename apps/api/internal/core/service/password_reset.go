@@ -195,3 +195,52 @@ func newCode() (string, error) {
 	}
 	return fmt.Sprintf("%06d", n.Int64()), nil
 }
+
+// SendVerification emails a code to confirm the email of the user (new users). Already verified = nothing.
+func (us *UserService) SendVerification(ctx context.Context, userID string, meta domain.RequestMeta) error {
+	user, err := us.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if user.EmailVerifiedAt != nil {
+		return nil
+	}
+
+	if !us.allow("verify-send", user.Email, meta) || !us.allowCode("verify", user.Email) {
+		return domain.ErrLimitExceededException
+	}
+	if us.mail == nil || us.codes == nil {
+		return domain.ErrInternal
+	}
+
+	return us.sendCode(ctx, user, domain.CodeVerifyEmail, domain.TemplateVerifyEmail)
+}
+
+// VerifyEmail checks the verification code of the user and marks the email as verified
+func (us *UserService) VerifyEmail(ctx context.Context, userID, code string, meta domain.RequestMeta) error {
+	user, err := us.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if user.EmailVerifiedAt != nil {
+		return nil
+	}
+
+	if !us.allow("verify", user.Email, meta) {
+		return domain.ErrLimitExceededException
+	}
+	if us.codes == nil {
+		return domain.ErrInternal
+	}
+
+	if err = us.checkCode(ctx, user.ID, domain.CodeVerifyEmail, code); err != nil {
+		return err
+	}
+
+	if err = us.repo.MarkEmailVerified(ctx, user.ID); err != nil {
+		return err
+	}
+
+	us.record(ctx, user.ID, user.Email, domain.EventEmailVerified, meta)
+	return nil
+}

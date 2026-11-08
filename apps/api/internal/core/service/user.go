@@ -73,7 +73,7 @@ func NewUserService(
 	}
 }
 
-// Register creates a user with a password and logs it in (there is no email verification)
+// Register creates a user with a password, logs it in and emails a verification code (not blocking)
 func (us *UserService) Register(ctx context.Context, user *domain.User, meta domain.RequestMeta) (*domain.AuthTokens, error) {
 	user.Email = domain.NormalizeEmail(user.Email)
 
@@ -103,6 +103,13 @@ func (us *UserService) Register(ctx context.Context, user *domain.User, meta dom
 	}
 
 	us.record(ctx, user.ID, user.Email, domain.EventSignup, meta)
+
+	// verification code by email; it never blocks the signup (the user can ask for another one)
+	if us.mail != nil && us.codes != nil {
+		if err := us.sendCode(ctx, user, domain.CodeVerifyEmail, domain.TemplateVerifyEmail); err != nil {
+			slog.Error("could not send the verification code", "user_id", user.ID, "error", err)
+		}
+	}
 
 	return us.issueTokens(ctx, user)
 }
