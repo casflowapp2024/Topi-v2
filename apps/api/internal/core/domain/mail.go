@@ -3,6 +3,7 @@ package domain
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -99,4 +100,26 @@ type OutboxEmail struct {
 	SentAt     *time.Time
 	// RecipientStatus is users.email_status of UserID (ok when there is no user)
 	RecipientStatus string
+}
+
+// ConnectionAlertCooldown: at most one "reconnect your email" alert per connection in this window
+const ConnectionAlertCooldown = 7 * 24 * time.Hour
+
+// ConnectionAlert is who to tell that a mail connection stopped working
+type ConnectionAlert struct {
+	UserID          string
+	UserEmail       string
+	ConnectionEmail string
+	Provider        string
+}
+
+// ProviderLabel is the name shown to the user
+func ProviderLabel(provider string) string {
+	switch strings.ToLower(provider) {
+	case "gmail":
+		return "Gmail"
+	case "outlook":
+		return "Outlook"
+	}
+	return provider
 }

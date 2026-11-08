@@ -3,6 +3,7 @@ package port
 import (
 	"cash-flow/internal/core/domain"
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -22,6 +23,9 @@ type EmailRepository interface {
 	UpdateEmail(ctx context.Context, email *domain.Email) error
 	DeleteEmailTrx(ctx context.Context, tx pgx.Tx, userID string, id uint64) error
 	SaveEmailError(ctx context.Context, emailID uint64, errorMsg string) error
+	// ClaimConnectionAlert marks alert_sent_at when the connection has an error, the user wants these
+	// alerts and none was sent in the cooldown (atomic). ok=false means "do not send".
+	ClaimConnectionAlert(ctx context.Context, emailID uint64, cooldown time.Duration) (*domain.ConnectionAlert, bool, error)
 }
 
 type EmailService interface {

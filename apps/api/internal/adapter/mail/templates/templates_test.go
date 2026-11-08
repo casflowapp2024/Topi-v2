@@ -13,6 +13,8 @@ import (
 var sampleData = map[string]map[string]any{
 	"password_code": {"code": "482913", "minutes": 10},
 	"verify_email":  {"code": "730154", "minutes": 10},
+	"connection_down": {"connection_email": "ana.banco@gmail.com", "provider": "Gmail",
+		"unsubscribe_url": "https://api.topi.test/mail/unsubscribe?t=abc"},
 }
 
 // amount-like text ($ 1.234, 1.234.567) must never appear in a subject
@@ -83,4 +85,17 @@ func withCommon(data map[string]any) map[string]any {
 		out[key] = value
 	}
 	return out
+}
+
+func TestConnectionDownHasUnsubscribeAndLink(t *testing.T) {
+	r, err := New()
+	require.NoError(t, err)
+
+	out, err := r.Render("connection_down", withCommon(sampleData["connection_down"]))
+	require.NoError(t, err)
+
+	assert.Contains(t, out.HTML, "https://www.topi.test/dashboard?settings=connections")
+	assert.Contains(t, out.HTML, "ana.banco@gmail.com")
+	assert.Contains(t, out.HTML, "Dejar de recibir estos correos")
+	assert.Contains(t, out.Text, "https://api.topi.test/mail/unsubscribe?t=abc")
 }

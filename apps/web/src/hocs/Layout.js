@@ -17,7 +17,7 @@ import Warnings from '../components/navigation/Warnings';
 import VerifyEmailBanner from '../components/navigation/VerifyEmailBanner';
 import PeriodSelector from '../components/navigation/PeriodSelector';
 import { connectEmailAction, wasPromptedThisSession, markPromptedThisSession } from '../components/conexions/emailConnection';
-import AccountSettings from '../containers/AccountSettings';
+import AccountSettings, { SETTINGS_TABS } from '../containers/AccountSettings';
 import PageContainer from '../components/ui/PageContainer';
 import UserMenu from '../components/ui/UserMenu';
 import { themePreference, useResolvedDark } from '../components/ui/theme';
@@ -85,6 +85,15 @@ const Layout = ({
   const [userDataRequested, setUserDataRequested] = useState(false);
   const [openNextSteps, setOpenNextSteps] = useState(false);
   const [forceEmailStep, setForceEmailStep] = useState(false);
+
+  // Enlaces de los correos (p. ej. "reconecta tu correo"): /dashboard?settings=connections abre Ajustes
+  useEffect(() => {
+    const tab = new URLSearchParams(location.search).get('settings');
+    if (tab && SETTINGS_TABS.some(t => t.id === tab)) {
+      open_settings_modal(tab);
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pathSegments = location.pathname.split('/').filter(Boolean);
   const activeTab = pathSegments.length > 1 ? pathSegments[1] : 'general';

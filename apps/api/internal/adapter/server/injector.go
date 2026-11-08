@@ -163,6 +163,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 
 	emailRepository := dbrepository.NewEmailRepository(db)
 	emailService := service.NewEmailService(emailRepository, emailResource, accountRepo, accountService, transactionManager)
+	emailService.SetMail(mailService)
 	emailHandler := http.NewEmailHandler(emailService)
 
 	// Initialization Dev

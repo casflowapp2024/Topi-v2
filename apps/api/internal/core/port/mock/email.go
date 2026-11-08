@@ -8,6 +8,7 @@ import (
 	domain "cash-flow/internal/core/domain"
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 	pgx "github.com/jackc/pgx/v5"
@@ -101,6 +102,22 @@ func NewMockEmailRepository(ctrl *gomock.Controller) *MockEmailRepository {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockEmailRepository) EXPECT() *MockEmailRepositoryMockRecorder {
 	return m.recorder
+}
+
+// ClaimConnectionAlert mocks base method.
+func (m *MockEmailRepository) ClaimConnectionAlert(ctx context.Context, emailID uint64, cooldown time.Duration) (*domain.ConnectionAlert, bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClaimConnectionAlert", ctx, emailID, cooldown)
+	ret0, _ := ret[0].(*domain.ConnectionAlert)
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ClaimConnectionAlert indicates an expected call of ClaimConnectionAlert.
+func (mr *MockEmailRepositoryMockRecorder) ClaimConnectionAlert(ctx, emailID, cooldown interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClaimConnectionAlert", reflect.TypeOf((*MockEmailRepository)(nil).ClaimConnectionAlert), ctx, emailID, cooldown)
 }
 
 // DeleteEmailTrx mocks base method.
