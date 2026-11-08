@@ -1,11 +1,12 @@
 package enums
 
 const (
-	EmailTableName  = "emails"
-	EmailJobsTable  = "email_jobs"
-	GmailStateToken = "state-token"
-	Gmail           = "gmail"
-	Outlook         = "outlook"
+	EmailTableName   = "emails"
+	EmailJobsTable   = "email_jobs"
+	EmailOutboxTable = "email_outbox"
+	GmailStateToken  = "state-token"
+	Gmail            = "gmail"
+	Outlook          = "outlook"
 )
 
 // Operation constants for logging

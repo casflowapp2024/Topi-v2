@@ -10,13 +10,19 @@ import (
 	"cash-flow/internal/adapter/email/jobqueue"
 	"cash-flow/internal/adapter/email/outlook"
 	"cash-flow/internal/adapter/handler/http"
+	"cash-flow/internal/adapter/mail/logmailer"
+	"cash-flow/internal/adapter/mail/resend"
+	"cash-flow/internal/adapter/mail/templates"
 	"cash-flow/internal/adapter/ratelimit"
 	"cash-flow/internal/adapter/storage/postgres"
 	dbrepository "cash-flow/internal/adapter/storage/postgres/repository"
 	dbtransaction "cash-flow/internal/adapter/storage/postgres/transaction"
+	"cash-flow/internal/core/port"
 	"cash-flow/internal/core/service"
+	"cash-flow/internal/enums"
 	"context"
 	"log/slog"
+	"os"
 	"time"
 )
 
@@ -46,6 +52,10 @@ type Handlers struct {
 
 type Resources struct {
 	DB *postgres.DB
+	// Mail processes email_outbox in background (started by main)
+	Mail *service.MailOutboxService
+	// MailInterval is how often the outbox is processed
+	MailInterval time.Duration
 }
 
 func NewInjector(settings *config.Configuration) *Injector {
@@ -59,6 +69,9 @@ func NewInjector(settings *config.Configuration) *Injector {
 
 	// Migrate database
 	db.Migrate()
+
+	// Mail: every email goes through the Mailer port and email_outbox
+	mailService := newMailService(settings, db)
 
 	// Transaction Manager
 	transactionManager := dbtransaction.NewTransactionManager(db)
@@ -182,7 +195,42 @@ func NewInjector(settings *config.Configuration) *Injector {
 			CategoryInitialization: InitHandler,
 		},
 		Resources: &Resources{
-			DB: db,
+			DB:           db,
+			Mail:         mailService,
+			MailInterval: settings.Mail.OutboxInterval,
 		},
 	}
+}
+
+// newMailService wires the mailer chosen by MAIL_PROVIDER (log by default: nothing is sent)
+func newMailService(settings *config.Configuration, db *postgres.DB) *service.MailOutboxService {
+	renderer, err := templates.New()
+	if err != nil {
+		slog.Error("mail templates are broken", "error", err)
+		os.Exit(1)
+	}
+
+	var mailer port.Mailer
+	switch settings.Mail.Provider {
+	case config.MailProviderResend:
+		mailer = resend.New(settings.Mail.ResendAPIKey, "")
+	default:
+		// only local logs the body (it may carry a code); development/prod log metadata only
+		mailer = logmailer.New(settings.App.Env == enums.Local)
+	}
+	slog.Info("mail provider", "provider", settings.Mail.Provider, "only_to", len(settings.Mail.OnlyTo) > 0)
+
+	return service.NewMailService(
+		dbrepository.NewOutboxRepository(db),
+		mailer,
+		renderer,
+		service.MailSettings{
+			From:       settings.Mail.From,
+			ReplyTo:    settings.Mail.ReplyTo,
+			DailyQuota: settings.Mail.DailyQuota,
+			OnlyTo:     settings.Mail.OnlyTo,
+			AppBaseURL: settings.Mail.AppBaseURL,
+			APIBaseURL: settings.Mail.APIBaseURL,
+		},
+	)
 }

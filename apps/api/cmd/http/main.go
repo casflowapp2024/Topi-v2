@@ -31,6 +31,7 @@ import (
 	"cash-flow/internal/adapter/logger"
 	"cash-flow/internal/adapter/server"
 	"cash-flow/internal/core/domain"
+	"context"
 	"log/slog"
 	"os"
 )
@@ -51,6 +52,9 @@ func main() {
 
 	// Set logger
 	logger.Set(settings.App)
+
+	// Send the emails of the outbox in background
+	go injector.Resources.Mail.Run(context.Background(), injector.Resources.MailInterval)
 
 	// Start the HTTP server
 	router, listenAddr := http.NewRouter(settings.HTTP)

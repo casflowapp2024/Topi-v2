@@ -29,6 +29,23 @@ type (
 		Auth    *Auth
 		Gmail   *Gmail
 		Outlook *Outlook
+		Mail    *Mail
+	}
+	// Mail contains the email sending settings (plan/23-correo-transaccional.md)
+	Mail struct {
+		// Provider is "log" (default: writes to the log, sends nothing) or "resend"
+		Provider            string
+		ResendAPIKey        string
+		ResendWebhookSecret string
+		From                string
+		ReplyTo             string
+		DailyQuota          int
+		// OnlyTo is the allow list of recipients; required with resend outside production
+		OnlyTo     []string
+		AppBaseURL string
+		APIBaseURL string
+		// OutboxInterval is how often the outbox is processed
+		OutboxInterval time.Duration
 	}
 	// App contains all the environment variables for the application
 	App struct {
@@ -170,6 +187,7 @@ func New() *Configuration {
 					Timeout: utils.GetTimeDuration(os.Getenv("OUTLOOK_LOGIN_TIMEOUT")),
 				},
 			},
+			newMail(),
 		}
 	})
 
@@ -204,6 +222,54 @@ func newAuth() *Auth {
 	return auth
 }
 
+// Mail providers (MAIL_PROVIDER)
+const (
+	MailProviderLog    = "log"
+	MailProviderResend = "resend"
+)
+
+func newMail() *Mail {
+	return &Mail{
+		Provider:            strings.ToLower(getEnvOrDefault("MAIL_PROVIDER", MailProviderLog)),
+		ResendAPIKey:        os.Getenv("RESEND_API_KEY"),
+		ResendWebhookSecret: os.Getenv("RESEND_WEBHOOK_SECRET"),
+		From:                getEnvOrDefault("MAIL_FROM", "Topi <hola@mail.topi.cash>"),
+		ReplyTo:             os.Getenv("MAIL_REPLY_TO"),
+		DailyQuota:          int(getEnvAsInt32("MAIL_DAILY_QUOTA", 100)),
+		OnlyTo:              getEnvList("MAIL_ONLY_TO"),
+		AppBaseURL:          strings.TrimRight(getEnvOrDefault("APP_BASE_URL", "http://localhost:3000"), "/"),
+		APIBaseURL:          strings.TrimRight(getEnvOrDefault("API_BASE_URL", "http://localhost:8080"), "/"),
+		OutboxInterval:      getEnvAsDuration("MAIL_OUTBOX_INTERVAL", 30*time.Second),
+	}
+}
+
+// validateMail: resend needs its key and, outside production, MAIL_ONLY_TO (privacy)
+func (c *Configuration) validateMail() error {
+	m := c.Mail
+	switch m.Provider {
+	case MailProviderLog:
+		return nil
+	case MailProviderResend:
+	default:
+		return fmt.Errorf("MAIL_PROVIDER must be %q or %q", MailProviderLog, MailProviderResend)
+	}
+
+	if m.ResendAPIKey == "" {
+		return errors.New("RESEND_API_KEY is required with MAIL_PROVIDER=resend")
+	}
+	if m.From == "" || m.AppBaseURL == "" || m.APIBaseURL == "" {
+		return errors.New("MAIL_FROM, APP_BASE_URL and API_BASE_URL are required with MAIL_PROVIDER=resend")
+	}
+	if c.App.Env != enums.Production && len(m.OnlyTo) == 0 {
+		return errors.New("MAIL_ONLY_TO is required with MAIL_PROVIDER=resend outside production")
+	}
+	if m.DailyQuota <= 0 {
+		return errors.New("MAIL_DAILY_QUOTA must be positive")
+	}
+
+	return nil
+}
+
 // Validate checks the settings that must be correct before starting the API
 func (c *Configuration) Validate() error {
 	if len(c.Auth.JWTSecret) < minJWTSecretLength {
@@ -214,7 +280,7 @@ func (c *Configuration) Validate() error {
 		return fmt.Errorf("INITIAL_PASSWORD_UNTIL: %w", c.Auth.initialPasswordErr)
 	}
 
-	return nil
+	return c.validateMail()
 }
 
 // parseDeadline accepts RFC3339 ("2026-12-31T23:59:59-05:00") or a date ("2026-12-31",
