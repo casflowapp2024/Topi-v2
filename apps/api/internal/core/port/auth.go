@@ -32,3 +32,15 @@ type PasswordHasher interface {
 type RateLimiter interface {
 	Allow(key string) bool
 }
+
+// AuthCodeRepository stores one-time codes (only the hash) in auth_codes
+type AuthCodeRepository interface {
+	// Create stores a new code and invalidates the previous active codes of the same purpose
+	Create(ctx context.Context, userID, purpose, codeHash string, expiresAt time.Time) error
+	// GetLatest returns the latest unused code of the purpose, or domain.ErrDataNotFound
+	GetLatest(ctx context.Context, userID, purpose string) (*domain.AuthCode, error)
+	// IncrementAttempts adds one attempt and returns the new count
+	IncrementAttempts(ctx context.Context, id int64) (int, error)
+	// MarkUsed marks the code as used; false when it was already used (atomic)
+	MarkUsed(ctx context.Context, id int64) (bool, error)
+}

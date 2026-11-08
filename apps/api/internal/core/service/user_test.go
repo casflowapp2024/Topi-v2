@@ -283,105 +283,27 @@ func TestUserService_Login(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// SetInitialPassword (the most sensitive flow)
+// SetInitialPassword: closed (users without password recover it with a code by email)
 // ---------------------------------------------------------------------------
 
 func TestUserService_SetInitialPassword(t *testing.T) {
-	ctx := context.Background()
-
-	t.Run("creates the password of a migrated account and logs it in", func(t *testing.T) {
+	t.Run("is closed even for an account without password", func(t *testing.T) {
 		env := newAuthTestEnv(t, AuthSettings{})
-		env.repo.EXPECT().GetUserByEmail(gomock.Any(), "user@example.com").Return(migratedUser(), nil)
-		env.repo.EXPECT().SetInitialPassword(gomock.Any(), "legacy-sub-1", "hash:"+validPassword).Return(nil)
+		// no repository call: the account is not even looked up
 
-		tokens, err := env.svc.SetInitialPassword(ctx, " User@Example.com ", validPassword, meta)
-
-		require.NoError(t, err)
-		assert.Equal(t, "access-token", tokens.AccessToken)
-		assert.Equal(t, 1, env.refresh.active("legacy-sub-1"))
-		require.Len(t, env.events.events, 1)
-		event := env.events.events[0]
-		assert.Equal(t, domain.EventInitialPasswordSet, event.Event)
-		assert.Equal(t, "legacy-sub-1", event.UserID)
-		assert.Equal(t, "user@example.com", event.Email)
-		assert.Equal(t, "10.0.0.1", event.IP)
-		assert.Equal(t, "test", event.UserAgent)
-	})
-
-	t.Run("fails when the account already has a password", func(t *testing.T) {
-		env := newAuthTestEnv(t, AuthSettings{})
-		env.repo.EXPECT().GetUserByEmail(gomock.Any(), "user@example.com").Return(userWithPassword("Other123!"), nil)
-		// SetInitialPassword must not be called
-
-		_, err := env.svc.SetInitialPassword(ctx, "user@example.com", validPassword, meta)
+		_, err := env.svc.SetInitialPassword(context.Background(), " User@Example.com ", validPassword, meta)
 
 		assert.ErrorIs(t, err, domain.ErrNotAuthorizedException)
 		assert.Equal(t, []string{domain.EventInitialPasswordFail}, env.events.names())
 		assert.Equal(t, 0, env.refresh.active("legacy-sub-1"))
 	})
 
-	t.Run("fails for an unknown email without revealing it", func(t *testing.T) {
+	t.Run("rate limited", func(t *testing.T) {
 		env := newAuthTestEnv(t, AuthSettings{})
-		env.repo.EXPECT().GetUserByEmail(gomock.Any(), "nobody@example.com").Return(nil, domain.ErrUserNotFoundException)
+		env.limiter.blocked["initial-password:ip:10.0.0.1"] = true
 
-		_, err := env.svc.SetInitialPassword(ctx, "nobody@example.com", validPassword, meta)
-
-		assert.ErrorIs(t, err, domain.ErrNotAuthorizedException)
-		assert.Equal(t, []string{domain.EventInitialPasswordFail}, env.events.names())
-	})
-
-	t.Run("fails when INITIAL_PASSWORD_UNTIL already passed", func(t *testing.T) {
-		until := time.Date(2026, 10, 19, 23, 59, 59, 0, time.UTC)
-		env := newAuthTestEnv(t, AuthSettings{InitialPasswordUntil: &until})
-		// no repository call is expected
-
-		_, err := env.svc.SetInitialPassword(ctx, "user@example.com", validPassword, meta)
-
-		assert.ErrorIs(t, err, domain.ErrNotAuthorizedException)
-		assert.Equal(t, []string{domain.EventInitialPasswordFail}, env.events.names())
-	})
-
-	t.Run("works before INITIAL_PASSWORD_UNTIL", func(t *testing.T) {
-		until := time.Date(2026, 12, 31, 23, 59, 59, 0, time.UTC)
-		env := newAuthTestEnv(t, AuthSettings{InitialPasswordUntil: &until})
-		env.repo.EXPECT().GetUserByEmail(gomock.Any(), "user@example.com").Return(migratedUser(), nil)
-		env.repo.EXPECT().SetInitialPassword(gomock.Any(), "legacy-sub-1", gomock.Any()).Return(nil)
-
-		_, err := env.svc.SetInitialPassword(ctx, "user@example.com", validPassword, meta)
-
-		assert.NoError(t, err)
-	})
-
-	t.Run("loses the race against another request", func(t *testing.T) {
-		env := newAuthTestEnv(t, AuthSettings{})
-		env.repo.EXPECT().GetUserByEmail(gomock.Any(), "user@example.com").Return(migratedUser(), nil)
-		env.repo.EXPECT().SetInitialPassword(gomock.Any(), "legacy-sub-1", gomock.Any()).Return(domain.ErrNotAuthorizedException)
-
-		_, err := env.svc.SetInitialPassword(ctx, "user@example.com", validPassword, meta)
-
-		assert.ErrorIs(t, err, domain.ErrNotAuthorizedException)
-		assert.Equal(t, []string{domain.EventInitialPasswordFail}, env.events.names())
-		assert.Equal(t, 0, env.refresh.active("legacy-sub-1"))
-	})
-
-	t.Run("validates the password policy before looking up the account", func(t *testing.T) {
-		env := newAuthTestEnv(t, AuthSettings{})
-
-		_, err := env.svc.SetInitialPassword(ctx, "user@example.com", "weakpassword", meta)
-
-		assert.ErrorIs(t, err, domain.ErrInvalidPasswordException)
-	})
-
-	t.Run("rate limited by IP and by email", func(t *testing.T) {
-		for _, key := range []string{"initial-password:ip:10.0.0.1", "initial-password:email:user@example.com"} {
-			env := newAuthTestEnv(t, AuthSettings{})
-			env.limiter.blocked[key] = true
-
-			_, err := env.svc.SetInitialPassword(ctx, "user@example.com", validPassword, meta)
-
-			assert.ErrorIs(t, err, domain.ErrLimitExceededException, key)
-			assert.Empty(t, env.events.events)
-		}
+		_, err := env.svc.SetInitialPassword(context.Background(), "user@example.com", validPassword, meta)
+		assert.ErrorIs(t, err, domain.ErrLimitExceededException)
 	})
 }
 

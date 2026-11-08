@@ -117,7 +117,35 @@ const (
 	EventPasswordChanged     = "password_changed"
 	EventAdminReset          = "admin_reset"
 	EventRefreshReuse        = "refresh_reuse"
+	EventResetRequested      = "password_reset_requested"
+	EventResetOK             = "password_reset"
+	EventResetFail           = "password_reset_fail"
+	EventEmailVerified       = "email_verified"
 )
+
+// One-time codes (auth_codes.purpose)
+const (
+	CodePasswordReset = "password_reset"
+	CodeVerifyEmail   = "verify_email"
+)
+
+// Rules of the one-time codes
+const (
+	CodeTTL         = 10 * time.Minute
+	CodeMaxAttempts = 5
+)
+
+// AuthCode is a one-time code sent by email; only its hash is stored
+type AuthCode struct {
+	ID        int64
+	UserID    string
+	Purpose   string
+	CodeHash  string
+	Attempts  int
+	ExpiresAt time.Time
+	UsedAt    *time.Time
+	CreatedAt time.Time
+}
 
 // AuthEvent is an audit record of an authentication action
 type AuthEvent struct {

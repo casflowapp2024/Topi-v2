@@ -99,6 +99,8 @@ func NewInjector(settings *config.Configuration) *Injector {
 			InternalAPIKey:       settings.Auth.InternalAPIKey,
 		},
 	)
+	// codes by email: at most 3 per email every 15 minutes (plus the general limit per IP)
+	userService.SetMail(mailService, dbrepository.NewAuthCodeRepository(db), ratelimit.NewMemory(3, 15*time.Minute))
 	userHandler := http.NewUserHandler(userService)
 
 	// UserExtra

@@ -220,3 +220,85 @@ func (mr *MockRateLimiterMockRecorder) Allow(key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Allow", reflect.TypeOf((*MockRateLimiter)(nil).Allow), key)
 }
+
+// MockAuthCodeRepository is a mock of AuthCodeRepository interface.
+type MockAuthCodeRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockAuthCodeRepositoryMockRecorder
+}
+
+// MockAuthCodeRepositoryMockRecorder is the mock recorder for MockAuthCodeRepository.
+type MockAuthCodeRepositoryMockRecorder struct {
+	mock *MockAuthCodeRepository
+}
+
+// NewMockAuthCodeRepository creates a new mock instance.
+func NewMockAuthCodeRepository(ctrl *gomock.Controller) *MockAuthCodeRepository {
+	mock := &MockAuthCodeRepository{ctrl: ctrl}
+	mock.recorder = &MockAuthCodeRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockAuthCodeRepository) EXPECT() *MockAuthCodeRepositoryMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method.
+func (m *MockAuthCodeRepository) Create(ctx context.Context, userID, purpose, codeHash string, expiresAt time.Time) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, userID, purpose, codeHash, expiresAt)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockAuthCodeRepositoryMockRecorder) Create(ctx, userID, purpose, codeHash, expiresAt interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockAuthCodeRepository)(nil).Create), ctx, userID, purpose, codeHash, expiresAt)
+}
+
+// GetLatest mocks base method.
+func (m *MockAuthCodeRepository) GetLatest(ctx context.Context, userID, purpose string) (*domain.AuthCode, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLatest", ctx, userID, purpose)
+	ret0, _ := ret[0].(*domain.AuthCode)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLatest indicates an expected call of GetLatest.
+func (mr *MockAuthCodeRepositoryMockRecorder) GetLatest(ctx, userID, purpose interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatest", reflect.TypeOf((*MockAuthCodeRepository)(nil).GetLatest), ctx, userID, purpose)
+}
+
+// IncrementAttempts mocks base method.
+func (m *MockAuthCodeRepository) IncrementAttempts(ctx context.Context, id int64) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IncrementAttempts", ctx, id)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IncrementAttempts indicates an expected call of IncrementAttempts.
+func (mr *MockAuthCodeRepositoryMockRecorder) IncrementAttempts(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementAttempts", reflect.TypeOf((*MockAuthCodeRepository)(nil).IncrementAttempts), ctx, id)
+}
+
+// MarkUsed mocks base method.
+func (m *MockAuthCodeRepository) MarkUsed(ctx context.Context, id int64) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkUsed", ctx, id)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MarkUsed indicates an expected call of MarkUsed.
+func (mr *MockAuthCodeRepositoryMockRecorder) MarkUsed(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkUsed", reflect.TypeOf((*MockAuthCodeRepository)(nil).MarkUsed), ctx, id)
+}

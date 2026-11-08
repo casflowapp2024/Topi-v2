@@ -114,7 +114,7 @@ type loginRequest struct {
 // Login godoc
 //
 //	@Summary		Login and get an access token
-//	@Description	Logs in with email and password. If the account has no password yet (migrated users) it returns 403 "user needs to reset the password": use /users/set-initial-password.
+//	@Description	Logs in with email and password. If the account has no password yet (migrated users) it returns 403 "user needs to reset the password": use /users/password/forgot and /users/password/reset.
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
@@ -145,6 +145,84 @@ func (uh *UserHandler) Login(ctx *gin.Context) {
 	handleSuccess(ctx, newAuthResponse(tokens))
 }
 
+// forgotPasswordRequest asks for a code to create a new password
+type forgotPasswordRequest struct {
+	Email string `json:"email" binding:"required,email" example:"test@example.com"`
+}
+
+// ForgotPassword godoc
+//
+//	@Summary		Send a code to recover (or create) the password
+//	@Description	Sends a 6 digit code valid for 10 minutes. The answer is the same whether the email is registered or not. Also for accounts without a password (migrated).
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Param			forgotPasswordRequest	body		forgotPasswordRequest	true	"Email"
+//	@Success		200						{object}	response				"If the email is registered a code was sent"
+//	@Failure		400						{object}	errorResponse			"Validation error"
+//	@Failure		429						{object}	errorResponse			"Too many requests"
+//	@Router			/users/password/forgot [post]
+func (uh *UserHandler) ForgotPassword(ctx *gin.Context) {
+	var req forgotPasswordRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	if err := uh.svc.ForgotPassword(ctx, req.Email, requestMeta(ctx)); err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	handleCustomSuccess(ctx, enums.ForgotPassword)
+}
+
+// resetPasswordRequest sets a new password with the code sent by email
+type resetPasswordRequest struct {
+	Email           string `json:"email" binding:"required,email" example:"test@example.com"`
+	Code            string `json:"code" binding:"required,len=6,numeric" example:"123456"`
+	Password        string `json:"password" binding:"required,min=8,max=40" example:"Password123!"`
+	ConfirmPassword string `json:"confirm_password" binding:"required,min=8,max=40" example:"Password123!"`
+}
+
+// ResetPassword godoc
+//
+//	@Summary		Set a new password with the code sent by email
+//	@Description	Checks the code (10 minutes, 5 attempts), sets the password, closes every other session and logs in.
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Param			resetPasswordRequest	body		resetPasswordRequest			true	"Email, code and new password"
+//	@Success		200						{object}	response{data=authResponse}		"Password updated and logged in"
+//	@Failure		400						{object}	errorResponse					"Validation error or expired code (ask for a new one)"
+//	@Failure		401						{object}	errorResponse					"Wrong code or password does not meet the requirements"
+//	@Failure		429						{object}	errorResponse					"Too many requests"
+//	@Router			/users/password/reset [post]
+func (uh *UserHandler) ResetPassword(ctx *gin.Context) {
+	var req resetPasswordRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	if err := domain.ConfirmPassword(req.Password, req.ConfirmPassword); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	tokens, err := uh.svc.ResetPassword(ctx, req.Email, req.Code, req.Password, requestMeta(ctx))
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	logRequestMetric(ctx, req.Email, nil)
+
+	handleSuccess(ctx, newAuthResponse(tokens))
+}
+
 // setInitialPasswordRequest represents the request to create the password of an account without one
 type setInitialPasswordRequest struct {
 	Email           string `json:"email" binding:"required,email" example:"test@example.com"`
@@ -154,8 +232,8 @@ type setInitialPasswordRequest struct {
 
 // SetInitialPassword godoc
 //
-//	@Summary		Create the password of a migrated account
-//	@Description	Only works when the account has no password (migrated or reset by the admin) and, if INITIAL_PASSWORD_UNTIL is set, before that date. Returns tokens.
+//	@Summary		Closed: use /users/password/forgot and /users/password/reset
+//	@Description	Creating a password without a code is no longer allowed. Always 401 (kept for old cached fronts).
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json

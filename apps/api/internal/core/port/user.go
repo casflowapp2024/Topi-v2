@@ -20,6 +20,8 @@ type UserRepository interface {
 	UpdatePassword(ctx context.Context, id string, passwordHash string) (int, error)
 	// UpdateProfile updates name and last name (also in user_extra)
 	UpdateProfile(ctx context.Context, id, name, lastName string) error
+	// MarkEmailVerified sets email_verified_at if it was empty
+	MarkEmailVerified(ctx context.Context, id string) error
 }
 
 // UserService is an interface for interacting with user-related business logic
@@ -27,6 +29,10 @@ type UserService interface {
 	Register(ctx context.Context, user *domain.User, meta domain.RequestMeta) (*domain.AuthTokens, error)
 	Login(ctx context.Context, email, password string, meta domain.RequestMeta) (*domain.AuthTokens, error)
 	SetInitialPassword(ctx context.Context, email, password string, meta domain.RequestMeta) (*domain.AuthTokens, error)
+	// ForgotPassword sends a code to the email if it is registered; the answer is the same either way
+	ForgotPassword(ctx context.Context, email string, meta domain.RequestMeta) error
+	// ResetPassword sets a new password with the code, closes every session and logs in
+	ResetPassword(ctx context.Context, email, code, password string, meta domain.RequestMeta) (*domain.AuthTokens, error)
 	Refresh(ctx context.Context, refreshToken string, meta domain.RequestMeta) (*domain.AuthTokens, error)
 	Logout(ctx context.Context, refreshToken string) error
 	ChangePassword(ctx context.Context, userID, currentPassword, newPassword string, meta domain.RequestMeta) (*domain.AuthTokens, error)

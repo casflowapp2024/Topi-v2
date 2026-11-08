@@ -6,7 +6,6 @@ import { logout } from '../redux/actions/auth';
 const AUTH_PATHS = [
     '/users/login',
     '/users/signup',
-    '/users/set-initial-password',
     '/users/refresh',
     '/users/logout',
     '/users/password',

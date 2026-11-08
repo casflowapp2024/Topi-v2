@@ -50,7 +50,10 @@ func (r *Routes) UserRoutes() {
 
 	user.POST("/signup", r.UserHandler.Register)
 	user.POST("/login", r.UserHandler.Login)
+	// closed: always 401 (users without password recover it with a code)
 	user.POST("/set-initial-password", r.UserHandler.SetInitialPassword)
+	user.POST("/password/forgot", r.UserHandler.ForgotPassword)
+	user.POST("/password/reset", r.UserHandler.ResetPassword)
 	user.POST("/refresh", r.UserHandler.Refresh)
 	user.POST("/logout", r.UserHandler.Logout)
 	// no-op 200 kept for compatibility (there is no email verification)
