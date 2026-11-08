@@ -7,7 +7,7 @@ import SpendVsBudgetChart from '../../charts/SpendVsBudgetChart';
 import { SkeletonChart } from '../../ui/Skeleton';
 
 // Gráfica del inicio. Los datos (history_dash) los pide Dashboard.jsx al cambiar de mes.
-// La proyección del mes vive en la tarjeta Ritmo del mes.
+// La proyección del mes vive en la tarjeta Ritmo del mes. La historia del patrimonio está en Cuentas › Todo.
 const TABS = [
   { id: 'balance', label: 'Balance', hint: 'Saldo en tus cuentas de efectivo' },
   { id: 'flow', label: 'Flujo', hint: 'Ingresos, gastos y ahorro neto por mes' },

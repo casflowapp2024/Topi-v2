@@ -77,6 +77,47 @@ type NetWorth struct {
 	MissingRates     bool // some account could not be valued
 }
 
+// NetWorthHistory is the net worth at the end of each month, oldest first
+type NetWorthHistory struct {
+	BaseCurrency string
+	Points       []NetWorthPoint
+}
+
+// NetWorthPoint is the net worth at the end of a day (the last day of a month, or today), split
+// by account class like NetWorth, plus what was put into the investments (their cost)
+type NetWorthPoint struct {
+	Date             time.Time
+	Total            decimal.Decimal
+	CashTotal        decimal.Decimal
+	InvestmentsTotal decimal.Decimal
+	CreditTotal      decimal.Decimal
+	// InvestmentsCost: net contributions to the investments in the base currency (initial balance and
+	// transfers in, minus withdrawals); InvestmentsTotal − InvestmentsCost is what they earned.
+	// nil when an investment has no cost (a movement without its base amount)
+	InvestmentsCost *decimal.Decimal
+	MissingRates    bool
+}
+
+// NewNetWorthPoint sums the accounts valued at date the same way as the net worth of today
+func NewNetWorthPoint(date time.Time, accounts []NetWorthAccount) NetWorthPoint {
+	n := NetWorth{Accounts: accounts}
+	n.Summarize()
+	point := NetWorthPoint{Date: date, Total: n.Total, CashTotal: n.CashTotal, InvestmentsTotal: n.InvestmentsTotal,
+		CreditTotal: n.CreditTotal, MissingRates: n.MissingRates}
+	cost := decimal.Zero
+	for _, a := range accounts {
+		if AccountClassOf(a.TypeID) != AccountClassInvestment {
+			continue
+		}
+		if a.Cost == nil {
+			return point
+		}
+		cost = cost.Add(*a.Cost)
+	}
+	point.InvestmentsCost = &cost
+	return point
+}
+
 // Summarize fills Total, UnrealizedGain and MissingRates from Accounts
 func (n *NetWorth) Summarize() {
 	n.Total, n.UnrealizedGain, n.MissingRates = decimal.Zero, decimal.Zero, false

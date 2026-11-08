@@ -83,8 +83,10 @@ plan/         plan de migración
   aproximada y la UI lo dice. `credit_card_cycles`: compras y pagos por corte. `transactions.installments`: el
   calendario sale de `installment_schedule` (`GET /transactions/installments`) y lo cobrado por corte de `card_billed`
   (contado más cuotas); la deuda incluye las cuotas por cobrar y lo no pagado de cortes anteriores (`card_carry`, por
-  cortes y desde octubre de 2026). En los reportes las compras desde `InstallmentsFrom` pesan una cuota por mes
-  (`extraExpensesByDay`); las anteriores siguen completas. La bandeja pregunta las cuotas de compras grandes con tarjeta
+  cortes y desde octubre de 2026). `net_worth_at(usuario, día)` es el patrimonio con esas mismas reglas a una fecha
+  (`GET /analysis/net-worth/history`, un punto por cierre de mes); `net_worth` es `net_worth_at(hoy)`. En los
+  reportes las compras desde `InstallmentsFrom` pesan una cuota por mes (`extraExpensesByDay`); las anteriores siguen
+  completas. La bandeja pregunta las cuotas de compras grandes con tarjeta
   leídas de correo (`needs_installments=true`, `InstallmentPromptMin`, `POST /transactions/:id/installments` marca
   `installments_reviewed_at`). Plan: `plan/21-cuotas.md`.
 - Correo saliente (`plan/23-correo-transaccional.md`): puerto `Mailer` (adaptadores `resend` y `logmailer`) y

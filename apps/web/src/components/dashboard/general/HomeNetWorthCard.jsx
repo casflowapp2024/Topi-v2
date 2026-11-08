@@ -1,7 +1,11 @@
+import { useEffect } from 'react';
 import { connect } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRightIcon } from '@heroicons/react/20/solid';
+import moment from 'moment';
+import 'moment/locale/es';
+import { ArrowDownIcon, ArrowUpIcon, ChevronRightIcon, MinusIcon } from '@heroicons/react/20/solid';
 import { set_dash_account_activated } from '../../../redux/actions/reports';
+import { get_net_worth_history } from '../../../redux/actions/fx';
 import Card from '../../ui/Card';
 import ChartLegend from '../../ui/ChartLegend';
 import Money from '../../ui/Money';
@@ -25,12 +29,29 @@ export const netWorthSegments = (netWorth) => {
   ].filter(s => s.value !== 0);
 };
 
+// Cambio contra el cierre del mes anterior: el penúltimo punto de la historia (el último es hoy).
+// null sin historia o sin ese mes; con tasas faltantes en cualquiera de los dos la resta no es confiable.
+export const netWorthChange = (history, netWorth) => {
+  const points = history?.points || [];
+  if (!netWorth || points.length < 2) return null;
+  const prev = points[points.length - 2];
+  if (prev.missing_rates || netWorth.missing_rates) return null;
+  return { delta: Number(netWorth.total) - Number(prev.total), since: prev.date };
+};
+
+const shortDate = (date) => moment(date, 'YYYY-MM-DD').locale('es').format('D MMM').replace(/\./g, '');
+
 /**
  * Tercera tarjeta del inicio: ¿cuánto tengo en total? Siempre es de hoy, sin importar el mes elegido.
- * history: reservado para la evolución mensual (Fase 3.B); hoy la API no la da y no se inventa.
+ * Debajo del total, cuánto cambió desde el cierre del mes anterior (misma cuenta a esa fecha:
+ * tarjetas por su deuda estimada entonces, inversiones por su valoración de entonces).
  */
-const HomeNetWorthCard = ({ net_worth, set_dash_account_activated, history = null }) => {
+const HomeNetWorthCard = ({ net_worth, net_worth_history, set_dash_account_activated, get_net_worth_history }) => {
   const navigate = useNavigate();
+  // Se pide otra vez cuando cambia el patrimonio de hoy (una valoración, un cambio de moneda...)
+  const total = net_worth?.total;
+  useEffect(() => { if (total != null) get_net_worth_history(); }, [total, get_net_worth_history]);
+  const change = netWorthChange(net_worth_history, net_worth);
   const c = useChartColors();
   const color = { cash: c.balance, investment: c.inversion, favor: c.ok, credit: c.crit };
   const base = net_worth?.base_currency || getBaseCurrency();
@@ -56,6 +77,7 @@ const HomeNetWorthCard = ({ net_worth, set_dash_account_activated, history = nul
               <Money amount={net_worth.total} currency={base} baseCurrency={base} align="left" className="text-2xl font-extrabold tabular-nums text-gray-900 dark:text-gray-100" />
               {net_worth.missing_rates && <span className="text-sm text-ink-2 dark:text-gray-400" title="Alguna cuenta aún no tiene tasa de cambio">*</span>}
             </span>
+            {change && <NetWorthChange {...change} base={base} />}
           </span>
           <span className="flex-1 min-w-0 flex flex-col gap-2 w-full">
             {scale > 0 && (
@@ -79,8 +101,32 @@ const HomeNetWorthCard = ({ net_worth, set_dash_account_activated, history = nul
   );
 };
 
+// Flecha + palabra + monto: el color nunca va solo
+const NetWorthChange = ({ delta, since, base }) => {
+  const day = shortDate(since);
+  if (delta === 0) {
+    return (
+      <span className="flex items-center gap-1 text-xs text-ink-2 dark:text-gray-400">
+        <MinusIcon className="w-3.5 h-3.5" aria-hidden="true" />Igual que el {day}
+      </span>
+    );
+  }
+  const up = delta > 0;
+  const Icon = up ? ArrowUpIcon : ArrowDownIcon;
+  return (
+    <span className="flex items-center gap-1 text-xs">
+      <Icon className={`w-3.5 h-3.5 ${up ? 'text-money-in dark:text-money-in-dark' : 'text-money-out dark:text-money-out-dark'}`} aria-hidden="true" />
+      <span className={`font-semibold tabular-nums ${up ? 'text-money-in dark:text-money-in-dark' : 'text-money-out dark:text-money-out-dark'}`}>
+        {up ? 'Subió' : 'Bajó'} {formatMoneyCompact(Math.abs(delta), base)}
+      </span>
+      <span className="text-ink-2 dark:text-gray-400">desde el {day}</span>
+    </span>
+  );
+};
+
 const mapStateToProps = (state) => ({
   net_worth: state.Fx.net_worth,
+  net_worth_history: state.Fx.net_worth_history,
 });
 
-export default connect(mapStateToProps, { set_dash_account_activated })(HomeNetWorthCard);
+export default connect(mapStateToProps, { set_dash_account_activated, get_net_worth_history })(HomeNetWorthCard);

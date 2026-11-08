@@ -6,7 +6,8 @@ import { createStore, applyMiddleware } from 'redux';
 import { thunk } from 'redux-thunk';
 import HomePaceCard from './HomePaceCard';
 import HomeFlowCard, { flowBarSegments } from './HomeFlowCard';
-import HomeNetWorthCard, { netWorthSegments } from './HomeNetWorthCard';
+import HomeNetWorthCard, { netWorthChange, netWorthSegments } from './HomeNetWorthCard';
+import axios from 'axios';
 import { getDailyAllowance } from '../../ui/BudgetProgress';
 import { formatMoney } from '../../helpers';
 
@@ -152,8 +153,38 @@ test('Patrimonio: los tramos suman el total y el toque abre Cuentas en "Todo"', 
   const { el, root } = render(<HomeNetWorthCard />, { Fx: { net_worth } });
   expect(el.textContent).toContain(formatMoney(7500000));
   expect(el.textContent).toContain('Deudas de tarjeta');
-  expect(el.textContent).not.toMatch(/mes anterior/);
+  expect(el.textContent).not.toMatch(/Subió|Bajó|aportaste/); // sin historia no se compara
   act(() => el.querySelector('button').dispatchEvent(new MouseEvent('click', { bubbles: true })));
   expect(mockNavigate).toHaveBeenCalledWith('/dashboard/accounts');
+  act(() => root.unmount());
+});
+
+const nwPoint = (date, total, extra = {}) => ({
+  date, total, cash_total: total, investments_total: '0', credit_total: '0', investments_cost: '0', missing_rates: false, ...extra,
+});
+
+test('Patrimonio: cambio contra el cierre del mes anterior, solo con datos confiables', () => {
+  const today = { total: '7500000', missing_rates: false };
+  const history = { points: [nwPoint('2026-09-30', '6000000'), nwPoint('2026-10-31', '7000000'), nwPoint('2026-11-07', '7500000')] };
+  expect(netWorthChange(history, today)).toEqual({ delta: 500000, since: '2026-10-31' });
+  expect(netWorthChange({ points: [nwPoint('2026-11-07', '7500000')] }, today)).toBeNull(); // primer mes
+  expect(netWorthChange(null, today)).toBeNull();
+  const missing = { points: [nwPoint('2026-10-31', '7000000', { missing_rates: true }), nwPoint('2026-11-07', '7500000')] };
+  expect(netWorthChange(missing, today)).toBeNull();
+});
+
+test('Patrimonio: pide la historia y muestra flecha, palabra y monto', async () => {
+  const net_worth = { base_currency: 'COP', total: '7500000', cash_total: '4500000', investments_total: '3000000', credit_total: '0', accounts: [] };
+  const net_worth_history = { base_currency: 'COP', points: [
+    nwPoint('2026-10-31', '8000000'), nwPoint('2026-11-07', '7500000', { investments_total: '3000000', investments_cost: '2500000' }),
+  ] };
+  axios.get.mockClear();
+  const { el, root } = render(<HomeNetWorthCard />, { Fx: { net_worth, net_worth_history } });
+  await act(async () => {});
+  expect(axios.get.mock.calls.some(([url]) => url.includes('/analysis/net-worth/history?months=12'))).toBe(true);
+  expect(el.textContent).toContain('Bajó');
+  expect(el.textContent).toContain('desde el 31 oct');
+  expect(el.querySelector('svg.text-money-out')).not.toBeNull();
+  expect(el.textContent).not.toMatch(/aportaste|ganancia/);
   act(() => root.unmount());
 });

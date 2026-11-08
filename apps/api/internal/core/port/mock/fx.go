@@ -36,6 +36,21 @@ func (m *MockFxRepository) EXPECT() *MockFxRepositoryMockRecorder {
 	return m.recorder
 }
 
+// GetNetWorthHistory mocks base method.
+func (m *MockFxRepository) GetNetWorthHistory(ctx context.Context, userID string, months int) (domain.NetWorthHistory, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNetWorthHistory", ctx, userID, months)
+	ret0, _ := ret[0].(domain.NetWorthHistory)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNetWorthHistory indicates an expected call of GetNetWorthHistory.
+func (mr *MockFxRepositoryMockRecorder) GetNetWorthHistory(ctx, userID, months interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNetWorthHistory", reflect.TypeOf((*MockFxRepository)(nil).GetNetWorthHistory), ctx, userID, months)
+}
+
 // GetNetWorth mocks base method.
 func (m *MockFxRepository) GetNetWorth(ctx context.Context, userID string) (domain.NetWorth, error) {
 	m.ctrl.T.Helper()
@@ -102,6 +117,21 @@ func NewMockFxService(ctrl *gomock.Controller) *MockFxService {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockFxService) EXPECT() *MockFxServiceMockRecorder {
 	return m.recorder
+}
+
+// GetNetWorthHistory mocks base method.
+func (m *MockFxService) GetNetWorthHistory(ctx context.Context, userID string, months int) (domain.NetWorthHistory, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNetWorthHistory", ctx, userID, months)
+	ret0, _ := ret[0].(domain.NetWorthHistory)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNetWorthHistory indicates an expected call of GetNetWorthHistory.
+func (mr *MockFxServiceMockRecorder) GetNetWorthHistory(ctx, userID, months interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNetWorthHistory", reflect.TypeOf((*MockFxService)(nil).GetNetWorthHistory), ctx, userID, months)
 }
 
 // GetNetWorth mocks base method.

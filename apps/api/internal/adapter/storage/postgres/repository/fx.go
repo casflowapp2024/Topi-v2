@@ -54,6 +54,60 @@ func (fr *FxRepository) GetQuote(ctx context.Context, from, to string, date time
 }
 
 // GetNetWorth values every account of the user today in their base currency
+// GetNetWorthHistory values the accounts at the end of each of the last months (the current one until
+// today), oldest first. Months before the user had accounts are left out.
+func (fr *FxRepository) GetNetWorthHistory(ctx context.Context, userID string, months int) (domain.NetWorthHistory, error) {
+	history := domain.NetWorthHistory{Points: make([]domain.NetWorthPoint, 0, months)}
+	if err := fr.db.QueryRow(ctx, "SELECT user_base_currency($1)", userID).Scan(&history.BaseCurrency); err != nil {
+		return history, mappers.MapPostgresErrorCode(err)
+	}
+	out := history.Points
+	rows, err := fr.db.Query(ctx, `
+		WITH t AS (SELECT (now() AT TIME ZONE user_timezone($1))::date AS today),
+		days AS (
+			SELECT LEAST((date_trunc('month', t.today) - make_interval(months => i) + INTERVAL '1 month - 1 day')::date, t.today) AS day
+			FROM t, generate_series(0, $2::int - 1) i
+		)
+		SELECT d.day, n.type_id, n.base_value::text, n.cost::text
+		FROM days d CROSS JOIN LATERAL net_worth_at($1, d.day) n
+		ORDER BY d.day`, userID, months)
+	if err != nil {
+		history.Points = out
+		return history, mappers.MapPostgresErrorCode(err)
+	}
+	defer rows.Close()
+
+	var (
+		day      time.Time
+		accounts []domain.NetWorthAccount
+	)
+	for rows.Next() {
+		var (
+			date time.Time
+			a    domain.NetWorthAccount
+		)
+		if err = rows.Scan(&date, &a.TypeID, scanDecimal(&a.BaseValue), scanDecimal(&a.Cost)); err != nil {
+			history.Points = out
+			return history, mappers.MapPostgresErrorCode(err)
+		}
+		if !date.Equal(day) && len(accounts) > 0 {
+			out = append(out, domain.NewNetWorthPoint(day, accounts))
+			accounts = nil
+		}
+		day = date
+		accounts = append(accounts, a)
+	}
+	if err = rows.Err(); err != nil {
+		history.Points = out
+		return history, mappers.MapPostgresErrorCode(err)
+	}
+	if len(accounts) > 0 {
+		out = append(out, domain.NewNetWorthPoint(day, accounts))
+	}
+	history.Points = out
+	return history, nil
+}
+
 func (fr *FxRepository) GetNetWorth(ctx context.Context, userID string) (domain.NetWorth, error) {
 	netWorth := domain.NetWorth{Accounts: make([]domain.NetWorthAccount, 0)}
 	err := fr.db.QueryRow(ctx,
