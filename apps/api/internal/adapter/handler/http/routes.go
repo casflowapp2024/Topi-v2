@@ -23,6 +23,7 @@ type Routes struct {
 	CurrencyChangeHandler *CurrencyChangeHandler
 	CreditCardHandler     *CreditCardHandler
 	EmailHandler          *EmailHandler
+	MailHandler           *MailHandler
 	InitDevHandler        *InitDevHandler
 	InitializationHandler *InitializationHandler
 	Router                *gin.Engine
@@ -233,6 +234,7 @@ func (r *Routes) Init(env string) {
 	r.AnalysisRoutes()
 	r.FxRoutes()
 	r.EmailRoutes()
+	r.MailRoutes()
 	r.InitializationRoutes()
 	r.DocRoutes(env)
 }
@@ -241,4 +243,23 @@ func (r *Routes) FxRoutes() {
 	auth := AuthMiddleware(r.UserHandler.svc)
 	r.Router.GET("/currencies", auth, r.FxHandler.GetCurrencies)
 	r.Router.GET("/fx/rate", auth, r.FxHandler.GetFxRate)
+}
+
+// MailRoutes: email preferences (with session) and the unsubscribe links (signed, no login)
+func (r *Routes) MailRoutes() {
+	if r.MailHandler == nil {
+		return
+	}
+
+	prefs := r.Router.Group("/users").Use(AuthMiddleware(r.UserHandler.svc))
+	{
+		prefs.GET("/notification-prefs", r.MailHandler.GetNotificationPrefs)
+		prefs.PUT("/notification-prefs", r.MailHandler.UpdateNotificationPrefs)
+	}
+
+	mail := r.Router.Group("/mail")
+	{
+		mail.GET("/unsubscribe", r.MailHandler.UnsubscribeForm)
+		mail.POST("/unsubscribe", r.MailHandler.Unsubscribe)
+	}
 }

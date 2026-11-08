@@ -17,10 +17,13 @@ import (
 	"cash-flow/internal/adapter/storage/postgres"
 	dbrepository "cash-flow/internal/adapter/storage/postgres/repository"
 	dbtransaction "cash-flow/internal/adapter/storage/postgres/transaction"
+	"cash-flow/internal/core/domain"
 	"cash-flow/internal/core/port"
 	"cash-flow/internal/core/service"
 	"cash-flow/internal/enums"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"log/slog"
 	"os"
 	"time"
@@ -46,6 +49,7 @@ type Handlers struct {
 	CurrencyChange         *http.CurrencyChangeHandler
 	CreditCard             *http.CreditCardHandler
 	Email                  *http.EmailHandler
+	Mail                   *http.MailHandler
 	Initialization         *http.InitDevHandler
 	CategoryInitialization *http.InitializationHandler
 }
@@ -54,6 +58,8 @@ type Resources struct {
 	DB *postgres.DB
 	// Mail processes email_outbox in background (started by main)
 	Mail *service.MailOutboxService
+	// Notifications queues the monthly summaries in background (started by main)
+	Notifications *service.NotificationPrefsService
 	// MailInterval is how often the outbox is processed
 	MailInterval time.Duration
 }
@@ -133,6 +139,20 @@ func NewInjector(settings *config.Configuration) *Injector {
 	analysisService := service.NewAnalysisService(analysisRepo)
 	analysisHandler := http.NewAnalysisHandler(analysisService)
 
+	// Email preferences, unsubscribe links and monthly summary (numbers computed at send time)
+	notificationService := service.NewNotificationService(
+		dbrepository.NewNotificationRepository(db),
+		mailService,
+		analysisService,
+		service.NotificationSettings{
+			UnsubscribeSecret: deriveKey(settings.Auth.JWTSecret, "topi-unsubscribe-v1"),
+			APIBaseURL:        settings.Mail.APIBaseURL,
+		},
+	)
+	mailService.SetUnsubscribeLinker(notificationService)
+	mailService.SetEnricher(domain.TemplateMonthlySummary, notificationService)
+	mailHandler := http.NewMailHandler(notificationService, settings.Mail.AppBaseURL)
+
 	// Fx: currencies, exchange rates and net worth
 	fxRepo := dbrepository.NewFxRepository(db)
 	fxService := service.NewFxService(fxRepo)
@@ -194,13 +214,15 @@ func NewInjector(settings *config.Configuration) *Injector {
 			CurrencyChange:         currencyChangeHandler,
 			CreditCard:             creditCardHandler,
 			Email:                  emailHandler,
+			Mail:                   mailHandler,
 			Initialization:         initDevHandler,
 			CategoryInitialization: InitHandler,
 		},
 		Resources: &Resources{
-			DB:           db,
-			Mail:         mailService,
-			MailInterval: settings.Mail.OutboxInterval,
+			DB:            db,
+			Mail:          mailService,
+			Notifications: notificationService,
+			MailInterval:  settings.Mail.OutboxInterval,
 		},
 	}
 }
@@ -236,4 +258,12 @@ func newMailService(settings *config.Configuration, db *postgres.DB) *service.Ma
 			APIBaseURL: settings.Mail.APIBaseURL,
 		},
 	)
+}
+
+// deriveKey derives a purpose specific key from a secret (HMAC-SHA256), so one variable signs
+// different things without reusing the same key
+func deriveKey(secret, purpose string) []byte {
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(purpose))
+	return mac.Sum(nil)
 }

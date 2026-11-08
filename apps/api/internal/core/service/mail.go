@@ -44,19 +44,26 @@ const (
 // mailBackoff is the wait before each retry (attempt 1 failed -> 1 min, ...)
 var mailBackoff = []time.Duration{time.Minute, 5 * time.Minute, 30 * time.Minute, 2 * time.Hour}
 
-// UnsubscribeLinker builds the signed one-click unsubscribe URL of a user (block 5)
+// UnsubscribeLinker builds the signed one-click unsubscribe URL of a user for a template
 type UnsubscribeLinker interface {
-	UnsubscribeURL(userID string) string
+	UnsubscribeURL(userID, template string) string
+}
+
+// MailEnricher adds the data of a template computed at send time (never stored in the outbox).
+// domain.ErrMailCancelled suppresses the email; any other error is retried.
+type MailEnricher interface {
+	Enrich(ctx context.Context, email domain.OutboxEmail, data map[string]any) error
 }
 
 // MailOutboxService implements port.MailService over email_outbox
 type MailOutboxService struct {
-	repo     port.OutboxRepository
-	mailer   port.Mailer
-	renderer port.MailRenderer
-	settings MailSettings
-	linker   UnsubscribeLinker
-	now      func() time.Time
+	repo      port.OutboxRepository
+	mailer    port.Mailer
+	renderer  port.MailRenderer
+	settings  MailSettings
+	linker    UnsubscribeLinker
+	enrichers map[string]MailEnricher
+	now       func() time.Time
 
 	// background sends of emails with a secret (tests wait on it)
 	wg sync.WaitGroup
@@ -71,12 +78,18 @@ func NewMailService(repo port.OutboxRepository, mailer port.Mailer, renderer por
 		settings.MaxAttempts = 5
 	}
 	return &MailOutboxService{
-		repo:     repo,
-		mailer:   mailer,
-		renderer: renderer,
-		settings: settings,
-		now:      time.Now,
+		repo:      repo,
+		mailer:    mailer,
+		renderer:  renderer,
+		settings:  settings,
+		enrichers: map[string]MailEnricher{},
+		now:       time.Now,
 	}
+}
+
+// SetEnricher registers the send-time data of a template
+func (s *MailOutboxService) SetEnricher(template string, enricher MailEnricher) {
+	s.enrichers[template] = enricher
 }
 
 // SetUnsubscribeLinker sets the builder of unsubscribe links (List-Unsubscribe)
@@ -230,7 +243,17 @@ func (s *MailOutboxService) deliver(ctx context.Context, email domain.OutboxEmai
 		return
 	}
 
-	msg, err := s.build(email, secret)
+	data, err := s.data(ctx, email, secret)
+	if errors.Is(err, domain.ErrMailCancelled) {
+		s.markSuppressed(ctx, email, err.Error())
+		return
+	}
+	if err != nil {
+		s.retryOrFail(ctx, email, "data: "+err.Error(), retryable)
+		return
+	}
+
+	msg, err := s.build(email, data)
 	if err != nil {
 		s.markFailed(ctx, email, "render: "+err.Error())
 		return
@@ -238,16 +261,7 @@ func (s *MailOutboxService) deliver(ctx context.Context, email domain.OutboxEmai
 
 	providerID, err := s.mailer.Send(ctx, *msg)
 	if err != nil {
-		if !retryable || errors.Is(err, domain.ErrMailRejected) || email.Attempts >= s.settings.MaxAttempts {
-			s.markFailed(ctx, email, err.Error())
-			return
-		}
-		wait := mailBackoff[min(max(email.Attempts-1, 0), len(mailBackoff)-1)]
-		if err := s.repo.MarkRetry(ctx, email.ID, err.Error(), s.now().Add(wait)); err != nil {
-			slog.Error("mail: could not schedule retry", "outbox_id", email.ID, "error", err)
-		}
-		slog.Warn("mail: send failed, will retry", "outbox_id", email.ID, "template", email.Template,
-			"attempts", email.Attempts, "error", err)
+		s.retryOrFail(ctx, email, err.Error(), retryable && !errors.Is(err, domain.ErrMailRejected))
 		return
 	}
 
@@ -258,8 +272,22 @@ func (s *MailOutboxService) deliver(ctx context.Context, email domain.OutboxEmai
 	slog.Info("mail: sent", "outbox_id", email.ID, "template", email.Template)
 }
 
-// build renders the template with the payload, the secret and the common links
-func (s *MailOutboxService) build(email domain.OutboxEmail, secret map[string]any) (*domain.EmailMessage, error) {
+// retryOrFail schedules a retry with backoff, or fails the email when it cannot be retried
+func (s *MailOutboxService) retryOrFail(ctx context.Context, email domain.OutboxEmail, reason string, retryable bool) {
+	if !retryable || email.Attempts >= s.settings.MaxAttempts {
+		s.markFailed(ctx, email, reason)
+		return
+	}
+	wait := mailBackoff[min(max(email.Attempts-1, 0), len(mailBackoff)-1)]
+	if err := s.repo.MarkRetry(ctx, email.ID, truncate(reason, 500), s.now().Add(wait)); err != nil {
+		slog.Error("mail: could not schedule retry", "outbox_id", email.ID, "error", err)
+	}
+	slog.Warn("mail: send failed, will retry", "outbox_id", email.ID, "template", email.Template,
+		"attempts", email.Attempts, "error", reason)
+}
+
+// data joins the payload, the secret, the send-time data of the template and the common links
+func (s *MailOutboxService) data(ctx context.Context, email domain.OutboxEmail, secret map[string]any) (map[string]any, error) {
 	data := map[string]any{}
 	if len(email.Payload) > 0 {
 		if err := json.Unmarshal(email.Payload, &data); err != nil {
@@ -269,11 +297,20 @@ func (s *MailOutboxService) build(email domain.OutboxEmail, secret map[string]an
 	for key, value := range secret {
 		data[key] = value
 	}
+	if enricher, ok := s.enrichers[email.Template]; ok {
+		if err := enricher.Enrich(ctx, email, data); err != nil {
+			return nil, err
+		}
+	}
 	data["app_url"] = s.settings.AppBaseURL
+	return data, nil
+}
 
+// build renders the template and adds the unsubscribe headers of non transactional emails
+func (s *MailOutboxService) build(email domain.OutboxEmail, data map[string]any) (*domain.EmailMessage, error) {
 	headers := map[string]string{}
 	if !domain.IsTransactionalTemplate(email.Template) && s.linker != nil && email.UserID != nil {
-		link := s.linker.UnsubscribeURL(*email.UserID)
+		link := s.linker.UnsubscribeURL(*email.UserID, email.Template)
 		data["unsubscribe_url"] = link
 		headers["List-Unsubscribe"] = "<" + link + ">"
 		headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"

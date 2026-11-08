@@ -224,7 +224,9 @@ func (r fakeRenderer) Render(template string, data map[string]any) (*domain.Rend
 
 type fakeLinker struct{}
 
-func (fakeLinker) UnsubscribeURL(userID string) string { return "https://api.test/mail/unsubscribe?t=" + userID }
+func (fakeLinker) UnsubscribeURL(userID, _ string) string {
+	return "https://api.test/mail/unsubscribe?t=" + userID
+}
 
 type mailFixture struct {
 	clock  time.Time
@@ -483,4 +485,42 @@ func TestMail_StaleSecretsAreFailedAndStaleOthersRetried(t *testing.T) {
 
 	assert.Equal(t, domain.OutboxFailed, f.repo.rows[secretID].Status)
 	assert.Equal(t, domain.OutboxSent, f.repo.rows[otherID].Status)
+}
+
+type fakeEnricher struct {
+	err error
+}
+
+func (e fakeEnricher) Enrich(_ context.Context, _ domain.OutboxEmail, data map[string]any) error {
+	if e.err != nil {
+		return e.err
+	}
+	data["income"] = "$1.000"
+	return nil
+}
+
+func TestMail_Enricher(t *testing.T) {
+	f := newMailFixture(t, MailSettings{})
+	f.svc.SetEnricher(domain.TemplateMonthlySummary, fakeEnricher{})
+	id := f.enqueue(t, domain.TemplateMonthlySummary, domain.MailPriorityBulk, "a@example.com")
+
+	_, _ = f.svc.ProcessOnce(context.Background())
+
+	assert.Equal(t, domain.OutboxSent, f.repo.rows[id].Status)
+	assert.Contains(t, f.mailer.messages()[0].Text, "$1.000", "send-time data reaches the template")
+	assert.NotContains(t, string(f.repo.rows[id].Payload), "1.000", "and never the outbox")
+}
+
+func TestMail_EnricherCancelAndRetry(t *testing.T) {
+	f := newMailFixture(t, MailSettings{})
+	f.svc.SetEnricher(domain.TemplateMonthlySummary, fakeEnricher{err: domain.ErrMailCancelled})
+	cancelled := f.enqueue(t, domain.TemplateMonthlySummary, domain.MailPriorityBulk, "a@example.com")
+	_, _ = f.svc.ProcessOnce(context.Background())
+	assert.Equal(t, domain.OutboxSuppressed, f.repo.rows[cancelled].Status)
+
+	f.svc.SetEnricher(domain.TemplateMonthlySummary, fakeEnricher{err: errors.New("db timeout")})
+	retried := f.enqueue(t, domain.TemplateMonthlySummary, domain.MailPriorityBulk, "b@example.com")
+	_, _ = f.svc.ProcessOnce(context.Background())
+	assert.Equal(t, domain.OutboxPending, f.repo.rows[retried].Status)
+	assert.Empty(t, f.mailer.messages())
 }

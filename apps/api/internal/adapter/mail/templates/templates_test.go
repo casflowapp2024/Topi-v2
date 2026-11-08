@@ -15,6 +15,10 @@ var sampleData = map[string]map[string]any{
 	"verify_email":  {"code": "730154", "minutes": 10},
 	"connection_down": {"connection_email": "ana.banco@gmail.com", "provider": "Gmail",
 		"unsubscribe_url": "https://api.topi.test/mail/unsubscribe?t=abc"},
+	"monthly_summary": {"month": "2026-10", "month_name": "octubre de 2026", "income": "$5.200.000",
+		"expenses": "$3.950.500", "savings": "$1.249.500", "saved": true, "has_activity": true,
+		"top_category": "Mercado", "top_category_amount": "$1.120.000",
+		"unsubscribe_url": "https://api.topi.test/mail/unsubscribe?t=abc"},
 }
 
 // amount-like text ($ 1.234, 1.234.567) must never appear in a subject
@@ -98,4 +102,24 @@ func TestConnectionDownHasUnsubscribeAndLink(t *testing.T) {
 	assert.Contains(t, out.HTML, "ana.banco@gmail.com")
 	assert.Contains(t, out.HTML, "Dejar de recibir estos correos")
 	assert.Contains(t, out.Text, "https://api.topi.test/mail/unsubscribe?t=abc")
+}
+
+func TestMonthlySummary(t *testing.T) {
+	r, err := New()
+	require.NoError(t, err)
+
+	out, err := r.Render("monthly_summary", withCommon(sampleData["monthly_summary"]))
+	require.NoError(t, err)
+	assert.Equal(t, "Tu resumen de octubre de 2026 en Topi", out.Subject)
+	assert.Contains(t, out.HTML, "$5.200.000")
+	assert.Contains(t, out.HTML, "Mercado")
+	assert.Contains(t, out.HTML, "Dejar de recibir estos correos")
+	assert.Contains(t, out.Text, "https://api.topi.test/mail/unsubscribe?t=abc")
+
+	empty := withCommon(sampleData["monthly_summary"])
+	empty["has_activity"] = false
+	out, err = r.Render("monthly_summary", empty)
+	require.NoError(t, err)
+	assert.Contains(t, out.HTML, "No registramos movimientos")
+	assert.NotContains(t, out.HTML, "$5.200.000")
 }

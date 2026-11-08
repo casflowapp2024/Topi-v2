@@ -34,6 +34,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"time"
 )
 
 func main() {
@@ -55,6 +56,8 @@ func main() {
 
 	// Send the emails of the outbox in background
 	go injector.Resources.Mail.Run(context.Background(), injector.Resources.MailInterval)
+	// Queue the monthly summaries (first days of the month, opt-in)
+	go injector.Resources.Notifications.RunScheduler(context.Background(), time.Hour)
 
 	// Start the HTTP server
 	router, listenAddr := http.NewRouter(settings.HTTP)
@@ -75,6 +78,7 @@ func main() {
 		CurrencyChangeHandler: injector.Handlers.CurrencyChange,
 		CreditCardHandler:     injector.Handlers.CreditCard,
 		EmailHandler:          injector.Handlers.Email,
+		MailHandler:           injector.Handlers.Mail,
 		InitDevHandler:        injector.Handlers.Initialization,
 		InitializationHandler: injector.Handlers.CategoryInitialization,
 		Router:                router.Router,
