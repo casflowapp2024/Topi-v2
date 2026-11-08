@@ -6,6 +6,8 @@ import (
 	"cash-flow/internal/enums"
 	"cash-flow/internal/mappers"
 	"context"
+	"errors"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
@@ -232,6 +234,30 @@ func (e *EmailRepository) SaveEmailError(ctx context.Context, emailID uint64, er
 	}
 
 	return nil
+}
+
+// ClaimConnectionAlert sets emails.alert_sent_at if an alert is due and returns who to tell
+func (e *EmailRepository) ClaimConnectionAlert(ctx context.Context, emailID uint64, cooldown time.Duration) (*domain.ConnectionAlert, bool, error) {
+	const query = `
+UPDATE emails e SET alert_sent_at = now()
+FROM users u
+WHERE e.id = $1 AND u.id = e.user_id
+  AND e.error IS NOT NULL AND e.error <> ''
+  AND (e.alert_sent_at IS NULL OR e.alert_sent_at < now() - make_interval(secs => $2))
+  AND COALESCE((SELECT p.email_connection_alerts FROM notification_prefs p WHERE p.user_id = e.user_id), true)
+RETURNING e.user_id, u.email, e.email, e.provider`
+
+	var alert domain.ConnectionAlert
+	err := e.db.QueryRow(ctx, query, emailID, cooldown.Seconds()).Scan(
+		&alert.UserID, &alert.UserEmail, &alert.ConnectionEmail, &alert.Provider)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, mappers.MapPostgresErrorCode(err)
+	}
+
+	return &alert, true, nil
 }
 
 func (e *EmailRepository) DeleteEmailTrx(ctx context.Context, tx pgx.Tx, userID string, id uint64) error {

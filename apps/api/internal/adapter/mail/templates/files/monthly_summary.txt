@@ -1,0 +1,18 @@
+{{define "subject"}}Tu resumen de {{.month_name}} en Topi{{end}}
+{{define "text"}}Hola, este es tu resumen de {{.month_name}}.
+{{if .has_activity}}
+Ingresos: {{.income}}
+Gastos:   {{.expenses}}
+{{if .saved}}Ahorro:   {{.savings}}{{else}}Gastaste más de lo que ingresó: {{.savings}}{{end}}
+{{if .top_category}}
+Donde más gastaste: {{.top_category}} ({{.top_category_amount}})
+{{end}}{{else}}
+No registramos movimientos en {{.month_name}}. Si tus correos dejaron de llegar, revisa tus conexiones en Ajustes.
+{{end}}
+Mira el detalle en Topi: {{.app_url}}/dashboard
+
+Las cifras son las mismas que ves en el Inicio de Topi para ese mes.
+
+— Topi
+
+No quiero recibir el resumen mensual: {{.unsubscribe_url}}{{end}}

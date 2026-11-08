@@ -1,0 +1,9 @@
+{{define "content"}}
+<p style="margin:0 0 16px 0;font-size:18px;font-weight:700;color:#111827;">Topi dejó de leer tu correo</p>
+<p style="margin:0 0 12px 0;color:#374151;">No pudimos leer <strong>{{.connection_email}}</strong> ({{.provider}}): el permiso venció o se revocó.</p>
+<p style="margin:0 0 24px 0;color:#374151;">Mientras no lo reconectes, tus movimientos nuevos no se registrarán solos.</p>
+<p style="margin:0 0 24px 0;">
+  <a href="{{.app_url}}/dashboard?settings=connections" style="display:inline-block;padding:12px 20px;background:#5266EB;color:#ffffff;border-radius:10px;font-weight:600;text-decoration:none;">Reconectar mi correo</a>
+</p>
+<p style="margin:0;color:#6b7280;font-size:13px;">Si ya no quieres que Topi lea ese correo, ignora este mensaje o quita la conexión en Ajustes &gt; Conexiones.</p>
+{{end}}

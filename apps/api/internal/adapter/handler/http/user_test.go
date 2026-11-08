@@ -120,29 +120,7 @@ func TestUserHandler_Signup(t *testing.T) {
 }
 
 func TestUserHandler_SetInitialPassword(t *testing.T) {
-	t.Run("ok", func(t *testing.T) {
-		router, svc := newUserRouter(t)
-		svc.EXPECT().SetInitialPassword(gomock.Any(), "user@example.com", "Password123!", gomock.Any()).Return(testTokens, nil)
-
-		w := postJSON(router, http.MethodPost, "/users/set-initial-password", setInitialPasswordRequest{
-			Email: "user@example.com", Password: "Password123!", ConfirmPassword: "Password123!",
-		})
-
-		assert.Equal(t, http.StatusOK, w.Code)
-	})
-
-	t.Run("confirmation mismatch never reaches the service", func(t *testing.T) {
-		router, _ := newUserRouter(t)
-
-		w := postJSON(router, http.MethodPost, "/users/set-initial-password", setInitialPasswordRequest{
-			Email: "user@example.com", Password: "Password123!", ConfirmPassword: "Password123?",
-		})
-
-		assert.Equal(t, http.StatusBadRequest, w.Code)
-		assert.Equal(t, []string{domain.ErrDifferentConfirmPassword.Error()}, errorMessages(t, w))
-	})
-
-	t.Run("account that already has a password", func(t *testing.T) {
+	t.Run("closed: the service answers 401", func(t *testing.T) {
 		router, svc := newUserRouter(t)
 		svc.EXPECT().SetInitialPassword(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, domain.ErrNotAuthorizedException)
 
@@ -152,6 +130,79 @@ func TestUserHandler_SetInitialPassword(t *testing.T) {
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 		assert.Equal(t, []string{domain.ErrNotAuthorizedException.Error()}, errorMessages(t, w))
+	})
+}
+
+func TestUserHandler_ForgotPassword(t *testing.T) {
+	t.Run("same answer for any email", func(t *testing.T) {
+		router, svc := newUserRouter(t)
+		svc.EXPECT().ForgotPassword(gomock.Any(), "user@example.com", gomock.Any()).Return(nil)
+
+		w := postJSON(router, http.MethodPost, "/users/password/forgot", forgotPasswordRequest{Email: "user@example.com"})
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Body.String(), "if this email is registered")
+	})
+
+	t.Run("invalid email", func(t *testing.T) {
+		router, _ := newUserRouter(t)
+		w := postJSON(router, http.MethodPost, "/users/password/forgot", forgotPasswordRequest{Email: "nope"})
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("rate limited", func(t *testing.T) {
+		router, svc := newUserRouter(t)
+		svc.EXPECT().ForgotPassword(gomock.Any(), gomock.Any(), gomock.Any()).Return(domain.ErrLimitExceededException)
+		w := postJSON(router, http.MethodPost, "/users/password/forgot", forgotPasswordRequest{Email: "user@example.com"})
+		assert.Equal(t, http.StatusTooManyRequests, w.Code)
+	})
+}
+
+func TestUserHandler_ResetPassword(t *testing.T) {
+	valid := resetPasswordRequest{Email: "user@example.com", Code: "123456", Password: "Password123!", ConfirmPassword: "Password123!"}
+
+	t.Run("returns tokens", func(t *testing.T) {
+		router, svc := newUserRouter(t)
+		svc.EXPECT().ResetPassword(gomock.Any(), "user@example.com", "123456", "Password123!", gomock.Any()).Return(testTokens, nil)
+
+		w := postJSON(router, http.MethodPost, "/users/password/reset", valid)
+
+		require.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Body.String(), `"access_token":"jwt"`)
+	})
+
+	t.Run("code must be 6 digits", func(t *testing.T) {
+		router, _ := newUserRouter(t)
+		for _, code := range []string{"12345", "1234567", "12a456"} {
+			req := valid
+			req.Code = code
+			w := postJSON(router, http.MethodPost, "/users/password/reset", req)
+			assert.Equal(t, http.StatusBadRequest, w.Code, code)
+		}
+	})
+
+	t.Run("confirmation mismatch never reaches the service", func(t *testing.T) {
+		router, _ := newUserRouter(t)
+		req := valid
+		req.ConfirmPassword = "Password123?"
+		w := postJSON(router, http.MethodPost, "/users/password/reset", req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("wrong and expired code", func(t *testing.T) {
+		router, svc := newUserRouter(t)
+		gomock.InOrder(
+			svc.EXPECT().ResetPassword(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, domain.ErrCodeMismatchException),
+			svc.EXPECT().ResetPassword(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, domain.ErrExpiredCodeException),
+		)
+
+		w := postJSON(router, http.MethodPost, "/users/password/reset", valid)
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
+		assert.Equal(t, []string{"invalid verification code provided"}, errorMessages(t, w))
+
+		w = postJSON(router, http.MethodPost, "/users/password/reset", valid)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, []string{"confirmation code has expired"}, errorMessages(t, w))
 	})
 }
 
@@ -193,4 +244,35 @@ func TestUserHandler_DeprecatedAndRemovedRoutes(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, postJSON(router, http.MethodPost, "/users/forgot-password", map[string]string{"email": "a@b.co"}).Code)
 	assert.Equal(t, http.StatusNotFound, postJSON(router, http.MethodPut, "/users/forgot-password/confirm", map[string]string{}).Code)
 	assert.Equal(t, http.StatusNotFound, postJSON(router, http.MethodGet, "/users/social-auth-url", nil).Code)
+}
+
+func TestUserHandler_VerifyEmail(t *testing.T) {
+	authed := func(method, path string, body any) *http.Request {
+		raw, _ := json.Marshal(body)
+		req := httptest.NewRequest(method, path, bytes.NewBuffer(raw))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer jwt")
+		return req
+	}
+
+	router, svc := newUserRouter(t)
+	svc.EXPECT().Authorize(gomock.Any(), "jwt").Return(&domain.TokenPayload{UserID: "u1", Groups: map[string]bool{}}, nil).AnyTimes()
+	svc.EXPECT().VerifyEmail(gomock.Any(), "u1", "123456", gomock.Any()).Return(nil)
+	svc.EXPECT().SendVerification(gomock.Any(), "u1", gomock.Any()).Return(domain.ErrLimitExceededException)
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, authed(http.MethodPost, "/users/email/verify", verifyEmailRequest{Code: "123456"}))
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, authed(http.MethodPost, "/users/email/verify", verifyEmailRequest{Code: "12"}))
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, authed(http.MethodPost, "/users/email/verify/resend", nil))
+	assert.Equal(t, http.StatusTooManyRequests, w.Code)
+
+	// without token
+	w = postJSON(router, http.MethodPost, "/users/email/verify", verifyEmailRequest{Code: "123456"})
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }

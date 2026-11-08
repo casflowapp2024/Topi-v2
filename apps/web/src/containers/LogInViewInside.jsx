@@ -7,7 +7,7 @@ import { setAlert } from '../redux/actions/alert';
 
 //components
 import Alert from '../components/alert'
-import MigrationPasswordForm from '../components/auth/MigrationPasswordForm';
+import PasswordResetForm from '../components/auth/PasswordResetForm';
 //uxui
 import { ThreeDots } from 'react-loader-spinner';
 
@@ -18,7 +18,7 @@ const LogInViewInside = ({
     setAlert
 }) => {
 
-    // la cuenta existe pero no tiene contraseña (migración): se muestra el formulario para crearla
+    // la cuenta existe pero no tiene contraseña (migración): la crea con un código enviado al correo
     const [needsPassword, setNeedsPassword] = useState(false);
 
 
@@ -89,7 +89,7 @@ const LogInViewInside = ({
                 <div className='w-full max-w-sm bg-white border border-gray-200 rounded-lg shadow  dark:bg-gray-800 dark:border-gray-700 overflow-hidden'>
                     <div class="p-4 sm:p-6 md:p-8">
                         {needsPassword ?
-                            <MigrationPasswordForm email={email} onCancel={() => setNeedsPassword(false)} />
+                            <PasswordResetForm email={email} migration onCancel={() => setNeedsPassword(false)} />
                             :
                             <>
                         <form class="space-y-6" action="#">

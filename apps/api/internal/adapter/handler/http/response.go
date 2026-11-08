@@ -344,15 +344,18 @@ type userResponse struct {
 	LastName string `json:"last_name" example:"Doe"`
 	Email    string `json:"email" example:"test@example.com"`
 	Verified bool   `json:"verified" example:"true"`
+	// EmailVerified is false for new users that have not confirmed the email yet (the front shows a banner)
+	EmailVerified bool `json:"email_verified" example:"true"`
 }
 
 // newUserResponse is a helper function to create a response body for handling user data
 func newUserResponse(user *domain.User) userResponse {
 	return userResponse{
-		Name:     user.Name,
-		LastName: user.LastName,
-		Email:    user.Email,
-		Verified: user.Verified,
+		Name:          user.Name,
+		LastName:      user.LastName,
+		Email:         user.Email,
+		Verified:      user.Verified,
+		EmailVerified: user.EmailVerifiedAt != nil,
 	}
 }
 

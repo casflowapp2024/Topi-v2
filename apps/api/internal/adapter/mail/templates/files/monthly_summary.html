@@ -1,0 +1,37 @@
+{{define "content"}}
+<p style="margin:0 0 4px 0;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Resumen mensual</p>
+<p style="margin:0 0 20px 0;font-size:20px;font-weight:800;color:#111827;">{{.month_name}}</p>
+{{if .has_activity}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px 0;">
+  <tr>
+    <td style="padding:12px 14px;background:#f0fdf4;border-radius:12px;">
+      <div style="font-size:12px;color:#166534;">Ingresos</div>
+      <div style="font-size:20px;font-weight:800;color:#16a34a;">{{.income}}</div>
+    </td>
+  </tr>
+  <tr><td style="height:8px;"></td></tr>
+  <tr>
+    <td style="padding:12px 14px;background:#fef2f2;border-radius:12px;">
+      <div style="font-size:12px;color:#991b1b;">Gastos</div>
+      <div style="font-size:20px;font-weight:800;color:#dc2626;">{{.expenses}}</div>
+    </td>
+  </tr>
+  <tr><td style="height:8px;"></td></tr>
+  <tr>
+    <td style="padding:12px 14px;background:#eef0fd;border-radius:12px;">
+      <div style="font-size:12px;color:#3730a3;">{{if .saved}}Ahorro{{else}}Gastaste más de lo que ingresó{{end}}</div>
+      <div style="font-size:20px;font-weight:800;color:#5266EB;">{{.savings}}</div>
+    </td>
+  </tr>
+</table>
+{{if .top_category}}
+<p style="margin:0 0 20px 0;color:#374151;">Donde más gastaste: <strong>{{.top_category}}</strong> ({{.top_category_amount}}).</p>
+{{end}}
+{{else}}
+<p style="margin:0 0 20px 0;color:#374151;">No registramos movimientos este mes. Si tus correos dejaron de llegar, revisa tus conexiones en Ajustes.</p>
+{{end}}
+<p style="margin:0 0 20px 0;">
+  <a href="{{.app_url}}/dashboard" style="display:inline-block;padding:12px 20px;background:#5266EB;color:#ffffff;border-radius:10px;font-weight:600;text-decoration:none;">Ver el detalle en Topi</a>
+</p>
+<p style="margin:0;color:#6b7280;font-size:13px;">Las cifras son las mismas que ves en el Inicio de Topi para ese mes.</p>
+{{end}}

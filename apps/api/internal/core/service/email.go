@@ -5,11 +5,15 @@ import (
 	"cash-flow/internal/core/port"
 	"cash-flow/internal/enums"
 	"context"
+	"encoding/json"
+	"log/slog"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 )
 
 type EmailService struct {
+	mail           port.MailService
 	repo           port.EmailRepository
 	email          port.EmailAPI
 	repoAccount    port.AccountRepository
@@ -120,8 +124,47 @@ func (e *EmailService) DeleteEmail(ctx context.Context, userID string, id uint64
 	return err
 }
 
+// SetMail enables the "Topi stopped reading your email" alert
+func (e *EmailService) SetMail(mail port.MailService) {
+	e.mail = mail
+}
+
+// SaveEmailError marks the connection (the worker calls it only for credential errors) and, at most
+// once every 7 days per connection, emails the user to reconnect it. The alert never fails the request.
 func (e *EmailService) SaveEmailError(ctx context.Context, emailID uint64, errorMsg string) error {
-	return e.repo.SaveEmailError(ctx, emailID, errorMsg)
+	if err := e.repo.SaveEmailError(ctx, emailID, errorMsg); err != nil {
+		return err
+	}
+
+	if e.mail == nil || strings.TrimSpace(errorMsg) == "" {
+		return nil
+	}
+
+	alert, ok, err := e.repo.ClaimConnectionAlert(ctx, emailID, domain.ConnectionAlertCooldown)
+	if err != nil {
+		slog.Error("connection alert: could not claim", "email_id", emailID, "error", err)
+		return nil
+	}
+	if !ok {
+		return nil
+	}
+
+	payload, _ := json.Marshal(map[string]any{
+		"connection_email": alert.ConnectionEmail,
+		"provider":         domain.ProviderLabel(alert.Provider),
+	})
+	userID := alert.UserID
+	if _, err = e.mail.Enqueue(ctx, domain.OutboxEmail{
+		UserID:   &userID,
+		To:       alert.UserEmail,
+		Template: domain.TemplateConnectionDown,
+		Payload:  payload,
+		Priority: domain.MailPriorityNotification,
+	}); err != nil {
+		slog.Error("connection alert: could not enqueue", "email_id", emailID, "error", err)
+	}
+
+	return nil
 }
 
 func (e *EmailService) ReadEmail(ctx context.Context, userID string, accountIDs []uint64) (*domain.ReadEmailResponse, error) {

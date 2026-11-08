@@ -28,6 +28,7 @@ jest.mock('../ui/DatePicker.tsx', () => ({ DatePicker: () => null }));
 jest.mock('../../hocs/Layout', () => ({ children }) => <div>{children}</div>);
 jest.mock('./ProfileSetts', () => () => <div data-tab="profile" />);
 jest.mock('./ConexionesSetts', () => () => <div data-tab="connections" />);
+jest.mock('./EmailPrefsSetts', () => () => <div data-tab="emails" />);
 jest.mock('./Membership', () => () => null);
 jest.mock('../onboarding2/GoalSelection', () => () => <div data-step="1" />);
 jest.mock('../onboarding2/StepLinkEmail', () => () => <div data-step="2" />);
@@ -59,7 +60,7 @@ const clean = (d) => expect(d.outerHTML).not.toMatch(/#[0-9a-f]{6}|indigo-/i);
 
 afterEach(() => { localStorage.clear(); mockNavigate.length = 0; });
 
-test('Configuración: Modal con pestañas Perfil/Conexiones, cerrar sesión en el pie y Esc cierra', async () => {
+test('Configuración: Modal con pestañas Perfil/Conexiones/Correos, cerrar sesión en el pie y Esc cierra', async () => {
   const close = jest.fn();
   const logout = jest.fn();
   const m = await mount(<AccountSettings isModal activeTab="connections" closeSettingsModal={close} handleLogout={logout} />);
@@ -67,9 +68,11 @@ test('Configuración: Modal con pestañas Perfil/Conexiones, cerrar sesión en e
   expect(d.querySelector('h2').textContent).toBe('Configuración');
   clean(d);
   const tabs = [...d.querySelectorAll('[role=tab]')];
-  expect(tabs.map(t => t.textContent)).toEqual(['Perfil', 'Conexiones']);
-  expect(tabs.map(t => t.getAttribute('aria-selected'))).toEqual(['false', 'true']);
+  expect(tabs.map(t => t.textContent)).toEqual(['Perfil', 'Conexiones', 'Correos']);
+  expect(tabs.map(t => t.getAttribute('aria-selected'))).toEqual(['false', 'true', 'false']);
   expect(d.querySelector('[data-tab]').dataset.tab).toBe('connections');
+  await click(tabs[2]);
+  expect(d.querySelector('[data-tab]').dataset.tab).toBe('emails');
   await click(tabs[0]);
   expect(d.querySelector('[data-tab]').dataset.tab).toBe('profile');
   await click(byText(d.querySelector('footer'), /Cerrar sesión/));

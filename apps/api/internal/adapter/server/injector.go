@@ -10,13 +10,22 @@ import (
 	"cash-flow/internal/adapter/email/jobqueue"
 	"cash-flow/internal/adapter/email/outlook"
 	"cash-flow/internal/adapter/handler/http"
+	"cash-flow/internal/adapter/mail/logmailer"
+	"cash-flow/internal/adapter/mail/resend"
+	"cash-flow/internal/adapter/mail/templates"
 	"cash-flow/internal/adapter/ratelimit"
 	"cash-flow/internal/adapter/storage/postgres"
 	dbrepository "cash-flow/internal/adapter/storage/postgres/repository"
 	dbtransaction "cash-flow/internal/adapter/storage/postgres/transaction"
+	"cash-flow/internal/core/domain"
+	"cash-flow/internal/core/port"
 	"cash-flow/internal/core/service"
+	"cash-flow/internal/enums"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"log/slog"
+	"os"
 	"time"
 )
 
@@ -40,12 +49,19 @@ type Handlers struct {
 	CurrencyChange         *http.CurrencyChangeHandler
 	CreditCard             *http.CreditCardHandler
 	Email                  *http.EmailHandler
+	Mail                   *http.MailHandler
 	Initialization         *http.InitDevHandler
 	CategoryInitialization *http.InitializationHandler
 }
 
 type Resources struct {
 	DB *postgres.DB
+	// Mail processes email_outbox in background (started by main)
+	Mail *service.MailOutboxService
+	// Notifications queues the monthly summaries in background (started by main)
+	Notifications *service.NotificationPrefsService
+	// MailInterval is how often the outbox is processed
+	MailInterval time.Duration
 }
 
 func NewInjector(settings *config.Configuration) *Injector {
@@ -59,6 +75,9 @@ func NewInjector(settings *config.Configuration) *Injector {
 
 	// Migrate database
 	db.Migrate()
+
+	// Mail: every email goes through the Mailer port and email_outbox
+	mailService := newMailService(settings, db)
 
 	// Transaction Manager
 	transactionManager := dbtransaction.NewTransactionManager(db)
@@ -86,6 +105,8 @@ func NewInjector(settings *config.Configuration) *Injector {
 			InternalAPIKey:       settings.Auth.InternalAPIKey,
 		},
 	)
+	// codes by email: at most 3 per email every 15 minutes (plus the general limit per IP)
+	userService.SetMail(mailService, dbrepository.NewAuthCodeRepository(db), ratelimit.NewMemory(3, 15*time.Minute))
 	userHandler := http.NewUserHandler(userService)
 
 	// UserExtra
@@ -118,6 +139,21 @@ func NewInjector(settings *config.Configuration) *Injector {
 	analysisService := service.NewAnalysisService(analysisRepo)
 	analysisHandler := http.NewAnalysisHandler(analysisService)
 
+	// Email preferences, unsubscribe links and monthly summary (numbers computed at send time)
+	notificationService := service.NewNotificationService(
+		dbrepository.NewNotificationRepository(db),
+		mailService,
+		analysisService,
+		service.NotificationSettings{
+			UnsubscribeSecret: deriveKey(settings.Auth.JWTSecret, "topi-unsubscribe-v1"),
+			APIBaseURL:        settings.Mail.APIBaseURL,
+		},
+	)
+	mailService.SetUnsubscribeLinker(notificationService)
+	mailService.SetEnricher(domain.TemplateMonthlySummary, notificationService)
+	mailHandler := http.NewMailHandler(notificationService, mailService,
+		resend.NewWebhookParser(settings.Mail.ResendWebhookSecret), settings.Mail.AppBaseURL)
+
 	// Fx: currencies, exchange rates and net worth
 	fxRepo := dbrepository.NewFxRepository(db)
 	fxService := service.NewFxService(fxRepo)
@@ -148,6 +184,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 
 	emailRepository := dbrepository.NewEmailRepository(db)
 	emailService := service.NewEmailService(emailRepository, emailResource, accountRepo, accountService, transactionManager)
+	emailService.SetMail(mailService)
 	emailHandler := http.NewEmailHandler(emailService)
 
 	// Initialization Dev
@@ -178,11 +215,56 @@ func NewInjector(settings *config.Configuration) *Injector {
 			CurrencyChange:         currencyChangeHandler,
 			CreditCard:             creditCardHandler,
 			Email:                  emailHandler,
+			Mail:                   mailHandler,
 			Initialization:         initDevHandler,
 			CategoryInitialization: InitHandler,
 		},
 		Resources: &Resources{
-			DB: db,
+			DB:            db,
+			Mail:          mailService,
+			Notifications: notificationService,
+			MailInterval:  settings.Mail.OutboxInterval,
 		},
 	}
+}
+
+// newMailService wires the mailer chosen by MAIL_PROVIDER (log by default: nothing is sent)
+func newMailService(settings *config.Configuration, db *postgres.DB) *service.MailOutboxService {
+	renderer, err := templates.New()
+	if err != nil {
+		slog.Error("mail templates are broken", "error", err)
+		os.Exit(1)
+	}
+
+	var mailer port.Mailer
+	switch settings.Mail.Provider {
+	case config.MailProviderResend:
+		mailer = resend.New(settings.Mail.ResendAPIKey, "")
+	default:
+		// only local logs the body (it may carry a code); development/prod log metadata only
+		mailer = logmailer.New(settings.App.Env == enums.Local)
+	}
+	slog.Info("mail provider", "provider", settings.Mail.Provider, "only_to", len(settings.Mail.OnlyTo) > 0)
+
+	return service.NewMailService(
+		dbrepository.NewOutboxRepository(db),
+		mailer,
+		renderer,
+		service.MailSettings{
+			From:       settings.Mail.From,
+			ReplyTo:    settings.Mail.ReplyTo,
+			DailyQuota: settings.Mail.DailyQuota,
+			OnlyTo:     settings.Mail.OnlyTo,
+			AppBaseURL: settings.Mail.AppBaseURL,
+			APIBaseURL: settings.Mail.APIBaseURL,
+		},
+	)
+}
+
+// deriveKey derives a purpose specific key from a secret (HMAC-SHA256), so one variable signs
+// different things without reusing the same key
+func deriveKey(secret, purpose string) []byte {
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(purpose))
+	return mac.Sum(nil)
 }

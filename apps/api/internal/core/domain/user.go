@@ -28,9 +28,14 @@ type User struct {
 	PasswordSetAt *time.Time
 	TokenVersion  int
 	Group         UserGroup
-	Verified      bool
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	// Verified is true for every stored user (the worker relies on it); see EmailVerifiedAt
+	Verified bool
+	// EmailVerifiedAt is when the user proved the email (nil = new user not verified yet)
+	EmailVerifiedAt *time.Time
+	// EmailStatus is users.email_status (ok | bounced | complained)
+	EmailStatus string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 // HasPassword reports whether the user already created a password

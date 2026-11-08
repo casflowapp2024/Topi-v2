@@ -12,6 +12,7 @@ import UpdateSetts from '../components/settings/UpdateSetts';
 import ProfileSetts from '../components/settings/ProfileSetts';
 import ConexionesSetts from '../components/settings/ConexionesSetts';
 import Membership from '../components/settings/Membership';
+import EmailPrefsSetts from '../components/settings/EmailPrefsSetts';
 import Alert from '../components/alert';
 import { ArrowRightStartOnRectangleIcon } from '@heroicons/react/20/solid';
 import Modal from '../components/ui/Modal';
@@ -20,6 +21,7 @@ import Button from '../components/ui/Button';
 export const SETTINGS_TABS = [
     { id: 'profile', label: 'Perfil' },
     { id: 'connections', label: 'Conexiones' },
+    { id: 'emails', label: 'Correos' },
 ];
 
 const AccountSettings = ({
@@ -136,6 +138,7 @@ const AccountSettings = ({
                 <div role="tabpanel" className="px-5 py-5">
                     {activeTab === 'profile' && <ProfileSetts />}
                     {activeTab === 'connections' && <ConexionesSetts />}
+                    {activeTab === 'emails' && <EmailPrefsSetts />}
                     {activeTab === 'membership' && <Membership />}
                 </div>
 

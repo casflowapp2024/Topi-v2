@@ -14,7 +14,7 @@ import (
 
 var userColumns = []string{
 	"id", "email", "password_hash", "name", "last_name", "role",
-	"migrated", "password_set_at", "token_version", "created_at", "updated_at",
+	"migrated", "password_set_at", "token_version", "created_at", "updated_at", "email_status", "email_verified_at",
 }
 
 // UserRepository implements port.UserRepository on the users table
@@ -162,6 +162,23 @@ func (ur *UserRepository) UpdateProfile(ctx context.Context, id, name, lastName 
 	return tx.Commit(ctx)
 }
 
+// MarkEmailVerified sets email_verified_at if it was empty
+func (ur *UserRepository) MarkEmailVerified(ctx context.Context, id string) error {
+	sql, args, err := ur.db.QueryBuilder.Update(enums.UsersTableName).
+		Set("email_verified_at", sq.Expr("now()")).
+		Set("updated_at", sq.Expr("now()")).
+		Where(sq.Eq{"id": id}).
+		Where("email_verified_at IS NULL").
+		ToSql()
+	if err != nil {
+		return err
+	}
+	if _, err = ur.db.Exec(ctx, sql, args...); err != nil {
+		return mappers.MapPostgresErrorCode(err)
+	}
+	return nil
+}
+
 func (ur *UserRepository) getOne(ctx context.Context, where sq.Sqlizer) (*domain.User, error) {
 	sql, args, err := ur.db.QueryBuilder.Select(userColumns...).
 		From(enums.UsersTableName).
@@ -185,6 +202,8 @@ func (ur *UserRepository) getOne(ctx context.Context, where sq.Sqlizer) (*domain
 		&user.TokenVersion,
 		&user.CreatedAt,
 		&user.UpdatedAt,
+		&user.EmailStatus,
+		&user.EmailVerifiedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, domain.ErrUserNotFoundException

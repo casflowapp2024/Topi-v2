@@ -357,18 +357,27 @@ export const login = (email, password) => async dispatch => {
     }
 }
 
-// Usuarios sin contraseña (migrados o reseteados por el admin): crean la contraseña desde el login
-export const set_initial_password = (email, password, confirm_password) => async dispatch => {
-    const config = {
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    };
-
-    const body = JSON.stringify({ email, password, confirm_password });
+// Recuperar (o crear) la contraseña con un código por correo. La API responde igual exista o no el
+// correo, así que aquí "true" solo significa "pedido recibido". Sirve también a los usuarios migrados.
+export const request_password_code = (email) => async () => {
+    const config = { headers: { 'Content-Type': 'application/json' } };
 
     try {
-        const res = await axios.post(`${process.env.REACT_APP_API_URL}/users/set-initial-password`, body, config);
+        const res = await axios.post(`${process.env.REACT_APP_API_URL}/users/password/forgot`, JSON.stringify({ email }), config);
+        if (res.status === 200) return true
+        return res.data.messages
+    } catch (err) {
+        return err.response?.data?.messages || ['network error']
+    }
+}
+
+// Cambia la contraseña con el código; la API cierra las demás sesiones y devuelve tokens (queda logueado)
+export const reset_password = (email, code, password, confirm_password) => async dispatch => {
+    const config = { headers: { 'Content-Type': 'application/json' } };
+    const body = JSON.stringify({ email, code, password, confirm_password });
+
+    try {
+        const res = await axios.post(`${process.env.REACT_APP_API_URL}/users/password/reset`, body, config);
         if (res.status === 200) {
             dispatch({
                 type: LOGIN_SUCCESS,
@@ -376,6 +385,37 @@ export const set_initial_password = (email, password, confirm_password) => async
             });
             return true
         }
+        return res.data.messages
+    } catch (err) {
+        return err.response?.data?.messages || ['network error']
+    }
+}
+
+// Verificar el correo (usuarios nuevos): no bloquea nada, solo quita el aviso
+const authedJSON = () => ({
+    headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+    }
+});
+
+export const verify_email = (code) => async dispatch => {
+    try {
+        const res = await axios.post(`${process.env.REACT_APP_API_URL}/users/email/verify`, JSON.stringify({ code }), authedJSON());
+        if (res.status === 200) {
+            await dispatch(load_user());
+            return true
+        }
+        return res.data.messages
+    } catch (err) {
+        return err.response?.data?.messages || ['network error']
+    }
+}
+
+export const resend_verification = () => async () => {
+    try {
+        const res = await axios.post(`${process.env.REACT_APP_API_URL}/users/email/verify/resend`, null, authedJSON());
+        if (res.status === 200) return true
         return res.data.messages
     } catch (err) {
         return err.response?.data?.messages || ['network error']

@@ -115,7 +115,8 @@ func clearEnv(t *testing.T) {
 		"APP_NAME", "APP_ENV", "JWT_SECRET", "JWT_ISSUER", "ACCESS_TOKEN_TTL", "REFRESH_TOKEN_TTL",
 		"INITIAL_PASSWORD_UNTIL", "INTERNAL_API_KEY", "RATE_LIMIT_PER_MIN", "TRUSTED_PROXIES", "REDIS_ADDR", "REDIS_PASSWORD", "DB_CONNECTION", "DB_HOST",
 		"DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME", "HTTP_URL", "HTTP_PORT",
-		"HTTP_ALLOWED_ORIGINS", "ENV_FILE",
+		"HTTP_ALLOWED_ORIGINS", "ENV_FILE", "MAIL_PROVIDER", "RESEND_API_KEY", "RESEND_WEBHOOK_SECRET", "MAIL_FROM",
+		"MAIL_REPLY_TO", "MAIL_DAILY_QUOTA", "MAIL_ONLY_TO", "APP_BASE_URL", "API_BASE_URL", "MAIL_OUTBOX_INTERVAL",
 	}
 	for _, key := range keys {
 		t.Setenv(key, "")
@@ -173,4 +174,57 @@ func TestAppEnv_ProductionAlias(t *testing.T) {
 		t.Setenv("APP_ENV", value)
 		assert.Equal(t, want, appEnv(), "APP_ENV=%q", value)
 	}
+}
+
+func TestNew_Mail(t *testing.T) {
+	testCases := []struct {
+		name  string
+		env   map[string]string
+		valid bool
+	}{
+		{name: "log is the default", env: map[string]string{"APP_ENV": "development"}, valid: true},
+		{name: "unknown provider", env: map[string]string{"MAIL_PROVIDER": "smtp"}, valid: false},
+		{name: "resend without key", env: map[string]string{"APP_ENV": enums.Production, "MAIL_PROVIDER": "resend"}, valid: false},
+		{name: "resend outside production needs MAIL_ONLY_TO", env: map[string]string{
+			"APP_ENV": "development", "MAIL_PROVIDER": "resend", "RESEND_API_KEY": "re_test"}, valid: false},
+		{name: "resend outside production with MAIL_ONLY_TO", env: map[string]string{
+			"APP_ENV": "development", "MAIL_PROVIDER": "resend", "RESEND_API_KEY": "re_test",
+			"MAIL_ONLY_TO": "equipo@example.com"}, valid: true},
+		{name: "resend in production", env: map[string]string{
+			"APP_ENV": enums.Production, "MAIL_PROVIDER": "resend", "RESEND_API_KEY": "re_test"}, valid: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			clearEnv(t)
+			t.Setenv("ENV_FILE", filepath.Join(os.TempDir(), "does-not-exist.env"))
+			t.Setenv("JWT_SECRET", "0123456789abcdef0123456789abcdef")
+			for key, value := range tc.env {
+				t.Setenv(key, value)
+			}
+			once = sync.Once{}
+
+			config := New()
+
+			if tc.valid {
+				assert.NoError(t, config.Validate())
+			} else {
+				assert.Error(t, config.Validate())
+			}
+		})
+	}
+
+	t.Run("defaults", func(t *testing.T) {
+		clearEnv(t)
+		t.Setenv("ENV_FILE", filepath.Join(os.TempDir(), "does-not-exist.env"))
+		t.Setenv("MAIL_ONLY_TO", "a@example.com, b@example.com")
+		once = sync.Once{}
+
+		config := New()
+
+		assert.Equal(t, "log", config.Mail.Provider)
+		assert.Equal(t, 100, config.Mail.DailyQuota)
+		assert.Equal(t, []string{"a@example.com", "b@example.com"}, config.Mail.OnlyTo)
+		assert.Equal(t, 30*time.Second, config.Mail.OutboxInterval)
+	})
 }

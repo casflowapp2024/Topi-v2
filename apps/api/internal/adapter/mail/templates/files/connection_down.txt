@@ -1,0 +1,14 @@
+{{define "subject"}}Topi dejó de leer tu correo: reconéctalo{{end}}
+{{define "text"}}Hola,
+
+Topi dejó de poder leer tu correo {{.connection_email}} ({{.provider}}): el permiso venció o se revocó.
+Mientras no lo reconectes, tus movimientos nuevos no se registrarán solos.
+
+Reconéctalo en Ajustes > Conexiones (toma un minuto):
+{{.app_url}}/dashboard?settings=connections
+
+Si ya no quieres que Topi lea ese correo, puedes ignorar este mensaje o quitar la conexión.
+
+— Topi
+{{if .unsubscribe_url}}
+No quiero más avisos de conexión: {{.unsubscribe_url}}{{end}}{{end}}

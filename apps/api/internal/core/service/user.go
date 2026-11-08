@@ -31,7 +31,7 @@ type AuthSettings struct {
 	InternalAPIKey string
 }
 
-// UserService implements port.UserService: own email + password auth (no email service)
+// UserService implements port.UserService: own email + password auth; codes by email (SetMail)
 type UserService struct {
 	repo     port.UserRepository
 	token    port.TokenRepository
@@ -41,6 +41,11 @@ type UserService struct {
 	limiter  port.RateLimiter
 	settings AuthSettings
 	now      func() time.Time
+
+	// email codes (SetMail); nil = the flows that need email answer ErrInternal
+	mail        port.MailService
+	codes       port.AuthCodeRepository
+	codeLimiter port.RateLimiter
 
 	dummyOnce sync.Once
 	dummyHash string
@@ -68,7 +73,7 @@ func NewUserService(
 	}
 }
 
-// Register creates a user with a password and logs it in (there is no email verification)
+// Register creates a user with a password, logs it in and emails a verification code (not blocking)
 func (us *UserService) Register(ctx context.Context, user *domain.User, meta domain.RequestMeta) (*domain.AuthTokens, error) {
 	user.Email = domain.NormalizeEmail(user.Email)
 
@@ -99,11 +104,18 @@ func (us *UserService) Register(ctx context.Context, user *domain.User, meta dom
 
 	us.record(ctx, user.ID, user.Email, domain.EventSignup, meta)
 
+	// verification code by email; it never blocks the signup (the user can ask for another one)
+	if us.mail != nil && us.codes != nil {
+		if err := us.sendCode(ctx, user, domain.CodeVerifyEmail, domain.TemplateVerifyEmail); err != nil {
+			slog.Error("could not send the verification code", "user_id", user.ID, "error", err)
+		}
+	}
+
 	return us.issueTokens(ctx, user)
 }
 
 // Login validates the credentials. Users without a password (migrated or reset by the admin)
-// get domain.ErrPasswordResetRequiredException so the front shows the "create password" form.
+// get domain.ErrPasswordResetRequiredException so the front asks for a code by email (ForgotPassword).
 func (us *UserService) Login(ctx context.Context, email, password string, meta domain.RequestMeta) (*domain.AuthTokens, error) {
 	email = domain.NormalizeEmail(email)
 
@@ -137,58 +149,18 @@ func (us *UserService) Login(ctx context.Context, email, password string, meta d
 	return us.issueTokens(ctx, user)
 }
 
-// SetInitialPassword lets a user without password (migrated or reset) create one without a code.
-// Accepted risk (see plan/02-fase-2-auth.md), mitigated by: it only works while the account has
-// no password (checked atomically), the optional INITIAL_PASSWORD_UNTIL window, rate limiting
-// and auditing in auth_events.
-func (us *UserService) SetInitialPassword(ctx context.Context, email, password string, meta domain.RequestMeta) (*domain.AuthTokens, error) {
+// SetInitialPassword is closed: creating a password without proving control of the email is no longer
+// allowed. Users without a password (migrated or reset by the admin) use ForgotPassword + ResetPassword.
+// The route is kept so an old cached front gets a clear 401 instead of a 404.
+func (us *UserService) SetInitialPassword(ctx context.Context, email, _ string, meta domain.RequestMeta) (*domain.AuthTokens, error) {
 	email = domain.NormalizeEmail(email)
 
 	if !us.allow("initial-password", email, meta) {
 		return nil, domain.ErrLimitExceededException
 	}
 
-	if us.settings.InitialPasswordUntil != nil && us.now().After(*us.settings.InitialPasswordUntil) {
-		us.record(ctx, "", email, domain.EventInitialPasswordFail, meta)
-		return nil, domain.ErrNotAuthorizedException
-	}
-
-	if err := domain.ValidatePasswordPolicy(password); err != nil {
-		return nil, err
-	}
-
-	user, err := us.repo.GetUserByEmail(ctx, email)
-	if errors.Is(err, domain.ErrUserNotFoundException) {
-		us.record(ctx, "", email, domain.EventInitialPasswordFail, meta)
-		return nil, domain.ErrNotAuthorizedException
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	if user.HasPassword() {
-		us.record(ctx, user.ID, email, domain.EventInitialPasswordFail, meta)
-		return nil, domain.ErrNotAuthorizedException
-	}
-
-	hash, err := us.hasher.Hash(password)
-	if err != nil {
-		return nil, domain.ErrInternal
-	}
-
-	if err = us.repo.SetInitialPassword(ctx, user.ID, hash); err != nil {
-		if errors.Is(err, domain.ErrNotAuthorizedException) {
-			// another request set the password first
-			us.record(ctx, user.ID, email, domain.EventInitialPasswordFail, meta)
-		}
-		return nil, err
-	}
-
-	us.record(ctx, user.ID, email, domain.EventInitialPasswordSet, meta)
-
-	user.PasswordHash = &hash
-
-	return us.issueTokens(ctx, user)
+	us.record(ctx, "", email, domain.EventInitialPasswordFail, meta)
+	return nil, domain.ErrNotAuthorizedException
 }
 
 // Refresh rotates a refresh token. Reusing a revoked token revokes every session of the user.

@@ -30,6 +30,8 @@ Guárdalos en tu gestor de contraseñas **antes** de empezar. No los pegues en c
 | Secret de Azure (Outlook) rotado | Azure Portal (B0.2) | api y worker |
 | `GEMINI_API_KEY` nueva | Google AI Studio, proyecto con facturación (B0.2) | worker |
 | Credenciales del bucket S3 | Cloudflare R2 o Backblaze B2 (B0.4) | backups de topi-db, `backup-check.sh` |
+| `RESEND_API_KEY` (solo envío) | Resend → API Keys (B8.3) | topi-api |
+| `RESEND_WEBHOOK_SECRET` (`whsec_...`) | Resend → Webhooks (B8.6) | topi-api |
 
 ---
 
@@ -419,12 +421,82 @@ Más adelante, el job `deploy` del workflow (hoy con `if: false`) llama a la API
 
 ---
 
+## B8. Correo (Resend)
+
+Topi envía correos solo por la API HTTP de Resend (Hetzner bloquea SMTP), desde el subdominio
+`mail.topi.cash` para no arriesgar la reputación de `topi.cash`. Todo pasa por la tabla `email_outbox`.
+Correos: código para recuperar o crear la contraseña, código para confirmar el correo (cuentas nuevas),
+aviso de conexión caída (máximo 1 por conexión cada 7 días) y resumen mensual (solo si el usuario lo activa).
+
+> **Orden obligatorio.** El front y la API de esta versión van juntos, y antes del deploy el dominio debe
+> estar verificado: `set-initial-password` quedó cerrado y los usuarios sin contraseña (migrados) la crean
+> con un código por correo. Si la API sale sin correo funcionando, esos usuarios no pueden entrar, y
+> `reset-password.sh` tampoco los salva (deja la cuenta sin contraseña, que también pide el código).
+
+### B8.1 Cuenta y dominio
+1. Crea la cuenta en <https://resend.com> con `cashflowapp2024@gmail.com`. Revisa en **Settings → Usage /
+   Billing** (verificar en tu versión) los límites del plan gratis (hoy ~3.000/mes y 100/día). Si el límite
+   diario no es 100, ajusta `MAIL_DAILY_QUOTA`.
+2. **Domains → Add Domain** → `mail.topi.cash`. Si pregunta la región, elige `us-east-1` (verificar en tu versión).
+3. Resend muestra los registros DNS. **Cópialos tal cual** (nombre, tipo, valor, prioridad). Normalmente son:
+   un TXT de DKIM (`resend._domainkey.mail`), y para el rebote un MX y un TXT de SPF en `send.mail`.
+
+### B8.2 DNS (donde está `topi.cash`)
+1. Crea cada registro que mostró Resend. En Cloudflare: los TXT/MX no se proxifican (nube gris).
+   **No toques** los MX ni TXT existentes de `topi.cash` (B0.6).
+2. DMARC inicial, solo de observación. Si `topi.cash` **no** tiene ya un registro `_dmarc`, crea:
+   - Tipo TXT, nombre `_dmarc`, valor `v=DMARC1; p=none; rua=mailto:<buzón-en-topi.cash>`
+   - El `rua` debe ser un buzón de `topi.cash` (o de un servicio de reportes DMARC): Gmail no acepta reportes
+     de otro dominio sin un registro de autorización. Si no tienes buzón, quita `rua=...` por ahora.
+   - Si ya existe un `_dmarc`, no crees otro (dos registros invalidan DMARC): edita el que hay.
+3. **Verificar:** en Resend → Domains, `mail.topi.cash` queda **Verified** (puede tardar de minutos a horas).
+   Desde tu computador: `LOCAL$ nslookup -type=TXT resend._domainkey.mail.topi.cash` muestra el DKIM.
+
+### B8.3 API key
+1. **API Keys → Create API Key** → nombre `topi-api-prod`, permiso **Sending access**, dominio `mail.topi.cash`.
+2. Guárdala en tu gestor de contraseñas (`re_...`, se muestra una sola vez). No la pegues en chats ni tickets.
+
+### B8.4 Variables en Coolify (`topi-api`)
+Copia la sección de correo de `infra/coolify/api.env.template`:
+`MAIL_PROVIDER=resend`, `RESEND_API_KEY`, `MAIL_FROM=Topi <hola@mail.topi.cash>`,
+`MAIL_REPLY_TO=cashflowapp2024@gmail.com`, `MAIL_DAILY_QUOTA=100`, `MAIL_ONLY_TO` vacío,
+`APP_BASE_URL=https://www.topi.cash`, `API_BASE_URL=https://api.topi.cash`. `RESEND_WEBHOOK_SECRET` va en B8.6.
+Con `APP_ENV` distinto de producción y `MAIL_PROVIDER=resend`, la API no arranca sin `MAIL_ONLY_TO` (a propósito).
+
+### B8.5 Deploy y prueba
+1. Despliega `topi-api` y `topi-web` (misma versión). Los logs de la API deben decir `mail provider provider=resend`.
+2. En `https://www.topi.cash/forgot_password/` pide un código para **tu** correo. Debe llegar en menos de un
+   minuto, desde `hola@mail.topi.cash`, sin ir a spam. Cámbiala o déjala: el código vence en 10 minutos.
+3. Revisa el outbox (sin datos sensibles: el código nunca se guarda):
+   ```bash
+   SERVER$ docker exec -it <pg> psql -U topi -d cashflow -c      "SELECT id, template, status, attempts, last_error, created_at FROM email_outbox ORDER BY id DESC LIMIT 10;"
+   ```
+   `status = sent` y `provider_id` con valor. Si queda `failed`, `last_error` dice por qué (p. ej. dominio no verificado).
+4. En Gmail → **Mostrar original**: `SPF: PASS`, `DKIM: PASS`, `DMARC: PASS`.
+
+### B8.6 Webhook (rebotes y quejas)
+1. Resend → **Webhooks → Add Endpoint** → URL `https://api.topi.cash/mail/webhook/resend`, eventos
+   `email.bounced` y `email.complained`.
+2. Copia el **Signing Secret** (`whsec_...`) a `RESEND_WEBHOOK_SECRET` en Coolify y vuelve a desplegar `topi-api`.
+3. **Verificar:** en Resend usa **Send test** (o reenvía un evento): la entrega debe dar 200. Si da 401, el
+   secreto no coincide. Un `curl -X POST https://api.topi.cash/mail/webhook/resend` sin firma debe dar 401.
+4. Un rebote duro o una queja marca `users.email_status` (`bounced`/`complained`) y Topi deja de escribirle,
+   salvo el código de contraseña si el usuario lo pide. Para reactivar a alguien que corrigió su buzón:
+   `UPDATE users SET email_status = 'ok' WHERE lower(email) = lower('<email>');`
+
+### B8.7 Después de 2 semanas
+Si los reportes DMARC (o Gmail → Mostrar original) siguen en PASS, sube el DMARC a
+`v=DMARC1; p=quarantine; ...`. Revisa en Resend el porcentaje de rebotes y quejas (debe ser casi 0).
+
+---
+
 ## Operación diaria
 
 | Tarea | Comando |
 |---|---|
 | Hacer admin a alguien | `SERVER$ /root/topi-scripts/prod/make-admin.sh --container <pg> <email>` |
-| "Olvidé mi contraseña" | `SERVER$ /root/topi-scripts/prod/reset-password.sh --container <pg> <email>` |
+| "Olvidé mi contraseña" | El usuario lo hace solo en `/forgot_password/` (código por correo). Respaldo si el correo falla: `SERVER$ /root/topi-scripts/prod/reset-password.sh --container <pg> <email>` (el usuario luego pide el código al entrar) |
+| Correos que no salen | `SELECT template, status, last_error, count(*) FROM email_outbox WHERE created_at > now() - interval '1 day' GROUP BY 1,2,3;` (B8.5) |
 | Estado de la migración de cuentas | `SERVER$ /root/topi-scripts/prod/auth-report.sh --container <pg> [dias]` |
 | Smoke después de un deploy | `LOCAL$ infra/scripts/smoke-prod.sh` |
 | Probar el backup (mensual) | `SERVER$ .../prod/backup-check.sh ...` (B7.4) |
