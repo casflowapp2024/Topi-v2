@@ -376,3 +376,25 @@ func truncate(value string, size int) string {
 	}
 	return value[:size]
 }
+
+// HandleEvent applies a verified provider event. Hard bounces and complaints suppress every future
+// email to the user except the password code they ask for; the rest of the events are ignored.
+func (s *MailOutboxService) HandleEvent(ctx context.Context, event domain.MailEvent) error {
+	var status string
+	switch {
+	case event.Type == domain.MailEventComplained:
+		status = domain.EmailStatusComplained
+	case event.IsHardBounce():
+		status = domain.EmailStatusBounced
+	default:
+		return nil
+	}
+
+	changed, err := s.repo.SetRecipientStatus(ctx, event.ProviderID, event.To, status)
+	if err != nil {
+		return err
+	}
+	slog.Warn("mail: recipient suppressed by the provider", "event", event.Type, "provider_id", event.ProviderID,
+		"status", status, "users", changed)
+	return nil
+}

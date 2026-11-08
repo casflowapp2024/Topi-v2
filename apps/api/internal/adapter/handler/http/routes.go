@@ -261,5 +261,6 @@ func (r *Routes) MailRoutes() {
 	{
 		mail.GET("/unsubscribe", r.MailHandler.UnsubscribeForm)
 		mail.POST("/unsubscribe", r.MailHandler.Unsubscribe)
+		mail.POST("/webhook/resend", r.MailHandler.ResendWebhook)
 	}
 }

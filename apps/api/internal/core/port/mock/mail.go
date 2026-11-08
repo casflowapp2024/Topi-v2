@@ -259,6 +259,59 @@ func (mr *MockOutboxRepositoryMockRecorder) RecipientStatus(ctx, userID interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecipientStatus", reflect.TypeOf((*MockOutboxRepository)(nil).RecipientStatus), ctx, userID)
 }
 
+// SetRecipientStatus mocks base method.
+func (m *MockOutboxRepository) SetRecipientStatus(ctx context.Context, providerID string, to []string, status string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetRecipientStatus", ctx, providerID, to, status)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetRecipientStatus indicates an expected call of SetRecipientStatus.
+func (mr *MockOutboxRepositoryMockRecorder) SetRecipientStatus(ctx, providerID, to, status interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRecipientStatus", reflect.TypeOf((*MockOutboxRepository)(nil).SetRecipientStatus), ctx, providerID, to, status)
+}
+
+// MockMailEventParser is a mock of MailEventParser interface.
+type MockMailEventParser struct {
+	ctrl     *gomock.Controller
+	recorder *MockMailEventParserMockRecorder
+}
+
+// MockMailEventParserMockRecorder is the mock recorder for MockMailEventParser.
+type MockMailEventParserMockRecorder struct {
+	mock *MockMailEventParser
+}
+
+// NewMockMailEventParser creates a new mock instance.
+func NewMockMailEventParser(ctrl *gomock.Controller) *MockMailEventParser {
+	mock := &MockMailEventParser{ctrl: ctrl}
+	mock.recorder = &MockMailEventParserMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockMailEventParser) EXPECT() *MockMailEventParserMockRecorder {
+	return m.recorder
+}
+
+// Parse mocks base method.
+func (m *MockMailEventParser) Parse(id, timestamp, signature string, body []byte) (*domain.MailEvent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Parse", id, timestamp, signature, body)
+	ret0, _ := ret[0].(*domain.MailEvent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Parse indicates an expected call of Parse.
+func (mr *MockMailEventParserMockRecorder) Parse(id, timestamp, signature, body interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parse", reflect.TypeOf((*MockMailEventParser)(nil).Parse), id, timestamp, signature, body)
+}
+
 // MockMailService is a mock of MailService interface.
 type MockMailService struct {
 	ctrl     *gomock.Controller
@@ -295,6 +348,20 @@ func (m *MockMailService) Enqueue(ctx context.Context, email domain.OutboxEmail)
 func (mr *MockMailServiceMockRecorder) Enqueue(ctx, email interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enqueue", reflect.TypeOf((*MockMailService)(nil).Enqueue), ctx, email)
+}
+
+// HandleEvent mocks base method.
+func (m *MockMailService) HandleEvent(ctx context.Context, event domain.MailEvent) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HandleEvent", ctx, event)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// HandleEvent indicates an expected call of HandleEvent.
+func (mr *MockMailServiceMockRecorder) HandleEvent(ctx, event interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleEvent", reflect.TypeOf((*MockMailService)(nil).HandleEvent), ctx, event)
 }
 
 // ProcessOnce mocks base method.

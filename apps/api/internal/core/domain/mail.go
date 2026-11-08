@@ -123,3 +123,30 @@ func ProviderLabel(provider string) string {
 	}
 	return provider
 }
+
+// Provider events (webhook)
+const (
+	MailEventBounced    = "email.bounced"
+	MailEventComplained = "email.complained"
+)
+
+// MailEvent is a verified provider webhook event
+type MailEvent struct {
+	Type       string
+	ProviderID string
+	To         []string
+	// BounceType is "Permanent" for hard bounces ("" when the provider does not say)
+	BounceType string
+}
+
+// IsHardBounce reports whether a bounce must stop the sending (transient bounces do not)
+func (e MailEvent) IsHardBounce() bool {
+	if e.Type != MailEventBounced {
+		return false
+	}
+	switch strings.ToLower(e.BounceType) {
+	case "", "permanent", "hard":
+		return true
+	}
+	return false
+}

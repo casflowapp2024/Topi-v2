@@ -190,3 +190,21 @@ func (r *OutboxRepository) RecipientStatus(ctx context.Context, userID string) (
 	}
 	return status, nil
 }
+
+// SetRecipientStatus marks the user of a bounced or complained email
+func (r *OutboxRepository) SetRecipientStatus(ctx context.Context, providerID string, to []string, status string) (int64, error) {
+	lowered := make([]string, 0, len(to))
+	for _, address := range to {
+		lowered = append(lowered, domain.NormalizeEmail(address))
+	}
+
+	tag, err := r.db.Exec(ctx, `UPDATE users SET email_status = $3, updated_at = now()
+WHERE (id IN (SELECT user_id FROM email_outbox WHERE provider_id = $1 AND $1 <> '' AND user_id IS NOT NULL)
+       OR lower(email) = ANY($2::text[]))
+  AND email_status <> $3
+  AND NOT (email_status = 'complained' AND $3 = 'bounced')`, providerID, lowered, status)
+	if err != nil {
+		return 0, mappers.MapPostgresErrorCode(err)
+	}
+	return tag.RowsAffected(), nil
+}

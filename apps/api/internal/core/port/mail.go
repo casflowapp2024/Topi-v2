@@ -39,6 +39,14 @@ type OutboxRepository interface {
 	CountSentSince(ctx context.Context, since time.Time) (int, error)
 	// RecipientStatus returns users.email_status (ok if the user does not exist)
 	RecipientStatus(ctx context.Context, userID string) (string, error)
+	// SetRecipientStatus sets users.email_status of the user of the email (by provider id, or by
+	// address); a complaint is never downgraded to a bounce. Returns how many users changed.
+	SetRecipientStatus(ctx context.Context, providerID string, to []string, status string) (int64, error)
+}
+
+// MailEventParser verifies and parses the provider webhooks (Svix signature headers)
+type MailEventParser interface {
+	Parse(id, timestamp, signature string, body []byte) (*domain.MailEvent, error)
 }
 
 // MailService enqueues and sends emails
@@ -52,4 +60,6 @@ type MailService interface {
 	ProcessOnce(ctx context.Context) (int, error)
 	// Run calls ProcessOnce every interval until ctx ends
 	Run(ctx context.Context, interval time.Duration)
+	// HandleEvent applies a provider event: hard bounce or complaint suppresses the recipient
+	HandleEvent(ctx context.Context, event domain.MailEvent) error
 }

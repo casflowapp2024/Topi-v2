@@ -103,8 +103,9 @@ func (m *fakeMailService) SendSecret(_ context.Context, email domain.OutboxEmail
 	return nil
 }
 
-func (m *fakeMailService) ProcessOnce(context.Context) (int, error) { return 0, nil }
-func (m *fakeMailService) Run(context.Context, time.Duration)       {}
+func (m *fakeMailService) ProcessOnce(context.Context) (int, error)            { return 0, nil }
+func (m *fakeMailService) HandleEvent(context.Context, domain.MailEvent) error { return nil }
+func (m *fakeMailService) Run(context.Context, time.Duration)                  {}
 
 func (m *fakeMailService) lastCode(t *testing.T) string {
 	t.Helper()

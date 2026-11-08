@@ -7,6 +7,7 @@ import (
 	"cash-flow/internal/core/domain"
 	"cash-flow/internal/core/port/mock"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -19,17 +20,24 @@ import (
 )
 
 func newMailRouter(t *testing.T) (*gin.Engine, *mock.MockUserService, *mock.MockNotificationService) {
+	router, users, prefs, _, _ := newMailRouterFull(t)
+	return router, users, prefs
+}
+
+func newMailRouterFull(t *testing.T) (*gin.Engine, *mock.MockUserService, *mock.MockNotificationService, *mock.MockMailService, *mock.MockMailEventParser) {
 	ctrl := gomock.NewController(t)
 	users := mock.NewMockUserService(ctrl)
 	prefs := mock.NewMockNotificationService(ctrl)
+	mail := mock.NewMockMailService(ctrl)
+	events := mock.NewMockMailEventParser(ctrl)
 
 	gin.SetMode(gin.TestMode)
 	logger.Set(&config.App{Env: "test"})
 	registerValidators()
 
-	routes := Routes{UserHandler: NewUserHandler(users), MailHandler: NewMailHandler(prefs, "https://www.topi.test"), Router: gin.New()}
+	routes := Routes{UserHandler: NewUserHandler(users), MailHandler: NewMailHandler(prefs, mail, events, "https://www.topi.test"), Router: gin.New()}
 	routes.MailRoutes()
-	return routes.Router, users, prefs
+	return routes.Router, users, prefs, mail, events
 }
 
 func TestMailHandler_NotificationPrefs(t *testing.T) {
@@ -96,4 +104,27 @@ func TestMailHandler_Unsubscribe(t *testing.T) {
 	router.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/mail/unsubscribe?t=bad", nil))
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, w.Body.String(), "El enlace no es válido")
+}
+
+func TestMailHandler_ResendWebhook(t *testing.T) {
+	router, _, _, mail, events := newMailRouterFull(t)
+	event := &domain.MailEvent{Type: domain.MailEventBounced, ProviderID: "re_1"}
+	gomock.InOrder(
+		events.EXPECT().Parse("msg_1", "1700000000", "v1,bad", []byte(`{"type":"email.bounced"}`)).Return(nil, errors.New("invalid webhook signature")),
+		events.EXPECT().Parse("msg_1", "1700000000", "v1,good", []byte(`{"type":"email.bounced"}`)).Return(event, nil),
+	)
+	mail.EXPECT().HandleEvent(gomock.Any(), *event).Return(nil)
+
+	send := func(signature string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/mail/webhook/resend", strings.NewReader(`{"type":"email.bounced"}`))
+		req.Header.Set("svix-id", "msg_1")
+		req.Header.Set("svix-timestamp", "1700000000")
+		req.Header.Set("svix-signature", signature)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		return w
+	}
+
+	assert.Equal(t, http.StatusUnauthorized, send("v1,bad").Code, "invalid signature: 401 and nothing is applied")
+	assert.Equal(t, http.StatusOK, send("v1,good").Code)
 }

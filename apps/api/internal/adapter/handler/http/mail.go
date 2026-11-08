@@ -6,6 +6,7 @@ import (
 	"cash-flow/internal/enums"
 	"errors"
 	"html/template"
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,12 +15,49 @@ import (
 // MailHandler serves the email preferences, the unsubscribe links and the provider webhook
 type MailHandler struct {
 	prefs  port.NotificationService
+	mail   port.MailService
+	events port.MailEventParser
 	appURL string
 }
 
 // NewMailHandler creates a MailHandler. appURL is the web app (links of the unsubscribe page).
-func NewMailHandler(prefs port.NotificationService, appURL string) *MailHandler {
-	return &MailHandler{prefs: prefs, appURL: appURL}
+func NewMailHandler(prefs port.NotificationService, mail port.MailService, events port.MailEventParser, appURL string) *MailHandler {
+	return &MailHandler{prefs: prefs, mail: mail, events: events, appURL: appURL}
+}
+
+// maxWebhookBody bounds the webhook body (Resend events are small)
+const maxWebhookBody = 256 << 10
+
+// ResendWebhook godoc
+//
+//	@Summary		Resend events (bounces and complaints)
+//	@Description	Verified with the Svix signature (RESEND_WEBHOOK_SECRET). Hard bounce or complaint stops the emails to that user.
+//	@Tags			Mail
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	response		"Processed (or ignored)"
+//	@Failure		401	{object}	errorResponse	"Invalid signature"
+//	@Router			/mail/webhook/resend [post]
+func (mh *MailHandler) ResendWebhook(ctx *gin.Context) {
+	body, err := io.ReadAll(io.LimitReader(ctx.Request.Body, maxWebhookBody+1))
+	if err != nil || len(body) > maxWebhookBody {
+		ctx.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, newErrorResponse([]string{"body too large"}))
+		return
+	}
+
+	event, err := mh.events.Parse(ctx.GetHeader("svix-id"), ctx.GetHeader("svix-timestamp"), ctx.GetHeader("svix-signature"), body)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, newErrorResponse([]string{domain.ErrUnauthorized.Error()}))
+		return
+	}
+
+	if err = mh.mail.HandleEvent(ctx, *event); err != nil {
+		// 5xx: the provider retries the webhook
+		handleError(ctx, err)
+		return
+	}
+
+	handleCustomSuccess(ctx, "ok")
 }
 
 // GetNotificationPrefs godoc

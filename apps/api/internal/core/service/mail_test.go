@@ -172,6 +172,23 @@ func (f *fakeOutbox) RecipientStatus(_ context.Context, userID string) (string, 
 	return domain.EmailStatusOK, nil
 }
 
+func (f *fakeOutbox) SetRecipientStatus(_ context.Context, providerID string, to []string, status string) (int64, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var changed int64
+	for _, row := range f.rows {
+		if row.UserID == nil || row.ProviderID == nil || *row.ProviderID != providerID {
+			continue
+		}
+		if current := f.statuses[*row.UserID]; current == status || (current == domain.EmailStatusComplained && status == domain.EmailStatusBounced) {
+			continue
+		}
+		f.statuses[*row.UserID] = status
+		changed++
+	}
+	return changed, nil
+}
+
 func (f *fakeOutbox) byStatus(status string) []domain.OutboxEmail {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -523,4 +540,32 @@ func TestMail_EnricherCancelAndRetry(t *testing.T) {
 	_, _ = f.svc.ProcessOnce(context.Background())
 	assert.Equal(t, domain.OutboxPending, f.repo.rows[retried].Status)
 	assert.Empty(t, f.mailer.messages())
+}
+
+func TestMail_HandleEvent(t *testing.T) {
+	ctx := context.Background()
+	f := newMailFixture(t, MailSettings{})
+	f.enqueue(t, domain.TemplateVerifyEmail, domain.MailPriorityTransactional, "a@example.com")
+	_, _ = f.svc.ProcessOnce(ctx)
+	providerID := *f.repo.byStatus(domain.OutboxSent)[0].ProviderID
+
+	// transient bounces and other events change nothing
+	require.NoError(t, f.svc.HandleEvent(ctx, domain.MailEvent{Type: domain.MailEventBounced, ProviderID: providerID, BounceType: "Transient"}))
+	require.NoError(t, f.svc.HandleEvent(ctx, domain.MailEvent{Type: "email.delivered", ProviderID: providerID}))
+	assert.Empty(t, f.repo.statuses["u-a@example.com"])
+
+	require.NoError(t, f.svc.HandleEvent(ctx, domain.MailEvent{Type: domain.MailEventBounced, ProviderID: providerID, BounceType: "Permanent"}))
+	assert.Equal(t, domain.EmailStatusBounced, f.repo.statuses["u-a@example.com"])
+
+	require.NoError(t, f.svc.HandleEvent(ctx, domain.MailEvent{Type: domain.MailEventComplained, ProviderID: providerID}))
+	assert.Equal(t, domain.EmailStatusComplained, f.repo.statuses["u-a@example.com"])
+
+	// a later bounce does not downgrade the complaint
+	require.NoError(t, f.svc.HandleEvent(ctx, domain.MailEvent{Type: domain.MailEventBounced, ProviderID: providerID}))
+	assert.Equal(t, domain.EmailStatusComplained, f.repo.statuses["u-a@example.com"])
+
+	// and the next non transactional email is suppressed
+	id := f.enqueue(t, domain.TemplateConnectionDown, domain.MailPriorityNotification, "a@example.com")
+	_, _ = f.svc.ProcessOnce(ctx)
+	assert.Equal(t, domain.OutboxSuppressed, f.repo.rows[id].Status)
 }

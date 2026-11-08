@@ -7,6 +7,7 @@ import (
 	"cash-flow/internal/core/domain"
 	"context"
 	"encoding/json"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -164,4 +165,56 @@ func TestOutboxRepository_ClaimSkipsLocked(t *testing.T) {
 	for id, n := range seen {
 		assert.Equal(t, 1, n, "email %d claimed twice", id)
 	}
+}
+
+func TestOutboxRepository_SetRecipientStatus(t *testing.T) {
+	ctx := context.Background()
+	db := integrationDB(t)
+	repo := repository.NewOutboxRepository(db)
+	users := repository.NewUserRepository(db)
+
+	newUser := func() (string, string) {
+		id := uuid.NewString()
+		email := "rs-" + id[:8] + "@example.com"
+		require.NoError(t, users.CreateUser(ctx, &domain.User{ID: id, Email: email, Role: domain.RoleUser}))
+		t.Cleanup(func() {
+			_, _ = db.Exec(ctx, "DELETE FROM email_outbox WHERE user_id = $1", id)
+			_, _ = db.Exec(ctx, "DELETE FROM users WHERE id = $1", id)
+		})
+		return id, email
+	}
+	a, _ := newUser()
+	b, bEmail := newUser()
+
+	id, _, err := repo.Enqueue(ctx, domain.OutboxEmail{UserID: &a, To: "a@example.com", Template: domain.TemplateVerifyEmail,
+		Payload: json.RawMessage(`{}`), Priority: 1, SendAfter: time.Now()})
+	require.NoError(t, err)
+	provider := "re_" + a[:8]
+	require.NoError(t, repo.MarkSent(ctx, id, provider))
+
+	status := func(userID string) string {
+		s, err := repo.RecipientStatus(ctx, userID)
+		require.NoError(t, err)
+		return s
+	}
+
+	// by provider id
+	n, err := repo.SetRecipientStatus(ctx, provider, nil, domain.EmailStatusBounced)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), n)
+	assert.Equal(t, domain.EmailStatusBounced, status(a))
+
+	// complaint wins and is never downgraded
+	_, err = repo.SetRecipientStatus(ctx, provider, nil, domain.EmailStatusComplained)
+	require.NoError(t, err)
+	n, err = repo.SetRecipientStatus(ctx, provider, nil, domain.EmailStatusBounced)
+	require.NoError(t, err)
+	assert.Zero(t, n)
+	assert.Equal(t, domain.EmailStatusComplained, status(a))
+
+	// unknown provider id: by address (case insensitive)
+	n, err = repo.SetRecipientStatus(ctx, "re_unknown", []string{"  " + strings.ToUpper(bEmail)}, domain.EmailStatusBounced)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), n)
+	assert.Equal(t, domain.EmailStatusBounced, status(b))
 }

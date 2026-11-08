@@ -151,7 +151,8 @@ func NewInjector(settings *config.Configuration) *Injector {
 	)
 	mailService.SetUnsubscribeLinker(notificationService)
 	mailService.SetEnricher(domain.TemplateMonthlySummary, notificationService)
-	mailHandler := http.NewMailHandler(notificationService, settings.Mail.AppBaseURL)
+	mailHandler := http.NewMailHandler(notificationService, mailService,
+		resend.NewWebhookParser(settings.Mail.ResendWebhookSecret), settings.Mail.AppBaseURL)
 
 	// Fx: currencies, exchange rates and net worth
 	fxRepo := dbrepository.NewFxRepository(db)
