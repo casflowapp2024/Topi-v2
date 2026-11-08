@@ -1,0 +1,13 @@
+{{define "subject"}}{{.subject}}{{end}}
+{{define "text"}}{{.heading}}
+
+{{.intro}}
+{{range .details}}
+{{.label}}: {{.value}}{{end}}
+{{if .cta_url}}
+{{.cta_label}}: {{.cta_url}}
+{{end}}
+{{if .note}}{{.note}}
+{{end}}
+— Topi
+{{.app_url}}{{end}}

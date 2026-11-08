@@ -15,6 +15,11 @@ var sampleData = map[string]map[string]any{
 	"verify_email":  {"code": "730154", "minutes": 10},
 	"connection_down": {"connection_email": "ana.banco@gmail.com", "provider": "Gmail",
 		"unsubscribe_url": "https://api.topi.test/mail/unsubscribe?t=abc"},
+	// generic receipt / payment notice for the business model (N1/N3): every text comes from the caller
+	"billing_generic": {"subject": "Recibo de tu aporte a Topi", "heading": "¡Gracias por apoyar a Topi!",
+		"intro":     "Recibimos tu pago. Este es tu recibo.",
+		"details":   []map[string]any{{"label": "Plan", "value": "Topi Plus mensual"}, {"label": "Valor", "value": "$9.900"}},
+		"cta_label": "Ver mi plan", "cta_url": "https://www.topi.test/dashboard?settings=profile", "note": "Referencia TP-0001"},
 	"monthly_summary": {"month": "2026-10", "month_name": "octubre de 2026", "income": "$5.200.000",
 		"expenses": "$3.950.500", "savings": "$1.249.500", "saved": true, "has_activity": true,
 		"top_category": "Mercado", "top_category_amount": "$1.120.000",
@@ -122,4 +127,22 @@ func TestMonthlySummary(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, out.HTML, "No registramos movimientos")
 	assert.NotContains(t, out.HTML, "$5.200.000")
+}
+
+func TestBillingGeneric(t *testing.T) {
+	r, err := New()
+	require.NoError(t, err)
+
+	out, err := r.Render("billing_generic", withCommon(sampleData["billing_generic"]))
+	require.NoError(t, err)
+	assert.Equal(t, "Recibo de tu aporte a Topi", out.Subject)
+	assert.Contains(t, out.HTML, "Topi Plus mensual")
+	assert.Contains(t, out.Text, "Valor: $9.900")
+	assert.NotContains(t, out.HTML, "Dejar de recibir", "transactional")
+
+	// without details nor button
+	minimal := withCommon(map[string]any{"subject": "Aviso de pago", "heading": "Tu pago no pasó",
+		"intro": "Inténtalo de nuevo.", "details": nil, "cta_label": "", "cta_url": "", "note": ""})
+	_, err = r.Render("billing_generic", minimal)
+	require.NoError(t, err)
 }

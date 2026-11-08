@@ -11,7 +11,8 @@ apps/api      Go 1.23, módulo `cash-flow`. Entrada: cmd/http/main.go
   internal/core/port       interfaces (puertos) + mocks gomock en port/mock
   internal/core/service    casos de uso; dependen solo de port y domain
   internal/adapter/*       implementaciones: handler/http (Gin), storage/postgres (pgx + squirrel,
-                           migraciones embebidas), email (gmail, outlook, jobqueue), auth (jwt HS256,
+                           migraciones embebidas), email (gmail, outlook, jobqueue: LEER correos),
+                           mail (resend, logmailer, templates: ENVIAR correos), auth (jwt HS256,
                            password argon2id), ratelimit, config, logger, server (injector = wiring)
 apps/worker   Python 3.12, worker de correos (paquete `worker/`): scheduler + job loop sobre email_jobs
   providers/   gmail, outlook, senders (remitentes separados por coma)
@@ -86,6 +87,15 @@ plan/         plan de migración
   (`extraExpensesByDay`); las anteriores siguen completas. La bandeja pregunta las cuotas de compras grandes con tarjeta
   leídas de correo (`needs_installments=true`, `InstallmentPromptMin`, `POST /transactions/:id/installments` marca
   `installments_reviewed_at`). Plan: `plan/21-cuotas.md`.
+- Correo saliente (`plan/23-correo-transaccional.md`): puerto `Mailer` (adaptadores `resend` y `logmailer`) y
+  `MailOutboxService` sobre `email_outbox` (prioridad 1 = transaccional con cupo reservado en `MAIL_DAILY_QUOTA`,
+  reintentos, `users.email_status` suprime por rebote/queja). Plantillas embebidas en `adapter/mail/templates/files`
+  (`<nombre>.txt` con `subject` + `text`, `<nombre>.html` con `content`; datos faltantes = error). Los códigos van con
+  `SendSecret` (el secreto nunca entra al outbox, no se reintenta); cifras como las del resumen mensual se calculan al
+  enviar con un `MailEnricher`. Códigos de 6 dígitos en `auth_codes` (hash, 10 min, 5 intentos). `set-initial-password`
+  está cerrado: sin contraseña se entra con `POST /users/password/forgot` + `/reset`. Preferencias en
+  `notification_prefs` (resumen mensual apagado por defecto) y baja firmada sin login (`/mail/unsubscribe`). El
+  aviso de conexión caída sale de `PUT /email/admin/error/:id` (`emails.alert_sent_at`, 1 cada 7 días).
 - Pagos de tarjeta por correo: el worker (`flag_card_payments`, sin tocar el prompt) los vuelve entrada de la tarjeta y
   la API los guarda con `transactions.needs_counterpart`: ya cuentan como transferencia. `link_pending_card_payments`
   liga solo el caso sin duda; si no, la app pregunta de qué cuenta salió. No uses `should_verify` para esto: abrir la
@@ -98,8 +108,10 @@ plan/         plan de migración
   `git grep -nIE "AIza|GOCSPX-|eyJ[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{20,}|AKIA|-----BEGIN"`.
   No copies valores de los repos viejos (`cdk.json`, `.env*`, `env_config.txt`).
 - **Nada de AWS.** Sin Lambda, CDK, SQS, S3/Glue, Secrets Manager, DynamoDB, EventBridge ni Cognito.
-- **Nada de envío de correos** (ni SMTP ni proveedores): "olvidé mi contraseña" lo resuelve el admin con
-  `infra/scripts/reset-password.sh`.
+- **Correo saliente solo por `Mailer` + `email_outbox`**, proveedor Resend por API HTTP (nunca SMTP). En local y
+  desarrollo `MAIL_PROVIDER=log` (no envía nada); `resend` fuera de producción exige `MAIL_ONLY_TO` y solo envía a
+  esa lista. Nada sensible en asuntos ni en el payload del outbox (ni códigos, ni montos, ni contenido de correos
+  bancarios). Webhook de Resend siempre con firma. El admin conserva `infra/scripts/reset-password.sh` como respaldo.
 - El email del admin no va en migraciones: se asigna con `infra/scripts/make-admin.sh`.
 - **Privacidad:** en local no se procesan correos de usuarios reales. Pruebas reales solo con una conexión
   del equipo (`WORKER_ONLY_EMAIL_IDS`) y primero con `WORKER_DRY_RUN=true`. No se guarda el cuerpo de los correos.

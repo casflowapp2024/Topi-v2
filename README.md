@@ -73,7 +73,7 @@ Scripts de administración (corren `psql` dentro del contenedor):
 
 ```bash
 infra/scripts/make-admin.sh <email>       # role = admin
-infra/scripts/reset-password.sh <email>   # "olvidé mi contraseña": vuelve a "crear contraseña" y cierra sesiones
+infra/scripts/reset-password.sh <email>   # respaldo del admin: borra la contraseña y cierra sesiones (el usuario pide un código al entrar)
 infra/scripts/auth-report.sh [dias]       # migrados con/sin contraseña, últimos eventos
 ```
 
