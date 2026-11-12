@@ -84,8 +84,11 @@ export const PanelError = ({ state }) => (
 );
 
 /** Rellena con 0 los días sin fila entre el primer y el último día pedidos. */
+// Hoy en Bogotá (los días de las métricas son de America/Bogota, no del navegador ni UTC)
+export const todayBogota = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
+
 export const fillDays = (series = {}, keys = [], days = 90, end = null) => {
-  const last = end ? new Date(`${end}T00:00:00Z`) : new Date();
+  const last = new Date(`${end || todayBogota()}T00:00:00Z`);
   const rows = [];
   for (let i = days - 1; i >= 0; i -= 1) {
     const d = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate() - i));

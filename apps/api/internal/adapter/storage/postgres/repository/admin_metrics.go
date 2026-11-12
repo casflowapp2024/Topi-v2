@@ -285,7 +285,8 @@ ORDER BY 2 DESC, 3 DESC LIMIT 30`
 		return catalog, err
 	}
 
-	defaults := []string{}
+	// system categories (created by the app, not named by the user) are not candidates
+	defaults := []string{strings.ToLower(domain.CardChargesCategory)}
 	for _, category := range domain.DefaultCategories("") {
 		defaults = append(defaults, strings.ToLower(strings.TrimSpace(category.Name)))
 	}

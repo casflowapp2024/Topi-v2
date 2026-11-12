@@ -39,6 +39,9 @@ const TreeRow = ({ label, value, hint }) => (
   </li>
 );
 
+const dayYearFmt = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const fmtDayYear = (day) => (day ? dayYearFmt.format(new Date(`${day}T00:00:00Z`)) : '—');
+
 const cohortCell = (part, eligible) => (eligible > 0 ? `${fmtPct(pct(part, eligible))} (${fmtInt(part)}/${fmtInt(eligible)})` : '—');
 
 const AdminSummary = ({ reloadKey }) => {
@@ -113,7 +116,7 @@ const AdminSummary = ({ reloadKey }) => {
             <div className="mt-4">
               <p className="text-xs font-medium text-ink-2 dark:text-gray-400 mb-1">Activación por periodo de registro</p>
               <SimpleTable rowKey={(r) => r.cohort} rows={activation.data} columns={[
-                { key: 'cohort', label: 'Desde', render: (r) => fmtDay(r.cohort) },
+                { key: 'cohort', label: 'Registrados desde', render: (r) => fmtDayYear(r.cohort) },
                 { key: 'signups', label: 'Registros', align: 'right', render: (r) => fmtInt(r.signups) },
                 { key: 'c', label: 'Correo 24 h', align: 'right', render: (r) => fmtPct(r.connection_24h_pct) },
                 { key: 'f', label: 'Auto 48 h', align: 'right', render: (r) => fmtPct(r.first_auto_tx_48h_pct) },

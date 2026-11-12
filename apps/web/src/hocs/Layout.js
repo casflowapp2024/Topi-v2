@@ -103,7 +103,10 @@ const Layout = ({
   }, [location.search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pathSegments = location.pathname.split('/').filter(Boolean);
-  const activeTab = pathSegments.length > 1 ? pathSegments[1] : 'general';
+  // en el panel admin ninguna pestaña principal queda marcada
+  const activeTab = pathSegments[0] === 'admin'
+    ? null
+    : (pathSegments.length > 1 ? pathSegments[1] : 'general');
 
   const themePref = themePreference(user_extra_data?.config);
   const isDark = useResolvedDark(themePref);

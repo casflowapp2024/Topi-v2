@@ -65,7 +65,7 @@ const AdminUsers = ({ reloadKey }) => {
         <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Usuarios</h2>
         <p className="text-xs text-ink-2 dark:text-gray-400">Para soporte y fundadores. Sin montos ni transacciones: solo fechas y conteos.</p>
       </div>
-      <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1" role="group" aria-label="Filtrar usuarios">
+      <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 [scrollbar-width:none]" role="group" aria-label="Filtrar usuarios">
         {SEGMENTS.map((s) => (
           <Chip key={s.id || 'all'} selected={segment === s.id} onClick={() => { setSegment(s.id); setOffset(0); }}>{s.label}</Chip>
         ))}
@@ -84,13 +84,13 @@ const AdminUsers = ({ reloadKey }) => {
           {/* PC: tabla */}
           <div className="hidden lg:block">
             <SimpleTable rowKey={(r) => r.id} rows={rows} empty="Ningún usuario en este filtro" columns={[
-              { key: 'name', label: 'Nombre', render: (r) => <span className="capitalize">{r.name || '—'}</span> },
-              { key: 'email', label: 'Correo' },
+              { key: 'name', label: 'Nombre', render: (r) => <span className="block max-w-[170px] truncate capitalize" title={r.name}>{r.name || '—'}</span> },
+              { key: 'email', label: 'Correo', render: (r) => <span className="block max-w-[190px] truncate" title={r.email}>{r.email}</span> },
               { key: 'signup_at', label: 'Registro', render: (r) => fmtDate(r.signup_at) },
-              { key: 'last', label: 'Último día activo', render: (r) => fmtDay(r.last_active_day) },
-              { key: 'conn', label: 'Conexiones sanas', render: connections },
-              { key: 'read', label: 'Último correo leído', render: (r) => fmtDateTime(r.last_email_read_at) },
-              { key: 'auto', label: 'Automáticas 30 d', align: 'right', render: (r) => fmtInt(r.auto_tx_30d) },
+              { key: 'last', label: 'Activo', render: (r) => fmtDay(r.last_active_day) },
+              { key: 'conn', label: 'Conexiones', render: connections },
+              { key: 'read', label: 'Último leído', render: (r) => fmtDateTime(r.last_email_read_at) },
+              { key: 'auto', label: 'Auto. 30 d', align: 'right', render: (r) => fmtInt(r.auto_tx_30d) },
               { key: 'founder', label: 'Fundador', render: (r) => <FounderBadge row={r} /> },
             ]} />
           </div>

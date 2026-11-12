@@ -98,6 +98,15 @@ plan/         plan de migración
   está cerrado: sin contraseña se entra con `POST /users/password/forgot` + `/reset`. Preferencias en
   `notification_prefs` (resumen mensual apagado por defecto) y baja firmada sin login (`/mail/unsubscribe`). El
   aviso de conexión caída sale de `PUT /email/admin/error/:id` (`emails.alert_sent_at`, 1 cada 7 días).
+- Panel admin (`plan/25-admin-metricas.md`, `/admin`, rol admin + `admin_audit` en cada acceso): agregados de
+  `metrics_daily` y las vistas `admin_user_stats` / `admin_user_cohort`, que recalcula `refresh_admin_metrics(desde)`
+  (worker 02:15, últimos 7 días; `POST /admin/metrics/refresh`). Días de America/Bogota. North Star = usuarios con
+  ≥ 1 transacción `automated` y ≥ 1 día en `user_activity_days` en 7 días; la actividad la escribe `AuthMiddleware`
+  una vez por usuario y día (`ActivityService`). `product_events` es lista cerrada (CHECK + `domain.ProductEvent`),
+  props solo ids/enums, nunca montos ni texto; se emiten en los servicios, no en el front. `llm_usage`: solo conteos
+  de tokens. Nombres de categorías/bancos/comercios solo con ≥ `domain.MinGroupUsers` (5) usuarios. Fundadores:
+  `FOUNDER_CUTOFF` marca elegibles al arrancar; confirmar/quitar va con su fila de auditoría y nunca borra a nadie.
+  Verificación manual: `infra/scripts/sql/admin-check.sql`.
 - Pagos de tarjeta por correo: el worker (`flag_card_payments`, sin tocar el prompt) los vuelve entrada de la tarjeta y
   la API los guarda con `transactions.needs_counterpart`: ya cuentan como transferencia. `link_pending_card_payments`
   liga solo el caso sin duda; si no, la app pregunta de qué cuenta salió. No uses `should_verify` para esto: abrir la

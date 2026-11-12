@@ -67,7 +67,7 @@ const Admin = ({ user }) => {
           </div>
 
           <nav aria-label="Secciones del panel admin"
-            className="flex gap-1 overflow-x-auto -mx-4 px-4 lg:mx-0 lg:px-0 border-b border-gray-200 dark:border-gray-700">
+            className="flex gap-1 overflow-x-auto overflow-y-hidden -mx-4 [scrollbar-width:none] px-4 lg:mx-0 lg:px-0 border-b border-gray-200 dark:border-gray-700">
             {ADMIN_TABS.map((t) => {
               const active = t.id === tab.id;
               return (

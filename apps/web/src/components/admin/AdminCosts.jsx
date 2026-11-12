@@ -1,7 +1,8 @@
 import { formatMoney } from '../helpers';
 import { useAdminMetric, Panel, PanelSkeleton, PanelError, Stat, StatGrid, DailyBars, DailyLines, fillDays, fmtInt } from './AdminUi';
 
-const usd = (v) => formatMoney(v, 'USD', { decimals: 4 });
+// centavos a partir de 1 USD; por debajo, 4 decimales para que no se vea en cero
+const usd = (v) => formatMoney(v, 'USD', { decimals: Math.abs(Number(v)) >= 1 ? 2 : 4 });
 const compactInt = new Intl.NumberFormat('es-CO', { notation: 'compact', maximumFractionDigits: 1 });
 
 const AdminCosts = ({ reloadKey }) => {

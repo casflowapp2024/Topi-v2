@@ -217,6 +217,10 @@ const PrivacyPolicy = () => {
                             <h2 className='text-xl font-semibold mb-2'>4. ANALÍTICA EN LINEA Y PUBLICIDAD</h2>
 
                             <p className='text-gray-700 mb-4 text-justify'>
+                                Métricas de uso agregadas: para mejorar el servicio registramos qué días usa la aplicación, cuántos tokens consume la lectura automática de sus correos y algunos eventos de uso (por ejemplo, que corrigió la categoría o el monto de una transacción leída, o que resolvió un ítem por revisar). Estos registros no incluyen montos, comercios, descripciones ni el contenido de sus correos, y se conservan hasta 13 meses. El equipo de {brandName} los consulta solo en forma agregada; los nombres de categorías o bancos se muestran únicamente cuando los usan cinco o más usuarios, y cada consulta queda registrada.
+                            </p>
+
+                            <p className='text-gray-700 mb-4 text-justify'>
                                 Podemos utilizar servicios de análisis de terceros (como Google Analytics y Amplitude Analytics) en nuestros Servicios para recopilar y analizar información de uso mediante cookies y tecnologías similares; realizar auditorías, investigaciones o reportes; ayudar en la prevención de fraudes; y ofrecerle ciertas funcionalidades.
                                 Si desea evitar que Google Analytics utilice su información con fines analíticos, puede instalar el complemento de inhabilitación para navegadores, disponible <a className="text-blue-600 underline" href="https://tools.google.com/dlpage/gaoptout">aquí.</a>
                             </p>
