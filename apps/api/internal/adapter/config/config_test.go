@@ -117,6 +117,7 @@ func clearEnv(t *testing.T) {
 		"DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME", "HTTP_URL", "HTTP_PORT",
 		"HTTP_ALLOWED_ORIGINS", "ENV_FILE", "MAIL_PROVIDER", "RESEND_API_KEY", "RESEND_WEBHOOK_SECRET", "MAIL_FROM",
 		"MAIL_REPLY_TO", "MAIL_DAILY_QUOTA", "MAIL_ONLY_TO", "APP_BASE_URL", "API_BASE_URL", "MAIL_OUTBOX_INTERVAL",
+		"FOUNDER_CUTOFF", "LLM_PRICE_IN_USD_PER_MTOK", "LLM_PRICE_OUT_USD_PER_MTOK", "SERVER_MONTHLY_COST_USD",
 	}
 	for _, key := range keys {
 		t.Setenv(key, "")
@@ -227,4 +228,62 @@ func TestNew_Mail(t *testing.T) {
 		assert.Equal(t, []string{"a@example.com", "b@example.com"}, config.Mail.OnlyTo)
 		assert.Equal(t, 30*time.Second, config.Mail.OutboxInterval)
 	})
+}
+
+func TestNew_Metrics(t *testing.T) {
+	testCases := []struct {
+		name     string
+		env      map[string]string
+		expected string
+		valid    bool
+	}{
+		{name: "no cutoff", env: map[string]string{}, valid: true},
+		{name: "date is the start of the day in Bogota", env: map[string]string{"FOUNDER_CUTOFF": "2026-11-15"}, expected: "2026-11-15T05:00:00Z", valid: true},
+		{name: "RFC3339", env: map[string]string{"FOUNDER_CUTOFF": "2026-11-15T12:00:00Z"}, expected: "2026-11-15T12:00:00Z", valid: true},
+		{name: "invalid cutoff", env: map[string]string{"FOUNDER_CUTOFF": "15/11/2026"}, valid: false},
+		{name: "negative price", env: map[string]string{"LLM_PRICE_IN_USD_PER_MTOK": "-1"}, valid: false},
+		{name: "invalid price", env: map[string]string{"SERVER_MONTHLY_COST_USD": "diez"}, valid: false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			clearEnv(t)
+			t.Setenv("JWT_SECRET", "0123456789abcdef0123456789abcdef")
+			t.Setenv("ENV_FILE", filepath.Join(t.TempDir(), "none.env"))
+			for key, value := range tc.env {
+				t.Setenv(key, value)
+			}
+
+			once = sync.Once{}
+			config := New()
+
+			if !tc.valid {
+				assert.Error(t, config.Validate())
+				return
+			}
+			assert.NoError(t, config.Validate())
+			if tc.expected == "" {
+				assert.Nil(t, config.Metrics.FounderCutoff)
+				return
+			}
+			assert.Equal(t, tc.expected, config.Metrics.FounderCutoff.UTC().Format(time.RFC3339))
+		})
+	}
+}
+
+func TestNew_MetricsPrices(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("JWT_SECRET", "0123456789abcdef0123456789abcdef")
+	t.Setenv("ENV_FILE", filepath.Join(t.TempDir(), "none.env"))
+	t.Setenv("LLM_PRICE_IN_USD_PER_MTOK", "0.10")
+	t.Setenv("LLM_PRICE_OUT_USD_PER_MTOK", "0.40")
+	t.Setenv("SERVER_MONTHLY_COST_USD", "12")
+
+	once = sync.Once{}
+	config := New()
+
+	assert.NoError(t, config.Validate())
+	assert.Equal(t, "0.1", config.Metrics.LLMPriceInPerMTok.String())
+	assert.Equal(t, "0.4", config.Metrics.LLMPriceOutPerMTok.String())
+	assert.Equal(t, "12", config.Metrics.ServerMonthlyCostUSD.String())
 }

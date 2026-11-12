@@ -1,6 +1,7 @@
 package http
 
 import (
+	"cash-flow/internal/core/port"
 	"cash-flow/internal/enums"
 
 	"github.com/gin-gonic/gin"
@@ -26,7 +27,14 @@ type Routes struct {
 	MailHandler           *MailHandler
 	InitDevHandler        *InitDevHandler
 	InitializationHandler *InitializationHandler
-	Router                *gin.Engine
+	// Activity records the daily activity of the authenticated users (optional)
+	Activity port.ActivityTracker
+	Router   *gin.Engine
+}
+
+// auth is the AuthMiddleware of every authenticated group (records the daily activity)
+func (r *Routes) auth() gin.HandlerFunc {
+	return AuthMiddleware(r.UserHandler.svc, r.Activity)
 }
 
 func (r *Routes) HealthRoutes() {
@@ -61,7 +69,7 @@ func (r *Routes) UserRoutes() {
 	user.POST("/confirm", r.UserHandler.ConfirmUser)
 	user.POST("/resend-confirmation", r.UserHandler.ResendConfirmationCode)
 
-	authUser := user.Group("/").Use(AuthMiddleware(r.UserHandler.svc))
+	authUser := user.Group("/").Use(r.auth())
 	{
 		authUser.GET("/", r.UserHandler.GetUser)
 		authUser.PUT("/", r.UserHandler.UpdateUser)
@@ -72,7 +80,7 @@ func (r *Routes) UserRoutes() {
 }
 
 func (r *Routes) CategoryRoutes() {
-	AuthCategories := r.Router.Group("/categories").Use(AuthMiddleware(r.UserHandler.svc))
+	AuthCategories := r.Router.Group("/categories").Use(r.auth())
 	{
 		AuthCategories.POST("/create", r.CategoryHandler.CreateCategory)
 		AuthCategories.GET("/:id", r.CategoryHandler.GetCategory)
@@ -83,7 +91,7 @@ func (r *Routes) CategoryRoutes() {
 }
 
 func (r *Routes) BanksRoutes() {
-	AuthBanks := r.Router.Group("/banks").Use(AuthMiddleware(r.UserHandler.svc))
+	AuthBanks := r.Router.Group("/banks").Use(r.auth())
 	{
 		AuthBanks.GET("/:id", r.BankHandler.GetBank)
 		AuthBanks.GET("/list", r.BankHandler.GetBanks)
@@ -95,7 +103,7 @@ func (r *Routes) BanksRoutes() {
 }
 
 func (r *Routes) AccountTypeRoutes() {
-	AuthType := r.Router.Group("/account-types").Use(AuthMiddleware(r.UserHandler.svc))
+	AuthType := r.Router.Group("/account-types").Use(r.auth())
 	{
 		AuthType.GET("/:id", r.AccountTypeHandler.GetAccountType)
 		AuthType.GET("/list", r.AccountTypeHandler.GetAccountTypes)
@@ -110,7 +118,7 @@ func (r *Routes) AccountTypeRoutes() {
 }
 
 func (r *Routes) AccountsRoutes() {
-	AuthAccounts := r.Router.Group("/accounts").Use(AuthMiddleware(r.UserHandler.svc))
+	AuthAccounts := r.Router.Group("/accounts").Use(r.auth())
 	{
 		AuthAccounts.POST("/create", r.AccountHandler.CreateAccount)
 		AuthAccounts.PUT("/:id/calculate/initial-balance", r.AccountHandler.CalculateInitialBalance)
@@ -139,7 +147,7 @@ func (r *Routes) AccountsRoutes() {
 }
 
 func (r *Routes) TransactionRoutes() {
-	AuthTransactions := r.Router.Group("/transactions").Use(AuthMiddleware(r.UserHandler.svc))
+	AuthTransactions := r.Router.Group("/transactions").Use(r.auth())
 	{
 		AuthTransactions.POST("/create", r.TransactionHandler.CreateTransaction)
 		AuthTransactions.POST("/transfer", r.TransactionHandler.CreateTransfer)
@@ -164,7 +172,7 @@ func (r *Routes) TransactionRoutes() {
 }
 
 func (r *Routes) AnalysisRoutes() {
-	AuthAnalysis := r.Router.Group("/analysis").Use(AuthMiddleware(r.UserHandler.svc))
+	AuthAnalysis := r.Router.Group("/analysis").Use(r.auth())
 	{
 		AuthAnalysis.GET("/financial-report", r.AnalysisHandler.GetFinancialReport)
 		AuthAnalysis.GET("/net-worth", r.FxHandler.GetNetWorth)
@@ -182,7 +190,7 @@ func (r *Routes) AnalysisRoutes() {
 }
 
 func (r *Routes) InitializationRoutes() {
-	AuthInit := r.Router.Group("/init").Use(AuthMiddleware(r.UserHandler.svc))
+	AuthInit := r.Router.Group("/init").Use(r.auth())
 	{
 		AuthInit.POST("/data", r.InitDevHandler.Init)
 		AuthInit.POST("/resources", r.InitializationHandler.InitializeResources)
@@ -190,7 +198,7 @@ func (r *Routes) InitializationRoutes() {
 }
 
 func (r *Routes) UserExtraRoutes() {
-	AuthUserExtra := r.Router.Group("/user-extra").Use(AuthMiddleware(r.UserHandler.svc))
+	AuthUserExtra := r.Router.Group("/user-extra").Use(r.auth())
 	{
 		AuthUserExtra.POST("create", r.UserExtraHandler.CreateUserExtra)
 		AuthUserExtra.GET("", r.UserExtraHandler.GetUserExtra)
@@ -206,7 +214,7 @@ func (r *Routes) UserExtraRoutes() {
 }
 
 func (r *Routes) EmailRoutes() {
-	AuthEmail := r.Router.Group("/email").Use(AuthMiddleware(r.UserHandler.svc))
+	AuthEmail := r.Router.Group("/email").Use(r.auth())
 	{
 		AuthEmail.GET("/auth-url", r.EmailHandler.GetAuthURL)
 		AuthEmail.POST("/register", r.EmailHandler.RegisterEmail)
@@ -241,7 +249,7 @@ func (r *Routes) Init(env string) {
 }
 
 func (r *Routes) FxRoutes() {
-	auth := AuthMiddleware(r.UserHandler.svc)
+	auth := r.auth()
 	r.Router.GET("/currencies", auth, r.FxHandler.GetCurrencies)
 	r.Router.GET("/fx/rate", auth, r.FxHandler.GetFxRate)
 }
@@ -252,7 +260,7 @@ func (r *Routes) MailRoutes() {
 		return
 	}
 
-	prefs := r.Router.Group("/users").Use(AuthMiddleware(r.UserHandler.svc))
+	prefs := r.Router.Group("/users").Use(r.auth())
 	{
 		prefs.GET("/notification-prefs", r.MailHandler.GetNotificationPrefs)
 		prefs.PUT("/notification-prefs", r.MailHandler.UpdateNotificationPrefs)

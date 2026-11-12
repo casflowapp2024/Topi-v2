@@ -52,6 +52,8 @@ type Handlers struct {
 	Mail                   *http.MailHandler
 	Initialization         *http.InitDevHandler
 	CategoryInitialization *http.InitializationHandler
+	// Activity records the daily activity in AuthMiddleware
+	Activity port.ActivityTracker
 }
 
 type Resources struct {
@@ -75,6 +77,9 @@ func NewInjector(settings *config.Configuration) *Injector {
 
 	// Migrate database
 	db.Migrate()
+
+	// Founders: users created before FOUNDER_CUTOFF are eligible (never unmarked, nobody is deleted)
+	markFounderEligible(ctx, settings.Metrics, dbrepository.NewFounderRepository(db))
 
 	// Mail: every email goes through the Mailer port and email_outbox
 	mailService := newMailService(settings, db)
@@ -218,6 +223,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 			Mail:                   mailHandler,
 			Initialization:         initDevHandler,
 			CategoryInitialization: InitHandler,
+			Activity:               service.NewActivityService(dbrepository.NewActivityRepository(db)),
 		},
 		Resources: &Resources{
 			DB:            db,
@@ -267,4 +273,18 @@ func deriveKey(secret, purpose string) []byte {
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write([]byte(purpose))
 	return mac.Sum(nil)
+}
+
+// markFounderEligible applies FOUNDER_CUTOFF at startup. It is idempotent and only adds the mark.
+func markFounderEligible(ctx context.Context, settings *config.Metrics, repo port.FounderRepository) {
+	if settings == nil || settings.FounderCutoff == nil {
+		slog.Info("founders: FOUNDER_CUTOFF not set, nobody is marked as eligible")
+		return
+	}
+	marked, err := repo.MarkEligible(ctx, *settings.FounderCutoff)
+	if err != nil {
+		slog.Error("founders: could not mark the eligible users", "error", err)
+		return
+	}
+	slog.Info("founders: eligible users marked", "cutoff", settings.FounderCutoff.Format(time.RFC3339), "new", marked)
 }

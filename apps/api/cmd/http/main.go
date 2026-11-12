@@ -78,6 +78,7 @@ func main() {
 		CurrencyChangeHandler: injector.Handlers.CurrencyChange,
 		CreditCardHandler:     injector.Handlers.CreditCard,
 		EmailHandler:          injector.Handlers.Email,
+		Activity:              injector.Handlers.Activity,
 		MailHandler:           injector.Handlers.Mail,
 		InitDevHandler:        injector.Handlers.Initialization,
 		InitializationHandler: injector.Handlers.CategoryInitialization,

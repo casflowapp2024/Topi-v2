@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/shopspring/decimal"
 )
 
 var once sync.Once
@@ -30,6 +31,18 @@ type (
 		Gmail   *Gmail
 		Outlook *Outlook
 		Mail    *Mail
+		Metrics *Metrics
+	}
+	// Metrics contains the settings of the admin panel (plan/25-admin-metricas.md)
+	Metrics struct {
+		// FounderCutoff: users created before it are founder eligible (nil = nobody is marked yet)
+		FounderCutoff *time.Time
+		// Prices of the LLM in USD per million tokens (0 = unknown: the panel shows tokens without cost)
+		LLMPriceInPerMTok  decimal.Decimal
+		LLMPriceOutPerMTok decimal.Decimal
+		// ServerMonthlyCostUSD is spread among the active users in the cost per user
+		ServerMonthlyCostUSD decimal.Decimal
+		err                  error
 	}
 	// Mail contains the email sending settings (plan/23-correo-transaccional.md)
 	Mail struct {
@@ -188,6 +201,7 @@ func New() *Configuration {
 				},
 			},
 			newMail(),
+			newMetrics(),
 		}
 	})
 
@@ -280,7 +294,62 @@ func (c *Configuration) Validate() error {
 		return fmt.Errorf("INITIAL_PASSWORD_UNTIL: %w", c.Auth.initialPasswordErr)
 	}
 
+	if c.Metrics.err != nil {
+		return c.Metrics.err
+	}
+
 	return c.validateMail()
+}
+
+func newMetrics() *Metrics {
+	m := &Metrics{}
+	var err error
+	m.FounderCutoff, err = parseCutoff(os.Getenv("FOUNDER_CUTOFF"))
+	if err != nil {
+		m.err = fmt.Errorf("FOUNDER_CUTOFF: %w", err)
+		return m
+	}
+	for key, target := range map[string]*decimal.Decimal{
+		"LLM_PRICE_IN_USD_PER_MTOK":  &m.LLMPriceInPerMTok,
+		"LLM_PRICE_OUT_USD_PER_MTOK": &m.LLMPriceOutPerMTok,
+		"SERVER_MONTHLY_COST_USD":    &m.ServerMonthlyCostUSD,
+	} {
+		value := strings.TrimSpace(os.Getenv(key))
+		if value == "" {
+			continue
+		}
+		parsed, perr := decimal.NewFromString(value)
+		if perr != nil || parsed.IsNegative() {
+			m.err = fmt.Errorf("%s must be a non negative decimal", key)
+			return m
+		}
+		*target = parsed
+	}
+	return m
+}
+
+// parseCutoff accepts RFC3339 or a date ("2026-11-15" = the start of that day in America/Bogota,
+// the day the stage 1 is deployed). Empty = no cutoff.
+func parseCutoff(value string) (*time.Time, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil, nil
+	}
+	if cutoff, err := time.Parse(time.RFC3339, value); err == nil {
+		return &cutoff, nil
+	}
+	date, err := time.ParseInLocation(time.DateOnly, value, bogota())
+	if err != nil {
+		return nil, errors.New("use RFC3339 or YYYY-MM-DD")
+	}
+	return &date, nil
+}
+
+func bogota() *time.Location {
+	if loc, err := time.LoadLocation("America/Bogota"); err == nil {
+		return loc
+	}
+	return time.FixedZone("America/Bogota", -5*60*60)
 }
 
 // parseDeadline accepts RFC3339 ("2026-12-31T23:59:59-05:00") or a date ("2026-12-31",

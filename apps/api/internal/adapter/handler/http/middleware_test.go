@@ -5,6 +5,7 @@ import (
 	"cash-flow/internal/adapter/logger"
 	"cash-flow/internal/core/domain"
 	"cash-flow/internal/core/port/mock"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -114,4 +115,31 @@ func TestAuthMiddleware_Bearer(t *testing.T) {
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 		assert.Equal(t, []string{domain.ErrEmptyAuthorizationHeader.Error()}, errorMessages(t, w))
 	})
+}
+
+type countingTracker struct{ calls map[string]int }
+
+func (c *countingTracker) Touch(_ context.Context, userID string) { c.calls[userID]++ }
+
+func TestAuthMiddleware_TracksActivity(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	svc := mock.NewMockUserService(ctrl)
+	gin.SetMode(gin.TestMode)
+	logger.Set(&config.App{Env: "test"})
+	tracker := &countingTracker{calls: map[string]int{}}
+
+	router := gin.New()
+	router.GET("/private", AuthMiddleware(svc, tracker), func(ctx *gin.Context) { handleSuccess(ctx, nil) })
+
+	svc.EXPECT().Authorize(gomock.Any(), "user-token").Return(&domain.TokenPayload{UserID: "u1"}, nil)
+	svc.EXPECT().Authorize(gomock.Any(), "bad").Return(nil, domain.ErrUnauthorized)
+	svc.EXPECT().AuthorizeAPIKey("internal-key").
+		Return(&domain.TokenPayload{UserID: "service", Groups: map[string]bool{"admin": true}}, nil)
+
+	doRequest(router, http.MethodGet, "/private", map[string]string{"Authorization": "Bearer user-token"})
+	doRequest(router, http.MethodGet, "/private", map[string]string{"Authorization": "Bearer bad"})
+	doRequest(router, http.MethodGet, "/private", map[string]string{"X-API-Key": "internal-key"})
+
+	// the user counts; a rejected token and the worker do not
+	assert.Equal(t, map[string]int{"u1": 1}, tracker.calls)
 }

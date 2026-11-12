@@ -34,7 +34,9 @@ func RequestIDMiddleware() gin.HandlerFunc {
 // AuthMiddleware is a middleware to check if the user is authenticated.
 // Internal callers (worker) can use the X-API-Key header instead of a bearer token:
 // they get an admin payload with UserID "service".
-func AuthMiddleware(auth port.UserService) gin.HandlerFunc {
+// With trackers, a bearer request marks the user as active today (once per day, see ActivityService);
+// the worker (X-API-Key) never counts as activity.
+func AuthMiddleware(auth port.UserService, trackers ...port.ActivityTracker) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		if apiKey := ctx.GetHeader(enums.APIKeyHeader); apiKey != "" {
 			payload, err := auth.AuthorizeAPIKey(apiKey)
@@ -90,6 +92,12 @@ func AuthMiddleware(auth port.UserService) gin.HandlerFunc {
 
 		ctx.Set(enums.AuthorizationPayloadKey, payload)
 		ctx.Set(enums.AuthorizationHeaderKey, authorizationHeader)
+
+		for _, tracker := range trackers {
+			if tracker != nil {
+				tracker.Touch(ctx.Request.Context(), payload.UserID)
+			}
+		}
 
 		// Defer logging request metric with payload after handler completes
 		defer logRequestMetricWithPayload(ctx, payload, err)
