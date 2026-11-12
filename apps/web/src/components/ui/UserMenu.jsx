@@ -1,5 +1,6 @@
 import { Menu, MenuButton, MenuItems, MenuItem, MenuSeparator } from '@headlessui/react';
-import { Cog6ToothIcon, EnvelopeIcon, ArrowRightStartOnRectangleIcon, UserIcon } from '@heroicons/react/20/solid';
+import { Link } from 'react-router-dom';
+import { Cog6ToothIcon, EnvelopeIcon, ArrowRightStartOnRectangleIcon, UserIcon, ChartBarSquareIcon } from '@heroicons/react/20/solid';
 import { THEME_OPTIONS, segmentClass } from './ThemeSwitch';
 
 const itemClass = 'w-full flex items-center gap-2 px-3 h-9 rounded-xl text-sm text-gray-700 dark:text-gray-200 data-[focus]:bg-gray-100 dark:data-[focus]:bg-gray-700/60 transition-colors';
@@ -34,6 +35,13 @@ const UserMenu = ({ user, theme, onThemeChange, onOpenSettings, onLogout }) => {
             <EnvelopeIcon className="w-4 h-4 text-gray-400" aria-hidden="true" /> Conexiones
           </button>
         </MenuItem>
+        {user?.is_admin && (
+          <MenuItem>
+            <Link to="/admin" className={itemClass}>
+              <ChartBarSquareIcon className="w-4 h-4 text-gray-400" aria-hidden="true" /> Panel admin
+            </Link>
+          </MenuItem>
+        )}
         <MenuSeparator className="my-1 h-px bg-gray-200 dark:bg-gray-700" />
         <div className="px-3 pt-1 pb-2">
           <p id="user-menu-theme" className="text-xs font-medium text-ink-2 dark:text-gray-400 mb-1.5">Tema</p>

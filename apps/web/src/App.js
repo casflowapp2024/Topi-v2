@@ -29,6 +29,7 @@ import AABudgetDashboard from './components/dashboard/budgetCategories/AABudgetD
 import AAGenDashboard from './components/dashboard/general/AAGenDashboard';
 import Membership from './components/settings/Membership';
 import ConnectEmail from './components/conexions/ConnectEmail';
+import Admin from './containers/Admin';
 //fondo blanco #FFFFFF
 //sombras blanco isabelino #e9e8ee
 //compplemento azul #5266EB
@@ -69,6 +70,8 @@ const AnalyticsWrapper = () => {
           <Route path="membership" element={<Membership />} />
         </Route>
         <Route exact path='/accounts/' element={<Accounts />} />
+        <Route path='/admin' element={<Admin />} />
+        <Route path='/admin/:section' element={<Admin />} />
         <Route exact path='/plan/' element={<PlanCategories />} />
         <Route exact path='/g-auth-call-back/' element={<Navigate to="/login/" replace />} />
         <Route exact path='/gmail-auth-connect/' element={<GmailConnectAuthCallBack />} />

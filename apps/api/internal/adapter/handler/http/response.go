@@ -347,6 +347,8 @@ type userResponse struct {
 	Verified bool   `json:"verified" example:"true"`
 	// EmailVerified is false for new users that have not confirmed the email yet (the front shows a banner)
 	EmailVerified bool `json:"email_verified" example:"true"`
+	// IsAdmin shows the link to the admin panel (the API checks the role on every /admin route anyway)
+	IsAdmin bool `json:"is_admin" example:"false"`
 }
 
 // newUserResponse is a helper function to create a response body for handling user data
@@ -357,6 +359,7 @@ func newUserResponse(user *domain.User) userResponse {
 		Email:         user.Email,
 		Verified:      user.Verified,
 		EmailVerified: user.EmailVerifiedAt != nil,
+		IsAdmin:       user.IsAdmin(),
 	}
 }
 
