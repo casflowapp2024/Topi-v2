@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from worker.db import DONE_STATUSES, Job
-from worker.extractors.base import ExtractedTransaction
+from worker.extractors.base import ExtractedTransaction, LlmUsage
 from worker.providers.base import EmailMessage, MessageRef
 
 
@@ -14,6 +14,7 @@ class FakeDB:
         self.last_runs: dict[tuple[int, str], datetime] = {}
         self.processed: dict[tuple[int, str], dict] = {}
         self.jobs: dict[int, dict] = {}
+        self.llm_usage: list[tuple] = []
 
     # sync state
     def get_last_run(self, email_id, sender):
@@ -35,6 +36,9 @@ class FakeDB:
         self.processed[(email_id, message_id)].update(status=status, transaction_ids=transaction_ids, error=error)
 
     # jobs
+    def record_llm_usage(self, *, user_id, feature, model, tokens_in, tokens_out):
+        self.llm_usage.append((user_id, feature, model, tokens_in, tokens_out))
+
     def complete_job(self, job_id):
         self.jobs[job_id] = {"status": "done"}
 
@@ -103,12 +107,19 @@ class FakeExtractor:
 
     name = "fake-extractor"
 
-    def __init__(self, fail_for: dict[str, Exception] | None = None):
+    def __init__(self, fail_for: dict[str, Exception] | None = None, usage: LlmUsage | None = None):
         self.calls: list[str] = []
         self.fail_for = fail_for or {}
+        self.usage = usage
+        self._pending: LlmUsage | None = None
+
+    def take_usage(self):
+        usage, self._pending = self._pending, None
+        return usage
 
     def extract(self, email, accounts):
         self.calls.append(email.id)
+        self._pending = self.usage
         if email.id in self.fail_for:
             raise self.fail_for[email.id]
         if not email.body.startswith("TX"):

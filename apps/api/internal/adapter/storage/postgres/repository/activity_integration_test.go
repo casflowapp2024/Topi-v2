@@ -70,3 +70,28 @@ func TestActivityAndFounderRepositories_Integration(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, eligible(old))
 }
+
+func TestProductEventRepository_Integration(t *testing.T) {
+	ctx := context.Background()
+	db := integrationDB(t)
+	users := repository.NewUserRepository(db)
+	repo := repository.NewProductEventRepository(db)
+
+	id := uuid.NewString()
+	require.NoError(t, users.CreateUser(ctx, &domain.User{ID: id, Email: "pe-" + id[:8] + "@example.com", Role: domain.RoleUser}))
+	t.Cleanup(func() { _, _ = db.Exec(ctx, "DELETE FROM users WHERE id = $1", id) })
+
+	require.NoError(t, repo.Record(ctx, domain.ProductEvent{UserID: id, Name: domain.ProductEventReviewResolved,
+		Props: map[string]any{"transaction_id": uint64(42), "kind": domain.ReviewKindVerify}}))
+	require.NoError(t, repo.Record(ctx, domain.ProductEvent{UserID: id, Name: domain.ProductEventAskTopiAsked}))
+
+	var kind string
+	var txID int64
+	require.NoError(t, db.QueryRow(ctx, `SELECT props->>'kind', (props->>'transaction_id')::bigint FROM product_events
+WHERE user_id = $1 AND name = 'review_resolved'`, id).Scan(&kind, &txID))
+	assert.Equal(t, domain.ReviewKindVerify, kind)
+	assert.Equal(t, int64(42), txID)
+
+	// the table also enforces the closed list
+	assert.Error(t, repo.Record(ctx, domain.ProductEvent{UserID: id, Name: "page_viewed"}))
+}

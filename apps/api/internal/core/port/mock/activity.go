@@ -5,6 +5,7 @@
 package mock
 
 import (
+	domain "cash-flow/internal/core/domain"
 	context "context"
 	reflect "reflect"
 	time "time"
@@ -120,4 +121,76 @@ func (m *MockFounderRepository) MarkEligible(ctx context.Context, cutoff time.Ti
 func (mr *MockFounderRepositoryMockRecorder) MarkEligible(ctx, cutoff interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkEligible", reflect.TypeOf((*MockFounderRepository)(nil).MarkEligible), ctx, cutoff)
+}
+
+// MockProductEventRepository is a mock of ProductEventRepository interface.
+type MockProductEventRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockProductEventRepositoryMockRecorder
+}
+
+// MockProductEventRepositoryMockRecorder is the mock recorder for MockProductEventRepository.
+type MockProductEventRepositoryMockRecorder struct {
+	mock *MockProductEventRepository
+}
+
+// NewMockProductEventRepository creates a new mock instance.
+func NewMockProductEventRepository(ctrl *gomock.Controller) *MockProductEventRepository {
+	mock := &MockProductEventRepository{ctrl: ctrl}
+	mock.recorder = &MockProductEventRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockProductEventRepository) EXPECT() *MockProductEventRepositoryMockRecorder {
+	return m.recorder
+}
+
+// Record mocks base method.
+func (m *MockProductEventRepository) Record(ctx context.Context, event domain.ProductEvent) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Record", ctx, event)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Record indicates an expected call of Record.
+func (mr *MockProductEventRepositoryMockRecorder) Record(ctx, event interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Record", reflect.TypeOf((*MockProductEventRepository)(nil).Record), ctx, event)
+}
+
+// MockProductEventRecorder is a mock of ProductEventRecorder interface.
+type MockProductEventRecorder struct {
+	ctrl     *gomock.Controller
+	recorder *MockProductEventRecorderMockRecorder
+}
+
+// MockProductEventRecorderMockRecorder is the mock recorder for MockProductEventRecorder.
+type MockProductEventRecorderMockRecorder struct {
+	mock *MockProductEventRecorder
+}
+
+// NewMockProductEventRecorder creates a new mock instance.
+func NewMockProductEventRecorder(ctrl *gomock.Controller) *MockProductEventRecorder {
+	mock := &MockProductEventRecorder{ctrl: ctrl}
+	mock.recorder = &MockProductEventRecorderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockProductEventRecorder) EXPECT() *MockProductEventRecorderMockRecorder {
+	return m.recorder
+}
+
+// Emit mocks base method.
+func (m *MockProductEventRecorder) Emit(ctx context.Context, event domain.ProductEvent) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Emit", ctx, event)
+}
+
+// Emit indicates an expected call of Emit.
+func (mr *MockProductEventRecorderMockRecorder) Emit(ctx, event interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Emit", reflect.TypeOf((*MockProductEventRecorder)(nil).Emit), ctx, event)
 }

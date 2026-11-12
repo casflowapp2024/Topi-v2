@@ -215,6 +215,20 @@ class Database:
                 (status, transaction_ids, error, email_id, message_id),
             )
 
+    # ------------------------------------------------------------------ llm_usage
+
+    def record_llm_usage(self, *, user_id: str, feature: str, model: str, tokens_in: int, tokens_out: int) -> None:
+        """Tokens de una llamada al modelo (plan/25). Sin contenido: solo conteos."""
+        with self.pool.connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO llm_usage (user_id, feature, model, tokens_in, tokens_out)
+                SELECT %s, %s, %s, %s, %s
+                WHERE EXISTS (SELECT 1 FROM users WHERE id = %s)
+                """,
+                (user_id, feature, model, tokens_in, tokens_out, user_id),
+            )
+
     # ------------------------------------------------------------------ heartbeat
 
     def heartbeat(self, worker_id: str, version: str | None) -> None:
@@ -289,7 +303,7 @@ class Database:
 
     # ------------------------------------------------------------------ limpieza
 
-    def cleanup(self, job_days: int, processed_days: int) -> dict[str, int]:
+    def cleanup(self, job_days: int, processed_days: int, events_months: int = 13) -> dict[str, int]:
         with self.pool.connection() as conn:
             jobs = conn.execute(
                 """
@@ -302,4 +316,13 @@ class Database:
                 "DELETE FROM processed_emails WHERE created_at < now() - make_interval(days => %s)",
                 (processed_days,),
             ).rowcount
-        return {"email_jobs": jobs, "processed_emails": processed}
+            # métricas del panel admin: retención 13 meses (plan/25)
+            events = conn.execute(
+                "DELETE FROM product_events WHERE created_at < now() - make_interval(months => %s)",
+                (events_months,),
+            ).rowcount
+            usage = conn.execute(
+                "DELETE FROM llm_usage WHERE created_at < now() - make_interval(months => %s)",
+                (events_months,),
+            ).rowcount
+        return {"email_jobs": jobs, "processed_emails": processed, "product_events": events, "llm_usage": usage}

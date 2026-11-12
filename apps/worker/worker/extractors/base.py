@@ -27,6 +27,14 @@ class ExtractedTransaction:
     reason: str = ""                 # por qué no es transacción (si el extractor lo dice)
 
 
+@dataclass(frozen=True)
+class LlmUsage:
+    """Tokens de una llamada al modelo. Nunca lleva contenido del correo ni de la respuesta."""
+    model: str
+    tokens_in: int
+    tokens_out: int
+
+
 class TransactionExtractor(Protocol):
     name: str  # se guarda en processed_emails.extractor
 

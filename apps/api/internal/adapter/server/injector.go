@@ -93,6 +93,9 @@ func NewInjector(settings *config.Configuration) *Injector {
 	// Category
 	categoryRepo := dbrepository.NewCategoryRepository(db)
 	categoryService := service.NewCategoryService(categoryRepo)
+	// product events (closed list, no amounts or free text): corrections, Por revisar, budgets
+	productEvents := service.NewProductEventService(dbrepository.NewProductEventRepository(db))
+	categoryService.SetEvents(productEvents)
 	categoryHandler := http.NewCategoryHandler(categoryService)
 
 	// User (own auth: email + password)
@@ -132,6 +135,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 	// Transaction
 	transactionRepo := dbrepository.NewTransactionRepository(db)
 	transactionService := service.NewTransactionService(transactionRepo, userService, categoryService)
+	transactionService.SetEvents(productEvents)
 	transactionHandler := http.NewTransactionHandler(transactionService)
 
 	// Account

@@ -15,6 +15,12 @@ type TransactionService struct {
 	repo        port.TransactionRepository
 	userSvc     port.UserService
 	categorySvc port.CategoryService
+	events      port.ProductEventRecorder
+}
+
+// SetEvents sets the recorder of product events (corrections and Por revisar resolved)
+func (ts *TransactionService) SetEvents(events port.ProductEventRecorder) {
+	ts.events = events
 }
 
 // NewTransactionService creates a new transaction service instance
@@ -24,9 +30,9 @@ func NewTransactionService(
 	cSvc port.CategoryService,
 ) *TransactionService {
 	return &TransactionService{
-		repo,
-		svc,
-		cSvc,
+		repo:        repo,
+		userSvc:     svc,
+		categorySvc: cSvc,
 	}
 }
 
@@ -87,7 +93,34 @@ func (ts *TransactionService) UpdateTransaction(ctx context.Context, transaction
 		return err
 	}
 
+	ts.emitUpdateEvents(ctx, actualTransaction, transaction)
+
 	return nil
+}
+
+// emitUpdateEvents: the user corrected what the email reader wrote (category or amount), or opened a
+// transaction that was waiting for verification. Only ids go in the event.
+func (ts *TransactionService) emitUpdateEvents(ctx context.Context, actual, updated *domain.Transaction) {
+	props := map[string]any{"transaction_id": actual.ID}
+	if actual.Automated {
+		if updated.Category.ID != 0 && updated.Category.ID != actual.Category.ID {
+			emit(ctx, ts.events, domain.ProductEvent{UserID: actual.UserID, Name: domain.ProductEventCategoryCorrected, Props: props})
+		}
+		if updated.Amount != actual.Amount {
+			emit(ctx, ts.events, domain.ProductEvent{UserID: actual.UserID, Name: domain.ProductEventAmountCorrected, Props: props})
+		}
+	}
+	if actual.ShouldVerify && !updated.ShouldVerify {
+		emit(ctx, ts.events, reviewResolved(actual.UserID, actual.ID, domain.ReviewKindVerify, false))
+	}
+}
+
+func reviewResolved(userID string, transactionID uint64, kind string, dismissed bool) domain.ProductEvent {
+	props := map[string]any{"transaction_id": transactionID, "kind": kind}
+	if dismissed {
+		props["dismissed"] = true
+	}
+	return domain.ProductEvent{UserID: userID, Name: domain.ProductEventReviewResolved, Props: props}
 }
 
 // CreateTransfer validates the transfer and stores both legs
@@ -111,14 +144,26 @@ func (ts *TransactionService) LinkTransfer(ctx context.Context, link *domain.Tra
 		return err
 	}
 	if link.CounterpartTransactionID != 0 {
-		return ts.repo.LinkTransactions(ctx, link)
+		if err := ts.repo.LinkTransactions(ctx, link); err != nil {
+			return err
+		}
+		emit(ctx, ts.events, reviewResolved(link.UserID, link.TransactionID, domain.ReviewKindTransfer, false))
+		return nil
 	}
-	return ts.repo.CreateTransferCounterpart(ctx, link)
+	if err := ts.repo.CreateTransferCounterpart(ctx, link); err != nil {
+		return err
+	}
+	emit(ctx, ts.events, reviewResolved(link.UserID, link.TransactionID, domain.ReviewKindCounterpart, false))
+	return nil
 }
 
 // SetInstallments answers how many installments a card purchase has; 1 means none
 func (ts *TransactionService) SetInstallments(ctx context.Context, userID string, id uint64, installments int16) error {
-	return ts.repo.SetInstallments(ctx, userID, id, installments)
+	if err := ts.repo.SetInstallments(ctx, userID, id, installments); err != nil {
+		return err
+	}
+	emit(ctx, ts.events, reviewResolved(userID, id, domain.ReviewKindInstallments, false))
+	return nil
 }
 
 // ListInstallments returns rows of the schedule of the user's purchases
@@ -128,7 +173,11 @@ func (ts *TransactionService) ListInstallments(ctx context.Context, userID strin
 
 // DismissCounterpart stops asking for the other leg of a card payment
 func (ts *TransactionService) DismissCounterpart(ctx context.Context, userID string, id uint64) error {
-	return ts.repo.DismissCounterpart(ctx, userID, id)
+	if err := ts.repo.DismissCounterpart(ctx, userID, id); err != nil {
+		return err
+	}
+	emit(ctx, ts.events, reviewResolved(userID, id, domain.ReviewKindCounterpart, true))
+	return nil
 }
 
 // SuggestCounterpartAccount returns the account that most often paid into this one (nil if none)
@@ -158,7 +207,11 @@ func (ts *TransactionService) DismissTransferCandidate(ctx context.Context, user
 	if outID == 0 || inID == 0 || outID == inID {
 		return domain.ErrInvalidTransfer
 	}
-	return ts.repo.DismissTransferCandidate(ctx, userID, outID, inID)
+	if err := ts.repo.DismissTransferCandidate(ctx, userID, outID, inID); err != nil {
+		return err
+	}
+	emit(ctx, ts.events, reviewResolved(userID, outID, domain.ReviewKindTransfer, true))
+	return nil
 }
 
 // DeleteTransaction deletes a transaction record

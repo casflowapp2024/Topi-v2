@@ -136,3 +136,22 @@ def test_heartbeat_upsert(db):
     finally:
         with db.pool.connection() as conn:
             conn.execute("DELETE FROM worker_heartbeat WHERE worker_id = %s", (worker_id,))
+
+
+def test_record_llm_usage_only_counts_and_skips_unknown_users(db):
+    user_id = f"llm-{uuid.uuid4()}"
+    with db.pool.connection() as conn:
+        conn.execute("INSERT INTO users (id, email) VALUES (%s, %s)", (user_id, f"{user_id}@example.com"))
+    try:
+        db.record_llm_usage(user_id=user_id, feature="email_parse", model="gemini-test", tokens_in=1200, tokens_out=80)
+        db.record_llm_usage(user_id="no-existe", feature="email_parse", model="gemini-test", tokens_in=1, tokens_out=1)
+        with db.pool.connection() as conn:
+            rows = conn.execute("SELECT feature, model, tokens_in, tokens_out FROM llm_usage WHERE user_id = %s",
+                                (user_id,)).fetchall()
+            unknown = conn.execute("SELECT count(*) AS n FROM llm_usage WHERE user_id = 'no-existe'").fetchone()["n"]
+        assert [tuple(r.values()) for r in rows] == [("email_parse", "gemini-test", 1200, 80)]
+        assert unknown == 0
+    finally:
+        with db.pool.connection() as conn:
+            conn.execute("DELETE FROM llm_usage WHERE user_id = %s", (user_id,))
+            conn.execute("DELETE FROM users WHERE id = %s", (user_id,))

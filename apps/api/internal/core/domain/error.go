@@ -142,6 +142,8 @@ var (
 	ErrDataNotFound = errors.New("data not found")
 	// ErrNoUpdatedData is an error for when no data is provided to update
 	ErrNoUpdatedData = errors.New("no data to update")
+	// ErrInvalidProductEvent: a product event outside the closed list or with props not allowed (plan/25)
+	ErrInvalidProductEvent = errors.New("invalid product event")
 	// ErrEmptyData is an error for when no data is provided
 	ErrEmptyData = errors.New("no data is provided")
 	// ErrConflictingData is an error for when data conflicts with existing data

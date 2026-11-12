@@ -49,3 +49,26 @@ def test_zero_or_null_amount_is_not_a_transaction():
 def test_prompt_v3_is_unchanged():
     assert PROMPT_V3.strip().startswith("ROL: Eres un experto en contabilidad automatizada")
     assert '"transaction_detected": false' in PROMPT_V3
+
+
+def test_usage_comes_only_from_usage_metadata_and_is_taken_once():
+    client = MagicMock()
+    meta = MagicMock(prompt_token_count=1500, candidates_token_count=40, thoughts_token_count=None)
+    client.models.generate_content.return_value = MagicMock(
+        text='{"transaction_detected": false, "reason": "x"}', usage_metadata=meta)
+    extractor = GeminiExtractor(api_key="k", client=client)
+
+    extractor.extract(EMAIL, [])
+    usage = extractor.take_usage()
+
+    assert (usage.model, usage.tokens_in, usage.tokens_out) == ("gemini-3.5-flash-lite", 1500, 40)
+    assert extractor.take_usage() is None, "se toma una sola vez"
+
+
+def test_without_usage_metadata_there_is_no_usage():
+    extractor, _ = extractor_returning('{"transaction_detected": false, "reason": "x"}')
+    extractor._client.models.generate_content.return_value.usage_metadata = None
+
+    extractor.extract(EMAIL, [])
+
+    assert extractor.take_usage() is None

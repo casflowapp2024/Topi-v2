@@ -1,6 +1,7 @@
 package port
 
 import (
+	"cash-flow/internal/core/domain"
 	"context"
 	"time"
 )
@@ -23,4 +24,15 @@ type FounderRepository interface {
 	// MarkEligible sets founder_eligible for the users created before cutoff; it never unmarks anyone.
 	// Returns how many users were marked now.
 	MarkEligible(ctx context.Context, cutoff time.Time) (int64, error)
+}
+
+// ProductEventRepository stores product_events
+type ProductEventRepository interface {
+	Record(ctx context.Context, event domain.ProductEvent) error
+}
+
+// ProductEventRecorder emits product events from the services. It never fails the user's action:
+// an invalid event or a failed write is logged and dropped.
+type ProductEventRecorder interface {
+	Emit(ctx context.Context, event domain.ProductEvent)
 }

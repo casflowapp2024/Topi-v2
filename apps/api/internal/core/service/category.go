@@ -8,7 +8,23 @@ import (
 )
 
 type CategoryService struct {
-	repo port.CategoryRepository
+	repo   port.CategoryRepository
+	events port.ProductEventRecorder
+}
+
+// SetEvents sets the recorder of product events (budget_created)
+func (cs *CategoryService) SetEvents(events port.ProductEventRecorder) {
+	cs.events = events
+}
+
+// emitBudgetCreated: a category that had no budget now has one
+func (cs CategoryService) emitBudgetCreated(ctx context.Context, category *domain.Category, before float64) {
+	if category != nil && category.Budget > 0 && before <= 0 {
+		emit(ctx, cs.events, domain.ProductEvent{
+			UserID: category.UserID, Name: domain.ProductEventBudgetCreated,
+			Props: map[string]any{"category_id": category.ID},
+		})
+	}
 }
 
 func NewCategoryService(repo port.CategoryRepository) *CategoryService {
@@ -22,6 +38,7 @@ func (cs CategoryService) CreateCategory(ctx context.Context, category *domain.C
 	if err != nil {
 		return err
 	}
+	cs.emitBudgetCreated(ctx, category, 0)
 	return nil
 }
 
@@ -117,6 +134,9 @@ func (cs CategoryService) UpdateCategory(ctx context.Context, category *domain.C
 	if err != nil {
 		return err
 	}
+
+	// an update without budget in the body keeps the stored one (Budget 0 means "not sent" there)
+	cs.emitBudgetCreated(ctx, category, actualCategory.Budget)
 
 	return nil
 }

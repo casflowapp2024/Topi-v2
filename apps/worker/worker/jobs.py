@@ -134,6 +134,22 @@ class JobProcessor:
 
     # ------------------------------------------------------------------ flujo
 
+    def _record_usage(self, user_id: str) -> None:
+        """Guarda los tokens de la última llamada al modelo (sin contenido). Nunca hace fallar el job."""
+        take = getattr(self.extractor, "take_usage", None)
+        usage = take() if callable(take) else None
+        if usage is None:
+            return
+        if self.settings.dry_run:
+            logger.info("dry run: tokens del modelo", extra={"model": usage.model, "tokens_in": usage.tokens_in,
+                                                             "tokens_out": usage.tokens_out})
+            return
+        try:
+            self.db.record_llm_usage(user_id=user_id, feature="email_parse", model=usage.model,
+                                     tokens_in=usage.tokens_in, tokens_out=usage.tokens_out)
+        except Exception as exc:  # noqa: BLE001 - la métrica no puede tumbar la lectura
+            logger.warning("no se pudo registrar el uso del modelo", extra={"error": str(exc)})
+
     def process(self, payload: dict[str, Any]) -> JobResult:
         missing = [f for f in REQUIRED_FIELDS if f not in payload]
         if missing:
@@ -193,6 +209,7 @@ class JobProcessor:
             try:
                 extracted = self.extractor.extract(email, account_refs)
             except Exception as exc:  # noqa: BLE001
+                self._record_usage(user_id)
                 error = classify(exc)
                 if isinstance(error, CredentialError):
                     raise error
@@ -204,6 +221,7 @@ class JobProcessor:
                                                            "error": str(error)})
                 continue
 
+            self._record_usage(user_id)
             found = [t for t in extracted if t.is_transaction]
             result.extracted += 1
             if not found:

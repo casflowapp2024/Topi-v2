@@ -9,11 +9,12 @@
 from __future__ import annotations
 
 import json
+import threading
 from typing import Any
 
 from worker import log
 from worker.errors import PermanentJobError
-from worker.extractors.base import AccountRef, ExtractedTransaction
+from worker.extractors.base import AccountRef, ExtractedTransaction, LlmUsage
 from worker.extractors.prompt_v3 import prompt as PROMPT_V3
 from worker.mapping import parse_amount
 from worker.providers.base import EmailMessage
@@ -28,6 +29,8 @@ class GeminiExtractor:
         self.name = model
         self.api_key = api_key
         self._client = client
+        # el uso de la última llamada, por hilo: el job loop comparte el extractor entre hilos
+        self._local = threading.local()
 
     @property
     def client(self) -> Any:
@@ -42,11 +45,30 @@ class GeminiExtractor:
     def generate_response(self, email_data: str) -> Any:
         from google.genai import types
 
-        return self.client.models.generate_content(
+        response = self.client.models.generate_content(
             model=self.model,
             config=types.GenerateContentConfig(system_instruction=self.prompt),
             contents=email_data,
         )
+        self._local.usage = self.usage_of(response)
+        return response
+
+    def usage_of(self, response: Any) -> LlmUsage | None:
+        """Solo los conteos de usage_metadata (prompt + respuesta); nada del contenido."""
+        meta = getattr(response, "usage_metadata", None)
+        if meta is None:
+            return None
+        tokens_in = _as_int(getattr(meta, "prompt_token_count", 0))
+        tokens_out = _as_int(getattr(meta, "candidates_token_count", 0)) + _as_int(getattr(meta, "thoughts_token_count", 0))
+        if tokens_in == 0 and tokens_out == 0:
+            return None
+        return LlmUsage(model=self.model, tokens_in=tokens_in, tokens_out=tokens_out)
+
+    def take_usage(self) -> LlmUsage | None:
+        """Devuelve y limpia el uso de la última llamada de este hilo."""
+        usage = getattr(self._local, "usage", None)
+        self._local.usage = None
+        return usage
 
     @staticmethod
     def parse_response(response: Any) -> dict[str, Any]:
@@ -76,3 +98,10 @@ class GeminiExtractor:
             description=str(data.get("description") or ""),
             confidence=None,
         )]
+
+
+def _as_int(value: Any) -> int:
+    try:
+        return max(int(value or 0), 0)
+    except (TypeError, ValueError):
+        return 0

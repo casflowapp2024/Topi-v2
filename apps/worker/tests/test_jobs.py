@@ -8,6 +8,7 @@ from google.auth.exceptions import RefreshError
 
 from tests.fakes import FakeApi, FakeDB, FakeExtractor, FakeProvider, job
 from worker.config import Settings
+from worker.extractors.base import LlmUsage
 from worker.jobs import JobProcessor, first_day_of_month
 from worker.providers.base import EmailMessage
 
@@ -257,3 +258,45 @@ def test_card_payment_email_is_an_income_of_the_card():
     sent = {t["source_message_id"]: t for t in api.create_calls[0]}
     assert sent["m12"]["expense"] is False and sent["m12"]["card_payment"] is True
     assert sent["m13"]["expense"] is True and "card_payment" not in sent["m13"]
+
+
+def test_records_model_tokens_per_extracted_email_without_content():
+    usage = LlmUsage(model="gemini-test", tokens_in=1200, tokens_out=80)
+    processor, db, _, _, _ = make(MESSAGES, extractor=FakeExtractor(usage=usage))
+
+    assert processor.handle(job()) == "done"
+
+    # una fila por correo enviado al modelo; solo usuario, función, modelo y conteos
+    assert len(db.llm_usage) == len(MESSAGES)
+    assert set(db.llm_usage) == {(job().payload["user_id"], "email_parse", "gemini-test", 1200, 80)}
+
+
+def test_tokens_are_recorded_even_when_the_extraction_fails():
+    usage = LlmUsage(model="gemini-test", tokens_in=10, tokens_out=0)
+    extractor = FakeExtractor(fail_for={"m1": ValueError("respuesta inválida")}, usage=usage)
+    processor, db, _, _, _ = make(MESSAGES, extractor=extractor)
+
+    processor.handle(job())
+
+    assert len(db.llm_usage) == len(MESSAGES)
+
+
+def test_dry_run_does_not_write_tokens():
+    usage = LlmUsage(model="gemini-test", tokens_in=10, tokens_out=1)
+    processor, db, _, _, _ = make(MESSAGES, extractor=FakeExtractor(usage=usage), dry_run=True)
+
+    processor.handle(job())
+
+    assert db.llm_usage == []
+
+
+def test_a_failing_usage_write_never_fails_the_job():
+    usage = LlmUsage(model="gemini-test", tokens_in=10, tokens_out=1)
+    processor, db, _, _, _ = make(MESSAGES, extractor=FakeExtractor(usage=usage))
+
+    def boom(**kwargs):
+        raise RuntimeError("db down")
+
+    db.record_llm_usage = boom
+
+    assert processor.handle(job()) == "done"
