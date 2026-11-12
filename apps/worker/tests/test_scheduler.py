@@ -74,6 +74,7 @@ def test_scheduler_jobs_and_triggers():
     assert jobs["reconcile_totals"] == "cron[hour='3', minute='30']"
     assert jobs["refresh_predictions"] == "cron[day='*/2', hour='0', minute='0']"
     assert jobs["cleanup"] == "cron[hour='3', minute='0']"
+    assert jobs["admin_metrics"] == "cron[hour='2', minute='15']"
     assert jobs["fx_sync"] == "cron[hour='19', minute='0']"
     assert jobs["fx_sync_startup"].startswith("date["), "una vez al arrancar"
     assert str(scheduler.timezone) == "America/Bogota"
@@ -142,3 +143,18 @@ def test_refresh_rejects_unknown_views():
 
     with pytest.raises(ValueError):
         refresh_view(object(), "users; DROP TABLE users")
+
+
+@pytest.mark.db
+def test_admin_metrics_refresh_and_do_not_overlap(db):
+    from worker.scheduler import refresh_admin_metrics
+
+    rows = refresh_admin_metrics(db)
+    assert rows is not None and rows >= 4 * 8, "wau, mau, north_star_7d y auto_users_7d por cada día"
+
+    with db.pool.connection() as other:
+        other.execute("SELECT pg_advisory_lock(hashtext('topi:admin_metrics'))")
+        try:
+            assert refresh_admin_metrics(db) is None
+        finally:
+            other.execute("SELECT pg_advisory_unlock(hashtext('topi:admin_metrics'))")

@@ -72,6 +72,20 @@ def reconcile_totals(db: Database) -> list[str]:
     return fixed
 
 
+# días que se recalculan cada noche: lo leído tarde (correos, eventos) entra a su día
+ADMIN_METRICS_DAYS = 7
+
+
+def refresh_admin_metrics(db: Database) -> int | None:
+    """Precalcula el panel admin (plan/25): el panel nunca barre las tablas grandes al cargar."""
+    rows = db.refresh_admin_metrics(ADMIN_METRICS_DAYS)
+    if rows is None:
+        logger.info("métricas admin: otra corrida en curso, se omite")
+    else:
+        logger.info("métricas admin recalculadas", extra={"rows": rows, "days": ADMIN_METRICS_DAYS})
+    return rows
+
+
 def _safe(name, fn, *args):
     def run():
         try:
@@ -94,6 +108,8 @@ def build_scheduler(settings: Settings, api: TopiApi, db: Database) -> Backgroun
                       CronTrigger(day="*/2", hour=0, minute=0, timezone=tz), id="refresh_predictions", name="refresh_predictions")
     scheduler.add_job(_safe("cleanup", cleanup, settings, db),
                       CronTrigger(hour=3, minute=0, timezone=tz), id="cleanup", name="cleanup")
+    scheduler.add_job(_safe("admin_metrics", refresh_admin_metrics, db),
+                      CronTrigger(hour=2, minute=15, timezone=tz), id="admin_metrics", name="admin_metrics")
     scheduler.add_job(_safe("reconcile_totals", reconcile_totals, db),
                       CronTrigger(hour=3, minute=30, timezone=tz), id="reconcile_totals", name="reconcile_totals")
     if settings.fx_sync_enabled:

@@ -144,6 +144,8 @@ var (
 	ErrNoUpdatedData = errors.New("no data to update")
 	// ErrInvalidProductEvent: a product event outside the closed list or with props not allowed (plan/25)
 	ErrInvalidProductEvent = errors.New("invalid product event")
+	// ErrInvalidAdminFilter: unknown segment of the users table of the admin panel
+	ErrInvalidAdminFilter = errors.New("invalid admin filter")
 	// ErrEmptyData is an error for when no data is provided
 	ErrEmptyData = errors.New("no data is provided")
 	// ErrConflictingData is an error for when data conflicts with existing data

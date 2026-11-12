@@ -287,6 +287,22 @@ class Database:
                 (quotes, dates, values, sources),
             ).rowcount
 
+    def refresh_admin_metrics(self, days: int) -> int | None:
+        """Precálculo del panel admin (función de la migración 000043): metrics_daily de los últimos `days` días y
+        las vistas admin_*. Con un advisory lock: si otra corrida lo tiene, se omite (None)."""
+        with self.pool.connection() as conn:
+            got = conn.execute("SELECT pg_try_advisory_lock(hashtext('topi:admin_metrics')) AS ok").fetchone()
+            if not (got["ok"] if isinstance(got, dict) else got[0]):
+                return None
+            try:
+                row = conn.execute(
+                    "SELECT refresh_admin_metrics(((now() AT TIME ZONE 'America/Bogota')::date - %s)::date) AS n",
+                    (days,),
+                ).fetchone()
+                return int(row["n"] if isinstance(row, dict) else row[0])
+            finally:
+                conn.execute("SELECT pg_advisory_unlock(hashtext('topi:admin_metrics'))")
+
     def fill_pending_fx(self) -> int:
         """Completa fx_rate/amount_base de las transacciones que no tenían tasa (función de la
         migración 000024). Devuelve cuántas quedaron completas."""

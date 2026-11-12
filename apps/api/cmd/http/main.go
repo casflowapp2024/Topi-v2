@@ -80,6 +80,7 @@ func main() {
 		EmailHandler:          injector.Handlers.Email,
 		Activity:              injector.Handlers.Activity,
 		MailHandler:           injector.Handlers.Mail,
+		AdminHandler:          injector.Handlers.Admin,
 		InitDevHandler:        injector.Handlers.Initialization,
 		InitializationHandler: injector.Handlers.CategoryInitialization,
 		Router:                router.Router,

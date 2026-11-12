@@ -50,6 +50,7 @@ type Handlers struct {
 	CreditCard             *http.CreditCardHandler
 	Email                  *http.EmailHandler
 	Mail                   *http.MailHandler
+	Admin                  *http.AdminHandler
 	Initialization         *http.InitDevHandler
 	CategoryInitialization *http.InitializationHandler
 	// Activity records the daily activity in AuthMiddleware
@@ -196,6 +197,15 @@ func NewInjector(settings *config.Configuration) *Injector {
 	emailService.SetMail(mailService)
 	emailHandler := http.NewEmailHandler(emailService)
 
+	// Admin panel: precomputed metrics, users table and founders (plan/25)
+	adminService := service.NewAdminMetricsService(dbrepository.NewAdminMetricsRepository(db), domain.MetricPrices{
+		InPerMTok:      settings.Metrics.LLMPriceInPerMTok,
+		OutPerMTok:     settings.Metrics.LLMPriceOutPerMTok,
+		ServerMonthly:  settings.Metrics.ServerMonthlyCostUSD,
+		MailDailyQuota: settings.Mail.DailyQuota,
+	})
+	adminHandler := http.NewAdminHandler(adminService)
+
 	// Initialization Dev
 	initDevHandler := http.NewDevHandler(
 		categoryService,
@@ -225,6 +235,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 			CreditCard:             creditCardHandler,
 			Email:                  emailHandler,
 			Mail:                   mailHandler,
+			Admin:                  adminHandler,
 			Initialization:         initDevHandler,
 			CategoryInitialization: InitHandler,
 			Activity:               service.NewActivityService(dbrepository.NewActivityRepository(db)),

@@ -27,6 +27,7 @@ type Routes struct {
 	MailHandler           *MailHandler
 	InitDevHandler        *InitDevHandler
 	InitializationHandler *InitializationHandler
+	AdminHandler          *AdminHandler
 	// Activity records the daily activity of the authenticated users (optional)
 	Activity port.ActivityTracker
 	Router   *gin.Engine
@@ -244,6 +245,7 @@ func (r *Routes) Init(env string) {
 	r.FxRoutes()
 	r.EmailRoutes()
 	r.MailRoutes()
+	r.AdminRoutes()
 	r.InitializationRoutes()
 	r.DocRoutes(env)
 }
@@ -271,5 +273,24 @@ func (r *Routes) MailRoutes() {
 		mail.GET("/unsubscribe", r.MailHandler.UnsubscribeForm)
 		mail.POST("/unsubscribe", r.MailHandler.Unsubscribe)
 		mail.POST("/webhook/resend", r.MailHandler.ResendWebhook)
+	}
+}
+
+// AdminRoutes: the admin panel (plan/25). Admin role only and every access audited.
+func (r *Routes) AdminRoutes() {
+	if r.AdminHandler == nil {
+		return
+	}
+	admin := r.Router.Group("/admin").Use(r.auth(), AdminMiddleware(), AdminAuditMiddleware(r.AdminHandler.svc))
+	{
+		admin.GET("/metrics/summary", r.AdminHandler.Summary)
+		admin.GET("/metrics/activation", r.AdminHandler.Activation)
+		admin.GET("/metrics/cohorts", r.AdminHandler.Cohorts)
+		admin.GET("/metrics/reading", r.AdminHandler.Reading)
+		admin.GET("/metrics/quality", r.AdminHandler.Quality)
+		admin.GET("/metrics/catalog", r.AdminHandler.Catalog)
+		admin.GET("/metrics/costs", r.AdminHandler.Costs)
+		admin.POST("/metrics/refresh", r.AdminHandler.Refresh)
+		admin.GET("/users", r.AdminHandler.Users)
 	}
 }
