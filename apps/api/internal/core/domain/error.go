@@ -146,6 +146,8 @@ var (
 	ErrInvalidProductEvent = errors.New("invalid product event")
 	// ErrInvalidAdminFilter: unknown segment of the users table of the admin panel
 	ErrInvalidAdminFilter = errors.New("invalid admin filter")
+	// ErrNotFounderEligible: only eligible users (registered before FOUNDER_CUTOFF) can be confirmed founders
+	ErrNotFounderEligible = errors.New("user is not founder eligible")
 	// ErrEmptyData is an error for when no data is provided
 	ErrEmptyData = errors.New("no data is provided")
 	// ErrConflictingData is an error for when data conflicts with existing data

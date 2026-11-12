@@ -7,6 +7,7 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import AdminSummary from '../components/admin/AdminSummary';
 import AdminUsers from '../components/admin/AdminUsers';
+import AdminFounders from '../components/admin/AdminFounders';
 import AdminReading from '../components/admin/AdminReading';
 import AdminCatalog from '../components/admin/AdminCatalog';
 import AdminCosts from '../components/admin/AdminCosts';
@@ -17,6 +18,7 @@ import { refreshAdminMetrics } from '../apiCalls/admin';
 export const ADMIN_TABS = [
   { id: 'resumen', label: 'Resumen', component: AdminSummary },
   { id: 'usuarios', label: 'Usuarios', component: AdminUsers },
+  { id: 'fundadores', label: 'Fundadores', component: AdminFounders },
   { id: 'lectura', label: 'Lectura', component: AdminReading },
   { id: 'catalogo', label: 'Catálogo', component: AdminCatalog },
   { id: 'costos', label: 'Costos', component: AdminCosts },

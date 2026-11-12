@@ -12,12 +12,13 @@ import (
 // AdminHandler serves the admin panel (plan/25-admin-metricas.md). Every route goes behind AuthMiddleware,
 // AdminMiddleware and AdminAuditMiddleware.
 type AdminHandler struct {
-	svc port.AdminService
+	svc      port.AdminService
+	founders port.FounderService
 }
 
 // NewAdminHandler creates a new AdminHandler instance
-func NewAdminHandler(svc port.AdminService) *AdminHandler {
-	return &AdminHandler{svc: svc}
+func NewAdminHandler(svc port.AdminService, founders port.FounderService) *AdminHandler {
+	return &AdminHandler{svc: svc, founders: founders}
 }
 
 // AdminAuditMiddleware records every access to the panel (admin, route, query). Without the audit row the
@@ -184,4 +185,56 @@ func respond(ctx *gin.Context, data any, err error) {
 		return
 	}
 	handleSuccess(ctx, data)
+}
+
+// Founders godoc
+//
+//	@Summary	Admin: founder eligible users, active in 90 days and without activity
+//	@Tags		Admin
+//	@Produce	json
+//	@Success	200	{object}	response{data=domain.FounderList}
+//	@Router		/admin/founders [get]
+//	@Security	BearerAuth
+func (h *AdminHandler) Founders(ctx *gin.Context) {
+	result, err := h.founders.List(ctx)
+	respond(ctx, result, err)
+}
+
+// ConfirmActiveFounders godoc
+//
+//	@Summary	Admin: confirm every active eligible user (dry_run=true only returns the summary)
+//	@Tags		Admin
+//	@Produce	json
+//	@Param		dry_run	query	bool	false	"Preview without changing anything"
+//	@Success	200	{object}	response{data=domain.FounderBulkResult}
+//	@Router		/admin/founders/confirm-active [post]
+//	@Security	BearerAuth
+func (h *AdminHandler) ConfirmActiveFounders(ctx *gin.Context) {
+	result, err := h.founders.ConfirmActive(ctx, adminID(ctx), ctx.Query("dry_run") == "true")
+	respond(ctx, result, err)
+}
+
+// ConfirmFounder godoc
+//
+//	@Summary	Admin: confirm one eligible user as founder
+//	@Tags		Admin
+//	@Param		id	path	string	true	"User id"
+//	@Success	200	{object}	response
+//	@Failure	400	{object}	errorResponse	"Not eligible"
+//	@Router		/admin/founders/{id}/confirm [post]
+//	@Security	BearerAuth
+func (h *AdminHandler) ConfirmFounder(ctx *gin.Context) {
+	respond(ctx, nil, h.founders.Confirm(ctx, adminID(ctx), ctx.Param("id")))
+}
+
+// UnconfirmFounder godoc
+//
+//	@Summary	Admin: remove the founder confirmation of one user (the user and its data stay)
+//	@Tags		Admin
+//	@Param		id	path	string	true	"User id"
+//	@Success	200	{object}	response
+//	@Router		/admin/founders/{id}/confirm [delete]
+//	@Security	BearerAuth
+func (h *AdminHandler) UnconfirmFounder(ctx *gin.Context) {
+	respond(ctx, nil, h.founders.Unconfirm(ctx, adminID(ctx), ctx.Param("id")))
 }

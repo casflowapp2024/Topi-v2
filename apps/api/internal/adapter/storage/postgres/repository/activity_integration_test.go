@@ -95,3 +95,89 @@ WHERE user_id = $1 AND name = 'review_resolved'`, id).Scan(&kind, &txID))
 	// the table also enforces the closed list
 	assert.Error(t, repo.Record(ctx, domain.ProductEvent{UserID: id, Name: "page_viewed"}))
 }
+
+func TestFounderRepository_ConfirmAndAudit_Integration(t *testing.T) {
+	ctx := context.Background()
+	db := integrationDB(t)
+	users := repository.NewUserRepository(db)
+	founders := repository.NewFounderRepository(db)
+	tag := "fd" + uuid.NewString()[:6]
+
+	var ids []string
+	newUser := func(eligible bool) string {
+		id := uuid.NewString()
+		require.NoError(t, users.CreateUser(ctx, &domain.User{ID: id, Email: tag + "-" + id[:8] + "@example.com", Role: domain.RoleUser}))
+		_, err := db.Exec(ctx, "UPDATE users SET founder_eligible = $2 WHERE id = $1", id, eligible)
+		require.NoError(t, err)
+		ids = append(ids, id)
+		return id
+	}
+	admin := newUser(false)
+	t.Cleanup(func() {
+		_, _ = db.Exec(ctx, "DELETE FROM admin_audit WHERE admin_id = $1", admin)
+		for _, id := range ids {
+			_, _ = db.Exec(ctx, "DELETE FROM user_activity_days WHERE user_id = $1", id)
+			_, _ = db.Exec(ctx, "DELETE FROM users WHERE id = $1", id)
+		}
+	})
+
+	active := newUser(true)
+	ghost := newUser(true) // eligible, no activity
+	notEligible := newUser(false)
+	require.NoError(t, repository.NewActivityRepository(db).MarkActive(ctx, active, domain.ActivityDay(time.Now())))
+	require.NoError(t, repository.NewActivityRepository(db).MarkActive(ctx, notEligible, domain.ActivityDay(time.Now())))
+
+	list, err := founders.List(ctx, domain.FounderActiveDays)
+	require.NoError(t, err)
+	state := map[string]bool{}
+	for _, r := range list.Active {
+		state[r.ID] = true
+	}
+	for _, r := range list.Inactive {
+		state[r.ID] = false
+	}
+	assert.Equal(t, true, state[active])
+	assert.Equal(t, false, state[ghost])
+	_, listed := state[notEligible]
+	assert.False(t, listed, "a user registered after the cutoff is not in the list")
+
+	confirmedAt := func(id string) *time.Time {
+		var at *time.Time
+		require.NoError(t, db.QueryRow(ctx, "SELECT founder_confirmed_at FROM users WHERE id = $1", id).Scan(&at))
+		return at
+	}
+	auditCount := func(action string) int {
+		var n int
+		require.NoError(t, db.QueryRow(ctx, "SELECT count(*) FROM admin_audit WHERE admin_id = $1 AND action = $2", admin, action).Scan(&n))
+		return n
+	}
+
+	// preview changes nothing
+	preview, err := founders.ConfirmActive(ctx, admin, domain.FounderActiveDays, true)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, preview.ToConfirm, int64(1))
+	assert.Nil(t, confirmedAt(active))
+	assert.Equal(t, 0, auditCount(domain.AdminActionFounderConfirmActive))
+
+	// bulk: the active one is confirmed, the ghost stays eligible (and exists), with one audit row
+	_, err = founders.ConfirmActive(ctx, admin, domain.FounderActiveDays, false)
+	require.NoError(t, err)
+	assert.NotNil(t, confirmedAt(active))
+	assert.Nil(t, confirmedAt(ghost))
+	assert.Equal(t, 1, auditCount(domain.AdminActionFounderConfirmActive))
+
+	// one by one, audited; a non eligible user cannot be confirmed
+	require.NoError(t, founders.SetConfirmed(ctx, admin, ghost, true))
+	assert.NotNil(t, confirmedAt(ghost))
+	require.NoError(t, founders.SetConfirmed(ctx, admin, ghost, false))
+	assert.Nil(t, confirmedAt(ghost))
+	assert.ErrorIs(t, founders.SetConfirmed(ctx, admin, notEligible, true), domain.ErrNotFounderEligible)
+	assert.ErrorIs(t, founders.SetConfirmed(ctx, admin, "does-not-exist", true), domain.ErrNotFounderEligible)
+	assert.Equal(t, 1, auditCount(domain.AdminActionFounderConfirm))
+	assert.Equal(t, 1, auditCount(domain.AdminActionFounderUnconfirm))
+
+	// nobody was deleted
+	var alive int
+	require.NoError(t, db.QueryRow(ctx, "SELECT count(*) FROM users WHERE id = ANY($1)", ids).Scan(&alive))
+	assert.Equal(t, len(ids), alive)
+}

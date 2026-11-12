@@ -108,6 +108,36 @@ func (m *MockFounderRepository) EXPECT() *MockFounderRepositoryMockRecorder {
 	return m.recorder
 }
 
+// ConfirmActive mocks base method.
+func (m *MockFounderRepository) ConfirmActive(ctx context.Context, adminID string, activeDays int, dryRun bool) (domain.FounderBulkResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConfirmActive", ctx, adminID, activeDays, dryRun)
+	ret0, _ := ret[0].(domain.FounderBulkResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ConfirmActive indicates an expected call of ConfirmActive.
+func (mr *MockFounderRepositoryMockRecorder) ConfirmActive(ctx, adminID, activeDays, dryRun interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfirmActive", reflect.TypeOf((*MockFounderRepository)(nil).ConfirmActive), ctx, adminID, activeDays, dryRun)
+}
+
+// List mocks base method.
+func (m *MockFounderRepository) List(ctx context.Context, activeDays int) (domain.FounderList, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", ctx, activeDays)
+	ret0, _ := ret[0].(domain.FounderList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List.
+func (mr *MockFounderRepositoryMockRecorder) List(ctx, activeDays interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockFounderRepository)(nil).List), ctx, activeDays)
+}
+
 // MarkEligible mocks base method.
 func (m *MockFounderRepository) MarkEligible(ctx context.Context, cutoff time.Time) (int64, error) {
 	m.ctrl.T.Helper()
@@ -121,6 +151,101 @@ func (m *MockFounderRepository) MarkEligible(ctx context.Context, cutoff time.Ti
 func (mr *MockFounderRepositoryMockRecorder) MarkEligible(ctx, cutoff interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkEligible", reflect.TypeOf((*MockFounderRepository)(nil).MarkEligible), ctx, cutoff)
+}
+
+// SetConfirmed mocks base method.
+func (m *MockFounderRepository) SetConfirmed(ctx context.Context, adminID, userID string, confirmed bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetConfirmed", ctx, adminID, userID, confirmed)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetConfirmed indicates an expected call of SetConfirmed.
+func (mr *MockFounderRepositoryMockRecorder) SetConfirmed(ctx, adminID, userID, confirmed interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetConfirmed", reflect.TypeOf((*MockFounderRepository)(nil).SetConfirmed), ctx, adminID, userID, confirmed)
+}
+
+// MockFounderService is a mock of FounderService interface.
+type MockFounderService struct {
+	ctrl     *gomock.Controller
+	recorder *MockFounderServiceMockRecorder
+}
+
+// MockFounderServiceMockRecorder is the mock recorder for MockFounderService.
+type MockFounderServiceMockRecorder struct {
+	mock *MockFounderService
+}
+
+// NewMockFounderService creates a new mock instance.
+func NewMockFounderService(ctrl *gomock.Controller) *MockFounderService {
+	mock := &MockFounderService{ctrl: ctrl}
+	mock.recorder = &MockFounderServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockFounderService) EXPECT() *MockFounderServiceMockRecorder {
+	return m.recorder
+}
+
+// Confirm mocks base method.
+func (m *MockFounderService) Confirm(ctx context.Context, adminID, userID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Confirm", ctx, adminID, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Confirm indicates an expected call of Confirm.
+func (mr *MockFounderServiceMockRecorder) Confirm(ctx, adminID, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Confirm", reflect.TypeOf((*MockFounderService)(nil).Confirm), ctx, adminID, userID)
+}
+
+// ConfirmActive mocks base method.
+func (m *MockFounderService) ConfirmActive(ctx context.Context, adminID string, dryRun bool) (*domain.FounderBulkResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConfirmActive", ctx, adminID, dryRun)
+	ret0, _ := ret[0].(*domain.FounderBulkResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ConfirmActive indicates an expected call of ConfirmActive.
+func (mr *MockFounderServiceMockRecorder) ConfirmActive(ctx, adminID, dryRun interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfirmActive", reflect.TypeOf((*MockFounderService)(nil).ConfirmActive), ctx, adminID, dryRun)
+}
+
+// List mocks base method.
+func (m *MockFounderService) List(ctx context.Context) (*domain.FounderList, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", ctx)
+	ret0, _ := ret[0].(*domain.FounderList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List.
+func (mr *MockFounderServiceMockRecorder) List(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockFounderService)(nil).List), ctx)
+}
+
+// Unconfirm mocks base method.
+func (m *MockFounderService) Unconfirm(ctx context.Context, adminID, userID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Unconfirm", ctx, adminID, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Unconfirm indicates an expected call of Unconfirm.
+func (mr *MockFounderServiceMockRecorder) Unconfirm(ctx, adminID, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unconfirm", reflect.TypeOf((*MockFounderService)(nil).Unconfirm), ctx, adminID, userID)
 }
 
 // MockProductEventRepository is a mock of ProductEventRepository interface.

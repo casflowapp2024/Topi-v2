@@ -8,6 +8,7 @@ jest.mock('axios', () => {
 });
 import { fillDays, fmtPct, fmtInt, pct, BarList, SimpleTable } from './AdminUi';
 import { FounderBadge, SEGMENTS } from './AdminUsers';
+import { FounderItem } from './AdminFounders';
 
 describe('panel admin: helpers', () => {
   test('fillDays rellena con 0 los días sin fila y respeta el último día', () => {
@@ -54,5 +55,25 @@ describe('panel admin: usuarios', () => {
 
   test('los filtros son los mismos segmentos que acepta la API', () => {
     expect(SEGMENTS.map((s) => s.id)).toEqual(['', 'active7', 'active30', 'active90', 'inactive90', 'no_connection', 'broken']);
+  });
+});
+
+describe('panel admin: fundadores', () => {
+  const row = { id: 'u1', name: 'ana prueba', email: 'ana.prueba@topi.test', signup_at: '2026-01-02T10:00:00Z', last_active_day: '2026-11-10', active_by: ['app'] };
+
+  test('un elegible sin confirmar ofrece Confirmar y no ofrece borrar', () => {
+    const onConfirm = jest.fn();
+    render(<ul><FounderItem row={row} onConfirm={onConfirm} onUnconfirm={jest.fn()} /></ul>);
+    screen.getByRole('button', { name: /Confirmar a ana prueba/ }).click();
+    expect(onConfirm).toHaveBeenCalledWith(row);
+    expect(screen.queryByRole('button', { name: /borrar|eliminar/i })).toBeNull();
+  });
+
+  test('un confirmado muestra la fecha y permite quitar la confirmación', () => {
+    const onUnconfirm = jest.fn();
+    render(<ul><FounderItem row={{ ...row, confirmed_at: '2026-11-11T15:00:00Z' }} onConfirm={jest.fn()} onUnconfirm={onUnconfirm} /></ul>);
+    expect(screen.getByText(/Confirmado/)).toBeTruthy();
+    screen.getByRole('button', { name: /Quitar confirmación/ }).click();
+    expect(onUnconfirm).toHaveBeenCalled();
   });
 });

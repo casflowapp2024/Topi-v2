@@ -83,6 +83,7 @@ var errorStatusMap = map[error]int{
 	domain.ErrUnauthorized:               http.StatusUnauthorized,
 	domain.ErrForbidden:                  http.StatusForbidden,
 	domain.ErrInvalidAdminFilter:         http.StatusBadRequest,
+	domain.ErrNotFounderEligible:         http.StatusBadRequest,
 
 	// General Errors
 	domain.ErrInternal:                 http.StatusInternalServerError,

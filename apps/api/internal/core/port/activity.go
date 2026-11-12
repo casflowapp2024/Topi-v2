@@ -24,6 +24,22 @@ type FounderRepository interface {
 	// MarkEligible sets founder_eligible for the users created before cutoff; it never unmarks anyone.
 	// Returns how many users were marked now.
 	MarkEligible(ctx context.Context, cutoff time.Time) (int64, error)
+	// List returns the eligible users with their activity of the last activeDays days
+	List(ctx context.Context, activeDays int) (domain.FounderList, error)
+	// ConfirmActive confirms the active eligible users not confirmed yet and audits it in the same statement;
+	// with dryRun it only counts
+	ConfirmActive(ctx context.Context, adminID string, activeDays int, dryRun bool) (domain.FounderBulkResult, error)
+	// SetConfirmed confirms (true) or removes the confirmation (false) of one eligible user, audited.
+	// It never deletes a user. ErrNotFounderEligible if the user is not eligible (or does not exist).
+	SetConfirmed(ctx context.Context, adminID, userID string, confirmed bool) error
+}
+
+// FounderService manages the founders list of the admin panel
+type FounderService interface {
+	List(ctx context.Context) (*domain.FounderList, error)
+	ConfirmActive(ctx context.Context, adminID string, dryRun bool) (*domain.FounderBulkResult, error)
+	Confirm(ctx context.Context, adminID, userID string) error
+	Unconfirm(ctx context.Context, adminID, userID string) error
 }
 
 // ProductEventRepository stores product_events

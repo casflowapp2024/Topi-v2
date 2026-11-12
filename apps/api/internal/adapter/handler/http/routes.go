@@ -292,5 +292,9 @@ func (r *Routes) AdminRoutes() {
 		admin.GET("/metrics/costs", r.AdminHandler.Costs)
 		admin.POST("/metrics/refresh", r.AdminHandler.Refresh)
 		admin.GET("/users", r.AdminHandler.Users)
+		admin.GET("/founders", r.AdminHandler.Founders)
+		admin.POST("/founders/confirm-active", r.AdminHandler.ConfirmActiveFounders)
+		admin.POST("/founders/:id/confirm", r.AdminHandler.ConfirmFounder)
+		admin.DELETE("/founders/:id/confirm", r.AdminHandler.UnconfirmFounder)
 	}
 }

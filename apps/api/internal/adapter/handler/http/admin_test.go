@@ -25,19 +25,29 @@ var adminRoutes = []struct{ method, path string }{
 	{http.MethodGet, "/admin/metrics/costs"},
 	{http.MethodPost, "/admin/metrics/refresh"},
 	{http.MethodGet, "/admin/users"},
+	{http.MethodGet, "/admin/founders"},
+	{http.MethodPost, "/admin/founders/confirm-active"},
+	{http.MethodPost, "/admin/founders/u1/confirm"},
+	{http.MethodDelete, "/admin/founders/u1/confirm"},
 }
 
 func newAdminRouter(t *testing.T) (*gin.Engine, *mock.MockUserService, *mock.MockAdminService) {
+	router, users, admin, _ := newAdminRouterWithFounders(t)
+	return router, users, admin
+}
+
+func newAdminRouterWithFounders(t *testing.T) (*gin.Engine, *mock.MockUserService, *mock.MockAdminService, *mock.MockFounderService) {
 	ctrl := gomock.NewController(t)
 	users := mock.NewMockUserService(ctrl)
 	admin := mock.NewMockAdminService(ctrl)
+	founders := mock.NewMockFounderService(ctrl)
 	gin.SetMode(gin.TestMode)
 	logger.Set(&config.App{Env: "test"})
 
 	router := gin.New()
-	routes := &Routes{UserHandler: &UserHandler{svc: users}, AdminHandler: NewAdminHandler(admin), Router: router}
+	routes := &Routes{UserHandler: &UserHandler{svc: users}, AdminHandler: NewAdminHandler(admin, founders), Router: router}
 	routes.AdminRoutes()
-	return router, users, admin
+	return router, users, admin, founders
 }
 
 func TestAdminRoutes_NormalUserGets403AndNothingRuns(t *testing.T) {
@@ -97,5 +107,30 @@ func TestAdminRoutes_WorkerKeyIsNotAnAdminSession(t *testing.T) {
 	req.Header.Set("X-API-Key", "internal-key")
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestAdminRoutes_Founders(t *testing.T) {
+	router, users, admin, founders := newAdminRouterWithFounders(t)
+	users.EXPECT().Authorize(gomock.Any(), "admin-token").
+		Return(&domain.TokenPayload{UserID: "a1", Groups: map[string]bool{"admin": true}}, nil).AnyTimes()
+	admin.EXPECT().Audit(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	auth := map[string]string{"Authorization": "Bearer admin-token"}
+
+	founders.EXPECT().ConfirmActive(gomock.Any(), "a1", true).Return(&domain.FounderBulkResult{DryRun: true, ToConfirm: 3}, nil)
+	w := doRequest(router, http.MethodPost, "/admin/founders/confirm-active?dry_run=true", auth)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), `"to_confirm":3`)
+
+	founders.EXPECT().ConfirmActive(gomock.Any(), "a1", false).Return(&domain.FounderBulkResult{Confirmed: 3}, nil)
+	w = doRequest(router, http.MethodPost, "/admin/founders/confirm-active", auth)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	founders.EXPECT().Confirm(gomock.Any(), "a1", "u9").Return(domain.ErrNotFounderEligible)
+	w = doRequest(router, http.MethodPost, "/admin/founders/u9/confirm", auth)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	founders.EXPECT().Unconfirm(gomock.Any(), "a1", "u1").Return(nil)
+	w = doRequest(router, http.MethodDelete, "/admin/founders/u1/confirm", auth)
 	assert.Equal(t, http.StatusOK, w.Code)
 }

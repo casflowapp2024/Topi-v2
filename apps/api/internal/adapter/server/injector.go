@@ -204,7 +204,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 		ServerMonthly:  settings.Metrics.ServerMonthlyCostUSD,
 		MailDailyQuota: settings.Mail.DailyQuota,
 	})
-	adminHandler := http.NewAdminHandler(adminService)
+	adminHandler := http.NewAdminHandler(adminService, service.NewFounderAdminService(dbrepository.NewFounderRepository(db)))
 
 	// Initialization Dev
 	initDevHandler := http.NewDevHandler(
