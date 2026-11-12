@@ -5,7 +5,7 @@ import { Provider } from 'react-redux';
 import { createStore, applyMiddleware } from 'redux';
 import { thunk } from 'redux-thunk';
 import Transactions, { TX_COLUMNS } from './Transactions';
-import { dayLabel, dayNet, groupByDay, installmentsNote } from '../components/transactions/transactionDays';
+import { dayLabel, dayNet, groupByDay, installmentsNote, pairTransfers, directionLabel } from '../components/transactions/transactionDays';
 import { formatMoney } from '../components/helpers';
 
 jest.mock('axios', () => {
@@ -97,8 +97,10 @@ test('Lista por día con neto, transferencias neutrales y Agregar sin relleno', 
   expect(row('Mov 1').textContent).toContain('Mercado · Nómina');
   const transfer = row('Mov 3');
   expect(transfer.textContent).toContain('Transferencia');
-  expect(transfer.querySelector('[aria-label]').getAttribute('aria-label')).not.toMatch(/^menos/);
-  expect(transfer.querySelector('.text-data-transfer')).not.toBeNull();
+  // una pata sola dice si sale o entra (−/+), pero en el gris de transferencia, no como gasto
+  expect(transfer.querySelector('[aria-label]').getAttribute('aria-label')).toMatch(/^menos/);
+  expect(transfer.querySelector('.tabular-nums').className).toContain('text-data-transfer');
+  expect(transfer.querySelector('.lg\\:hidden').textContent).toBe('Sale de Nómina · Mercado');
   const add = el.querySelector('[aria-label="Agregar movimiento"]');
   expect(add.className).not.toContain('bg-topi-500');
   await act(async () => root.unmount());
@@ -147,5 +149,48 @@ test('Sin transacciones invita a conectar el correo, no a digitar', async () => 
   const { el, root } = await mount(state({ user_transactions: { items: [], total: 0, default_limit: 30 } }));
   expect(el.textContent).toContain('Conectar correo');
   expect(el.textContent).not.toContain('Crear');
+  await act(async () => root.unmount());
+});
+
+test('Las dos patas de una transferencia van juntas, primero la que sale', () => {
+  const entra = tx(21, '2026-11-09', 251.36, { transfer_group_id: 't1', expense: false, currency: 'USD', amount_base: 817000, account: { id: 2, name: 'ARQ' } });
+  const sale = tx(22, '2026-11-09', 817000, { transfer_group_id: 't1', account: { id: 3, name: 'Bolsillo' } });
+  const suelta = tx(23, '2026-11-09', 100, { transfer_group_id: 't2' });
+  const gasto = tx(24, '2026-11-09', 5000);
+  const rows = pairTransfers([gasto, entra, suelta, sale]);
+  expect(rows.map(r => r.map(t => t.id))).toEqual([[24], [22, 21], [23]]);
+  expect(pairTransfers([])).toEqual([]);
+  expect(directionLabel(sale)).toBe('Sale de Bolsillo');
+  expect(directionLabel(entra)).toBe('Entra a ARQ');
+});
+
+test('La lista une las patas de una transferencia y la que entra solo dice a qué cuenta', async () => {
+  const list = [
+    tx(21, '2026-11-09', 251.36, { description: 'Trans a ARQ', transfer_group_id: 't1', expense: false, currency: 'USD', amount_base: 817000, account: { id: 2, name: 'ARQ' } }),
+    tx(1, '2026-11-09', 50000),
+    tx(22, '2026-11-09', 817000, { description: 'Trans a ARQ', transfer_group_id: 't1', account: { id: 3, name: 'Bolsillo' } }),
+    tx(30, '2026-11-09', 1200000, { description: 'Pago tarjeta', needs_counterpart: true }),
+  ];
+  const { el, root } = await mount(state({ user_transactions: { items: list, total: list.length, default_limit: 30 } }));
+  const pair = el.querySelector('[data-transfer-pair]');
+  const [out, inn] = pair.querySelectorAll('button');
+  expect(pair.querySelectorAll('button')).toHaveLength(2);
+  expect(out.textContent).toContain('Trans a ARQ');
+  expect(out.querySelector('[aria-label]').getAttribute('aria-label')).toMatch(/^menos/);
+  expect(out.textContent).toContain('Transferencia que sale');
+  // la que entra no repite la descripción: dice a qué cuenta entra, con + y su equivalente en pesos
+  expect(inn.textContent).not.toContain('Trans a ARQ');
+  expect(inn.textContent).toContain('Entra a ARQ');
+  expect(inn.textContent).toContain('Transferencia que entra');
+  expect(inn.querySelector('[aria-label]').getAttribute('aria-label')).not.toMatch(/^menos/);
+  expect(inn.textContent).toContain(`+${formatMoney(251.36, 'USD')}`);
+  // la pareja va donde aparece su primera pata: antes del gasto
+  const lis = [...el.querySelector('section ul').children];
+  expect(lis.indexOf(pair)).toBe(0);
+  // el pago sin su otra pata sigue suelto, con su aviso
+  const pago = lis.find(li => li.textContent.includes('Pago tarjeta'));
+  expect(pago.hasAttribute('data-transfer-pair')).toBe(false);
+  expect(pago.textContent).toContain('Falta elegir la cuenta con que pagaste');
+  expect(pago.textContent).toContain('Sale de Nómina');
   await act(async () => root.unmount());
 });

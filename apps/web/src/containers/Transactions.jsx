@@ -14,7 +14,8 @@ import {
 import TransactionDetail from "../components/transactions/TransactionDetail2";
 import { formatMoney, formatDate, capitalizeWords, accountClass } from "../components/helpers";
 import { ACCOUNT_GROUPS } from "../components/dashboard/productsAccounts/accountGroups";
-import { groupByDay, dayLabel, dayNet, installmentsNote, isNeutral } from "../components/transactions/transactionDays";
+import { groupByDay, dayLabel, dayNet, installmentsNote, isNeutral, neutralSign, directionLabel, pairTransfers } from "../components/transactions/transactionDays";
+import TransferDirectionIcon from "../components/transactions/TransferDirectionIcon";
 
 import TransactionFilterSheet, { countPanelFilters } from "../components/transactions/TransactionFilterSheet";
 import Chip from "../components/ui/Chip";
@@ -75,46 +76,74 @@ const TransactionsHeader = () => (
     </div>
 );
 
-// Fila de un movimiento. Las transferencias van neutrales: ícono ↔ y monto sin signo ni color de flujo.
-const TransactionRow = ({ tx, onOpen, account }) => {
+// Fila de un movimiento. Lo neutral (transferencias y pagos sin su otra pata) va en gris: −/+ dice si sale o entra
+// de la cuenta, sin el rojo/verde de gasto/ingreso. `follows` es la pata que entra de una pareja: va pegada a la
+// que sale y, si repite su descripción, solo dice a qué cuenta entra.
+const TransactionRow = ({ tx, onOpen, account, follows = null }) => {
     const neutral = isNeutral(tx);
+    const repeated = follows && follows.description === tx.description;
+    const category = capitalizeWords(tx.category?.name);
+    const sameCategory = follows && follows.category?.name === tx.category?.name;
+    // En móvil la cuenta va debajo (en lo neutral primero, para que no la corte el ancho); la pata que entra no repite
+    // lo que ya dijo la que sale
+    const subtitle = repeated
+        ? (sameCategory ? '' : category)
+        : (neutral ? [directionLabel(tx), sameCategory ? '' : category] : [category, tx.account?.name]).filter(Boolean).join(' · ');
     return (
-        <li>
-            <button type="button" onClick={() => onOpen(tx.id)}
-                className={`w-full px-3 md:px-4 py-2 flex items-center gap-3 ${TX_COLUMNS} lg:items-center text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-topi-500 transition-colors duration-150`}>
-                <span className="lg:order-1 w-6 h-6 shrink-0 flex items-center justify-center">
-                    {tx.transfer_group_id ? (
-                        <span title="Transferencia entre tus cuentas" className="text-data-transfer dark:text-slate-300"><ArrowsRightLeftIcon className="w-5 h-5" aria-hidden="true" /><span className="sr-only">Transferencia</span></span>
-                    ) : tx.category?.emoji ? (
-                        <Emoji unified={tx.category.emoji.toLowerCase()} emojiStyle="apple" size={20} />
+        <button type="button" onClick={() => onOpen(tx.id)}
+            className={`w-full px-3 md:px-4 py-2 flex items-center gap-3 ${TX_COLUMNS} lg:items-center text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-topi-500 transition-colors duration-150`}>
+            <span className="lg:order-1 w-6 h-6 shrink-0 flex items-center justify-center">
+                {tx.transfer_group_id ? (
+                    <TransferDirectionIcon tx={tx} />
+                ) : tx.category?.emoji ? (
+                    <Emoji unified={tx.category.emoji.toLowerCase()} emojiStyle="apple" size={20} />
+                ) : null}
+            </span>
+            <span className="lg:order-2 flex-1 min-w-0 flex flex-col">
+                {repeated ? (
+                    <span className="text-sm text-ink-2 dark:text-gray-400 truncate">{directionLabel(tx)}</span>
+                ) : (
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>
+                )}
+                {subtitle && <span className="lg:hidden text-xs text-ink-2 dark:text-gray-400 truncate">{subtitle}</span>}
+            </span>
+            <span className="hidden lg:block lg:order-5 min-w-0 text-sm text-ink-2 dark:text-gray-300 truncate">{category}</span>
+            <span className="hidden lg:flex lg:order-6 min-w-0 items-center gap-1.5 text-sm text-ink-2 dark:text-gray-300">
+                <AccountTypeIcon account={account || tx.account} />
+                <span className="truncate">{tx.account?.name}</span>
+            </span>
+            <span className="shrink-0 flex items-center gap-1.5 lg:contents">
+                <span className="lg:order-3 lg:flex lg:justify-end lg:min-w-0">
+                <Money amount={tx.amount} currency={tx.currency} base={tx.amount_base} note={installmentsNote(tx)}
+                    sign={neutral ? neutralSign(tx) : tx.expense ? '-' : '+'}
+                    className={`text-sm font-semibold tabular-nums ${neutral ? 'text-data-transfer dark:text-slate-300' : tx.expense ? 'text-gray-900 dark:text-gray-100' : 'text-money-in dark:text-money-in-dark'}`} />
+                </span>
+                <span className="lg:order-4 w-4 flex justify-center">
+                    {tx.needs_counterpart ? (
+                        <span title="Falta elegir la cuenta con que pagaste" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Falta elegir la cuenta con que pagaste</span></span>
+                    ) : tx.should_verify === true ? (
+                        <span title="Por revisar" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Por revisar</span></span>
+                    ) : tx.checked === false ? (
+                        <span title="Nuevo" className="inline-flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-topi-500" aria-hidden="true" /><span className="sr-only">Nuevo</span></span>
                     ) : null}
                 </span>
-                <span className="lg:order-2 flex-1 min-w-0 flex flex-col">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>
-                    <span className="lg:hidden text-xs text-ink-2 dark:text-gray-400 truncate">{capitalizeWords(tx.category?.name)} · {tx.account?.name}</span>
-                </span>
-                <span className="hidden lg:block lg:order-5 min-w-0 text-sm text-ink-2 dark:text-gray-300 truncate">{capitalizeWords(tx.category?.name)}</span>
-                <span className="hidden lg:flex lg:order-6 min-w-0 items-center gap-1.5 text-sm text-ink-2 dark:text-gray-300">
-                    <AccountTypeIcon account={account || tx.account} />
-                    <span className="truncate">{tx.account?.name}</span>
-                </span>
-                <span className="shrink-0 flex items-center gap-1.5 lg:contents">
-                    <span className="lg:order-3 lg:flex lg:justify-end lg:min-w-0">
-                    <Money amount={tx.amount} currency={tx.currency} base={tx.amount_base} note={installmentsNote(tx)}
-                        sign={neutral ? '' : tx.expense ? '-' : '+'}
-                        className={`text-sm font-semibold tabular-nums ${neutral ? 'text-data-transfer dark:text-slate-300' : tx.expense ? 'text-gray-900 dark:text-gray-100' : 'text-money-in dark:text-money-in-dark'}`} />
-                    </span>
-                    <span className="lg:order-4 w-4 flex justify-center">
-                        {tx.needs_counterpart ? (
-                            <span title="Falta elegir la cuenta con que pagaste" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Falta elegir la cuenta con que pagaste</span></span>
-                        ) : tx.should_verify === true ? (
-                            <span title="Por revisar" className="inline-flex items-center text-status-warn-text dark:text-amber-300"><ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" /><span className="sr-only">Por revisar</span></span>
-                        ) : tx.checked === false ? (
-                            <span title="Nuevo" className="inline-flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-topi-500" aria-hidden="true" /><span className="sr-only">Nuevo</span></span>
-                        ) : null}
-                    </span>
-                </span>
-            </button>
+            </span>
+        </button>
+    );
+};
+
+// Un movimiento suelto, o las dos patas de una transferencia seguidas y unidas por una barra gris a la izquierda
+const TransactionEntry = ({ legs, onOpen, accountsById }) => {
+    const accountOf = (tx) => accountsById.get(String(tx.account?.id));
+    if (legs.length === 1) {
+        return <li><TransactionRow tx={legs[0]} onOpen={onOpen} account={accountOf(legs[0])} /></li>;
+    }
+    const [first, second] = legs;
+    return (
+        <li className="relative" data-transfer-pair="">
+            <span aria-hidden="true" className="absolute left-1 md:left-1.5 inset-y-2 w-0.5 rounded-full bg-data-transfer/50 dark:bg-slate-500" />
+            <TransactionRow tx={first} onOpen={onOpen} account={accountOf(first)} />
+            <TransactionRow tx={second} onOpen={onOpen} account={accountOf(second)} follows={first} />
         </li>
     );
 };
@@ -491,7 +520,7 @@ const Transactions = ({
                                                 )}
                                             </div>
                                             <ul className="divide-y divide-gray-100 dark:divide-gray-700">
-                                                {items.map(tx => <TransactionRow key={tx.id} tx={tx} onOpen={handleOpenTransDetail} account={accountsById.get(String(tx.account?.id))} />)}
+                                                {pairTransfers(items).map(legs => <TransactionEntry key={legs[0].id} legs={legs} onOpen={handleOpenTransDetail} accountsById={accountsById} />)}
                                             </ul>
                                         </section>
                                     );

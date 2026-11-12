@@ -8,7 +8,8 @@ import { get_user_transactions } from '../../../redux/actions/cashflow';
 import { get_history_dash, get_history_category_by_month, get_expenses_report } from '../../../redux/actions/reports';
 import { set_dash_category_activated } from '../../../redux/actions/reports';
 import { fetch_card_charges, fetch_installments } from '../../../redux/actions/creditCards';
-import { installmentsNote } from '../../transactions/transactionDays';
+import { installmentsNote, isNeutral, directionLabel, pairTransfers } from '../../transactions/transactionDays';
+import TransferDirectionIcon from '../../transactions/TransferDirectionIcon';
 //componentes
 import { Emoji } from "emoji-picker-react";
 import { formatMoney, formatDate, findElmentById, deepEqual, capitalizeWords } from '../../helpers';
@@ -233,25 +234,37 @@ const BudDashTransCategorie = ({
                   {prettyDate(date)}
                 </h3>
                 <ul>
-                  {groupedTransactions.groups[date].map((tx) => {
-                    const transfer = !!tx.transfer_group_id;
-                    return (
-                      <li key={tx.id}>
-                        <button type="button" onClick={() => handleOpenTransDetail(tx.id)}
+                  {pairTransfers(groupedTransactions.groups[date]).map((legs) => {
+                    const row = (tx, follows = null) => {
+                      const neutral = isNeutral(tx);
+                      const repeated = follows && follows.description === tx.description;
+                      const category = !cat && tx.category?.name && !(follows && follows.category?.name === tx.category?.name) ? capitalizeWords(tx.category.name) : '';
+                      const detail = repeated ? category : (neutral ? [directionLabel(tx), category] : [category, tx.account?.name]).filter(Boolean).join(' · ');
+                      return (
+                        <button key={tx.id} type="button" onClick={() => handleOpenTransDetail(tx.id)}
                           className="w-full flex items-center gap-3 px-2 py-2.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 active:bg-gray-100 dark:active:bg-gray-700 transition-colors">
                           <span className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
-                            {tx.category?.emoji ? <Emoji unified={tx.category.emoji.toLowerCase()} emojiStyle="apple" size={16} /> : null}
+                            {tx.transfer_group_id ? <TransferDirectionIcon tx={tx} className="w-4 h-4" />
+                              : tx.category?.emoji ? <Emoji unified={tx.category.emoji.toLowerCase()} emojiStyle="apple" size={16} /> : null}
                           </span>
                           <span className="flex-1 min-w-0">
-                            <span className="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>
-                            <span className="block text-xs text-ink-2 dark:text-gray-400 truncate">
-                              {!cat && tx.category?.name ? `${capitalizeWords(tx.category.name)} · ` : ''}{tx.account?.name}{transfer ? ' · transferencia' : ''}
-                            </span>
+                            {repeated
+                              ? <span className="block text-sm text-ink-2 dark:text-gray-400 truncate">{directionLabel(tx)}</span>
+                              : <span className="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>}
+                            {detail && <span className="block text-xs text-ink-2 dark:text-gray-400 truncate">{detail}</span>}
                           </span>
                           <Money amount={tx.amount} currency={tx.currency} base={tx.amount_base} note={installmentsNote(tx)}
-                            sign={transfer ? '' : tx.expense ? '−' : '+'}
-                            className={`text-sm font-semibold tabular-nums ${transfer ? 'text-gray-700 dark:text-gray-200' : tx.expense ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}`} />
+                            sign={tx.expense ? '−' : '+'}
+                            className={`text-sm font-semibold tabular-nums ${neutral ? 'text-data-transfer dark:text-slate-300' : tx.expense ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}`} />
                         </button>
+                      );
+                    };
+                    // Las dos patas de una transferencia van seguidas, unidas por una barra gris a la izquierda
+                    return legs.length === 1 ? <li key={legs[0].id}>{row(legs[0])}</li> : (
+                      <li key={legs[0].id} className="relative" data-transfer-pair="">
+                        <span aria-hidden="true" className="absolute left-0 inset-y-3 w-0.5 rounded-full bg-data-transfer/50 dark:bg-slate-500" />
+                        {row(legs[0])}
+                        {row(legs[1], legs[0])}
                       </li>
                     );
                   })}

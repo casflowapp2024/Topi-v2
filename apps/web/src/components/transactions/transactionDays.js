@@ -45,3 +45,34 @@ export const dayNet = (items) => {
   if (flows.length === 0) return null;
   return flows.reduce((sum, tx) => sum + (tx.expense ? -1 : 1) * Number(tx.installment_amount_base ?? tx.amount_base ?? 0), 0);
 };
+
+// Una pata neutral sale (−) o entra (+) a su cuenta: se dice con signo y flecha, en gris, sin el rojo/verde del flujo
+export const neutralSign = (tx) => (tx.expense ? '-' : '+');
+export const directionLabel = (tx) => `${tx.expense ? 'Sale de' : 'Entra a'} ${tx.account?.name || 'otra cuenta'}`;
+
+// Filas de una lista con las dos patas de cada transferencia juntas: [[tx], [sale, entra], ...]. La pareja va donde
+// aparece su primera pata y primero la que sale. Una pata cuya pareja no vino en la lista (otra página, otro día,
+// un filtro) o un pago sin su otra pata queda sola.
+export const pairTransfers = (items) => {
+  const list = items || [];
+  const groups = new Map();
+  list.forEach(tx => {
+    if (!tx.transfer_group_id) return;
+    if (!groups.has(tx.transfer_group_id)) groups.set(tx.transfer_group_id, []);
+    groups.get(tx.transfer_group_id).push(tx);
+  });
+  const done = new Set();
+  const rows = [];
+  list.forEach(tx => {
+    if (done.has(tx)) return;
+    const legs = tx.transfer_group_id && groups.get(tx.transfer_group_id);
+    if (legs && legs.length === 2) {
+      const pair = [...legs].sort((a, b) => Number(!a.expense) - Number(!b.expense));
+      pair.forEach(l => done.add(l));
+      rows.push(pair);
+    } else {
+      rows.push([tx]);
+    }
+  });
+  return rows;
+};

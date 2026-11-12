@@ -18,7 +18,7 @@ const Money = ({
   const code = currency || baseCurrency;
   const foreign = code !== baseCurrency;
   const main = `${sign}${formatMoney(amount, code)}`;
-  const label = `${sign === '-' ? 'menos ' : ''}${moneyAriaLabel(amount, code)}` +
+  const label = `${sign === '-' || sign === '−' ? 'menos ' : ''}${moneyAriaLabel(amount, code)}` +
     (foreign && showBase && base != null ? `, equivale a ${moneyAriaLabel(base, baseCurrency)}` : '');
 
   return (
