@@ -152,19 +152,19 @@ test('Sin transacciones invita a conectar el correo, no a digitar', async () => 
   await act(async () => root.unmount());
 });
 
-test('Las dos patas de una transferencia van juntas, primero la que sale', () => {
+test('Las dos patas de una transferencia van juntas, arriba la que entra', () => {
   const entra = tx(21, '2026-11-09', 251.36, { transfer_group_id: 't1', expense: false, currency: 'USD', amount_base: 817000, account: { id: 2, name: 'ARQ' } });
   const sale = tx(22, '2026-11-09', 817000, { transfer_group_id: 't1', account: { id: 3, name: 'Bolsillo' } });
   const suelta = tx(23, '2026-11-09', 100, { transfer_group_id: 't2' });
   const gasto = tx(24, '2026-11-09', 5000);
   const rows = pairTransfers([gasto, entra, suelta, sale]);
-  expect(rows.map(r => r.map(t => t.id))).toEqual([[24], [22, 21], [23]]);
+  expect(rows.map(r => r.map(t => t.id))).toEqual([[24], [21, 22], [23]]);
   expect(pairTransfers([])).toEqual([]);
   expect(directionLabel(sale)).toBe('Sale de Bolsillo');
   expect(directionLabel(entra)).toBe('Entra a ARQ');
 });
 
-test('La lista une las patas de una transferencia y la que entra solo dice a qué cuenta', async () => {
+test('La lista une las patas: arriba la que entra, abajo la que sale, con flecha y sin perder el emoji', async () => {
   const list = [
     tx(21, '2026-11-09', 251.36, { description: 'Trans a ARQ', transfer_group_id: 't1', expense: false, currency: 'USD', amount_base: 817000, account: { id: 2, name: 'ARQ' } }),
     tx(1, '2026-11-09', 50000),
@@ -173,17 +173,21 @@ test('La lista une las patas de una transferencia y la que entra solo dice a qu�
   ];
   const { el, root } = await mount(state({ user_transactions: { items: list, total: list.length, default_limit: 30 } }));
   const pair = el.querySelector('[data-transfer-pair]');
-  const [out, inn] = pair.querySelectorAll('button');
   expect(pair.querySelectorAll('button')).toHaveLength(2);
-  expect(out.textContent).toContain('Trans a ARQ');
-  expect(out.querySelector('[aria-label]').getAttribute('aria-label')).toMatch(/^menos/);
-  expect(out.textContent).toContain('Transferencia que sale');
-  // la que entra no repite la descripción: dice a qué cuenta entra, con + y su equivalente en pesos
-  expect(inn.textContent).not.toContain('Trans a ARQ');
-  expect(inn.textContent).toContain('Entra a ARQ');
+  const [inn, out] = pair.querySelectorAll('button');
+  expect(inn.textContent).toContain('Trans a ARQ');
   expect(inn.textContent).toContain('Transferencia que entra');
   expect(inn.querySelector('[aria-label]').getAttribute('aria-label')).not.toMatch(/^menos/);
   expect(inn.textContent).toContain(`+${formatMoney(251.36, 'USD')}`);
+  // la que sale no repite la descripción: dice de qué cuenta sale, con −
+  expect(out.textContent).not.toContain('Trans a ARQ');
+  expect(out.textContent).toContain('Sale de Bolsillo');
+  expect(out.textContent).toContain('Transferencia que sale');
+  expect(out.querySelector('[aria-label]').getAttribute('aria-label')).toMatch(/^menos/);
+  // el emoji de la categoría se queda en su columna; la flecha va junto al título
+  const iconCol = inn.querySelector('.lg\\:order-1');
+  expect(iconCol.querySelector('[title^="Transferencia"]')).toBeNull();
+  expect(inn.querySelector('.lg\\:order-2 [title="Transferencia que entra"]')).not.toBeNull();
   // la pareja va donde aparece su primera pata: antes del gasto
   const lis = [...el.querySelector('section ul').children];
   expect(lis.indexOf(pair)).toBe(0);

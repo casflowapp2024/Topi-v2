@@ -244,14 +244,19 @@ const BudDashTransCategorie = ({
                         <button key={tx.id} type="button" onClick={() => handleOpenTransDetail(tx.id)}
                           className="w-full flex items-center gap-3 px-2 py-2.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 active:bg-gray-100 dark:active:bg-gray-700 transition-colors">
                           <span className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
-                            {tx.transfer_group_id ? <TransferDirectionIcon tx={tx} className="w-4 h-4" />
-                              : tx.category?.emoji ? <Emoji unified={tx.category.emoji.toLowerCase()} emojiStyle="apple" size={16} /> : null}
+                            {tx.category?.emoji ? <Emoji unified={tx.category.emoji.toLowerCase()} emojiStyle="apple" size={16} /> : null}
                           </span>
                           <span className="flex-1 min-w-0">
+                            {/* La flecha ↙/↗ va antes de "Entra a / Sale de": en el subtítulo o, si repite la descripción, en el título */}
                             {repeated
-                              ? <span className="block text-sm text-ink-2 dark:text-gray-400 truncate">{directionLabel(tx)}</span>
+                              ? <span className="flex items-center gap-1 min-w-0 text-sm text-ink-2 dark:text-gray-400"><TransferDirectionIcon tx={tx} className="w-3.5 h-3.5" /><span className="truncate">{directionLabel(tx)}</span></span>
                               : <span className="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>}
-                            {detail && <span className="block text-xs text-ink-2 dark:text-gray-400 truncate">{detail}</span>}
+                            {detail && (
+                              <span className="flex items-center gap-1 min-w-0 text-xs text-ink-2 dark:text-gray-400">
+                                {neutral && !repeated && <TransferDirectionIcon tx={tx} className="w-3 h-3" />}
+                                <span className="truncate">{detail}</span>
+                              </span>
+                            )}
                           </span>
                           <Money amount={tx.amount} currency={tx.currency} base={tx.amount_base} note={installmentsNote(tx)}
                             sign={tx.expense ? '−' : '+'}
@@ -259,7 +264,7 @@ const BudDashTransCategorie = ({
                         </button>
                       );
                     };
-                    // Las dos patas de una transferencia van seguidas, unidas por una barra gris a la izquierda
+                    // Las dos patas de una transferencia van seguidas (arriba la que entra), unidas por una barra gris a la izquierda
                     return legs.length === 1 ? <li key={legs[0].id}>{row(legs[0])}</li> : (
                       <li key={legs[0].id} className="relative" data-transfer-pair="">
                         <span aria-hidden="true" className="absolute left-0 inset-y-3 w-0.5 rounded-full bg-data-transfer/50 dark:bg-slate-500" />

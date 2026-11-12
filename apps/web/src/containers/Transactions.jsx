@@ -77,8 +77,9 @@ const TransactionsHeader = () => (
 );
 
 // Fila de un movimiento. Lo neutral (transferencias y pagos sin su otra pata) va en gris: −/+ dice si sale o entra
-// de la cuenta, sin el rojo/verde de gasto/ingreso. `follows` es la pata que entra de una pareja: va pegada a la
-// que sale y, si repite su descripción, solo dice a qué cuenta entra.
+// de la cuenta, sin el rojo/verde de gasto/ingreso, y una flecha ↙/↗ antes del título (el emoji de la categoría se
+// queda en su columna). `follows` es la pata de abajo de una pareja (la que sale): si repite la descripción de la de
+// arriba, solo dice de qué cuenta sale.
 const TransactionRow = ({ tx, onOpen, account, follows = null }) => {
     const neutral = isNeutral(tx);
     const repeated = follows && follows.description === tx.description;
@@ -93,18 +94,19 @@ const TransactionRow = ({ tx, onOpen, account, follows = null }) => {
         <button type="button" onClick={() => onOpen(tx.id)}
             className={`w-full px-3 md:px-4 py-2 flex items-center gap-3 ${TX_COLUMNS} lg:items-center text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-topi-500 transition-colors duration-150`}>
             <span className="lg:order-1 w-6 h-6 shrink-0 flex items-center justify-center">
-                {tx.transfer_group_id ? (
-                    <TransferDirectionIcon tx={tx} />
-                ) : tx.category?.emoji ? (
+                {tx.category?.emoji ? (
                     <Emoji unified={tx.category.emoji.toLowerCase()} emojiStyle="apple" size={20} />
                 ) : null}
             </span>
             <span className="lg:order-2 flex-1 min-w-0 flex flex-col">
-                {repeated ? (
-                    <span className="text-sm text-ink-2 dark:text-gray-400 truncate">{directionLabel(tx)}</span>
-                ) : (
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>
-                )}
+                <span className="flex items-center gap-1 min-w-0">
+                    {neutral && <TransferDirectionIcon tx={tx} className="w-3.5 h-3.5" />}
+                    {repeated ? (
+                        <span className="text-sm text-ink-2 dark:text-gray-400 truncate">{directionLabel(tx)}</span>
+                    ) : (
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description}</span>
+                    )}
+                </span>
                 {subtitle && <span className="lg:hidden text-xs text-ink-2 dark:text-gray-400 truncate">{subtitle}</span>}
             </span>
             <span className="hidden lg:block lg:order-5 min-w-0 text-sm text-ink-2 dark:text-gray-300 truncate">{category}</span>

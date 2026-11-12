@@ -50,8 +50,8 @@ export const dayNet = (items) => {
 export const neutralSign = (tx) => (tx.expense ? '-' : '+');
 export const directionLabel = (tx) => `${tx.expense ? 'Sale de' : 'Entra a'} ${tx.account?.name || 'otra cuenta'}`;
 
-// Filas de una lista con las dos patas de cada transferencia juntas: [[tx], [sale, entra], ...]. La pareja va donde
-// aparece su primera pata y primero la que sale. Una pata cuya pareja no vino en la lista (otra página, otro día,
+// Filas de una lista con las dos patas de cada transferencia juntas: [[tx], [entra, sale], ...]. La pareja va donde
+// aparece su primera pata y, como la lista va de lo más nuevo a lo más viejo, arriba la que entra y abajo la que sale. Una pata cuya pareja no vino en la lista (otra página, otro día,
 // un filtro) o un pago sin su otra pata queda sola.
 export const pairTransfers = (items) => {
   const list = items || [];
@@ -67,7 +67,7 @@ export const pairTransfers = (items) => {
     if (done.has(tx)) return;
     const legs = tx.transfer_group_id && groups.get(tx.transfer_group_id);
     if (legs && legs.length === 2) {
-      const pair = [...legs].sort((a, b) => Number(!a.expense) - Number(!b.expense));
+      const pair = [...legs].sort((a, b) => Number(Boolean(a.expense)) - Number(Boolean(b.expense)));
       pair.forEach(l => done.add(l));
       rows.push(pair);
     } else {
