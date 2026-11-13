@@ -183,6 +183,37 @@ export const delete_category = (id) => async dispatch => {
     }
 }
 
+// Historial de presupuestos de una categoría (plan/26-presupuestos-historicos.md). Las tres devuelven
+// { res, data } con las versiones, la más reciente primero: [{ budget, from: 'YYYY-MM', base }].
+const budgetsConfig = () => ({
+    headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+    }
+});
+const budgetsResult = async (call) => {
+    try {
+        const res = await call();
+        if (res.status === 200) return { res: true, data: res.data?.data ?? [] };
+        return { res: false, messages: res.data?.messages?.[0] };
+    } catch (err) {
+        return { res: false, messages: err.response?.data?.messages?.[0] };
+    }
+};
+
+export const get_category_budgets = (cat_id) => async () =>
+    budgetsResult(() => axios.get(`${process.env.REACT_APP_API_URL}/categories/${cat_id}/budgets`, budgetsConfig()));
+
+// from: 'YYYY-MM' o vacío para el mes en curso (lo decide el servidor con la zona horaria del usuario)
+export const set_category_budget = (cat_id, budget, from) => async () => {
+    const body = JSON.stringify(from ? { budget, from } : { budget });
+    return budgetsResult(() => axios.put(`${process.env.REACT_APP_API_URL}/categories/${cat_id}/budgets`, body, budgetsConfig()));
+};
+
+export const delete_category_budget = (cat_id, from) => async () =>
+    budgetsResult(() => axios.delete(`${process.env.REACT_APP_API_URL}/categories/${cat_id}/budgets/${from}`, budgetsConfig()));
+
 export const update_category = (
     cat_id,
     name,

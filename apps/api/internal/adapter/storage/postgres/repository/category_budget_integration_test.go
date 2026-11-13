@@ -115,6 +115,10 @@ func TestCategoryBudgetHistory(t *testing.T) {
 	require.Len(t, history.Monthly, 2)
 	assert.Equal(t, []float64{500, 1200}, history.MonthlyBudget)
 	assert.InDelta(t, 1200, history.Budget, 0.001, "el presupuesto del análisis es el del último mes")
+	// todos los meses del rango, también los que no tienen movimientos de la categoría
+	assert.InDelta(t, 500, history.BudgetByMonth[early.AddDate(0, 1, 0).Format("2006-01")], 0.001)
+	assert.InDelta(t, 1200, history.BudgetByMonth[current.Format("2006-01")], 0.001)
+	assert.Len(t, history.BudgetByMonth, 7)
 
 	fr := &domain.FinancialResolver{UserID: userID, Start: early, End: current.AddDate(0, 1, -1),
 		Rsp: &domain.FinancialAnalysis{}, Mu: &sync.Mutex{}, Wg: &sync.WaitGroup{}}

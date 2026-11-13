@@ -21,6 +21,12 @@ Este archivo documenta todas las llamadas de tipo **PUT** (usadas habitualmente 
 ### `PUT /categories/{cat_id}`
 *   **Descripción:** Modifica el presupuesto, nombre, ingreso configurado, y el emoji de una categoría guardada usando el ID del item a modificar en la URL.
 *   **Cuerpo (Request):**  `name`, `budget`, `emoji`, `income`
+*   **Nota:** un cambio de `budget` aquí es una versión del presupuesto desde el mes en curso (los meses anteriores no cambian).
+
+### `PUT /categories/{id}/budgets` (`set_category_budget`)
+*   **Descripción:** Fija el presupuesto desde un mes. Sin `from` es el mes en curso (zona horaria del usuario). Un mes pasado rige hasta la siguiente versión que ya exista; no se puede elegir un mes futuro (400). Dos cambios en el mismo mes dejan una sola versión.
+*   **Cuerpo (Request):** `budget` (obligatorio, ≥ 0), `from` (opcional, `YYYY-MM`)
+*   **Respuesta:** el historial actualizado, como `GET /categories/{id}/budgets`.
 
 ### `PUT /accounts/{tran_id}` (Actualización de Cuentas)
 *   **Descripción:** Endpoint de backend para aplicar modificaciones a datos y montos de una cuenta, o añadirle/quitarle notificaciones por la automatización de un banco asociado.

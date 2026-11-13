@@ -89,6 +89,18 @@ export const daysInMonth = (year, month) => new Date(year, month, 0).getDate();
 
 // Tope "redondo" del eje Y para que quepa `value` (p. ej. el presupuesto) con 3 tramos limpios
 // (0, 2 M, 4 M, 6 M). Se usa como domain={[0, (dataMax) => niceMax(dataMax, budget)]}.
+// Presupuesto de un mes (plan/26-presupuestos-historicos.md): el arreglo por mes que manda el API o, si no
+// viene (respuestas viejas en caché), el valor de arriba.
+export const budgetAt = (perMonth, i, fallback) => Math.abs(Number(perMonth?.[i] ?? fallback) || 0);
+
+// Con el mismo presupuesto en todos los meses se dibuja la línea fija de siempre; si cambió, una línea
+// escalonada que sube o baja en el borde entre meses. Los meses sin presupuesto cortan la línea.
+export const budgetLine = (rows, key) => {
+  const values = rows.map(r => r[key]).filter(v => v > 0);
+  const flat = values.length === 0 || (values.length === rows.length && values.every(v => v === values[0]));
+  return { flat, max: Math.max(0, ...values), value: flat ? (values[0] || 0) : null };
+};
+
 export const niceMax = (...values) => {
   const max = Math.max(0, ...values.map(Number).filter(Number.isFinite)) * 1.04;
   if (max <= 0) return 1;

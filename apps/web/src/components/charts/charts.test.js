@@ -148,3 +148,38 @@ test('patrimonio por mes: no está en las gráficas del inicio', () => {
   expect([...home.el.querySelectorAll('[role=tab]')].map(t => t.textContent)).toEqual(['Balance', 'Flujo', 'Gastos']);
   act(() => home.root.unmount());
 });
+
+// Presupuestos con historial (plan/26): cada mes se compara con el presupuesto que tenía.
+test('presupuesto por mes: línea escalonada si cambió, fija si no; el ▲ usa el del mes', () => {
+  const { budgetLine } = jest.requireActual('./chartTheme');
+  expect(budgetLine([{ b: 5 }, { b: 5 }], 'b')).toEqual({ flat: true, max: 5, value: 5 });
+  expect(budgetLine([{ b: 5 }, { b: 7 }], 'b')).toMatchObject({ flat: false, max: 7 });
+  expect(budgetLine([{ b: 0 }, { b: 5 }], 'b')).toMatchObject({ flat: false, max: 5 });
+  expect(budgetLine([{ b: 0 }], 'b')).toMatchObject({ flat: true, max: 0, value: 0 });
+
+  const SpendVsBudgetChart = jest.requireActual('./SpendVsBudgetChart').default;
+  const BudgetBreakdownChart = jest.requireActual('./BudgetBreakdownChart').default;
+  const withBudgets = (perMonth) => {
+    const store = makeStore(9000000);
+    const state = store.getState();
+    state.Reports.history_dash.monthly.expense_budget = perMonth;
+    state.Reports.history_dash.monthly.income_budget = months.map(() => 10000000);
+    return store;
+  };
+  // 11 meses con 1.000.000 (todos se pasan) y el último con 9.000.000
+  const changed = withBudgets(months.map((_, i) => (i < 11 ? 1000000 : 9000000)));
+  const a = render(<SpendVsBudgetChart />, changed);
+  expect(a.el.querySelector('.recharts-line')).not.toBeNull();
+  expect(a.el.querySelector('.recharts-reference-line')).toBeNull();
+  expect(a.el.textContent).toMatch(/9[\s ]*M/); // la leyenda muestra el del último mes
+  act(() => a.root.unmount());
+
+  const b = render(<BudgetBreakdownChart highlight={false} />, changed);
+  expect(b.el.querySelector('.recharts-line')).not.toBeNull();
+  act(() => b.root.unmount());
+
+  const same = render(<SpendVsBudgetChart />, withBudgets(months.map(() => 3000000)));
+  expect(same.el.querySelector('.recharts-line')).toBeNull();
+  expect(same.el.querySelector('.recharts-reference-line')).not.toBeNull();
+  act(() => same.root.unmount());
+});

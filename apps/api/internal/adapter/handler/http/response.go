@@ -1043,6 +1043,8 @@ func newFinancialAnalysisResponse(analysis *domain.FinancialAnalysis) FinancialA
 type CategoryAnalysisResponse struct {
 	Budget  float64                 `json:"budget"`
 	Monthly MonthlyCategoryResponse `json:"monthly"`
+	// budget of every month of the range ("2026-11" -> budget), also the months without movements
+	BudgetByMonth map[string]float64 `json:"budget_by_month"`
 }
 
 type MonthlyCategoryResponse struct {
@@ -1069,8 +1071,13 @@ func newCategoryAnalysisResponse(analysis *domain.CategoryAnalysis) CategoryAnal
 		}
 	}
 
+	byMonth := analysis.BudgetByMonth
+	if byMonth == nil {
+		byMonth = map[string]float64{}
+	}
 	return CategoryAnalysisResponse{
-		Budget: analysis.Budget,
+		Budget:        analysis.Budget,
+		BudgetByMonth: byMonth,
 		Monthly: MonthlyCategoryResponse{
 			Expense: monthly,
 			Budget:  analysis.MonthlyBudget,

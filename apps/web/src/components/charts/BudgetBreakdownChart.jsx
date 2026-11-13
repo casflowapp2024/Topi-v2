@@ -1,16 +1,17 @@
 import { useMemo, useState } from 'react';
 import { MagnifyingGlassMinusIcon, MagnifyingGlassPlusIcon } from '@heroicons/react/20/solid';
 import { connect } from 'react-redux';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Rectangle } from 'recharts';
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Rectangle } from 'recharts';
 import ChartLegend from '../ui/ChartLegend';
 import ChartTooltip from './ChartTooltip';
 import { formatMoney, formatMoneyCompact, capitalizeWords } from '../helpers';
-import { useChartColors, xAxisProps, yAxisProps, chartMargin, monthlyRows, metricValue } from './chartTheme';
+import { useChartColors, xAxisProps, yAxisProps, chartMargin, monthlyRows, metricValue, budgetAt, budgetLine } from './chartTheme';
 import { niceMax } from './chartTheme';
 
 // Presupuestos: el total del mes (gastos o ingresos, según la pestaña de la lista) es la barra de
 // fondo y la categoría elegida llena su parte desde abajo. Así se ve cuánto pesa la categoría en
-// el total y cómo cambia mes a mes. highlight=false muestra solo el total.
+// el total y cómo cambia mes a mes. highlight=false muestra solo el total. Los presupuestos son los de
+// cada mes (monthly.*_budget[] y monthly.budget[] de la categoría).
 const BudgetBreakdownChart = ({
   highlight = true, history_dash, history_category, category_activated, active_report_tab,
   expenses_report, income_report, current_Year,
@@ -22,37 +23,54 @@ const BudgetBreakdownChart = ({
   // Solo se resalta si la categoría pertenece a la lista que se está viendo (gastos o ingresos)
   const catOk = highlight && category_activated && list.some(x => x.category_id === category_activated.category_id) && history_category?.monthly;
   const catName = catOk ? capitalizeWords(category_activated.name) : null;
-  const totalBudget = Math.abs(Number(isIncome ? history_dash?.income_budget : history_dash?.expense_budget) || 0);
-  const catBudget = catOk ? Math.abs(Number(history_category?.budget) || 0) : 0;
 
   const data = useMemo(() => {
     const m = history_dash?.monthly;
     if (!m) return [];
     const totals = isIncome ? m.income : m.expense;
+    const totalBudgets = isIncome ? m.income_budget : m.expense_budget;
+    const totalTop = isIncome ? history_dash?.income_budget : history_dash?.expense_budget;
     const catByKey = new Map();
     if (catOk) {
       monthlyRows(history_category.monthly, current_Year).forEach((r, i) => {
-        catByKey.set(r.key, Math.abs(metricValue(history_category.monthly.expense?.[i])));
+        catByKey.set(r.key, {
+          value: Math.abs(metricValue(history_category.monthly.expense?.[i])),
+          budget: budgetAt(history_category.monthly.budget, i, history_category.budget),
+        });
       });
     }
     return monthlyRows(m, current_Year).map((r, i) => {
       const total = Math.abs(metricValue(totals?.[i]));
-      const cat = catOk ? Math.min(catByKey.get(r.key) ?? 0, total || Infinity) : 0;
-      return { ...r, total, cat, rest: Math.max(total - cat, 0), share: total > 0 ? cat / total : 0 };
+      const catRow = catByKey.get(r.key);
+      const cat = catOk ? Math.min(catRow?.value ?? 0, total || Infinity) : 0;
+      const totalBudget = budgetAt(totalBudgets, i, totalTop);
+      // un mes sin movimientos de la categoría no está en su histórico: su presupuesto viene en budget_by_month
+      const monthKey = `${r.year}-${String(r.month).padStart(2, '0')}`;
+      const catBudget = catOk
+        ? (catRow ? catRow.budget : budgetAt(null, 0, history_category.budget_by_month?.[monthKey] ?? history_category.budget))
+        : 0;
+      return {
+        ...r, total, cat, rest: Math.max(total - cat, 0), share: total > 0 ? cat / total : 0,
+        totalBudget, catBudget, totalBudgetLine: totalBudget || null, catBudgetLine: catBudget || null,
+      };
     });
   }, [history_dash, history_category, catOk, isIncome, current_Year]);
 
   // Zoom: con una categoría elegida el eje se ajusta a ella (y su presupuesto); las barras del
   // total que no caben se recortan arriba y llevan una marca ▲. "Escala completa" lo deshace.
   const [zoom, setZoom] = useState(true);
+  const totalLine = budgetLine(data, 'totalBudget');
+  const catLine = budgetLine(data, 'catBudget');
   const catMax = data.reduce((mx, d) => Math.max(mx, d.cat), 0);
   const totalMax = data.reduce((mx, d) => Math.max(mx, d.total), 0);
-  const zoomMax = niceMax(catMax * 1.35, catBudget);
+  const zoomMax = niceMax(catMax * 1.35, catLine.max);
   const zoomed = catOk && zoom && zoomMax < totalMax;
-  const yMax = zoomed ? zoomMax : niceMax(totalMax, totalBudget, catBudget);
+  const yMax = zoomed ? zoomMax : niceMax(totalMax, totalLine.max, catLine.max);
 
   const last = data[data.length - 1];
   const month = last?.longLabel.split(' ')[0];
+  const totalBudget = last?.totalBudget || 0;
+  const catBudget = last?.catBudget || 0;
   let lead = null;
   if (last && catOk) {
     lead = {
@@ -77,8 +95,8 @@ const BudgetBreakdownChart = ({
         rows={[
           { label: isIncome ? 'Ingresos totales' : 'Gasto total', value: formatMoney(p.total), color, tone: isIncome ? 'in' : 'out' },
           catOk && { label: `${catName} · ${Math.round(p.share * 100)}%`, value: formatMoney(p.cat), color },
-          catOk && catBudget > 0 && { label: `Presupuesto ${catName}`, value: formatMoney(catBudget), tone: 'muted' },
-          totalBudget > 0 && { label: 'Presupuesto total', value: formatMoney(totalBudget), tone: 'muted' },
+          catOk && p.catBudget > 0 && { label: `Presupuesto ${catName}`, value: formatMoney(p.catBudget), tone: 'muted' },
+          p.totalBudget > 0 && { label: 'Presupuesto total', value: formatMoney(p.totalBudget), tone: 'muted' },
         ]}
       />
     );
@@ -91,8 +109,8 @@ const BudgetBreakdownChart = ({
         items={[
           catOk ? { type: 'bar', color, label: catName } : null,
           catOk ? { type: 'bar', color, faded: true, label: 'Resto' } : null,
-          catOk && catBudget > 0 ? { type: 'line', color, label: `Presup. ${catName}` } : null,
-          totalBudget > 0 && totalBudget <= yMax ? { type: 'line', label: 'Presup. total' } : null,
+          catOk && catLine.max > 0 ? { type: 'line', color, label: `Presup. ${catName}` } : null,
+          totalLine.max > 0 && data.some(d => d.totalBudget > 0 && d.totalBudget <= yMax) ? { type: 'line', label: 'Presup. total' } : null,
         ]}
         className="pt-2"
       />
@@ -108,16 +126,16 @@ const BudgetBreakdownChart = ({
       )}
       <div className="flex-1 min-h-0">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={chartMargin}>
+          <ComposedChart data={data} margin={chartMargin}>
             <CartesianGrid vertical={false} />
             <XAxis dataKey="label" {...xAxisProps} />
             <YAxis {...yAxisProps} tickCount={4} domain={[0, yMax]} allowDataOverflow tickFormatter={(v) => formatMoneyCompact(v)} />
             <Tooltip content={tooltip} cursor={{ fill: c.neutral, fillOpacity: 0.08 }} />
-            {totalBudget > 0 && (
-              <ReferenceLine y={totalBudget} className="topi-budget-line" stroke={c.neutral} strokeWidth={1.5} strokeDasharray="6 4" />
+            {totalLine.flat && totalLine.value > 0 && (
+              <ReferenceLine y={totalLine.value} className="topi-budget-line" stroke={c.neutral} strokeWidth={1.5} strokeDasharray="6 4" />
             )}
-            {catOk && catBudget > 0 && (
-              <ReferenceLine y={catBudget} stroke={color} strokeWidth={1.5} strokeDasharray="4 4" strokeOpacity={0.9} />
+            {catOk && catLine.flat && catLine.value > 0 && (
+              <ReferenceLine y={catLine.value} stroke={color} strokeWidth={1.5} strokeDasharray="4 4" strokeOpacity={0.9} />
             )}
             {/* La categoría abajo (sólida) y el resto del total encima (tenue): una sola barra por mes */}
             <Bar dataKey={catOk ? 'cat' : 'total'} stackId="b" fill={color} maxBarSize={28} isAnimationActive={false}
@@ -128,7 +146,16 @@ const BudgetBreakdownChart = ({
                   ? <text x={x + width / 2} y={chartMargin.top + 9} textAnchor="middle" fontSize={10} fill={c.neutral}>▲</text>
                   : null)} />
             )}
-          </BarChart>
+            {/* presupuestos que cambiaron en el rango: escalonados, cada mes con el suyo */}
+            {!totalLine.flat && (
+              <Line type="step" dataKey="totalBudgetLine" className="topi-budget-line" stroke={c.neutral} strokeWidth={1.5} strokeDasharray="6 4"
+                dot={false} activeDot={false} legendType="none" isAnimationActive={false} />
+            )}
+            {catOk && !catLine.flat && (
+              <Line type="step" dataKey="catBudgetLine" stroke={color} strokeWidth={1.5} strokeDasharray="4 4" strokeOpacity={0.9}
+                dot={false} activeDot={false} legendType="none" isAnimationActive={false} />
+            )}
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
     </div>

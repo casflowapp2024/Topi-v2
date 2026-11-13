@@ -2,6 +2,8 @@
 export const categoriesApiErrors ={
     "data conflicts with existing data in unique column": 'Esta categoría ya existe!!', // implemented in crear,update
     "unique constraint violated": 'Categoría vinculada con alguna transacción, no puede ser eliminada.', // implemented in eliminar
+    "budget month out of range": 'Elige un mes entre el inicio y el mes en curso.',
+    "the first budget version cannot be deleted": 'La primera versión del presupuesto no se puede borrar.',
     3: 'Mar',
     4: 'Abr',
     5: 'May', 

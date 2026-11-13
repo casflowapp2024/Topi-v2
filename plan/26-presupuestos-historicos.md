@@ -143,11 +143,20 @@ Sin versión vigente (meses previos a D8) → `NULL`, que los reportes leen como
   sigue 1.000.000". Guarda con `PUT /categories/:id/budgets`. La barra de "Gastado este mes" sigue usando el mes
   en curso.
 - **Historial** en el detalle de la categoría: lista corta "1.000.000 desde nov 2026 · 800.000 desde el inicio",
-  con borrar en cada versión salvo la base (confirmación con `Dialog`). Versión PC y móvil.
+  con borrar en cada versión salvo la base. La confirmación va en la misma fila ("¿Borrar? Desde jun 2026 vuelve a
+  800.000"), no en otro `Dialog` encima del modal. Solo se muestra si hay más de una versión. Versión PC y móvil.
 - **Gráficos**: `SpendVsBudgetChart` (línea de presupuesto y ▲ de excedido por mes con
   `monthly.expense_budget[i]` o `monthly.budget[i]`), `BudgetBreakdownChart`, y donde se mire un mes elegido que no
   sea el actual (`HomePaceCard`, `ProjectionChart`, `BudgetOverview`) usar el presupuesto de ese mes. La línea de
-  referencia de presupuesto pasa a ser escalonada (`Line type="stepAfter"`) en vez de `ReferenceLine` fija.
+  referencia de presupuesto pasa a ser escalonada (`Line type="step"`: el salto cae en el borde entre meses) cuando
+  el presupuesto cambió en el rango; si fue el mismo todos los meses queda la `ReferenceLine` fija de siempre.
+  `HomePaceCard`, `ProjectionChart` y `BudgetOverview` no cambiaron: miran un solo mes y el API ya les manda el
+  presupuesto de ese mes (`analysis_daily` llega hasta hoy, así que el último mes del rango siempre es el elegido).
+- **Meses sin movimientos de la categoría**: `history_category.monthly` solo trae los meses con movimientos; el API
+  agrega `budget_by_month` ("YYYY-MM" → presupuesto, todos los meses del rango) para que `BudgetBreakdownChart`
+  dibuje la línea de la categoría también en esos meses.
+- **Guardar desde un mes pasado**: solo `PUT /categories/:id/budgets`; el `PUT /categories/:id` va únicamente si
+  cambió nombre, ícono o tipo (sin cambios responde 400 "no data to update"), y lleva el presupuesto vigente.
 - Redux: acciones `getCategoryBudgets`, `setCategoryBudget`, `deleteCategoryBudget` en `redux/actions`;
   refrescar `history_dash` / `history_category` y el reporte del mes al guardar.
 - Montos con `formatMoney`, moneda base del usuario.
@@ -157,7 +166,7 @@ Sin versión vigente (meses previos a D8) → `NULL`, que los reportes leen como
 - **Fase A — backend** (hecha el 12-nov-2026): migración 000044, dominio, repositorio, servicio, endpoints, las tres consultas, swagger.
   Tests: dominio (meses, validaciones), servicio con mocks, handlers, integración (`category_budgets` + reportes
   con dos versiones en meses distintos).
-- **Fase B — web**: selector "Aplica desde", historial, gráficos por mes, tests de componentes (`modals.test.js`,
+- **Fase B — web** (hecha el 12-nov-2026): selector "Aplica desde", historial, gráficos por mes, tests de componentes (`modals.test.js`,
   `charts.test.js`).
 - **Fase C — verificación**: snapshot antes/después sobre la copia del dump (`scratchpad/snapshot.sh`): sin
   cambios de presupuesto los reportes deben salir **idénticos** a main (D7). Luego cambiar un presupuesto en la
@@ -170,12 +179,14 @@ Sin versión vigente (meses previos a D8) → `NULL`, que los reportes leen como
       del dump, 11.140 filas: solo cambian los arreglos nuevos y el `budget` de 524 históricos de categoría que antes
       salían en 0 por no tener movimientos en el rango).
 - [x] Cambiar un presupuesto hoy no altera ningún mes anterior al en curso, ni en totales ni por categoría.
-- [ ] Fijar un valor desde un mes pasado cambia solo de ese mes hasta la siguiente versión (D4).
+- [x] Fijar un valor desde un mes pasado cambia solo de ese mes hasta la siguiente versión (D4). (Probado en el
+      front de prueba: 650.000 desde mar con versiones en jun y nov → solo mar–may.)
 - [x] El ahorro presupuestado de cada mes del histórico = ingresos presupuestados − gastos presupuestados **de ese
       mes**.
 - [x] Dos cambios en el mismo mes dejan una sola versión (D3); no se puede fijar un mes futuro (D5) ni borrar la
       versión base (D9).
-- [ ] Presupuesto 0 desde un mes se guarda y se ve como "sin presupuesto" desde ese mes (D10).
+- [x] Presupuesto 0 desde un mes se guarda y se ve como "sin presupuesto" desde ese mes (D10).
 - [x] `categories.budget` siempre = última versión; admin y `budget_created` funcionan igual.
-- [ ] Categoría nueva: meses previos a su creación con presupuesto 0 (D8).
-- [ ] `go test ./...`, integración, `npm test` y build del front en verde; migración con `down` probado.
+- [x] Categoría nueva: meses previos a su creación con presupuesto 0 (D8).
+- [x] `go test ./...`, integración, `npm test` y build del front en verde; migración con `down` probado.
+      (`App.test.js` no carga por `react-router-dom` en jest; pasa igual en main.)

@@ -346,8 +346,11 @@ type FinancialAnalysisMonthly struct {
 }
 
 type CategoryAnalysis struct {
-	Budget        float64          `json:"budget"` // budget of the last month of the range
-	MonthlyBudget []float64        // budget of each month, parallel to Monthly
+	Budget        float64   `json:"budget"` // budget of the last month of the range
+	MonthlyBudget []float64 // budget of each month, parallel to Monthly
+	// budget of every month of the range, with or without movements ("2026-11" -> budget): charts that put the
+	// category next to the totals need the months the category has no rows for
+	BudgetByMonth map[string]float64
 	Monthly       []MonthlyMetrics `json:"monthly"`
 	Year          []uint16
 	Month         []uint16

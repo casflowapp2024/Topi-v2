@@ -1013,6 +1013,10 @@ func (ar *AnalysisRepository) GetCategoryAnalysis(
 
 	analysis.Budget = budget
 	analysis.MonthlyBudget = monthlyBudgets
+	for month, b := range budgets {
+		budgets[month] = utils.Round(b, 2)
+	}
+	analysis.BudgetByMonth = budgets
 	analysis.Monthly = monthlyMetrics
 	analysis.Year = yearList
 	analysis.Month = monthList

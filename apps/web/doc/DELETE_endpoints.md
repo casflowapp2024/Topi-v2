@@ -7,6 +7,10 @@ Este archivo agrupa los diferentes endpoints de mutación destructiva (**DELETE*
 ### `DELETE /categories/{id}`
 *   **Descripción:** Remueve la categoría y cualquier rastro de la misma que tenga ID `id`.
 
+### `DELETE /categories/{id}/budgets/{from}` (`delete_category_budget`)
+*   **Descripción:** Borra la versión del presupuesto que rige desde el mes `from` (`YYYY-MM`); esos meses vuelven a usar la versión anterior. Devuelve el historial actualizado, como `GET /categories/{id}/budgets`.
+*   **Errores:** 404 si no hay versión en ese mes; 409 si es la versión base (la más antigua), que se puede editar pero no borrar.
+
 ### `DELETE /accounts/{id}`
 *   **Descripción:** Realiza un borrado en una cuenta financiera seleccionada por medio del parámetro de la llave de ID, purgando así su registro del estado.
 

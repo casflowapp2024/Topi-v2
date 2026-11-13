@@ -1,21 +1,24 @@
 import { useMemo } from 'react';
 import { connect } from 'react-redux';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Rectangle } from 'recharts';
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Rectangle } from 'recharts';
 import ChartLegend from '../ui/ChartLegend';
 import ChartTooltip from './ChartTooltip';
 import { formatMoney, formatMoneyCompact } from '../helpers';
 import {
   useChartColors, xAxisProps, yAxisProps, chartMargin, monthlyRows, metricValue, isCurrentMonth, daysInMonth,
+  budgetAt, budgetLine,
 } from './chartTheme';
 import { niceMax } from './chartTheme';
 
 // Gastos por mes contra el presupuesto. En el mes en curso dibuja la proyección al cierre
-// (gasto ÷ días transcurridos × días del mes) y marca con ▲ los meses que se pasaron.
+// (gasto ÷ días transcurridos × días del mes) y marca con ▲ los meses que se pasaron. Cada mes se compara
+// con el presupuesto que tenía (monthly.expense_budget[] o monthly.budget[] de la categoría).
 //   source: 'total' (todas las categorías) | 'category' (la categoría activa en Presupuestos)
 const SpendVsBudgetChart = ({ source = 'total', history_dash, history_category, current_Year }) => {
   const c = useChartColors();
   const series = source === 'category' ? history_category?.monthly : history_dash?.monthly;
-  const budget = Math.abs(Number(source === 'category' ? history_category?.budget : history_dash?.expense_budget) || 0);
+  const topBudget = source === 'category' ? history_category?.budget : history_dash?.expense_budget;
+  const perMonth = source === 'category' ? series?.budget : series?.expense_budget;
 
   const data = useMemo(() => {
     if (!series) return [];
@@ -26,18 +29,23 @@ const SpendVsBudgetChart = ({ source = 'total', history_dash, history_category, 
       const elapsed = today.getDate();
       const projected = current && elapsed > 0 ? (spent / elapsed) * daysInMonth(r.year, r.month) : null;
       const reference = current ? projected : spent;
+      const budget = budgetAt(perMonth, i, topBudget);
       return {
         ...r,
         spent,
+        budget,
+        budgetLine: budget > 0 ? budget : null,
         current,
         projected,
         projExtra: projected && projected > spent ? projected - spent : 0,
         over: budget > 0 && reference > budget ? reference / budget - 1 : null,
       };
     });
-  }, [series, current_Year, budget]);
+  }, [series, perMonth, topBudget, current_Year]);
 
+  const line = budgetLine(data, 'budget');
   const last = data[data.length - 1];
+  const budget = last?.budget || 0; // el del último mes: el que se está mirando
   let lead = null;
   if (last) {
     if (last.current && last.projected != null && budget > 0) {
@@ -52,14 +60,14 @@ const SpendVsBudgetChart = ({ source = 'total', history_dash, history_category, 
     if (!active || !payload?.length) return null;
     const p = payload[0].payload;
     const ref = p.current ? p.projected : p.spent;
-    const diff = budget > 0 && ref != null ? budget - ref : null;
+    const diff = p.budget > 0 && ref != null ? p.budget - ref : null;
     return (
       <ChartTooltip
         title={`${p.longLabel}${p.current ? ' · en curso' : ''}`}
         rows={[
           { label: 'Gastado', value: formatMoney(p.spent), color: c.gasto, tone: 'out' },
           p.current && p.projected != null ? { label: 'Proyección al cierre', value: formatMoney(p.projected) } : null,
-          budget > 0 ? { label: 'Presupuesto', value: formatMoney(budget), tone: 'muted' } : null,
+          p.budget > 0 ? { label: 'Presupuesto', value: formatMoney(p.budget), tone: 'muted' } : null,
           diff != null ? { label: diff < 0 ? (p.current ? 'Te pasarías por' : 'Te pasaste por') : (p.current ? 'Te sobraría' : 'Te sobró'), value: formatMoney(Math.abs(diff)), tone: diff < 0 ? 'crit' : 'ok' } : null,
         ]}
       />
@@ -86,26 +94,30 @@ const SpendVsBudgetChart = ({ source = 'total', history_dash, history_category, 
         lead={lead}
         items={[
           data.some(d => d.projExtra > 0) ? { type: 'bar', color: c.gasto, faded: true, label: 'Proyección' } : null,
-          budget > 0 ? { type: 'line', label: 'Presupuesto', value: formatMoneyCompact(budget) } : null,
+          line.max > 0 ? { type: 'line', label: 'Presupuesto', value: budget > 0 ? formatMoneyCompact(budget) : undefined } : null,
         ]}
         className="pt-2"
       />
       <div className="flex-1 min-h-0">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ ...chartMargin, top: 22 }}>
+          <ComposedChart data={data} margin={{ ...chartMargin, top: 22 }}>
             <CartesianGrid vertical={false} />
             <XAxis dataKey="label" {...xAxisProps} />
-            <YAxis {...yAxisProps} tickCount={4} domain={[0, (dataMax) => niceMax(dataMax, budget)]} tickFormatter={(v) => formatMoneyCompact(v)} />
+            <YAxis {...yAxisProps} tickCount={4} domain={[0, (dataMax) => niceMax(dataMax, line.max)]} tickFormatter={(v) => formatMoneyCompact(v)} />
             <Tooltip content={tooltip} cursor={{ fill: c.neutral, fillOpacity: 0.08 }} />
-            {budget > 0 && (
-              <ReferenceLine y={budget} className="topi-budget-line" stroke={c.neutral} strokeWidth={1.5} strokeDasharray="6 4" />
+            {line.flat && line.value > 0 && (
+              <ReferenceLine y={line.value} className="topi-budget-line" stroke={c.neutral} strokeWidth={1.5} strokeDasharray="6 4" />
             )}
             <Bar dataKey="spent" stackId="s" fill={c.gasto} maxBarSize={28} isAnimationActive={false}
               shape={(props) => <Rectangle {...props} radius={props.payload.projExtra > 0 ? [0, 0, 0, 0] : [4, 4, 0, 0]} />}
               label={(props) => (data[props.index]?.projExtra > 0 ? null : overLabel(props))} />
             <Bar dataKey="projExtra" stackId="s" fill={c.gasto} fillOpacity={0.35} radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false}
               label={(props) => (data[props.index]?.projExtra > 0 ? overLabel(props) : null)} />
-          </BarChart>
+            {!line.flat && (
+              <Line type="step" dataKey="budgetLine" className="topi-budget-line" stroke={c.neutral} strokeWidth={1.5} strokeDasharray="6 4"
+                dot={false} activeDot={false} legendType="none" isAnimationActive={false} />
+            )}
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
     </div>

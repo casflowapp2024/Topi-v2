@@ -91,6 +91,16 @@ Este archivo contiene la documentación de todos los endpoints de tipo **GET** e
     }
     ```
 
+### `GET /categories/{id}/budgets` (`get_category_budgets`)
+*   **Descripción:** Historial del presupuesto de una categoría: una versión por mes, la más reciente primero. Cada versión rige desde `from` hasta la siguiente. `base: true` en la más antigua (la de "desde el inicio" para las categorías que existían antes del historial).
+*   **Respuesta:**
+    ```json
+    { "success": true, "message": "Success", "data": [
+      { "budget": 1000000, "from": "2026-11", "base": false },
+      { "budget": 800000, "from": "2000-01", "base": true }
+    ] }
+    ```
+
 ### `GET /account-types/list?skip={skip}&limit={limit}`
 *   **Descripción:** Lista todos los tipos de cuentas admitidos.
 *   **Respuesta:**
@@ -229,10 +239,12 @@ Este archivo contiene la documentación de todos los endpoints de tipo **GET** e
 ### `GET /analysis/financial-analysis?date={YYYY-MM-DD}`
 *   **Descripción:** Historial de tablero o dashboard (Data acumulada por días o mes para el gráfico).
 *   **Respuesta:** Poblado en `history_dash` en Redux.
+*   **Presupuesto por mes:** `monthly.income_budget[]`, `monthly.expense_budget[]` y `monthly.savings_budget[]` van en paralelo a `monthly.year[]`/`monthly.month[]`, con el presupuesto que regía cada mes. Los `income_budget`/`expense_budget`/`savings_budget` de arriba son los del último mes del rango.
 
 ### `GET /analysis/category-analysis?category_id={id}&date={YYYY-MM-DD}`
 *   **Descripción:** Evolución mensual de una categoría de gasto en específico y su presupuesto de la historia.
 *   **Respuesta:** Poblado en `history_category` en Redux.
+*   **Presupuesto por mes:** `monthly.budget[]`, en paralelo a los meses, con el presupuesto que regía cada uno. `budget` arriba es el del último mes del rango.
 
 ### `GET /analysis/account-analysis?account_id={id}&date={YYYY-MM-DD}`
 *   **Descripción:** Historial financiero individual para una cuenta por mes en específico.

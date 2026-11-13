@@ -5,7 +5,7 @@ import { Provider } from 'react-redux';
 import { createStore, applyMiddleware } from 'redux';
 import { thunk } from 'redux-thunk';
 import CreateCategory from './CreateCategory';
-import EditCategory from './EditCategory';
+import EditCategory, { budgetFromNotice, budgetMonthLabel } from './EditCategory';
 import FullBudgetsModal, { panoramaRows } from '../dashboard/budgetCategories/FullBudgetsModal';
 import BudDashCategorieList from '../dashboard/budgetCategories/BudDashCategorieList';
 import { SET_DASH_CATEGORY_ACTIVATED, SET_ACTIVE_REPORT_TAB } from '../../redux/actions/types';
@@ -145,5 +145,70 @@ test('Panorama: Gastos e Ingresos con gastado/recibido, % y estado; tocar una ta
 test('Presupuestos: el botón del Panorama está también en la pestaña de Ingresos', async () => {
   const m = await mount(<BudDashCategorieList handleOpenEditCat={() => {}} setOpenCreateBox={() => {}} />, { UI: { active_report_tab: 'Income' } });
   expect(m.el.querySelector('[aria-label="Panorama completo"]')).not.toBeNull();
+  await m.unmount();
+});
+
+// Presupuestos con historial (plan/26-presupuestos-historicos.md)
+test('budgetFromNotice: hasta cuándo rige un presupuesto fijado desde un mes pasado', () => {
+  const versions = [{ budget: 1000000, from: '2026-11' }, { budget: 800000, from: '2000-01', base: true }];
+  expect(budgetFromNotice(versions, '2026-11', '2026-11')).toBeNull();
+  expect(budgetFromNotice(versions, '2026-06', '2026-11')).toMatch(/^Rige desde jun 2026 hasta oct 2026; desde nov 2026 sigue .*1\.000\.000\.$/);
+  expect(budgetFromNotice(versions, '2026-10', '2026-11')).toMatch(/^Rige solo en oct 2026; desde nov 2026/);
+  expect(budgetFromNotice([{ budget: 5, from: '2000-01' }], '2026-03', '2026-11')).toBe('Rige desde mar 2026 en adelante, también este mes.');
+  expect(budgetFromNotice(versions, '2000-01', '2026-11')).toMatch(/^Rige desde el inicio hasta oct 2026/);
+  expect(budgetMonthLabel('2000-01')).toBe('el inicio');
+});
+
+test('Editar presupuesto: historial con borrar (menos la base) y "Aplica desde" con el mes en curso por defecto', async () => {
+  const axios = require('axios').default;
+  const versions = [{ budget: 1000000, from: '2026-11', base: false }, { budget: 800000, from: '2000-01', base: true }];
+  axios.get.mockImplementation((url) => Promise.resolve({ status: 200, data: { data: url.includes('/budgets') ? versions : [] } }));
+  const detail = { id: 2, name: 'salidas', budget: 1000000, income: false, emoji: '1f389' };
+  const m = await mount(<EditCategory openEditCat setOpenEditCat={() => {}} detailInfo={detail} setDetailInfo={() => {}} />);
+  const d = dialog();
+  expect(d.textContent).toContain('Historial del presupuesto');
+  expect(d.textContent).toMatch(/1\.000\.000 desde nov 2026 · vigente/);
+  expect(d.textContent).toMatch(/800\.000 desde el inicio/);
+  const trash = [...d.querySelectorAll('button[aria-label^="Borrar el presupuesto"]')];
+  expect(trash.map(b => b.getAttribute('aria-label'))).toEqual(['Borrar el presupuesto desde nov 2026']);
+  await click(trash[0]);
+  expect(d.textContent).toMatch(/¿Borrar\? Desde nov 2026 vuelve a .*800\.000/);
+
+  await click([...d.querySelectorAll('footer button')][1]); // Editar
+  const select = d.querySelector('#applyFrom');
+  const now = new Date();
+  expect(select.value).toBe(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
+  expect(select.options[0].textContent).toMatch(/^Este mes \(/);
+  expect(select.options[select.options.length - 1].textContent).toBe('Desde el inicio');
+  axios.get.mockImplementation(() => Promise.resolve({ status: 200, data: { data: [] } }));
+  await m.unmount();
+});
+
+test('Editar presupuesto desde un mes pasado: solo fija la versión (sin el PUT de la categoría si no cambió nada más)', async () => {
+  const axios = require('axios').default;
+  const versions = [{ budget: 1000000, from: '2026-11', base: false }, { budget: 800000, from: '2000-01', base: true }];
+  axios.get.mockImplementation((url) => Promise.resolve({ status: 200, data: { data: url.includes('/budgets') ? versions : [] } }));
+  axios.put.mockReset();
+  axios.put.mockImplementation(() => Promise.resolve({ status: 200, data: { data: [{ budget: 1000000, from: '2026-11' }, { budget: 650000, from: '2026-03' }, versions[1]] } }));
+  const detail = { id: 2, name: 'salidas', budget: 1000000, income: false, emoji: '1f389' };
+  const m = await mount(<EditCategory openEditCat setOpenEditCat={() => {}} detailInfo={detail} setDetailInfo={() => {}} />);
+  const d = dialog();
+  await click([...d.querySelectorAll('footer button')][1]); // Editar
+  const set = async (el, v, ev) => act(async () => {
+    Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value').set.call(el, v);
+    el.dispatchEvent(new Event(ev, { bubbles: true }));
+  });
+  const select = d.querySelector('#applyFrom');
+  const past = select.options[3].value;
+  await set(select, past, 'change');
+  await set(d.querySelector('#budget'), '650000', 'input');
+  expect(d.textContent).toMatch(/hasta .*; desde nov 2026 sigue .*1\.000\.000/);
+  await click([...d.querySelectorAll('footer button')].find(b => b.textContent.trim() === 'Guardar cambios'));
+  expect(axios.put).toHaveBeenCalledTimes(1);
+  const [url, body] = axios.put.mock.calls[0];
+  expect(url).toMatch(/\/categories\/2\/budgets$/);
+  expect(JSON.parse(body)).toEqual({ budget: 650000, from: past });
+  expect(d.textContent).toMatch(/650\.000 desde/);
+  axios.get.mockImplementation(() => Promise.resolve({ status: 200, data: { data: [] } }));
   await m.unmount();
 });

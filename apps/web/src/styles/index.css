@@ -206,6 +206,8 @@ input, select, textarea {
 .topi-stripes { background-image: repeating-linear-gradient(45deg, transparent 0 3px, rgba(255, 255, 255, 0.4) 3px 6px); }
 .topi-budget-line line { stroke: #6A6F88; }
 .dark .topi-budget-line line { stroke: #9097B4; }
+.topi-budget-line path.recharts-curve { stroke: #6A6F88; }
+.dark .topi-budget-line path.recharts-curve { stroke: #9097B4; }
 .topi-budget-label { fill: #5B6078; }
 .dark .topi-budget-label { fill: #B9BDD3; }
 .topi-budget-swatch { stroke: #6A6F88; }
