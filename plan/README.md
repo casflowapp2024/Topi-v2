@@ -12,8 +12,10 @@
 | `20-ux-fase-3-vistas.md` | UX Fase 3: Inicio (ritmo, flujo, patrimonio), bandeja "Por revisar", agregar discreto, movimientos por día |
 | `21-cuotas.md` | Repartir compras a cuotas en gastos, presupuestos y cortes de tarjeta |
 | `21-ux-layout-y-modales.md` | Layout de PC (contenedor común, grilla 12 col, menú de usuario) y rediseño de modales |
-| `22-modelo-negocio.md` | Modelo de negocio: gratis + Plus, fundadores, Apoyar a Topi, medición de costos, pagos |
+| `22-modelo-negocio.md` | Modelo de negocio por etapas: medir → Apoyar a Topi → Fase 4 en beta → lanzar Plus |
 | `23-correo-transaccional.md` | Correo con Resend: outbox, recuperar contraseña, verificación, conexión caída, resumen mensual |
+| `24-ux-fase-4.md` | UX Fase 4 (beta): aviso del día, push, Pregúntale a Topi (1/día gratis), rachas, logros, mascota |
+| `25-admin-metricas.md` | Panel admin, North Star "usuarios al día semanales", métricas, fundadores |
 | `90-evaluacion-jev.md` | Análisis de Jev vs Gemini (para después) |
 | `PROMPT-fase-*.md` | Prompts para Claude Code |
 

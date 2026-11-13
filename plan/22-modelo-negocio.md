@@ -1,120 +1,97 @@
 # Modelo de negocio — cubrir la operación sin incomodar al usuario gratis
 
-Objetivo: que Topi **se pague sola** (servidor, IA, verificación de Google, dominio), no hacerse rico.
-Principio: **gratis es todo lo que la app promete; se paga lo que cuesta dinero extra o lo usa el usuario
-avanzado.** Sin anuncios, sin vender datos, sin pruebas que caducan, sin patrones oscuros.
+Objetivo: que Topi **se pague sola** (servidor, IA, verificación de Google, dominio, correo), no hacerse rico.
+Principios:
+1. **Gratis es todo lo que la app promete** (lectura automática, cuentas, presupuestos, Por revisar, avisos).
+2. **No se ofrece lo que no existe.** Plus sale a la venta solo cuando sus funciones ya están en producción.
+3. **Nada gratis se vuelve pago.** Por eso toda función nueva nace con su límite de plan gratis visible.
+4. Sin anuncios, sin vender datos, sin pruebas que caducan, cancelar tan fácil como suscribirse.
 
-> Nota: esto no es asesoría legal ni tributaria. Los puntos de facturación (DIAN), retracto y habeas data
-> hay que validarlos con un contador/abogado antes de cobrar.
+> No es asesoría legal ni tributaria: facturación (DIAN), retracto y habeas data se validan con un
+> contador/abogado antes de cobrar.
 
-## 1. Costos a cubrir (supuestos a medir)
+## Orden (reemplaza el orden N0–N3 anterior)
 
-| Costo | Tipo | Cómo se mide |
-|---|---|---|
-| Servidor Hetzner + Coolify, backups | Fijo mensual | Factura |
-| Dominio + correo transaccional (plan gratis, ver `23-correo-transaccional.md`) | Fijo | Factura |
-| Gemini (lectura de correos y, en Fase 4, Pregúntale a Topi) | Variable por usuario | **Nuevo: `llm_usage`** |
-| Verificación de Google para `gmail.readonly` (CASA anual) | Fijo anual, probablemente el mayor | Cotización |
-| WhatsApp (si se activa) | Variable por mensaje | Factura Meta |
-| Apple Developer / Google Play (si hay apps nativas) | Fijo anual / único | — |
+| Etapa | Qué | Promete algo pago | Plan |
+|---|---|---|---|
+| **1. Medir + fundadores** | Panel admin, métricas, North Star, costo por usuario, lista de fundadores | No | `25-admin-metricas.md` |
+| **2. Apoyar a Topi** | Pago único voluntario (spike Wompi vs Mercado Pago) | No | este archivo, §N1 |
+| **3. Fase 4 en beta** | Avisos, push, Pregúntale a Topi (**1 pregunta/día gratis**), diversión; derechos por plan ya activos | No (todo lo existente es gratis con límites) | `24-ux-fase-4.md` |
+| **4. Lanzar Plus** | Planes, cobro recurrente, página Planes, fundadores confirmados | Sí, cuando 1–3 están en prod | este archivo, §N2–N3 |
 
-Punto de equilibrio aproximado: `costos_mensuales / precio_neto_plus`. Con ~US$50–100/mes y ~US$2,5 neto
-por suscriptor, son 20–40 suscriptores; con 2–5 % de conversión, ~1.000 usuarios activos.
+Decidir precio y contenido final de Plus con 1–2 meses de datos de la etapa 3 (uso de la IA, % de usuarios
+que llegan al límite diario, costo por usuario activo).
 
-### Verificación de Google (bloqueante a revisar primero)
-El flujo actual (ventana emergente de OAuth + callback) es el correcto; lo que importa es **el estado de la
-pantalla de consentimiento** del proyecto de Google Cloud, porque el alcance `gmail.readonly` es
-"restringido":
-- **Testing**: solo entran usuarios agregados a mano como "test users" y los tokens vencen cada 7 días.
-- **En producción sin verificar**: el usuario ve "Google no ha verificado esta app" y hay un tope de 100
-  usuarios para alcances restringidos.
-- **En producción verificada**: sin advertencia ni tope; exige la evaluación de seguridad **CASA** cada año.
-Cómo verlo: Google Cloud Console → Google Auth Platform → *Audience* (estado) y *Verification Center*.
-Tarea: registrar el estado en este archivo y, si no está verificada, presupuestar la verificación + CASA.
-Outlook (Microsoft) pide verificación de editor; es más liviana.
-
-## 2. Planes
+## Planes
 
 ### Topi (gratis, para siempre)
-- Lectura automática de hasta **2** conexiones de correo.
-- Cuentas, presupuestos, "Por revisar", Inicio completo, gráficas, multimoneda.
-- Avisos dentro de la app y notificaciones push (Fase 4).
-- Historial completo de lo que ya existe (no se esconde nada que hoy se ve).
+- Lectura automática de hasta **2** conexiones de correo; cuentas, presupuestos, Por revisar, Inicio,
+  gráficas, multimoneda, patrimonio.
+- Aviso del día dentro de la app y notificaciones push.
+- **Pregúntale a Topi: 1 pregunta por día.**
+- Correos: recuperación, conexión caída, resumen mensual.
 
-### Topi Plus (hipótesis de precio: COP 9.900/mes o 79.900/año)
-- **Pregúntale a Topi** (Fase 4; gratis: unas pocas preguntas al mes para probar).
-- Avisos por **WhatsApp** (cuando exista el canal).
-- **Hogar / pareja**: cuentas y presupuestos compartidos (futuro).
-- Hasta **5** conexiones de correo.
-- Exportar a Excel/CSV, metas y resumen mensual completo.
-- Insignia "Plus" discreta y prioridad en soporte.
+### Topi Plus (hipótesis: COP 9.900/mes o 79.900/año; se confirma en la etapa 4)
+- Pregúntale a Topi: **hasta 30 preguntas por día** (ajustable por configuración, no por código).
+- Hasta 5 conexiones de correo.
+- Funciones que existan al lanzar: exportar, metas, resumen mensual completo tipo historia, WhatsApp,
+  hogar/pareja. **Solo se listan las que estén en producción el día del lanzamiento.**
 
 ### Fundadores
-Todo usuario creado antes de la fecha de lanzamiento de Plus queda con **Plus de por vida**
-(`users.founder = true`). Se comunica como agradecimiento.
+- **Elegibles**: usuarios registrados antes de la fecha de corte `FOUNDER_CUTOFF` (= el día que se despliega
+  la etapa 1).
+- **Confirmados**: elegibles con actividad real en los últimos 90 días al momento de lanzar Plus (ingresó a la
+  app, o tiene una conexión de correo sana con transacciones leídas). Así se descartan las cuentas fantasma sin
+  borrar a nadie: un elegible que vuelva antes del lanzamiento queda confirmado.
+- Fundador confirmado = Plus de por vida. El admin revisa y confirma la lista en el panel (§ en plan 25).
+- No se borran usuarios ni datos por no ser fundadores; limpiar cuentas abandonadas es otra decisión (habeas
+  data) que requiere OK explícito.
 
-### Apoyar a Topi
-Pago único voluntario (montos sugeridos COP 10.000 / 20.000 / 50.000 o libre). Sale primero porque valida la
-disposición a pagar sin construir todo Plus.
+## Implementación
 
-### Reglas
-1. Nada que hoy es gratis pasa a ser pago.
-2. Los límites se muestran como información amable, nunca bloquean a mitad de una tarea ni esconden datos.
-3. Cancelar es igual de fácil que suscribirse (2 clics), desde Configuración.
-4. Sin publicidad, sin vender ni compartir datos, sin recomendaciones pagadas de productos financieros.
-5. Un usuario que deja de pagar vuelve a gratis: no pierde datos; las funciones Plus quedan en solo lectura.
+### N1 · Apoyar a Topi (etapa 2)
+- **Spike** (½ día, sin código de producción): Wompi vs Mercado Pago para (a) pago único por link/checkout,
+  (b) cobro recurrente en Colombia, (c) webhooks con firma, (d) comisiones, (e) sandbox. Decisión escrita
+  aquí antes de codificar.
+- Puerto `domain.Billing` + adaptador. Tabla `payments` (id, user_id, provider, provider_ref único,
+  kind `support|subscription`, amount decimal, currency, status, raw_status, timestamps).
+- Webhook `POST /billing/webhook/:provider`: firma verificada, idempotente por `provider_ref`; el front nunca
+  marca un pago.
+- Front: "Apoyar a Topi" en el menú de usuario → hoja con montos (10.000 / 20.000 / 50.000 / libre) →
+  checkout → gracias. Recibo con la plantilla `billing_generic` del correo (ya existe).
 
-## 3. Implementación técnica
+### N2a · Derechos mínimos (se hace dentro de la Fase 4, etapa 3)
+- `users.founder_eligible bool`, `users.founder_confirmed_at timestamptz` (de la etapa 1).
+- Dominio: `Entitlements(user, sub)` en un solo lugar → `{plan, askTopiDaily, maxEmailConnections, ...}`.
+  Hoy: `free` (ask 1/día, 2 conexiones) y `plus` (= fundador confirmado o suscripción activa; ask 30/día,
+  5 conexiones). Valores por variables de entorno con defaults.
+- `GET /me/entitlements`, middleware `RequireEntitlement`, cuotas validadas en la API.
+- Mientras Plus no se lance, **los elegibles a fundador se tratan como Plus** (para que no "pierdan" nada al
+  confirmarse). El límite de conexiones solo aplica a conexiones nuevas: nadie pierde una conexión existente.
 
-### N0 · Medir (antes de cobrar)
-- Migración `llm_usage` (user_id, feature `email_parse|ask`, model, tokens_in, tokens_out, created_at) con
-  `down`. El worker registra los tokens de cada llamada a Gemini (sin guardar el contenido).
-- Endpoint admin `GET /admin/metrics/costs?month=` → usuarios activos (con transacción o login en el mes),
-  tokens y costo estimado por usuario (precio por token en variable de entorno, no en código).
-- Vista admin mínima en el front (solo rol admin).
+### N2 · Planes (etapa 4)
+- Tabla `subscriptions` (user_id, plan, status `active|past_due|canceled`, current_period_end, provider,
+  provider_ref, cancel_at_period_end, timestamps).
+- Front: página **Planes** (menú de usuario y Configuración), `ui/PlusGate` (muestra qué da Plus sin bloquear
+  la navegación), estado de suscripción y Cancelar.
 
-### N1 · Apoyar a Topi
-- Puerto `domain.Billing` con adaptador de pasarela. **Spike primero** (½ día, sin código de producción):
-  comparar Wompi y Mercado Pago para (a) pago único con link/checkout, (b) cobro recurrente en Colombia
-  (Mercado Pago "suscripciones/preapproval" vs Wompi con fuente de pago tokenizada + cobro que dispara
-  nuestro scheduler), (c) webhooks con firma, (d) comisiones, (e) sandbox. Dejar la decisión escrita aquí.
-- Tabla `payments` (id, user_id, provider, provider_ref único, kind `support|subscription`, amount, currency,
-  status, raw_status, created_at, updated_at). Montos como decimal/string.
-- Webhook `POST /billing/webhook/:provider`: valida firma, es **idempotente** por `provider_ref`, nunca
-  confía en el front para marcar un pago.
-- Front: botón "Apoyar a Topi" en el menú de usuario → hoja con montos → checkout de la pasarela →
-  pantalla de gracias. Recibo por correo si el servicio de correo ya está (si no, se omite).
+### N3 · Cobro recurrente (etapa 4)
+- Según el spike. Reintentos 3 en 7 días → `past_due` → vuelve a gratis al terminar el periodo; sin perder
+  datos (lo de Plus queda en solo lectura).
+- Correos: pago recibido, pago fallido, renovación anual (7 días antes).
+- Términos (precio, renovación, cancelación, retracto) y Privacidad (solo referencia de la pasarela, nunca
+  datos de tarjeta).
 
-### N2 · Planes y derechos (entitlements)
-- Migración: `subscriptions` (user_id, plan `free|plus`, status `active|past_due|canceled`,
-  current_period_end, provider, provider_ref, cancel_at_period_end, timestamps) y `users.founder bool`.
-  Script/migración que marca fundadores a todos los usuarios existentes.
-- Dominio: `Entitlements(user, sub) → {plan, maxEmailConnections, askTopiMonthly, whatsapp, export,
-  household}` en un solo lugar, con tests de tabla. Plus = founder || sub activa || dentro del periodo pagado.
-- API: `GET /me/entitlements`; middleware `RequireEntitlement(feature)`; los límites se validan en la API
-  (p. ej. crear una tercera conexión de correo en gratis → 402/403 con código propio documentado).
-- Front: `useEntitlements()` (redux), componente `ui/PlusGate` (muestra la función y una hoja "Esto es de
-  Plus" con beneficios y precio, sin bloquear la navegación), página **Planes** desde el menú de usuario y
-  desde Configuración, estado de la suscripción y botón Cancelar.
+### Verificación de Google (pendiente de anotar)
+`gmail.readonly` es alcance restringido. Estado actual de la pantalla de consentimiento (Testing / Producción
+sin verificar / Producción verificada): **por anotar**. Si no está verificada, presupuestar verificación +
+CASA anual: es probablemente el costo fijo más grande.
 
-### N3 · Cobro recurrente
-- Según el spike: suscripción gestionada por la pasarela o cobro programado por el worker con fuente
-  tokenizada. Reintentos: 3 intentos en 7 días → `past_due` → vuelve a gratis al terminar el periodo.
-- Avisos (correo, si existe): pago recibido, pago fallido, suscripción por renovar (anual, 7 días antes).
-- Página de Términos: precio, renovación, cancelación, retracto; Política de privacidad: que se guarda de
-  pagos (solo referencia de la pasarela, nunca datos de tarjeta).
-
-### Fuera de alcance
-Hogar/pareja, WhatsApp, Pregúntale a Topi (llegan en Fase 4 o después; aquí solo quedan como derechos).
-
-## 4. Criterios de aceptación
-- [ ] Estado de verificación de Google anotado en este archivo.
-- [ ] `llm_usage` se llena desde el worker y el admin ve costo estimado por usuario del mes.
-- [ ] Spike de pasarela documentado con la decisión.
-- [ ] "Apoyar a Topi" funciona en sandbox de punta a punta; webhook con firma inválida → 401; repetido →
-      no duplica.
-- [ ] Usuarios existentes son fundadores; `GET /me/entitlements` correcto para free, plus, founder,
-      past_due y cancelado (tests de tabla).
-- [ ] Gratis no pierde nada de lo que hoy tiene (revisión explícita de funciones).
-- [ ] Suscribirse y cancelar en sandbox; cancelar mantiene Plus hasta fin de periodo.
-- [ ] Migraciones con `down`; `go test ./...` y jest verdes; `npm run build` OK; cero secretos.
+## Criterios de aceptación
+- [x] Etapa 1 completa (ver `25-admin-metricas.md`).
+- [ ] Spike documentado; Apoyar a Topi de punta a punta en sandbox; webhook con firma inválida → 401;
+      repetido → no duplica; recibo por correo.
+- [ ] `Entitlements` con tests de tabla (free, elegible, confirmado, plus activo, past_due, cancelado).
+- [ ] Ninguna función existente queda limitada para usuarios actuales (revisión explícita).
+- [ ] (Etapa 4) Suscribir y cancelar en sandbox; cancelar mantiene Plus hasta fin de periodo.
+- [ ] Migraciones con `down`; `go test ./...`, jest y `npm run build` verdes; cero secretos.
