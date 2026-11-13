@@ -334,6 +334,9 @@ type FinancialAnalysisMonthly struct {
 	Income          []MonthlyMetrics
 	Expense         []MonthlyMetrics
 	BudgetSpent     []float64 // Expense plus what the budgets moved to investments, by month
+	IncomeBudget    []float64 // budget of each month (category_budgets): plan/26-presupuestos-historicos.md
+	ExpenseBudget   []float64
+	SavingsBudget   []float64
 	Savings         []MonthlyMetrics
 	RSavingsBalance []MonthlyMetrics
 	RCreditsBalance []MonthlyMetrics
@@ -343,10 +346,11 @@ type FinancialAnalysisMonthly struct {
 }
 
 type CategoryAnalysis struct {
-	Budget  float64          `json:"budget"`
-	Monthly []MonthlyMetrics `json:"monthly"`
-	Year    []uint16
-	Month   []uint16
+	Budget        float64          `json:"budget"` // budget of the last month of the range
+	MonthlyBudget []float64        // budget of each month, parallel to Monthly
+	Monthly       []MonthlyMetrics `json:"monthly"`
+	Year          []uint16
+	Month         []uint16
 }
 
 // =============================================================================

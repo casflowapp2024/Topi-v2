@@ -8,6 +8,7 @@ import (
 	domain "cash-flow/internal/core/domain"
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 )
@@ -63,6 +64,21 @@ func (mr *MockCategoryRepositoryMockRecorder) CreateCategory(ctx, category inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCategory", reflect.TypeOf((*MockCategoryRepository)(nil).CreateCategory), ctx, category)
 }
 
+// CurrentBudgetMonth mocks base method.
+func (m *MockCategoryRepository) CurrentBudgetMonth(ctx context.Context, userID string) (time.Time, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CurrentBudgetMonth", ctx, userID)
+	ret0, _ := ret[0].(time.Time)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CurrentBudgetMonth indicates an expected call of CurrentBudgetMonth.
+func (mr *MockCategoryRepositoryMockRecorder) CurrentBudgetMonth(ctx, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CurrentBudgetMonth", reflect.TypeOf((*MockCategoryRepository)(nil).CurrentBudgetMonth), ctx, userID)
+}
+
 // DeleteCategory mocks base method.
 func (m *MockCategoryRepository) DeleteCategory(ctx context.Context, userID string, id uint64) error {
 	m.ctrl.T.Helper()
@@ -75,6 +91,20 @@ func (m *MockCategoryRepository) DeleteCategory(ctx context.Context, userID stri
 func (mr *MockCategoryRepositoryMockRecorder) DeleteCategory(ctx, userID, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCategory", reflect.TypeOf((*MockCategoryRepository)(nil).DeleteCategory), ctx, userID, id)
+}
+
+// DeleteCategoryBudget mocks base method.
+func (m *MockCategoryRepository) DeleteCategoryBudget(ctx context.Context, userID string, categoryID uint64, month time.Time) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteCategoryBudget", ctx, userID, categoryID, month)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteCategoryBudget indicates an expected call of DeleteCategoryBudget.
+func (mr *MockCategoryRepositoryMockRecorder) DeleteCategoryBudget(ctx, userID, categoryID, month interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCategoryBudget", reflect.TypeOf((*MockCategoryRepository)(nil).DeleteCategoryBudget), ctx, userID, categoryID, month)
 }
 
 // GetCategory mocks base method.
@@ -122,6 +152,21 @@ func (mr *MockCategoryRepositoryMockRecorder) GetCategoryList(ctx, userID, skip,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCategoryList", reflect.TypeOf((*MockCategoryRepository)(nil).GetCategoryList), ctx, userID, skip, limit)
 }
 
+// ListCategoryBudgets mocks base method.
+func (m *MockCategoryRepository) ListCategoryBudgets(ctx context.Context, userID string, categoryID uint64) ([]domain.CategoryBudget, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListCategoryBudgets", ctx, userID, categoryID)
+	ret0, _ := ret[0].([]domain.CategoryBudget)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListCategoryBudgets indicates an expected call of ListCategoryBudgets.
+func (mr *MockCategoryRepositoryMockRecorder) ListCategoryBudgets(ctx, userID, categoryID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCategoryBudgets", reflect.TypeOf((*MockCategoryRepository)(nil).ListCategoryBudgets), ctx, userID, categoryID)
+}
+
 // UpdateCategory mocks base method.
 func (m *MockCategoryRepository) UpdateCategory(ctx context.Context, category *domain.Category) error {
 	m.ctrl.T.Helper()
@@ -134,6 +179,20 @@ func (m *MockCategoryRepository) UpdateCategory(ctx context.Context, category *d
 func (mr *MockCategoryRepositoryMockRecorder) UpdateCategory(ctx, category interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCategory", reflect.TypeOf((*MockCategoryRepository)(nil).UpdateCategory), ctx, category)
+}
+
+// UpsertCategoryBudget mocks base method.
+func (m *MockCategoryRepository) UpsertCategoryBudget(ctx context.Context, budget domain.CategoryBudget) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpsertCategoryBudget", ctx, budget)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpsertCategoryBudget indicates an expected call of UpsertCategoryBudget.
+func (mr *MockCategoryRepositoryMockRecorder) UpsertCategoryBudget(ctx, budget interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertCategoryBudget", reflect.TypeOf((*MockCategoryRepository)(nil).UpsertCategoryBudget), ctx, budget)
 }
 
 // MockCategoryService is a mock of CategoryService interface.
@@ -185,6 +244,21 @@ func (m *MockCategoryService) CreateCategory(ctx context.Context, category *doma
 func (mr *MockCategoryServiceMockRecorder) CreateCategory(ctx, category interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCategory", reflect.TypeOf((*MockCategoryService)(nil).CreateCategory), ctx, category)
+}
+
+// DeleteBudget mocks base method.
+func (m *MockCategoryService) DeleteBudget(ctx context.Context, userID string, categoryID uint64, month time.Time) ([]domain.CategoryBudget, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteBudget", ctx, userID, categoryID, month)
+	ret0, _ := ret[0].([]domain.CategoryBudget)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteBudget indicates an expected call of DeleteBudget.
+func (mr *MockCategoryServiceMockRecorder) DeleteBudget(ctx, userID, categoryID, month interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBudget", reflect.TypeOf((*MockCategoryService)(nil).DeleteBudget), ctx, userID, categoryID, month)
 }
 
 // DeleteCategory mocks base method.
@@ -256,6 +330,36 @@ func (m *MockCategoryService) GetDefaultCategory(ctx context.Context, cpr *domai
 func (mr *MockCategoryServiceMockRecorder) GetDefaultCategory(ctx, cpr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDefaultCategory", reflect.TypeOf((*MockCategoryService)(nil).GetDefaultCategory), ctx, cpr)
+}
+
+// ListBudgets mocks base method.
+func (m *MockCategoryService) ListBudgets(ctx context.Context, userID string, categoryID uint64) ([]domain.CategoryBudget, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListBudgets", ctx, userID, categoryID)
+	ret0, _ := ret[0].([]domain.CategoryBudget)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListBudgets indicates an expected call of ListBudgets.
+func (mr *MockCategoryServiceMockRecorder) ListBudgets(ctx, userID, categoryID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBudgets", reflect.TypeOf((*MockCategoryService)(nil).ListBudgets), ctx, userID, categoryID)
+}
+
+// SetBudget mocks base method.
+func (m *MockCategoryService) SetBudget(ctx context.Context, userID string, categoryID uint64, budget float64, from *time.Time) ([]domain.CategoryBudget, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetBudget", ctx, userID, categoryID, budget, from)
+	ret0, _ := ret[0].([]domain.CategoryBudget)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetBudget indicates an expected call of SetBudget.
+func (mr *MockCategoryServiceMockRecorder) SetBudget(ctx, userID, categoryID, budget, from interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBudget", reflect.TypeOf((*MockCategoryService)(nil).SetBudget), ctx, userID, categoryID, budget, from)
 }
 
 // UpdateCategory mocks base method.

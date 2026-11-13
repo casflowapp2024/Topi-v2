@@ -88,6 +88,9 @@ func (r *Routes) CategoryRoutes() {
 		AuthCategories.GET("/list", r.CategoryHandler.GetCategories)
 		AuthCategories.PUT("/:id", r.CategoryHandler.UpdateCategory)
 		AuthCategories.DELETE("/:id", r.CategoryHandler.DeleteCategory)
+		AuthCategories.GET("/:id/budgets", r.CategoryHandler.GetCategoryBudgets)
+		AuthCategories.PUT("/:id/budgets", r.CategoryHandler.SetCategoryBudget)
+		AuthCategories.DELETE("/:id/budgets/:from", r.CategoryHandler.DeleteCategoryBudget)
 	}
 }
 

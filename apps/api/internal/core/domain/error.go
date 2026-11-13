@@ -25,6 +25,10 @@ var (
 	// ErrDefaultCategoryLocked is an error where the category cannot be updated or deleted
 	ErrDefaultCategoryLocked = errors.New("cannot be update name or delete defaults categories")
 	ErrNilCategory           = errors.New("category is nil")
+	// ErrBudgetMonthOutOfRange: a budget version can't start in a future month nor before BudgetBaseMonth
+	ErrBudgetMonthOutOfRange = errors.New("budget month out of range")
+	// ErrBudgetBaseVersion: the oldest budget version of a category can be edited but not deleted
+	ErrBudgetBaseVersion = errors.New("the first budget version cannot be deleted")
 )
 
 // Transaction Errors

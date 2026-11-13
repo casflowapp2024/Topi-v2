@@ -5,6 +5,7 @@ import (
 	"cash-flow/internal/core/port"
 	"cash-flow/internal/enums"
 	"context"
+	"time"
 )
 
 type CategoryService struct {
@@ -148,4 +149,68 @@ func (cs CategoryService) DeleteCategory(ctx context.Context, category domain.Ca
 	}
 
 	return cs.repo.DeleteCategory(ctx, category.UserID, category.ID)
+}
+
+func (cs CategoryService) ListBudgets(ctx context.Context, userID string, categoryID uint64) ([]domain.CategoryBudget, error) {
+	if _, err := cs.repo.GetCategory(ctx, userID, categoryID); err != nil {
+		return nil, err
+	}
+	return cs.repo.ListCategoryBudgets(ctx, userID, categoryID)
+}
+
+// SetBudget saves the budget from a month (by default the user's current month) until the next version: editing a
+// past month keeps the later versions (plan/26-presupuestos-historicos.md, D1–D4).
+func (cs CategoryService) SetBudget(ctx context.Context, userID string, categoryID uint64, budget float64, from *time.Time) ([]domain.CategoryBudget, error) {
+	category, err := cs.repo.GetCategory(ctx, userID, categoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	current, err := cs.repo.CurrentBudgetMonth(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	month := current
+	if from != nil {
+		month = domain.MonthStart(*from)
+	}
+	if err = domain.ValidateBudgetMonth(month, current); err != nil {
+		return nil, err
+	}
+
+	err = cs.repo.UpsertCategoryBudget(ctx, domain.CategoryBudget{
+		CategoryID: categoryID, UserID: userID, Budget: budget, EffectiveFrom: month,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	versions, err := cs.repo.ListCategoryBudgets(ctx, userID, categoryID)
+	if err != nil {
+		return nil, err
+	}
+	if len(versions) > 0 {
+		before := category.Budget
+		category.Budget = versions[0].Budget
+		cs.emitBudgetCreated(ctx, category, before)
+	}
+	return versions, nil
+}
+
+// DeleteBudget deletes a version (never the oldest one: D9); the previous version applies again from that month.
+func (cs CategoryService) DeleteBudget(ctx context.Context, userID string, categoryID uint64, month time.Time) ([]domain.CategoryBudget, error) {
+	versions, err := cs.ListBudgets(ctx, userID, categoryID)
+	if err != nil {
+		return nil, err
+	}
+	if _, ok := domain.FindBudget(versions, month); !ok {
+		return nil, domain.ErrDataNotFound
+	}
+	if domain.IsBaseBudget(versions, month) {
+		return nil, domain.ErrBudgetBaseVersion
+	}
+	if err = cs.repo.DeleteCategoryBudget(ctx, userID, categoryID, month); err != nil {
+		return nil, err
+	}
+	return cs.repo.ListCategoryBudgets(ctx, userID, categoryID)
 }

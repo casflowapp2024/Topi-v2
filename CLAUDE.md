@@ -71,6 +71,11 @@ plan/         plan de migración
 - Cargos de tarjeta (`card_charges`): lo pagado por encima de lo debido por corte. Se calculan, no son
   transacciones: una compra que llega tarde los corrige. Entran a gastos y a la categoría "Cargos de Tarjeta" en
   el mes del pago, solo desde los cortes de octubre de 2026. No cambian saldos ni la deuda estimada.
+- Presupuestos con historial (`plan/26-presupuestos-historicos.md`): `category_budgets` guarda una versión por
+  categoría y mes (`effective_from` = día 1, rige hasta la siguiente). Los reportes de un mes usan
+  `budget_at(categoría, mes)`, nunca `categories.budget`, que es solo el vigente (= última versión; no hay meses
+  futuros). El trigger `categories_budget_version` versiona en el mes en curso todo cambio de `categories.budget`;
+  editar un mes pasado va por `PUT /categories/:id/budgets` (`from` = `YYYY-MM`). La versión más antigua no se borra.
 - Clases de cuenta (`account_types.class`: deposit | investment | credit). En el front, `accountClass` /
   `isCreditAccount` / `isInvestmentAccount` de `helpers.js`; no compares `type_id`. Inversiones: su saldo es la
   última valoración (`account_valuations`) + movimientos posteriores; los reportes de saldos suman

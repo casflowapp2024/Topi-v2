@@ -569,7 +569,8 @@ func (ar *AnalysisRepository) GetCategoriesReport(
 			"c.id",
 			"c.name",
 			"c.emoji",
-			"c.budget",
+			// the budget of the requested month, not the current one (plan/26-presupuestos-historicos.md)
+			fmt.Sprintf("coalesce(budget_at(c.id, date '%s'), 0)", filter.Format(time.DateOnly)),
 			"coalesce(t.amount, 0)",
 			"c.income",
 		).
@@ -777,11 +778,13 @@ func (ar *AnalysisRepository) GetMonthlyAnalysis(ctx context.Context, fr *domain
 		       ma.running_credits_balance, ma.running_credits_balance_past, ma.updated_at,
 		       budgets.income_budget, budgets.expense_budget
 		FROM ` + enums.MonthlyAnalysisFunction + `($1) ma
-		CROSS JOIN (
-			SELECT coalesce(sum(budget) filter (where income = true), 0) as income_budget,
-			       coalesce(sum(budget) filter (where income = false), 0) as expense_budget
-			FROM ` + enums.CategoryTableName + `
-			WHERE user_id = $1
+		CROSS JOIN LATERAL (
+			-- each month with the budgets it had (category_budgets), not with the current ones
+			SELECT coalesce(sum(b.budget) filter (where c.income = true), 0) as income_budget,
+			       coalesce(sum(b.budget) filter (where c.income = false), 0) as expense_budget
+			FROM ` + enums.CategoryTableName + ` c
+			CROSS JOIN LATERAL (SELECT budget_at(c.id, make_date(ma.year::int, ma.month::int, 1)) AS budget) b
+			WHERE c.user_id = $1
 		) budgets
 		WHERE (ma.year * 100 + ma.month) >= $2
 		  AND (ma.year * 100 + ma.month) <= $3
@@ -833,6 +836,9 @@ func (ar *AnalysisRepository) GetMonthlyAnalysis(ctx context.Context, fr *domain
 		out.Income = append(out.Income, domain.IncomeMetrics(income, incomePast, incomeBudget))
 		out.Expense = append(out.Expense, domain.ExpenseMetrics(expense, expensePast, expenseBudget))
 		out.Savings = append(out.Savings, domain.SavingsMetrics(savings, savingsPast, incomeBudget-expenseBudget))
+		out.IncomeBudget = append(out.IncomeBudget, utils.Round(incomeBudget, 2))
+		out.ExpenseBudget = append(out.ExpenseBudget, utils.Round(expenseBudget, 2))
+		out.SavingsBudget = append(out.SavingsBudget, utils.Round(incomeBudget-expenseBudget, 2))
 		out.RSavingsBalance = append(out.RSavingsBalance, domain.SavingsBalanceMetrics(runSavings, runSavingsPast))
 		out.RCreditsBalance = append(out.RCreditsBalance, domain.CreditsBalanceMetrics(runCredits, runCreditsPast))
 
@@ -856,6 +862,7 @@ func (ar *AnalysisRepository) GetMonthlyAnalysis(ctx context.Context, fr *domain
 	defer fr.Mu.Unlock()
 	fr.Mu.Lock()
 	fr.Rsp.Monthly = out
+	// the budgets of the last month of the range (the current one when the range ends today)
 	fr.Rsp.SetBudgets(incomeBudget, expenseBudget)
 }
 
@@ -889,7 +896,7 @@ func (ar *AnalysisRepository) GetCategoryAnalysis(
 	query := ar.db.QueryBuilder.Select(
 		"extract(year from "+convertedDate+") as year",
 		"extract(month from "+convertedDate+") as month",
-		"max(c.budget) as budget",
+		"coalesce(max(budget_at(c.id, "+convertedDate+")), 0) as budget",
 		"sum((case when t.expense then -1 else 1 end) * t.amount_base) as expense",
 		"bool_or(c.income) as is_income_category",
 	).
@@ -920,6 +927,7 @@ func (ar *AnalysisRepository) GetCategoryAnalysis(
 		monthlyMetrics      []domain.MonthlyMetrics
 		yearList, monthList []uint16
 		budget              float64
+		monthlyBudgets      = []float64{}
 	)
 
 	type monthRow struct {
@@ -942,9 +950,8 @@ func (ar *AnalysisRepository) GetCategoryAnalysis(
 	// Cargos de tarjeta y cuotas no son transacciones de ese mes: se suman a su categoría, también en
 	// meses sin movimientos
 	var name string
-	var categoryBudget float64
-	if err = ar.db.QueryRow(ctx, "SELECT name, budget FROM "+enums.CategoryTableName+" WHERE id = $1 AND user_id = $2",
-		categoryID, userID).Scan(&name, &categoryBudget); err == nil {
+	if err = ar.db.QueryRow(ctx, "SELECT name FROM "+enums.CategoryTableName+" WHERE id = $1 AND user_id = $2",
+		categoryID, userID).Scan(&name); err == nil {
 		byDay := make(map[string]float64)
 		if strings.EqualFold(name, domain.CardChargesCategory) {
 			if byDay, err = ar.cardChargesByDay(ctx, userID, start, end.AddDate(0, 0, -1)); err != nil {
@@ -967,7 +974,7 @@ func (ar *AnalysisRepository) GetCategoryAnalysis(
 			}
 			i := slices.IndexFunc(months, func(m monthRow) bool { return m.year == year && m.month == month })
 			if i < 0 {
-				months = append(months, monthRow{year: year, month: month, budget: categoryBudget})
+				months = append(months, monthRow{year: year, month: month, budget: -1})
 				i = len(months) - 1
 			}
 			months[i].balance -= amount
@@ -975,11 +982,21 @@ func (ar *AnalysisRepository) GetCategoryAnalysis(
 		slices.SortFunc(months, func(a, b monthRow) int { return int(a.year)*100 + int(a.month) - int(b.year)*100 - int(b.month) })
 	}
 
-	for _, m := range months {
-		// Set the budget from the first row (should be consistent across months)
-		if budget == 0 {
-			budget = m.budget
+	// months without transactions (only charges or installments) take the budget they had; the analysis budget is
+	// the one of the last month of the range (the current one when the range ends today)
+	last := end.AddDate(0, 0, -1) // end is exclusive
+	budgets, err := ar.categoryBudgetsByMonth(ctx, userID, categoryID, start, last)
+	if err != nil {
+		return analysis, err
+	}
+	budget = budgets[last.Format("2006-01")]
+
+	for i := range months {
+		m := &months[i]
+		if m.budget < 0 {
+			m.budget = budgets[fmt.Sprintf("%04d-%02d", m.year, m.month)]
 		}
+		monthlyBudgets = append(monthlyBudgets, utils.Round(m.budget, 2))
 
 		var monthlyMetric domain.MonthlyMetrics
 
@@ -995,6 +1012,7 @@ func (ar *AnalysisRepository) GetCategoryAnalysis(
 	}
 
 	analysis.Budget = budget
+	analysis.MonthlyBudget = monthlyBudgets
 	analysis.Monthly = monthlyMetrics
 	analysis.Year = yearList
 	analysis.Month = monthList
@@ -1187,4 +1205,30 @@ func (ar *AnalysisRepository) GetFinancialAccountSummary(
 	}
 
 	return summary, nil
+}
+
+// categoryBudgetsByMonth is the budget of the user's category in each month from start to end ("2026-11" -> budget);
+// empty when the category is not the user's
+func (ar *AnalysisRepository) categoryBudgetsByMonth(ctx context.Context, userID string, categoryID uint64, start, end time.Time) (map[string]float64, error) {
+	rows, err := ar.db.Query(ctx, `
+		SELECT to_char(g.m, 'YYYY-MM'), coalesce(budget_at(c.id, g.m::date), 0)
+		FROM categories c
+		CROSS JOIN generate_series(date_trunc('month', $3::date), date_trunc('month', $4::date), interval '1 month') AS g(m)
+		WHERE c.id = $1 AND c.user_id = $2`,
+		categoryID, userID, start.Format(time.DateOnly), end.Format(time.DateOnly))
+	if err != nil {
+		return nil, mappers.MapPostgresErrorCode(err)
+	}
+	defer rows.Close()
+
+	out := make(map[string]float64)
+	for rows.Next() {
+		var key string
+		var amount float64
+		if err = rows.Scan(&key, &amount); err != nil {
+			return nil, err
+		}
+		out[key] = amount
+	}
+	return out, rows.Err()
 }

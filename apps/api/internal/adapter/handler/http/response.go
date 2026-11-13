@@ -29,6 +29,8 @@ var errorStatusMap = map[error]int{
 
 	// Category Errors
 	domain.ErrDefaultCategoryLocked: http.StatusBadRequest,
+	domain.ErrBudgetMonthOutOfRange: http.StatusBadRequest,
+	domain.ErrBudgetBaseVersion:     http.StatusConflict,
 
 	// Transaction Errors
 	domain.ErrGettingOtherCategoryId: http.StatusNotFound,
@@ -938,6 +940,9 @@ type MonthlyAnalysisResponse struct {
 	Income          []MonthlyAnalysisMetrics `json:"income"`
 	Expense         []MonthlyAnalysisMetrics `json:"expense"`
 	BudgetSpent     []float64                `json:"budget_spent"`
+	IncomeBudget    []float64                `json:"income_budget"`  // budget of each month
+	ExpenseBudget   []float64                `json:"expense_budget"` // budget of each month
+	SavingsBudget   []float64                `json:"savings_budget"` // budget of each month
 	Savings         []MonthlyAnalysisMetrics `json:"savings"`
 	RSavingsBalance []MonthlyAnalysisMetrics `json:"running_savings_balance"`
 	RCreditsBalance []MonthlyAnalysisMetrics `json:"running_credits_balance"`
@@ -1022,6 +1027,9 @@ func newFinancialAnalysisResponse(analysis *domain.FinancialAnalysis) FinancialA
 			Income:          income,
 			Expense:         expense,
 			BudgetSpent:     analysis.Monthly.BudgetSpent,
+			IncomeBudget:    analysis.Monthly.IncomeBudget,
+			ExpenseBudget:   analysis.Monthly.ExpenseBudget,
+			SavingsBudget:   analysis.Monthly.SavingsBudget,
 			Savings:         savings,
 			RSavingsBalance: rSavings,
 			RCreditsBalance: rCredits,
@@ -1039,6 +1047,7 @@ type CategoryAnalysisResponse struct {
 
 type MonthlyCategoryResponse struct {
 	Expense []MonthlyCategoryMetrics `json:"expense"`
+	Budget  []float64                `json:"budget"` // budget of each month
 	Year    []uint16                 `json:"year"`
 	Month   []uint16                 `json:"month"`
 }
@@ -1064,6 +1073,7 @@ func newCategoryAnalysisResponse(analysis *domain.CategoryAnalysis) CategoryAnal
 		Budget: analysis.Budget,
 		Monthly: MonthlyCategoryResponse{
 			Expense: monthly,
+			Budget:  analysis.MonthlyBudget,
 			Year:    analysis.Year,
 			Month:   analysis.Month,
 		},
