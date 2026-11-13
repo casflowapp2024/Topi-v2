@@ -53,6 +53,40 @@ que llegan al límite diario, costo por usuario activo).
 - **Spike** (½ día, sin código de producción): Wompi vs Mercado Pago para (a) pago único por link/checkout,
   (b) cobro recurrente en Colombia, (c) webhooks con firma, (d) comisiones, (e) sandbox. Decisión escrita
   aquí antes de codificar.
+
+#### Spike: Wompi vs Mercado Pago (13-nov-2026)
+
+Fuentes: documentación oficial leída el 13-nov-2026 (enlaces en cada fila). Las páginas oficiales de tarifas
+(`wompi.com/es/co/planes-tarifas`, `mercadopago.com.co/costs-section`, `/ayuda/costos`) respondieron 403/503 a la
+lectura automática: **las comisiones salen de comparativas de terceros y hay que confirmarlas en el panel de cada
+pasarela antes de producción.**
+
+| | **Wompi** (Bancolombia) | **Mercado Pago** |
+|---|---|---|
+| (a) Pago único | Web Checkout: formulario GET a `checkout.wompi.co/p/` con `public-key`, `currency=COP`, `amount-in-cents`, `reference` (única) y `signature:integrity` = `SHA256(reference + amount_in_cents + currency + integrity_secret)`, calculada en el servidor. `redirect-url` opcional; vuelve con `?id=<tx>`. No requiere SDK. [widget-checkout-web](https://docs.wompi.co/docs/colombia/widget-checkout-web/) | Checkout Pro: crear una *preferencia* por pago (items, `back_urls`, `auto_return`) y redirigir al checkout. [create-payment-preference](https://www.mercadopago.com.co/developers/es/docs/checkout-pro-preferences/create-payment-preference), [back-urls](https://www.mercadopago.com.co/developers/es/docs/checkout-pro-preferences/configure-back-urls) |
+| Medios en Colombia | Tarjeta, Nequi, PSE, Bancolombia, Daviplata | Tarjeta, PSE, Efecty, dinero en cuenta |
+| (b) Recurrente | **Sin producto de suscripción**: fuentes de pago (tarjeta o Nequi tokenizados + `acceptance_token`) que el servidor cobra con `POST /v1/transactions` + `payment_source_id`. El calendario, los reintentos y `past_due` los pone Topi. COF (`recurrent`) solo Visa/Mastercard con procesador RBM. [fuentes-de-pago](https://docs.wompi.co/docs/colombia/fuentes-de-pago/) | **Suscripciones nativas** (`preapproval_plan` / `preapproval`): semanal, mensual o anual, reintentos automáticos, pausar/cancelar con `PUT /preapproval/{id}`. La tabla de países incluye CO, pero la marca de disponibilidad no se pudo leer. [subscriptions/overview](https://www.mercadopago.com.co/developers/es/docs/subscriptions/overview), [subscription-management](https://www.mercadopago.com.co/developers/es/docs/subscriptions/subscription-management) |
+| (c) Webhook y firma | Evento `transaction.updated` (estado final: APPROVED, DECLINED, VOIDED, ERROR). `checksum = SHA256(valores de signature.properties en orden + timestamp + events_secret)`, también en `X-Event-Checksum`. Las propiedades vienen en el cuerpo: no fijarlas en código. Responder 200; reintenta 3 veces en 24 h (30 min, 3 h, 24 h). URL distinta por ambiente. [eventos](https://docs.wompi.co/docs/colombia/eventos/) | `x-signature: ts=…,v1=…`; `v1 = HMAC-SHA256(secret, "id:<data.id>;request-id:<x-request-id>;ts:<ts>;")`. La notificación no trae el estado: hay que pedir `/v1/payments/{id}`. Responder 200/201 en 22 s; reintenta cada 15 min. [webhooks (orders)](https://www.mercadopago.com.co/developers/es/docs/checkout-pro-orders/resources/notifications/webhooks), [optional-notifications](https://www.mercadopago.com.co/developers/en/docs/checkout-pro-preferences/optional-notifications) |
+| Consultar estado | `GET /v1/transactions/{id}` con la llave privada como Bearer. [seguimiento](https://docs.wompi.co/docs/colombia/seguimiento-de-transacciones/) | `GET /v1/payments/{id}` con el access token |
+| (d) Comisión (terceros, por confirmar) | ~2,65 % + COP 700 + IVA por transacción exitosa, sin mensualidad; desembolso al día hábil siguiente ([btodigital](https://btodigital.com/pasarelas-pago-colombia-comparativa-guia-negocio/), [mentoracolombia](https://mentoracolombia.com/pasarelas-de-pago-colombia-2026-comisiones-wompi-bold-mercadopago/)) | Link/checkout ~3,29 % + IVA al instante, 2,99 % a 7 días, 2,79 % a 14 días; las fuentes no coinciden en si hay fijo ([kytcode](https://www.kytcode.lat/blog/wompi-vs-mercado-pago-vs-payu-colombia), [guiadebancos](https://www.guiadebancos.com/ar/blog/comisiones-mercado-pago-latam-2026)) |
+| (e) Sandbox | `https://sandbox.wompi.co/v1`, llaves `pub_test_` / `prv_test_` / `test_events_` / `test_integrity_`. Tarjeta 4242 4242 4242 4242 → APPROVED, 4111 1111 1111 1111 → DECLINED; Nequi 3991111111 → APPROVED. [ambientes-y-llaves](https://docs.wompi.co/docs/colombia/ambientes-y-llaves/), [datos-de-prueba](https://docs.wompi.co/docs/colombia/datos-de-prueba-en-sandbox/) | Credenciales de prueba de la aplicación (cuentas de prueba solo para algunos escenarios). Tarjetas de prueba con el nombre del titular como resultado (APRO, OTHE, CONT…). [test/accounts](https://www.mercadopago.com.co/developers/es/docs/your-integrations/test/accounts), [test/cards](https://www.mercadopago.com.co/developers/es/docs/your-integrations/test/cards) |
+
+**Decisión: Wompi** para la etapa 2 (Apoyar a Topi), con el adaptador detrás del puerto `Billing` para poder sumar
+Mercado Pago sin tocar el core.
+- El pago único es justo lo que Wompi hace mejor: un formulario firmado en el servidor, sin SDK ni preferencia por
+  pago, en COP y con Nequi/PSE/Bancolombia, que es como paga la mayoría de los usuarios colombianos.
+- El webhook trae el estado final firmado: se verifica el checksum y, por seguridad, se confirma con
+  `GET /v1/transactions/{id}` antes de marcar el pago. Mercado Pago siempre obliga a esa segunda llamada.
+- Comisión probablemente menor en montos de 10.000–50.000 (por confirmar), sin mensualidad.
+- La documentación oficial de Wompi se leyó completa; la de Mercado Pago quedó a medias (503 en webhooks y tarifas).
+
+**Lo que se pierde (para la etapa 4):** Wompi no tiene suscripciones nativas. El cobro recurrente sería con fuentes de
+pago: un job del worker cobra al vencer `current_period_end`, con los reintentos (3 en 7 días) y `past_due` que N3
+ya pide. Es más trabajo que `preapproval` de Mercado Pago. Se decide de nuevo al llegar a la etapa 4: si mantener el
+calendario propio resulta caro, Mercado Pago entra como segundo adaptador solo para `subscription`.
+
+**Antes de producción (pasos manuales):** cuenta de comercio Wompi, confirmar tarifa en el panel, configurar la URL
+de eventos por ambiente, y que contador/abogado revisen si un aporte voluntario necesita factura electrónica (DIAN).
 - Puerto `domain.Billing` + adaptador. Tabla `payments` (id, user_id, provider, provider_ref único,
   kind `support|subscription`, amount decimal, currency, status, raw_status, timestamps).
 - Webhook `POST /billing/webhook/:provider`: firma verificada, idempotente por `provider_ref`; el front nunca
