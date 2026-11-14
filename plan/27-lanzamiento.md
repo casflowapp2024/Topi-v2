@@ -54,7 +54,11 @@ Auth Platform, 14-nov-2026):
   los usuarios.
 - **Data access status**: se envió antes y **no se aprobó**; "Debes verificar y publicar la información de tu marca
   antes de solicitar la verificación".
-- Estado de publicación (Testing / En producción): **por confirmar** en Google Auth Platform → Público.
+- **Estado de publicación: En producción, sin verificar** (Google Auth Platform → Público, 14-nov-2026), usuarios
+  externos. Aviso: "Tu app requiere una verificación".
+- **Límite de usuarios de OAuth: 18 de 100 usados.** El límite cuenta a todos los que han dado permiso en la vida del
+  proyecto y **no se puede restablecer**: quedan **82 cupos** hasta que Google apruebe la verificación. Cada cuenta de
+  Gmail nueva que conecte (incluidas las del equipo y las pruebas) gasta uno.
 
 Qué implica cada estado ([Manage App Audience](https://support.google.com/cloud/answer/15549945?hl=es),
 [production readiness](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview)):
@@ -90,9 +94,13 @@ Mientras tanto:
 - **Priorizar Outlook** en la bienvenida para quien tenga Hotmail/Outlook (Microsoft no tiene un tope equivalente
   para apps multi-inquilino; la verificación de editor de Microsoft es gratuita, a confirmar), y registrar a mano
   como testers a los primeros usuarios de Gmail.
-- **Limitar la etapa 1 del despliegue (I) a ≤ 100 usuarios de Gmail** contando a todos los que ya consintieron (el
-  tope es de por vida), y avisar en la app que la verificación está en curso.
-- Si sigue en Testing: re-consentimiento semanal inevitable → D (reconectar en un toque) es aún más urgente.
+- **Cuidar los 82 cupos**: no probar con cuentas de Gmail nuevas (usar las que ya consintieron), y que I.1 y I.2
+  sumen como máximo ~70 cuentas de Gmail nuevas, dejando un margen para soporte. Contar los cupos en el panel admin
+  (conexiones Gmail distintas) y revisar el contador de Google Auth Platform → Público cada semana.
+- Avisar en la app, antes del consentimiento, que Google mostrará "app no verificada" mientras la verificación está
+  en curso, y cómo continuar ("Configuración avanzada" → "Ir a Topi"), para que no abandonen ahí.
+- Al estar En producción, los tokens no vencen a los 7 días (eso solo pasa en Testing): **no volver al modo de
+  prueba**.
 
 ## B. Bienvenida guiada (activación)
 
@@ -196,8 +204,8 @@ sin `admin_audit`:
 | I.2 Comunidades | Comunidades de finanzas personales en Colombia (grupos, foros, creadores pequeños) | 4 semanas | UAS ≥ 50 sostenido 2 semanas; retención S4 ≥ 30 %; costo por usuario activo dentro del presupuesto |
 | I.3 Abierto | Registro abierto, landing con SEO | continuo | UAS ≥ 50 durante 4 semanas → encender Apoyar a Topi (`SUPPORT_ENABLED=true`) |
 
-- Con Google sin verificar (A), I.1 y I.2 caben dentro del tope de 100 usuarios de Gmail; **I.3 requiere la
-  verificación aprobada**.
+- Con Google sin verificar (A), I.1 y I.2 deben caber en los **82 cupos restantes** de Gmail (Outlook no gasta
+  cupos); **I.3 requiere la verificación aprobada**.
 - Se mide con el panel (plan 25): North Star UAS, activación (conexión 24 h, 1.ª automática 48 h, presupuesto 7 d),
   salud de lectura, conexiones caídas y tiempo a reconectar (D), opiniones (E).
 
@@ -215,7 +223,8 @@ sin `admin_audit`:
 
 ## Criterios de aceptación
 - [ ] Diagnóstico reproducible con un script SQL agregado (sin nombres ni correos) y corrido en producción.
-- [ ] A: estado de publicación anotado; marca y acceso a datos enviados; CASA contratada o descartada con decisión
+- [x] A (estado): En producción sin verificar, 18/100 usuarios de OAuth (14-nov-2026).
+- [ ] A: marca y acceso a datos enviados; CASA contratada o descartada con decisión
       escrita; mientras tanto, tope de 100 usuarios de Gmail controlado.
 - [ ] B: checklist en el Inicio con estado real; "Leyendo tus correos…"; métrica "1.ª automática en 48 h" en el panel.
 - [ ] C: aviso en app y un correo por conexión tras 48 h sin transacciones; lista de bancos soportados; ningún cuerpo

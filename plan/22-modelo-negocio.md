@@ -149,8 +149,8 @@ un aporte voluntario necesita factura electrónica (DIAN).
 
 ### Verificación de Google
 `gmail.readonly` es alcance restringido. Estado (Centro de verificación, 14-nov-2026): la marca y el acceso a datos
-**se enviaron antes y no se aprobaron**; ninguno está verificado. Estado de publicación (Testing / En producción)
-por confirmar en Google Auth Platform → Público. Pasos, costos (CASA Tier 2 desde ~USD 540/año) y qué hacer
+**se enviaron antes y no se aprobaron**; ninguno está verificado. Publicación: **En producción sin verificar**, con
+el límite de OAuth en **18 de 100 usuarios** (de por vida, no se restablece). Pasos, costos (CASA Tier 2 desde ~USD 540/año) y qué hacer
 mientras tanto: `27-lanzamiento.md` §A. Es el costo fijo más grande y bloquea el lanzamiento abierto.
 
 #### Verificación de N1 (13-nov-2026, rama `feat/apoyar-topi`)
