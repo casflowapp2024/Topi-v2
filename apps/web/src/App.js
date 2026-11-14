@@ -30,6 +30,7 @@ import AAGenDashboard from './components/dashboard/general/AAGenDashboard';
 import Membership from './components/settings/Membership';
 import ConnectEmail from './components/conexions/ConnectEmail';
 import Admin from './containers/Admin';
+import SupportThanks from './containers/SupportThanks';
 //fondo blanco #FFFFFF
 //sombras blanco isabelino #e9e8ee
 //compplemento azul #5266EB
@@ -70,6 +71,7 @@ const AnalyticsWrapper = () => {
           <Route path="membership" element={<Membership />} />
         </Route>
         <Route exact path='/accounts/' element={<Accounts />} />
+        <Route path='/apoyar/gracias' element={<SupportThanks />} />
         <Route path='/admin' element={<Admin />} />
         <Route path='/admin/:section' element={<Admin />} />
         <Route exact path='/plan/' element={<PlanCategories />} />

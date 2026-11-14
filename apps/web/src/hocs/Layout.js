@@ -20,6 +20,8 @@ import { connectEmailAction, wasPromptedThisSession, markPromptedThisSession } f
 import AccountSettings, { SETTINGS_TABS } from '../containers/AccountSettings';
 import PageContainer from '../components/ui/PageContainer';
 import UserMenu from '../components/ui/UserMenu';
+import SupportSheet from '../components/support/SupportSheet';
+import { getBillingConfig } from '../apiCalls/billing';
 import { themePreference, useResolvedDark } from '../components/ui/theme';
 import { ReactComponent as Cflogo } from '../assets/logos/T1.svg';
 import {
@@ -92,6 +94,15 @@ const Layout = ({
   const [userDataRequested, setUserDataRequested] = useState(false);
   const [openNextSteps, setOpenNextSteps] = useState(false);
   const [forceEmailStep, setForceEmailStep] = useState(false);
+  // Apoyar a Topi: el menú solo lo muestra si la API tiene un proveedor de pagos configurado
+  const [billing, setBilling] = useState(null);
+  const [supportOpen, setSupportOpen] = useState(false);
+  useEffect(() => {
+    if (!user_found) return undefined;
+    let alive = true;
+    getBillingConfig().then((cfg) => { if (alive) setBilling(cfg?.enabled ? cfg : null); }).catch(() => {});
+    return () => { alive = false; };
+  }, [user_found]);
 
   // Enlaces de los correos (p. ej. "reconecta tu correo"): /dashboard?settings=connections abre Ajustes
   useEffect(() => {
@@ -267,6 +278,7 @@ const Layout = ({
                         onThemeChange={set_theme}
                         onOpenSettings={open_settings_modal}
                         onLogout={handleLogout}
+                        onOpenSupport={billing ? () => setSupportOpen(true) : undefined}
                       />
                     </div>
                   </PageContainer>
@@ -322,6 +334,8 @@ const Layout = ({
               handleLogout={handleLogout}
             />
           )}
+
+          {billing && <SupportSheet open={supportOpen} onClose={() => setSupportOpen(false)} config={billing} />}
 
           <InstallPwaModal />
         </div>
