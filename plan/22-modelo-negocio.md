@@ -137,6 +137,19 @@ un aporte voluntario necesita factura electrónica (DIAN).
 sin verificar / Producción verificada): **por anotar**. Si no está verificada, presupuestar verificación +
 CASA anual: es probablemente el costo fijo más grande.
 
+#### Verificación de N1 (13-nov-2026, rama `feat/apoyar-topi`)
+- `go test ./...` verde; integración de repositorios verde contra Postgres 16 con `schema_v17.sql` (incluye
+  `TestPaymentRepository_Integration`: 5 webhooks concurrentes → una sola aprobación; pago doble → su propia fila);
+  000045 `down` + `up` sin errores.
+- jest: 127 pruebas verdes (12 nuevas en `components/support`); `App.test.js` ya fallaba antes (react-router-dom 7
+  en el jest de CRA). `npm run build` verde.
+- Punta a punta local con un Mercado Pago **falso** que firma igual que el real (`x-signature`): preferencia →
+  checkout → webhook firmado → aprobado → recibo `billing_generic` (outbox con solo `payment_id`); webhook repetido 3
+  veces → 1 fila y 1 recibo; sin firma → 401; `?collection_status=approved` en la URL no aprueba nada; rechazado y
+  sección Dinero con capturas en `topiv2/capturas-apoyar/`.
+- **Pendiente:** la misma prueba contra el sandbox real (credenciales de prueba de JuanMa; el pago en el checkout lo
+  hace él con el comprador de prueba).
+
 ## Criterios de aceptación
 - [x] Etapa 1 completa (ver `25-admin-metricas.md`).
 - [ ] Spike documentado; Apoyar a Topi de punta a punta en sandbox; webhook con firma inválida → 401;
