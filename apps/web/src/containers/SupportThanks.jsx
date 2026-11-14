@@ -101,8 +101,8 @@ export const SupportThanksContent = ({ paymentId, pollMs = POLL_MS, tries = POLL
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">El pago no se completó</h1>
             <p className="text-sm text-gray-700 dark:text-gray-300">No se te cobró nada. Si quieres, puedes intentarlo otra vez.</p>
             <div className="flex flex-col sm:flex-row gap-2 mt-2">
-              {billing && <Button icon={HeartIcon} className="flex-1" onClick={() => setRetryOpen(true)}>Intentar de nuevo</Button>}
-              <Link to="/dashboard" className="flex-1"><Button variant="secondary" className="w-full">Volver al Inicio</Button></Link>
+              {billing && <Button icon={HeartIcon} className="w-full sm:flex-1" onClick={() => setRetryOpen(true)}>Intentar de nuevo</Button>}
+              <Link to="/dashboard" className="sm:flex-1"><Button variant="secondary" className="w-full">Volver al Inicio</Button></Link>
             </div>
           </div>
         )}

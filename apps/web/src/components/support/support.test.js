@@ -177,6 +177,6 @@ describe('panel admin: Dinero', () => {
     expect(screen.getByText('abcd1234')).toBeTruthy();
     expect(screen.getByText('Aprobado')).toBeTruthy();
     expect(text).not.toMatch(/@/);
-    expect(fmtMonth('2026-11')).toMatch(/noviembre/);
+    expect(fmtMonth('2026-11')).toBe('Noviembre de 2026');
   });
 });

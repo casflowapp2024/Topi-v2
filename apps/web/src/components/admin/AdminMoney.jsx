@@ -13,7 +13,9 @@ export const PAYMENT_STATUS = {
 const monthFmt = new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 export const fmtMonth = (month) => {
   const d = new Date(`${month}-01T00:00:00Z`);
-  return Number.isNaN(d.getTime()) ? month : monthFmt.format(d);
+  if (Number.isNaN(d.getTime())) return month;
+  const text = monthFmt.format(d);
+  return text.charAt(0).toUpperCase() + text.slice(1);
 };
 
 export const AdminMoneyView = ({ data }) => {
@@ -33,7 +35,7 @@ export const AdminMoneyView = ({ data }) => {
       <Panel title="Por mes" subtitle="Últimos 12 meses · días de Bogotá">
         <SimpleTable rows={data.months || []} rowKey={(m) => m.month} empty="Todavía no hay aportes aprobados"
           columns={[
-            { key: 'month', label: 'Mes', render: (m) => <span className="capitalize">{fmtMonth(m.month)}</span> },
+            { key: 'month', label: 'Mes', render: (m) => fmtMonth(m.month) },
             { key: 'payments', label: 'Aportes', align: 'right', render: (m) => fmtInt(m.payments) },
             { key: 'supporters', label: 'Personas', align: 'right', render: (m) => fmtInt(m.supporters) },
             { key: 'amount', label: 'Total', align: 'right', render: (m) => formatMoney(m.amount, currency) },
