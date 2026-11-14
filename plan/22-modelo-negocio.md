@@ -10,16 +10,24 @@ Principios:
 > No es asesoría legal ni tributaria: facturación (DIAN), retracto y habeas data se validan con un
 > contador/abogado antes de cobrar.
 
-## Orden (reemplaza el orden N0–N3 anterior)
+## Orden (actualizado el 14-nov-2026)
 
-| Etapa | Qué | Promete algo pago | Plan |
-|---|---|---|---|
-| **1. Medir + fundadores** | Panel admin, métricas, North Star, costo por usuario, lista de fundadores | No | `25-admin-metricas.md` |
-| **2. Apoyar a Topi** | Pago único voluntario (spike Wompi vs Mercado Pago) | No | este archivo, §N1 |
-| **3. Fase 4 en beta** | Avisos, push, Pregúntale a Topi (**1 pregunta/día gratis**), diversión; derechos por plan ya activos | No (todo lo existente es gratis con límites) | `24-ux-fase-4.md` |
-| **4. Lanzar Plus** | Planes, cobro recurrente, página Planes, fundadores confirmados | Sí, cuando 1–3 están en prod | este archivo, §N2–N3 |
+El panel admin (etapa 1) mostró que, aparte del equipo, hay **1 usuario activo**. Antes de pedir apoyo o cobrar
+hace falta tracción: el lanzamiento público pasa a ser la etapa 3.
 
-Decidir precio y contenido final de Plus con 1–2 meses de datos de la etapa 3 (uso de la IA, % de usuarios
+| Etapa | Qué | Estado | Promete algo pago | Plan |
+|---|---|---|---|---|
+| **1. Medir + fundadores** | Panel admin, métricas, North Star, costo por usuario, lista de fundadores | **Hecha** (en `main` desde 7f49490, 12-nov) | No | `25-admin-metricas.md` |
+| **2. Apoyar a Topi** | Pago único voluntario con Mercado Pago | **Implementada y apagada** (`SUPPORT_ENABLED=false`) | No | este archivo, §N1 |
+| **3. Lanzamiento público** | Verificación de Google, activación guiada, banco no soportado, conexión caída, opiniones, landing, reactivación, despliegue por etapas | Siguiente | No | `27-lanzamiento.md` |
+| **4. Fase 4 en beta** | Avisos, push, Pregúntale a Topi (**1 pregunta/día gratis**), diversión; derechos por plan ya activos | Pendiente | No (todo lo existente es gratis con límites) | `24-ux-fase-4.md` |
+| **5. Lanzar Plus** | Planes, cobro recurrente, página Planes, fundadores confirmados | Pendiente | Sí, cuando 1–4 están en prod | este archivo, §N2–N3 |
+
+**Criterio para encender Apoyar a Topi** (`SUPPORT_ENABLED=true`): **≥ 50 "usuarios al día semanales"** (North Star,
+plan 25) **durante 4 semanas seguidas**. Hasta entonces la opción no aparece y no se crean pagos; el webhook sigue
+activo para no perder notificaciones.
+
+Decidir precio y contenido final de Plus con 1–2 meses de datos de la etapa 4 (uso de la IA, % de usuarios
 que llegan al límite diario, costo por usuario activo).
 
 ## Planes
@@ -31,7 +39,7 @@ que llegan al límite diario, costo por usuario activo).
 - **Pregúntale a Topi: 1 pregunta por día.**
 - Correos: recuperación, conexión caída, resumen mensual.
 
-### Topi Plus (hipótesis: COP 9.900/mes o 79.900/año; se confirma en la etapa 4)
+### Topi Plus (hipótesis: COP 9.900/mes o 79.900/año; se confirma en la etapa 5)
 - Pregúntale a Topi: **hasta 30 preguntas por día** (ajustable por configuración, no por código).
 - Hasta 5 conexiones de correo.
 - Funciones que existan al lanzar: exportar, metas, resumen mensual completo tipo historia, WhatsApp,
@@ -49,7 +57,10 @@ que llegan al límite diario, costo por usuario activo).
 
 ## Implementación
 
-### N1 · Apoyar a Topi (etapa 2)
+### N1 · Apoyar a Topi (etapa 2) — implementada, apagada
+Estado (14-nov-2026): en la rama `feat/apoyar-topi`, verificada en el sandbox real y detrás de `SUPPORT_ENABLED`
+(por defecto `false`: menú oculto y `POST /billing/support` → 404; el webhook y la consulta de pagos existentes
+siguen). Se enciende con el criterio de la tabla de etapas.
 - **Spike** (½ día, sin código de producción): Wompi vs Mercado Pago para (a) pago único por link/checkout,
   (b) cobro recurrente en Colombia, (c) webhooks con firma, (d) comisiones, (e) sandbox. Decisión escrita
   aquí antes de codificar.
@@ -81,7 +92,7 @@ pasarela antes de producción.**
 como segundo adaptador sin tocar el core).
 - Los aportes son pequeños (10.000–50.000): sin cargo fijo por transacción, Mercado Pago sale más barato que el
   ~2,65 % + COP 700 de Wompi. El punto de equilibrio está alrededor de COP 110.000 (tarifas por confirmar).
-- Tiene suscripciones nativas (`preapproval`) para la etapa 4: Topi no tendría que mantener su propio calendario
+- Tiene suscripciones nativas (`preapproval`) para la etapa 5: Topi no tendría que mantener su propio calendario
   de cobros ni reintentos.
 - Lo que cuesta: hay que crear una order por pago y, al recibir el webhook, leer siempre la order desde el servidor.
 
@@ -114,7 +125,7 @@ la API de Preferences se va a deshabilitar; JuanMa creó la aplicación con Orde
 en el panel, configurar la URL de webhook y revelar la clave secreta, y que contador/abogado revisen el IVA (0) y si
 un aporte voluntario necesita factura electrónica (DIAN).
 
-### N2a · Derechos mínimos (se hace dentro de la Fase 4, etapa 3)
+### N2a · Derechos mínimos (se hace dentro de la Fase 4, etapa 4)
 - `users.founder_eligible bool`, `users.founder_confirmed_at timestamptz` (de la etapa 1).
 - Dominio: `Entitlements(user, sub)` en un solo lugar → `{plan, askTopiDaily, maxEmailConnections, ...}`.
   Hoy: `free` (ask 1/día, 2 conexiones) y `plus` (= fundador confirmado o suscripción activa; ask 30/día,
@@ -123,23 +134,24 @@ un aporte voluntario necesita factura electrónica (DIAN).
 - Mientras Plus no se lance, **los elegibles a fundador se tratan como Plus** (para que no "pierdan" nada al
   confirmarse). El límite de conexiones solo aplica a conexiones nuevas: nadie pierde una conexión existente.
 
-### N2 · Planes (etapa 4)
+### N2 · Planes (etapa 5)
 - Tabla `subscriptions` (user_id, plan, status `active|past_due|canceled`, current_period_end, provider,
   provider_ref, cancel_at_period_end, timestamps).
 - Front: página **Planes** (menú de usuario y Configuración), `ui/PlusGate` (muestra qué da Plus sin bloquear
   la navegación), estado de suscripción y Cancelar.
 
-### N3 · Cobro recurrente (etapa 4)
+### N3 · Cobro recurrente (etapa 5)
 - Según el spike. Reintentos 3 en 7 días → `past_due` → vuelve a gratis al terminar el periodo; sin perder
   datos (lo de Plus queda en solo lectura).
 - Correos: pago recibido, pago fallido, renovación anual (7 días antes).
 - Términos (precio, renovación, cancelación, retracto) y Privacidad (solo referencia de la pasarela, nunca
   datos de tarjeta).
 
-### Verificación de Google (pendiente de anotar)
-`gmail.readonly` es alcance restringido. Estado actual de la pantalla de consentimiento (Testing / Producción
-sin verificar / Producción verificada): **por anotar**. Si no está verificada, presupuestar verificación +
-CASA anual: es probablemente el costo fijo más grande.
+### Verificación de Google
+`gmail.readonly` es alcance restringido. Estado (Centro de verificación, 14-nov-2026): la marca y el acceso a datos
+**se enviaron antes y no se aprobaron**; ninguno está verificado. Estado de publicación (Testing / En producción)
+por confirmar en Google Auth Platform → Público. Pasos, costos (CASA Tier 2 desde ~USD 540/año) y qué hacer
+mientras tanto: `27-lanzamiento.md` §A. Es el costo fijo más grande y bloquea el lanzamiento abierto.
 
 #### Verificación de N1 (13-nov-2026, rama `feat/apoyar-topi`)
 - `go test ./...` verde; integración de repositorios verde contra Postgres 16 con `schema_v17.sql` (incluye
@@ -168,5 +180,10 @@ CASA anual: es probablemente el costo fijo más grande.
       se verifican en el deploy, ver "Verificación de N1".)
 - [ ] `Entitlements` con tests de tabla (free, elegible, confirmado, plus activo, past_due, cancelado).
 - [ ] Ninguna función existente queda limitada para usuarios actuales (revisión explícita).
-- [ ] (Etapa 4) Suscribir y cancelar en sandbox; cancelar mantiene Plus hasta fin de periodo.
-- [ ] Migraciones con `down`; `go test ./...`, jest y `npm run build` verdes; cero secretos.
+- [ ] (Etapa 5) Suscribir y cancelar en sandbox; cancelar mantiene Plus hasta fin de periodo.
+- [x] (Etapa 2) Migraciones con `down`; `go test ./...`, jest y `npm run build` verdes; cero secretos.
+      (000045 down→up probado; `go test ./...` e integración verdes; jest 127/127 — `App.test.js` falla igual que en
+      `main`, react-router-dom 7 en el jest de CRA —; build verde; `git grep` de secretos limpio. Commits 1566270…0a8e238.)
+- [x] (Etapa 2) Apoyar a Topi apagable sin perder notificaciones: `SUPPORT_ENABLED=false` → config `enabled:false`,
+      `POST /billing/support` 404, webhook firmado 200 y sin firma 401, pago existente consultable (14-nov-2026,
+      `TestSupportDisabledByFlag` y prueba contra la API local con las credenciales de prueba).
