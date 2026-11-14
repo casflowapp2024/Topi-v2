@@ -151,13 +151,21 @@ CASA anual: es probablemente el costo fijo más grande.
   checkout → webhook firmado → aprobado → recibo `billing_generic` (outbox con solo `payment_id`); webhook repetido 3
   veces → 1 fila y 1 recibo; sin firma → 401; `?collection_status=approved` en la URL no aprueba nada; rechazado y
   sección Dinero con capturas en `topiv2/capturas-apoyar/`.
-- **Pendiente:** la misma prueba contra el sandbox real (credenciales de prueba de JuanMa; el pago en el checkout lo
-  hace él con el comprador de prueba).
+- **Sandbox real (14-nov-2026, Orders API, credenciales de prueba de JuanMa):** hoja → $ 10.000 → order
+  `ORDTST01M7DBBAKZRXMKY00TYK0NEZG0` → checkout de Mercado Pago con la tarjeta de prueba Mastercard, titular `APRO`
+  (sin cuenta de prueba, correo de ejemplo) → "¡Listo! Tu pago ya se acreditó" → "Volver a la tienda" → la página de
+  gracias quedó en aprobado porque la API leyó la order (`processed/accredited`). Recibo `billing_generic` generado
+  una vez (Valor $10.000, Referencia = la order). Webhook firmado con la **firma secreta real** 3 veces → 200 y 1 sola
+  fila; firma inválida o sin firma → 401. Capturas 11–13 en `topiv2/capturas-apoyar/`.
+- **No cubierto en local:** que Mercado Pago entregue el webhook a una URL pública (no llega a localhost) y el envío
+  real del recibo por Resend (en local `MAIL_PROVIDER=log`). Se comprueba en el primer deploy con el paso B9 del RUNBOOK
+  ("Simular notificación" → 200).
 
 ## Criterios de aceptación
 - [x] Etapa 1 completa (ver `25-admin-metricas.md`).
-- [ ] Spike documentado; Apoyar a Topi de punta a punta en sandbox; webhook con firma inválida → 401;
-      repetido → no duplica; recibo por correo.
+- [x] Spike documentado; Apoyar a Topi de punta a punta en sandbox; webhook con firma inválida → 401;
+      repetido → no duplica; recibo por correo. (14-nov-2026; entrega del webhook a URL pública y envío por Resend
+      se verifican en el deploy, ver "Verificación de N1".)
 - [ ] `Entitlements` con tests de tabla (free, elegible, confirmado, plus activo, past_due, cancelado).
 - [ ] Ninguna función existente queda limitada para usuarios actuales (revisión explícita).
 - [ ] (Etapa 4) Suscribir y cancelar en sandbox; cancelar mantiene Plus hasta fin de periodo.
