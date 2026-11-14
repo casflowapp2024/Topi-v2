@@ -152,6 +152,19 @@ var (
 	ErrInvalidAdminFilter = errors.New("invalid admin filter")
 	// ErrNotFounderEligible: only eligible users (registered before FOUNDER_CUTOFF) can be confirmed founders
 	ErrNotFounderEligible = errors.New("user is not founder eligible")
+
+	// Billing (plan/22-modelo-negocio.md, N1)
+	// ErrBillingDisabled: no payment provider configured (BILLING_PROVIDER empty)
+	ErrBillingDisabled = errors.New("payments are not available")
+	// ErrInvalidSupportAmount: not a whole amount of pesos between MinSupportAmount and MaxSupportAmount
+	ErrInvalidSupportAmount = errors.New("invalid support amount")
+	// ErrInvalidWebhookSignature: the provider notification is not signed with our secret
+	ErrInvalidWebhookSignature = errors.New("invalid webhook signature")
+	// ErrUnknownPaymentProvider: the webhook names a provider that is not configured
+	ErrUnknownPaymentProvider = errors.New("unknown payment provider")
+	// ErrBillingProvider: the provider failed or answered something unexpected (retry later)
+	ErrBillingProvider = errors.New("payment provider error")
+
 	// ErrEmptyData is an error for when no data is provided
 	ErrEmptyData = errors.New("no data is provided")
 	// ErrConflictingData is an error for when data conflicts with existing data

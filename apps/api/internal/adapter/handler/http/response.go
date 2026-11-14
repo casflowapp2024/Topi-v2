@@ -86,6 +86,11 @@ var errorStatusMap = map[error]int{
 	domain.ErrForbidden:                  http.StatusForbidden,
 	domain.ErrInvalidAdminFilter:         http.StatusBadRequest,
 	domain.ErrNotFounderEligible:         http.StatusBadRequest,
+	domain.ErrBillingDisabled:            http.StatusNotFound,
+	domain.ErrInvalidSupportAmount:       http.StatusBadRequest,
+	domain.ErrInvalidWebhookSignature:    http.StatusUnauthorized,
+	domain.ErrUnknownPaymentProvider:     http.StatusNotFound,
+	domain.ErrBillingProvider:            http.StatusBadGateway,
 
 	// General Errors
 	domain.ErrInternal:                 http.StatusInternalServerError,

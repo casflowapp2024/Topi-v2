@@ -50,6 +50,8 @@ var productEventProps = map[string]map[string]propKind{
 	ProductEventInsightDismissed:  {"insight": propEnum},
 	ProductEventInsightFeedback:   {"insight": propEnum, "useful": propBool},
 	ProductEventAskTopiAsked:      {},
+	ProductEventSupportStarted:    {},
+	ProductEventSupportApproved:   {},
 }
 
 var reviewKinds = map[string]bool{ReviewKindVerify: true, ReviewKindInstallments: true, ReviewKindCounterpart: true, ReviewKindTransfer: true}
