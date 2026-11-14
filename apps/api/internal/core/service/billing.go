@@ -24,6 +24,9 @@ const (
 type BillingSettings struct {
 	// AppBaseURL is the web app; the buyer returns to <AppBaseURL>/apoyar/gracias?payment=<id>
 	AppBaseURL string
+	// SupportEnabled (SUPPORT_ENABLED): "Apoyar a Topi" is offered. Off, no new payments are created, but the
+	// webhook and the status of existing payments keep working (no notification is lost).
+	SupportEnabled bool
 }
 
 // BillingUsers is what billing needs from the users (the email of the receipt)
@@ -53,7 +56,7 @@ func NewBillingService(provider port.Billing, repo port.PaymentRepository, users
 // Config tells the front whether to show "Apoyar a Topi" and the amounts
 func (s *BillingAppService) Config() domain.BillingConfig {
 	return domain.BillingConfig{
-		Enabled:  s.provider != nil,
+		Enabled:  s.supportOpen(),
 		Currency: domain.SupportCurrency,
 		Presets:  domain.SupportPresets,
 		Min:      domain.MinSupportAmount.String(),
@@ -63,7 +66,7 @@ func (s *BillingAppService) Config() domain.BillingConfig {
 
 // StartSupport creates the payment (created) and opens the provider checkout
 func (s *BillingAppService) StartSupport(ctx context.Context, userID, amountText string) (*domain.CheckoutSession, error) {
-	if s.provider == nil {
+	if !s.supportOpen() {
 		return nil, domain.ErrBillingDisabled
 	}
 	amount, err := domain.ParseSupportAmount(amountText)
@@ -284,9 +287,14 @@ func (s *BillingAppService) Money(ctx context.Context) (*domain.MoneyReport, err
 	if err != nil {
 		return nil, err
 	}
-	report.Enabled = s.provider != nil
+	report.Enabled = s.supportOpen()
 	report.Currency = domain.SupportCurrency
 	return report, nil
+}
+
+// supportOpen: a provider is configured and SUPPORT_ENABLED is on
+func (s *BillingAppService) supportOpen() bool {
+	return s.provider != nil && s.settings.SupportEnabled
 }
 
 func (s *BillingAppService) emit(ctx context.Context, userID, name string) {

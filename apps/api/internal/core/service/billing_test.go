@@ -54,7 +54,7 @@ func newBillingFixture(t *testing.T, enabled bool) *billingFixture {
 		provider = f.provider
 	}
 	f.svc = NewBillingService(provider, f.repo, f.users, f.mail, f.events, allowLimiter{allow: true},
-		BillingSettings{AppBaseURL: "https://app.topi.test"})
+		BillingSettings{AppBaseURL: "https://app.topi.test", SupportEnabled: true})
 	return f
 }
 
@@ -75,6 +75,30 @@ func TestBillingConfig(t *testing.T) {
 	assert.True(t, cfg.Enabled)
 	assert.Equal(t, []string{"10000", "20000", "50000"}, cfg.Presets)
 	assert.Equal(t, "5000", cfg.Min)
+}
+
+func TestSupportDisabledByFlag(t *testing.T) {
+	ctx := context.Background()
+	f := newBillingFixture(t, true)
+	f.svc.settings.SupportEnabled = false
+
+	// hidden and no new payments (the repository and the provider are never called)
+	assert.False(t, f.svc.Config().Enabled)
+	_, err := f.svc.StartSupport(ctx, "u1", "20000")
+	assert.ErrorIs(t, err, domain.ErrBillingDisabled)
+
+	// the webhook keeps working: a late notification of an existing payment is applied
+	req := domain.WebhookRequest{Query: map[string]string{"data.id": "1234"}}
+	current := payment(domain.PaymentPending, nil)
+	ref := "1234"
+	approved := payment(domain.PaymentApproved, &ref)
+	now := time.Now()
+	approved.ReceiptEnqueuedAt = &now
+	f.provider.EXPECT().VerifyWebhook(req).Return(&domain.WebhookNotice{ProviderRef: "1234"}, nil)
+	f.provider.EXPECT().GetPayment(ctx, "1234").Return(ptr(approvedPP(20000)), nil)
+	f.repo.EXPECT().Get(ctx, testPaymentID).Return(&current, nil)
+	f.repo.EXPECT().Apply(ctx, testPaymentID, approvedPP(20000)).Return(&port.PaymentApplied{Payment: approved, Approved: true}, nil)
+	require.NoError(t, f.svc.HandleWebhook(ctx, "mercadopago", req))
 }
 
 func TestStartSupport(t *testing.T) {

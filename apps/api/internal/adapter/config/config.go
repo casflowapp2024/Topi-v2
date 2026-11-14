@@ -52,6 +52,9 @@ type (
 		MPAccessToken   string
 		MPWebhookSecret string
 		MPAPIBase       string
+		// SupportEnabled shows "Apoyar a Topi" and allows new support payments (SUPPORT_ENABLED, default false).
+		// Off: the menu hides it and POST /billing/support is 404, but the webhook keeps working.
+		SupportEnabled bool
 	}
 	// Mail contains the email sending settings (plan/23-correo-transaccional.md)
 	Mail struct {
@@ -279,6 +282,7 @@ func newBilling() *Billing {
 		MPAccessToken:   os.Getenv("MP_ACCESS_TOKEN"),
 		MPWebhookSecret: os.Getenv("MP_WEBHOOK_SECRET"),
 		MPAPIBase:       strings.TrimRight(os.Getenv("MP_API_BASE"), "/"),
+		SupportEnabled:  strings.EqualFold(strings.TrimSpace(os.Getenv("SUPPORT_ENABLED")), "true"),
 	}
 }
 

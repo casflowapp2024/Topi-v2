@@ -22,7 +22,7 @@ export const AdminMoneyView = ({ data }) => {
   const currency = data.currency || 'COP';
   return (
     <div className="flex flex-col gap-4">
-      <Panel title="Apoyar a Topi" subtitle={data.enabled ? 'Pagos únicos y voluntarios · Mercado Pago' : 'Pagos apagados: BILLING_PROVIDER vacío'}>
+      <Panel title="Apoyar a Topi" subtitle={data.enabled ? 'Pagos únicos y voluntarios · Mercado Pago' : 'Apagado: SUPPORT_ENABLED=false o sin BILLING_PROVIDER (el webhook sigue activo)'}>
         <StatGrid>
           <Stat label="Total aportado" value={formatMoney(data.total, currency)} hint="Aportes aprobados, toda la historia" />
           <Stat label="Aportes" value={fmtInt(data.payments)} />

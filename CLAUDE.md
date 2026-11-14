@@ -118,7 +118,8 @@ plan/         plan de migración
   webhook `POST /billing/webhook/:provider` (tópico `order`, firma `x-signature` verificada, si no 401) o
   `GET /billing/payments/:id`, que lee la order desde el servidor; el front nunca marca un pago.
   `domain.DecidePayment` es idempotente y nunca retrocede un aprobado. Recibo `billing_generic` con dedupe por pago y
-  solo el id en el outbox (el monto lo pone el enricher). `BILLING_PROVIDER` vacío = apagado; fuera de producción solo
+  solo el id en el outbox (el monto lo pone el enricher). Se ofrece solo con `SUPPORT_ENABLED=true` (por defecto `false`:
+  menú oculto y `POST /billing/support` 404, el webhook sigue) y `BILLING_PROVIDER`; fuera de producción solo
   cuentan las orders de prueba (`ORDTST...`). No se muestra Plus ni precios de suscripción.
 - Pagos de tarjeta por correo: el worker (`flag_card_payments`, sin tocar el prompt) los vuelve entrada de la tarjeta y
   la API los guarda con `transactions.needs_counterpart`: ya cuentan como transferencia. `link_pending_card_payments`

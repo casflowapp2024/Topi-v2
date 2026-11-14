@@ -118,7 +118,7 @@ func clearEnv(t *testing.T) {
 		"HTTP_ALLOWED_ORIGINS", "ENV_FILE", "MAIL_PROVIDER", "RESEND_API_KEY", "RESEND_WEBHOOK_SECRET", "MAIL_FROM",
 		"MAIL_REPLY_TO", "MAIL_DAILY_QUOTA", "MAIL_ONLY_TO", "APP_BASE_URL", "API_BASE_URL", "MAIL_OUTBOX_INTERVAL",
 		"FOUNDER_CUTOFF", "LLM_PRICE_IN_USD_PER_MTOK", "LLM_PRICE_OUT_USD_PER_MTOK", "SERVER_MONTHLY_COST_USD",
-		"BILLING_PROVIDER", "MP_ACCESS_TOKEN", "MP_WEBHOOK_SECRET", "MP_API_BASE",
+		"BILLING_PROVIDER", "MP_ACCESS_TOKEN", "MP_WEBHOOK_SECRET", "MP_API_BASE", "SUPPORT_ENABLED",
 	}
 	for _, key := range keys {
 		t.Setenv(key, "")
@@ -259,6 +259,16 @@ func TestNew_Billing(t *testing.T) {
 				assert.Error(t, config.Validate())
 			}
 		})
+	}
+}
+
+func TestNew_SupportEnabled(t *testing.T) {
+	for value, want := range map[string]bool{"": false, "false": false, "true": true, "TRUE": true, " true ": true, "1": false} {
+		clearEnv(t)
+		t.Setenv("ENV_FILE", filepath.Join(os.TempDir(), "does-not-exist.env"))
+		t.Setenv("SUPPORT_ENABLED", value)
+		once = sync.Once{}
+		assert.Equal(t, want, New().Billing.SupportEnabled, "SUPPORT_ENABLED=%q", value)
 	}
 }
 

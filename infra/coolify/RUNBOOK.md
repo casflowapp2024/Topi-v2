@@ -494,7 +494,11 @@ Si los reportes DMARC (o Gmail → Mostrar original) siguen en PASS, sube el DMA
 
 ## B9. Apoyar a Topi (Mercado Pago)
 
-Pago único y voluntario (plan/22, N1). Mientras `BILLING_PROVIDER` esté vacío, nadie ve la opción.
+Pago único y voluntario (plan/22, N1). Dos interruptores:
+- `SUPPORT_ENABLED` (por defecto `false`): con `false` nadie ve la opción y `POST /billing/support` responde 404,
+  pero el webhook y el estado de los pagos existentes siguen funcionando. Se enciende cuando haya tracción
+  (plan 22: ≥ 50 usuarios al día semanales durante 4 semanas).
+- `BILLING_PROVIDER`: vacío = sin pasarela ni webhook. Puede quedar en `mercadopago` con `SUPPORT_ENABLED=false`.
 Antes de activarlo: contador/abogado revisan el IVA (se envía `IVA 0`) y si el aporte necesita factura (DIAN).
 
 1. Mercado Pago → **Integraciones → Crear aplicación** (Checkout Pro con **Orders API**; la de Preferences se
@@ -502,14 +506,15 @@ Antes de activarlo: contador/abogado revisan el IVA (se envía `IVA 0`) y si el 
 2. **Configuración de Webhooks → Producción**: URL `https://api.topi.cash/billing/webhook/mercadopago`, evento
    **Order (Mercado Pago)** → Guardar → copia la firma secreta.
 3. Coolify (`topi-api`): `BILLING_PROVIDER=mercadopago`, `MP_ACCESS_TOKEN` (credencial de producción) y
-   `MP_WEBHOOK_SECRET`. Vuelve a desplegar.
+   `MP_WEBHOOK_SECRET`. Para ofrecerlo, `SUPPORT_ENABLED=true`. Vuelve a desplegar.
 4. **Verificar:**
    - `curl -X POST https://api.topi.cash/billing/webhook/mercadopago` sin firma → 401.
    - En Configuración de Webhooks → **Simular notificación** (evento Order, cualquier Data ID) → 200 (la order
      no existe y se ignora).
    - Un aporte real pequeño desde la app: la página de gracias pasa a aprobado, llega el recibo y aparece en
      `/admin/dinero`. `SELECT status, raw_status FROM payments ORDER BY created_at DESC LIMIT 5;`
-5. Apagar: `BILLING_PROVIDER=` y desplegar (los pagos guardados se conservan).
+5. Apagar la oferta: `SUPPORT_ENABLED=false` y desplegar (el webhook sigue; los pagos guardados se conservan).
+   `BILLING_PROVIDER=` apaga también el webhook: solo si no hay pagos en curso.
 
 ---
 

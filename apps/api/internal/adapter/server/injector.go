@@ -211,7 +211,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 	// Apoyar a Topi (plan/22, N1): payments only through the provider; the receipt amount is added when sending
 	billingService := service.NewBillingService(newBillingProvider(settings), dbrepository.NewPaymentRepository(db),
 		userRepo, mailService, productEvents, ratelimit.NewMemory(10, time.Hour),
-		service.BillingSettings{AppBaseURL: settings.Mail.AppBaseURL})
+		service.BillingSettings{AppBaseURL: settings.Mail.AppBaseURL, SupportEnabled: settings.Billing.SupportEnabled})
 	mailService.SetEnricher(domain.TemplateBillingGeneric, billingService)
 	adminHandler.SetBilling(billingService)
 	billingHandler := http.NewBillingHandler(billingService)
