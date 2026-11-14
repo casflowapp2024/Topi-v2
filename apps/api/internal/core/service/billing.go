@@ -117,23 +117,30 @@ func (s *BillingAppService) GetPayment(ctx context.Context, userID, id string) (
 	return &view, nil
 }
 
-// reconcile applies every provider payment of our payment (search by external reference)
+// reconcile reads the provider payment of our checkout (Mercado Pago: the order) and applies it
 func (s *BillingAppService) reconcile(ctx context.Context, payment domain.Payment) (*domain.Payment, error) {
-	found, err := s.provider.FindPayments(ctx, payment.ID)
+	ref := payment.ProviderRef
+	if ref == nil {
+		ref = payment.CheckoutRef
+	}
+	if ref == nil {
+		return &payment, nil
+	}
+	pp, err := s.provider.GetPayment(ctx, *ref)
+	if errors.Is(err, domain.ErrDataNotFound) {
+		return &payment, nil
+	}
 	if err != nil {
 		return nil, err
 	}
-	current := &payment
-	for _, pp := range found {
-		applied, err := s.apply(ctx, *current, pp)
-		if err != nil {
-			return nil, err
-		}
-		if applied.Payment.ID == payment.ID {
-			current = &applied.Payment
-		}
+	applied, err := s.apply(ctx, payment, *pp)
+	if err != nil {
+		return nil, err
 	}
-	return current, nil
+	if applied.Payment.ID != payment.ID {
+		return &payment, nil
+	}
+	return &applied.Payment, nil
 }
 
 // HandleWebhook verifies the notification, reads the payment from the provider and applies it. Notifications

@@ -118,7 +118,7 @@ func clearEnv(t *testing.T) {
 		"HTTP_ALLOWED_ORIGINS", "ENV_FILE", "MAIL_PROVIDER", "RESEND_API_KEY", "RESEND_WEBHOOK_SECRET", "MAIL_FROM",
 		"MAIL_REPLY_TO", "MAIL_DAILY_QUOTA", "MAIL_ONLY_TO", "APP_BASE_URL", "API_BASE_URL", "MAIL_OUTBOX_INTERVAL",
 		"FOUNDER_CUTOFF", "LLM_PRICE_IN_USD_PER_MTOK", "LLM_PRICE_OUT_USD_PER_MTOK", "SERVER_MONTHLY_COST_USD",
-		"BILLING_PROVIDER", "MP_ACCESS_TOKEN", "MP_WEBHOOK_SECRET", "MP_API_BASE", "MP_USE_SANDBOX_URL", "BILLING_NOTIFICATION_URL",
+		"BILLING_PROVIDER", "MP_ACCESS_TOKEN", "MP_WEBHOOK_SECRET", "MP_API_BASE",
 	}
 	for _, key := range keys {
 		t.Setenv(key, "")
@@ -241,10 +241,8 @@ func TestNew_Billing(t *testing.T) {
 		{name: "unknown provider", env: map[string]string{"BILLING_PROVIDER": "paypal"}, valid: false},
 		{name: "mercadopago without secret", env: map[string]string{"BILLING_PROVIDER": "mercadopago", "MP_ACCESS_TOKEN": "x"}, valid: false},
 		{name: "mercadopago without token", env: map[string]string{"BILLING_PROVIDER": "mercadopago", "MP_WEBHOOK_SECRET": "x"}, valid: false},
-		{name: "notification URL must be https", env: map[string]string{"BILLING_PROVIDER": "mercadopago",
-			"MP_ACCESS_TOKEN": "x", "MP_WEBHOOK_SECRET": "y", "BILLING_NOTIFICATION_URL": "http://localhost:8080/billing"}, valid: false},
 		{name: "mercadopago", env: map[string]string{"BILLING_PROVIDER": "MercadoPago", "MP_ACCESS_TOKEN": "x",
-			"MP_WEBHOOK_SECRET": "y", "BILLING_NOTIFICATION_URL": "https://api.topi.test/billing/webhook/mercadopago"}, valid: true},
+			"MP_WEBHOOK_SECRET": "y"}, valid: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			clearEnv(t)

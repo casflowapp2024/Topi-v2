@@ -52,21 +52,6 @@ func (mr *MockBillingMockRecorder) CreateCheckout(ctx, req interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCheckout", reflect.TypeOf((*MockBilling)(nil).CreateCheckout), ctx, req)
 }
 
-// FindPayments mocks base method.
-func (m *MockBilling) FindPayments(ctx context.Context, externalRef string) ([]domain.ProviderPayment, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindPayments", ctx, externalRef)
-	ret0, _ := ret[0].([]domain.ProviderPayment)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// FindPayments indicates an expected call of FindPayments.
-func (mr *MockBillingMockRecorder) FindPayments(ctx, externalRef interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindPayments", reflect.TypeOf((*MockBilling)(nil).FindPayments), ctx, externalRef)
-}
-
 // GetPayment mocks base method.
 func (m *MockBilling) GetPayment(ctx context.Context, providerRef string) (*domain.ProviderPayment, error) {
 	m.ctrl.T.Helper()

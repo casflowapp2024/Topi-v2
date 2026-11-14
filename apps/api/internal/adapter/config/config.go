@@ -52,10 +52,6 @@ type (
 		MPAccessToken   string
 		MPWebhookSecret string
 		MPAPIBase       string
-		// MPUseSandboxURL opens sandbox_init_point instead of init_point
-		MPUseSandboxURL bool
-		// NotificationURL is the public webhook URL sent in each preference (empty = Tus integraciones)
-		NotificationURL string
 	}
 	// Mail contains the email sending settings (plan/23-correo-transaccional.md)
 	Mail struct {
@@ -283,8 +279,6 @@ func newBilling() *Billing {
 		MPAccessToken:   os.Getenv("MP_ACCESS_TOKEN"),
 		MPWebhookSecret: os.Getenv("MP_WEBHOOK_SECRET"),
 		MPAPIBase:       strings.TrimRight(os.Getenv("MP_API_BASE"), "/"),
-		MPUseSandboxURL: strings.EqualFold(os.Getenv("MP_USE_SANDBOX_URL"), "true"),
-		NotificationURL: strings.TrimSpace(os.Getenv("BILLING_NOTIFICATION_URL")),
 	}
 }
 
@@ -300,9 +294,6 @@ func (c *Configuration) validateBilling() error {
 	}
 	if b.MPAccessToken == "" || b.MPWebhookSecret == "" {
 		return errors.New("MP_ACCESS_TOKEN and MP_WEBHOOK_SECRET are required with BILLING_PROVIDER=mercadopago")
-	}
-	if b.NotificationURL != "" && !strings.HasPrefix(b.NotificationURL, "https://") {
-		return errors.New("BILLING_NOTIFICATION_URL must be https")
 	}
 	return nil
 }

@@ -301,14 +301,12 @@ func newBillingProvider(settings *config.Configuration) port.Billing {
 		slog.Info("billing disabled (BILLING_PROVIDER empty)")
 		return nil
 	}
-	slog.Info("billing provider", "provider", b.Provider, "notification_url", b.NotificationURL != "")
+	slog.Info("billing provider", "provider", b.Provider)
 	return mercadopago.New(mercadopago.Settings{
-		AccessToken:     b.MPAccessToken,
-		WebhookSecret:   b.MPWebhookSecret,
-		BaseURL:         b.MPAPIBase,
-		NotificationURL: b.NotificationURL,
-		AllowLive:       settings.App.Env == enums.Production,
-		UseSandboxURL:   b.MPUseSandboxURL,
+		AccessToken:   b.MPAccessToken,
+		WebhookSecret: b.MPWebhookSecret,
+		BaseURL:       b.MPAPIBase,
+		AllowLive:     settings.App.Env == enums.Production,
 	})
 }
 

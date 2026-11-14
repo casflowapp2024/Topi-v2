@@ -83,28 +83,32 @@ como segundo adaptador sin tocar el core).
   ~2,65 % + COP 700 de Wompi. El punto de equilibrio está alrededor de COP 110.000 (tarifas por confirmar).
 - Tiene suscripciones nativas (`preapproval`) para la etapa 4: Topi no tendría que mantener su propio calendario
   de cobros ni reintentos.
-- Lo que cuesta: hay que crear una *preferencia* por pago y, al recibir el webhook, pedir siempre
-  `GET /v1/payments/{id}`, porque la notificación no trae el estado.
+- Lo que cuesta: hay que crear una order por pago y, al recibir el webhook, leer siempre la order desde el servidor.
 
-Detalles leídos en la documentación oficial para implementar (13-nov-2026):
-- Preferencia: `items[{title, quantity, unit_price, currency_id: "COP"}]`, `back_urls{success, failure, pending}`,
-  `auto_return: "approved"`, más `external_reference` (= `payments.id`) y `notification_url`. Las `back_urls` **no
-  pueden ser localhost/127.0.0.1**: para probar el retorno en local hace falta un dominio (túnel).
-  [configure-back-urls](https://www.mercadopago.com.co/developers/es/docs/checkout-pro-preferences/configure-back-urls)
-- IVA en Colombia: si la preferencia no trae `taxes`, Mercado Pago asume el 19 % de IVA incluido. Para un aporte
-  voluntario se enviará `taxes: [{type: "IVA", value: 0}]` (**validar con el contador**).
-  [iva-colombia](https://www.mercadopago.com.co/developers/es/docs/checkout-pro-preferences/additional-settings/iva-colombia)
-- Webhook (evento Pagos, configurado en Tus integraciones): `POST ?data.id=…&type=payment` con cuerpo
-  `{action: "payment.updated", data: {id}, live_mode, type: "payment"}`. Firma: separar `x-signature` por `,` →
-  `ts` y `v1`; `manifest = "id:<data.id de la URL, en minúsculas>;request-id:<x-request-id>;ts:<ts>;"` (se omite el
-  par que no venga); `v1 == hex(HMAC-SHA256(secret, manifest))`. Falla → 401. Responder 200/201 en menos de 22 s;
-  reintenta a los 15 min, 30 min, 6 h, 48 h y 96 h. Luego `GET /v1/payments/{id}` para el estado (`approved`,
-  `pending`, `rejected`, …) y `external_reference`.
-  [payment-notifications](https://www.mercadopago.com.co/developers/es/docs/checkout-pro-preferences/payment-notifications)
-- Sandbox: credenciales de prueba de la aplicación; la compra de prueba se hace **en incógnito, con sesión de un
-  usuario comprador de prueba**, y tarjetas de prueba (titular `APRO` aprobada, `OTHE` rechazada, `CONT` pendiente;
-  documento 123456789).
-  [test-purchases](https://www.mercadopago.com.co/developers/es/docs/checkout-pro-preferences/integration-test/test-purchases)
+**Cambio (14-nov-2026): Checkout Pro vía Orders API, no Preferences.** Al crear la aplicación, Mercado Pago avisa que
+la API de Preferences se va a deshabilitar; JuanMa creó la aplicación con Orders y el adaptador se rehizo sobre
+`/v1/orders`. Detalles leídos en la documentación oficial y comprobados con las credenciales de prueba:
+- Crear: `POST /v1/orders` con `X-Idempotency-Key` (= `payments.id`, así un reintento nunca crea otra order),
+  `type: "online"`, `processing_mode: "manual"`, `total_amount` e `items[].unit_price` como **string**,
+  `external_reference` (= `payments.id`), `taxes: [{type: "IVA", value: "0"}]` y `config.online.{success,failure,
+  pending}_url` (`auto_return: "all"` solo con https). Responde `id` (`ORDTST...` en pruebas) y `checkout_url`.
+  Con Orders, localhost sí se acepta en las URLs de retorno. No se manda `payer`: el correo del usuario no sale.
+  [create-order](https://www.mercadopago.com.co/developers/es/docs/checkout-pro-orders/create-order),
+  [back-urls](https://www.mercadopago.com.co/developers/es/docs/checkout-pro-orders/web-integration/configure-back-urls)
+- Estado: `GET /v1/orders/{id}` (el id respeta mayúsculas; en minúsculas da 404). `created` → creado,
+  `processing`/`action_required` → pendiente, `processed` → aprobado, `failed` → rechazado, `canceled` → cancelado,
+  `refunded` → devuelto. No hay búsqueda por `external_reference` (400): la order se guarda en `checkout_ref` y se
+  consulta por id. La order no trae `live_mode`: fuera de producción solo cuentan las `ORDTST...`.
+  [order-status](https://www.mercadopago.com.co/developers/es/docs/checkout-pro-orders/payment-management/status/order-status)
+- Webhook: evento **Order (Mercado Pago)** en Configuración de Webhooks (Prueba / Producción), `POST
+  ?data.id=ORD...&type=order`. Misma firma `x-signature` con el id **en minúsculas** en el manifest. Después se lee
+  la order con `GET /v1/orders/{id}`.
+  [notifications](https://www.mercadopago.com.co/developers/es/docs/checkout-pro-orders/notifications)
+- IVA: igual que en Preferences (sin `taxes` asume 19 % incluido); con Orders `value` va como string.
+  [iva-colombia](https://www.mercadopago.com.co/developers/es/docs/checkout-pro-orders/additional-settings/iva-colombia)
+- Sandbox: no hace falta cuenta de prueba; en incógnito, cualquier correo y tarjeta de prueba (titular `APRO`
+  aprobada, `OTHE` rechazada, `CONT` pendiente; documento 123456789).
+  [test-purchase-with-card](https://www.mercadopago.com.co/developers/es/docs/checkout-pro-orders/integration-test/test-purchase-with-card)
 
 **Antes de producción (pasos manuales):** cuenta de vendedor Mercado Pago, confirmar tarifa y plazo de liberación
 en el panel, configurar la URL de webhook y revelar la clave secreta, y que contador/abogado revisen el IVA (0) y si

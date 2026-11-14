@@ -18,10 +18,9 @@ type Billing interface {
 	// VerifyWebhook checks the signature of a notification (domain.ErrInvalidWebhookSignature if it fails).
 	// The notice only says which payment to look up: its status always comes from GetPayment.
 	VerifyWebhook(req domain.WebhookRequest) (*domain.WebhookNotice, error)
-	// GetPayment reads a provider payment (domain.ErrDataNotFound if it does not exist)
+	// GetPayment reads a provider payment (Mercado Pago: the order, whose id is also the checkout reference);
+	// domain.ErrDataNotFound if it does not exist
 	GetPayment(ctx context.Context, providerRef string) (*domain.ProviderPayment, error)
-	// FindPayments lists the provider payments of one of our payments (external reference)
-	FindPayments(ctx context.Context, externalRef string) ([]domain.ProviderPayment, error)
 }
 
 // PaymentApplied is the result of applying a provider payment

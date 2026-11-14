@@ -229,14 +229,15 @@ func TestBillingGetPayment(t *testing.T) {
 	ctx := context.Background()
 	f := newBillingFixture(t, true)
 
-	// not final: the server asks the provider (by external reference) and applies what it finds
+	// not final: the server reads the order of the checkout and applies it
 	current := payment(domain.PaymentCreated, nil)
 	ref := "1234"
+	current.CheckoutRef = &ref
 	approved := payment(domain.PaymentApproved, &ref)
 	now := time.Now()
 	approved.ReceiptEnqueuedAt = &now
 	f.repo.EXPECT().GetForUser(ctx, "u1", testPaymentID).Return(&current, nil)
-	f.provider.EXPECT().FindPayments(ctx, testPaymentID).Return([]domain.ProviderPayment{approvedPP(20000)}, nil)
+	f.provider.EXPECT().GetPayment(ctx, "1234").Return(ptr(approvedPP(20000)), nil)
 	f.repo.EXPECT().Apply(ctx, testPaymentID, approvedPP(20000)).Return(&port.PaymentApplied{Payment: approved}, nil)
 	view, err := f.svc.GetPayment(ctx, "u1", testPaymentID)
 	require.NoError(t, err)
@@ -251,7 +252,14 @@ func TestBillingGetPayment(t *testing.T) {
 
 	// provider down: the stored status
 	f.repo.EXPECT().GetForUser(ctx, "u1", testPaymentID).Return(&current, nil)
-	f.provider.EXPECT().FindPayments(ctx, testPaymentID).Return(nil, errors.New("timeout"))
+	f.provider.EXPECT().GetPayment(ctx, "1234").Return(nil, errors.New("timeout"))
+	view, err = f.svc.GetPayment(ctx, "u1", testPaymentID)
+	require.NoError(t, err)
+	assert.Equal(t, domain.PaymentCreated, view.Status)
+
+	// no checkout yet (the provider failed when opening it): nothing to ask
+	noCheckout := payment(domain.PaymentCreated, nil)
+	f.repo.EXPECT().GetForUser(ctx, "u1", testPaymentID).Return(&noCheckout, nil)
 	view, err = f.svc.GetPayment(ctx, "u1", testPaymentID)
 	require.NoError(t, err)
 	assert.Equal(t, domain.PaymentCreated, view.Status)
