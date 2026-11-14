@@ -14,6 +14,7 @@ import (
 type AdminHandler struct {
 	svc      port.AdminService
 	founders port.FounderService
+	billing  port.BillingService
 }
 
 // NewAdminHandler creates a new AdminHandler instance
@@ -42,6 +43,28 @@ func AdminAuditMiddleware(svc port.AdminService) gin.HandlerFunc {
 		}
 		ctx.Next()
 	}
+}
+
+// SetBilling enables the "Dinero" section (payments)
+func (h *AdminHandler) SetBilling(billing port.BillingService) {
+	h.billing = billing
+}
+
+// Money godoc
+//
+//	@Summary	Admin: approved support payments by month and the latest payments (no emails)
+//	@Tags		Admin
+//	@Produce	json
+//	@Success	200	{object}	response{data=domain.MoneyReport}
+//	@Router		/admin/money [get]
+//	@Security	BearerAuth
+func (h *AdminHandler) Money(ctx *gin.Context) {
+	if h.billing == nil {
+		respond(ctx, nil, domain.ErrDataNotFound)
+		return
+	}
+	report, err := h.billing.Money(ctx)
+	respond(ctx, report, err)
 }
 
 func adminID(ctx *gin.Context) string {

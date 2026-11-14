@@ -118,6 +118,7 @@ func clearEnv(t *testing.T) {
 		"HTTP_ALLOWED_ORIGINS", "ENV_FILE", "MAIL_PROVIDER", "RESEND_API_KEY", "RESEND_WEBHOOK_SECRET", "MAIL_FROM",
 		"MAIL_REPLY_TO", "MAIL_DAILY_QUOTA", "MAIL_ONLY_TO", "APP_BASE_URL", "API_BASE_URL", "MAIL_OUTBOX_INTERVAL",
 		"FOUNDER_CUTOFF", "LLM_PRICE_IN_USD_PER_MTOK", "LLM_PRICE_OUT_USD_PER_MTOK", "SERVER_MONTHLY_COST_USD",
+		"BILLING_PROVIDER", "MP_ACCESS_TOKEN", "MP_WEBHOOK_SECRET", "MP_API_BASE", "MP_USE_SANDBOX_URL", "BILLING_NOTIFICATION_URL",
 	}
 	for _, key := range keys {
 		t.Setenv(key, "")
@@ -228,6 +229,39 @@ func TestNew_Mail(t *testing.T) {
 		assert.Equal(t, []string{"a@example.com", "b@example.com"}, config.Mail.OnlyTo)
 		assert.Equal(t, 30*time.Second, config.Mail.OutboxInterval)
 	})
+}
+
+func TestNew_Billing(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		env   map[string]string
+		valid bool
+	}{
+		{name: "disabled by default", env: map[string]string{}, valid: true},
+		{name: "unknown provider", env: map[string]string{"BILLING_PROVIDER": "paypal"}, valid: false},
+		{name: "mercadopago without secret", env: map[string]string{"BILLING_PROVIDER": "mercadopago", "MP_ACCESS_TOKEN": "x"}, valid: false},
+		{name: "mercadopago without token", env: map[string]string{"BILLING_PROVIDER": "mercadopago", "MP_WEBHOOK_SECRET": "x"}, valid: false},
+		{name: "notification URL must be https", env: map[string]string{"BILLING_PROVIDER": "mercadopago",
+			"MP_ACCESS_TOKEN": "x", "MP_WEBHOOK_SECRET": "y", "BILLING_NOTIFICATION_URL": "http://localhost:8080/billing"}, valid: false},
+		{name: "mercadopago", env: map[string]string{"BILLING_PROVIDER": "MercadoPago", "MP_ACCESS_TOKEN": "x",
+			"MP_WEBHOOK_SECRET": "y", "BILLING_NOTIFICATION_URL": "https://api.topi.test/billing/webhook/mercadopago"}, valid: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			clearEnv(t)
+			t.Setenv("ENV_FILE", filepath.Join(os.TempDir(), "does-not-exist.env"))
+			t.Setenv("JWT_SECRET", "0123456789abcdef0123456789abcdef")
+			for key, value := range tc.env {
+				t.Setenv(key, value)
+			}
+			once = sync.Once{}
+			config := New()
+			if tc.valid {
+				assert.NoError(t, config.Validate())
+			} else {
+				assert.Error(t, config.Validate())
+			}
+		})
+	}
 }
 
 func TestNew_Metrics(t *testing.T) {

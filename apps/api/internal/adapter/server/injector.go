@@ -4,6 +4,7 @@ import (
 	"cash-flow/internal/adapter/api"
 	"cash-flow/internal/adapter/auth/jwt"
 	"cash-flow/internal/adapter/auth/password"
+	"cash-flow/internal/adapter/billing/mercadopago"
 	"cash-flow/internal/adapter/config"
 	"cash-flow/internal/adapter/email"
 	"cash-flow/internal/adapter/email/gmail"
@@ -51,6 +52,7 @@ type Handlers struct {
 	Email                  *http.EmailHandler
 	Mail                   *http.MailHandler
 	Admin                  *http.AdminHandler
+	Billing                *http.BillingHandler
 	Initialization         *http.InitDevHandler
 	CategoryInitialization *http.InitializationHandler
 	// Activity records the daily activity in AuthMiddleware
@@ -206,6 +208,14 @@ func NewInjector(settings *config.Configuration) *Injector {
 	})
 	adminHandler := http.NewAdminHandler(adminService, service.NewFounderAdminService(dbrepository.NewFounderRepository(db)))
 
+	// Apoyar a Topi (plan/22, N1): payments only through the provider; the receipt amount is added when sending
+	billingService := service.NewBillingService(newBillingProvider(settings), dbrepository.NewPaymentRepository(db),
+		userRepo, mailService, productEvents, ratelimit.NewMemory(10, time.Hour),
+		service.BillingSettings{AppBaseURL: settings.Mail.AppBaseURL})
+	mailService.SetEnricher(domain.TemplateBillingGeneric, billingService)
+	adminHandler.SetBilling(billingService)
+	billingHandler := http.NewBillingHandler(billingService)
+
 	// Initialization Dev
 	initDevHandler := http.NewDevHandler(
 		categoryService,
@@ -236,6 +246,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 			Email:                  emailHandler,
 			Mail:                   mailHandler,
 			Admin:                  adminHandler,
+			Billing:                billingHandler,
 			Initialization:         initDevHandler,
 			CategoryInitialization: InitHandler,
 			Activity:               service.NewActivityService(dbrepository.NewActivityRepository(db)),
@@ -280,6 +291,25 @@ func newMailService(settings *config.Configuration, db *postgres.DB) *service.Ma
 			APIBaseURL: settings.Mail.APIBaseURL,
 		},
 	)
+}
+
+// newBillingProvider wires the provider chosen by BILLING_PROVIDER (nil = "Apoyar a Topi" hidden). Live payments
+// count only in production: everywhere else only the sandbox.
+func newBillingProvider(settings *config.Configuration) port.Billing {
+	b := settings.Billing
+	if b == nil || b.Provider != config.BillingProviderMercadoPago {
+		slog.Info("billing disabled (BILLING_PROVIDER empty)")
+		return nil
+	}
+	slog.Info("billing provider", "provider", b.Provider, "notification_url", b.NotificationURL != "")
+	return mercadopago.New(mercadopago.Settings{
+		AccessToken:     b.MPAccessToken,
+		WebhookSecret:   b.MPWebhookSecret,
+		BaseURL:         b.MPAPIBase,
+		NotificationURL: b.NotificationURL,
+		AllowLive:       settings.App.Env == enums.Production,
+		UseSandboxURL:   b.MPUseSandboxURL,
+	})
 }
 
 // deriveKey derives a purpose specific key from a secret (HMAC-SHA256), so one variable signs

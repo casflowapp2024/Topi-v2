@@ -32,6 +32,7 @@ type (
 		Outlook *Outlook
 		Mail    *Mail
 		Metrics *Metrics
+		Billing *Billing
 	}
 	// Metrics contains the settings of the admin panel (plan/25-admin-metricas.md)
 	Metrics struct {
@@ -43,6 +44,18 @@ type (
 		// ServerMonthlyCostUSD is spread among the active users in the cost per user
 		ServerMonthlyCostUSD decimal.Decimal
 		err                  error
+	}
+	// Billing contains the payment provider settings (plan/22-modelo-negocio.md, N1)
+	Billing struct {
+		// Provider is "" (default: "Apoyar a Topi" hidden) or "mercadopago"
+		Provider        string
+		MPAccessToken   string
+		MPWebhookSecret string
+		MPAPIBase       string
+		// MPUseSandboxURL opens sandbox_init_point instead of init_point
+		MPUseSandboxURL bool
+		// NotificationURL is the public webhook URL sent in each preference (empty = Tus integraciones)
+		NotificationURL string
 	}
 	// Mail contains the email sending settings (plan/23-correo-transaccional.md)
 	Mail struct {
@@ -202,6 +215,7 @@ func New() *Configuration {
 			},
 			newMail(),
 			newMetrics(),
+			newBilling(),
 		}
 	})
 
@@ -257,6 +271,42 @@ func newMail() *Mail {
 	}
 }
 
+// Billing providers (BILLING_PROVIDER)
+const (
+	BillingProviderNone        = ""
+	BillingProviderMercadoPago = "mercadopago"
+)
+
+func newBilling() *Billing {
+	return &Billing{
+		Provider:        strings.ToLower(strings.TrimSpace(os.Getenv("BILLING_PROVIDER"))),
+		MPAccessToken:   os.Getenv("MP_ACCESS_TOKEN"),
+		MPWebhookSecret: os.Getenv("MP_WEBHOOK_SECRET"),
+		MPAPIBase:       strings.TrimRight(os.Getenv("MP_API_BASE"), "/"),
+		MPUseSandboxURL: strings.EqualFold(os.Getenv("MP_USE_SANDBOX_URL"), "true"),
+		NotificationURL: strings.TrimSpace(os.Getenv("BILLING_NOTIFICATION_URL")),
+	}
+}
+
+// validateBilling: mercadopago needs its token and the webhook secret (a webhook is never accepted unsigned)
+func (c *Configuration) validateBilling() error {
+	b := c.Billing
+	switch b.Provider {
+	case BillingProviderNone:
+		return nil
+	case BillingProviderMercadoPago:
+	default:
+		return fmt.Errorf("BILLING_PROVIDER must be empty or %q", BillingProviderMercadoPago)
+	}
+	if b.MPAccessToken == "" || b.MPWebhookSecret == "" {
+		return errors.New("MP_ACCESS_TOKEN and MP_WEBHOOK_SECRET are required with BILLING_PROVIDER=mercadopago")
+	}
+	if b.NotificationURL != "" && !strings.HasPrefix(b.NotificationURL, "https://") {
+		return errors.New("BILLING_NOTIFICATION_URL must be https")
+	}
+	return nil
+}
+
 // validateMail: resend needs its key and, outside production, MAIL_ONLY_TO (privacy)
 func (c *Configuration) validateMail() error {
 	m := c.Mail
@@ -298,7 +348,10 @@ func (c *Configuration) Validate() error {
 		return c.Metrics.err
 	}
 
-	return c.validateMail()
+	if err := c.validateMail(); err != nil {
+		return err
+	}
+	return c.validateBilling()
 }
 
 func newMetrics() *Metrics {

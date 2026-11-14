@@ -81,6 +81,7 @@ func main() {
 		Activity:              injector.Handlers.Activity,
 		MailHandler:           injector.Handlers.Mail,
 		AdminHandler:          injector.Handlers.Admin,
+		BillingHandler:        injector.Handlers.Billing,
 		InitDevHandler:        injector.Handlers.Initialization,
 		InitializationHandler: injector.Handlers.CategoryInitialization,
 		Router:                router.Router,

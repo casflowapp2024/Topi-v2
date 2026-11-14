@@ -29,6 +29,7 @@ var adminRoutes = []struct{ method, path string }{
 	{http.MethodPost, "/admin/founders/confirm-active"},
 	{http.MethodPost, "/admin/founders/u1/confirm"},
 	{http.MethodDelete, "/admin/founders/u1/confirm"},
+	{http.MethodGet, "/admin/money"},
 }
 
 func newAdminRouter(t *testing.T) (*gin.Engine, *mock.MockUserService, *mock.MockAdminService) {

@@ -28,6 +28,7 @@ type Routes struct {
 	InitDevHandler        *InitDevHandler
 	InitializationHandler *InitializationHandler
 	AdminHandler          *AdminHandler
+	BillingHandler        *BillingHandler
 	// Activity records the daily activity of the authenticated users (optional)
 	Activity port.ActivityTracker
 	Router   *gin.Engine
@@ -249,6 +250,7 @@ func (r *Routes) Init(env string) {
 	r.EmailRoutes()
 	r.MailRoutes()
 	r.AdminRoutes()
+	r.BillingRoutes()
 	r.InitializationRoutes()
 	r.DocRoutes(env)
 }
@@ -299,5 +301,23 @@ func (r *Routes) AdminRoutes() {
 		admin.POST("/founders/confirm-active", r.AdminHandler.ConfirmActiveFounders)
 		admin.POST("/founders/:id/confirm", r.AdminHandler.ConfirmFounder)
 		admin.DELETE("/founders/:id/confirm", r.AdminHandler.UnconfirmFounder)
+		admin.GET("/money", r.AdminHandler.Money)
+	}
+}
+
+// BillingRoutes: "Apoyar a Topi" (with session) and the payment webhooks (signed, no login). Plan 22, N1.
+func (r *Routes) BillingRoutes() {
+	if r.BillingHandler == nil {
+		return
+	}
+	billing := r.Router.Group("/billing")
+	{
+		billing.POST("/webhook/:provider", r.BillingHandler.Webhook)
+	}
+	auth := r.Router.Group("/billing").Use(r.auth())
+	{
+		auth.GET("/config", r.BillingHandler.Config)
+		auth.POST("/support", r.BillingHandler.StartSupport)
+		auth.GET("/payments/:id", r.BillingHandler.GetPayment)
 	}
 }
