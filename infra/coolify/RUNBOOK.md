@@ -32,6 +32,8 @@ Guárdalos en tu gestor de contraseñas **antes** de empezar. No los pegues en c
 | Credenciales del bucket S3 | Cloudflare R2 o Backblaze B2 (B0.4) | backups de topi-db, `backup-check.sh` |
 | `RESEND_API_KEY` (solo envío) | Resend → API Keys (B8.3) | topi-api |
 | `RESEND_WEBHOOK_SECRET` (`whsec_...`) | Resend → Webhooks (B8.6) | topi-api |
+| `MP_ACCESS_TOKEN` (producción) | Mercado Pago → Tus integraciones → Credenciales (B9) | topi-api |
+| `MP_WEBHOOK_SECRET` | Mercado Pago → Tus integraciones → Webhooks (B9) | topi-api |
 
 ---
 
@@ -487,6 +489,27 @@ Con `APP_ENV` distinto de producción y `MAIL_PROVIDER=resend`, la API no arranc
 ### B8.7 Después de 2 semanas
 Si los reportes DMARC (o Gmail → Mostrar original) siguen en PASS, sube el DMARC a
 `v=DMARC1; p=quarantine; ...`. Revisa en Resend el porcentaje de rebotes y quejas (debe ser casi 0).
+
+---
+
+## B9. Apoyar a Topi (Mercado Pago)
+
+Pago único y voluntario (plan/22, N1). Mientras `BILLING_PROVIDER` esté vacío, nadie ve la opción.
+Antes de activarlo: contador/abogado revisan el IVA (se envía `IVA 0`) y si el aporte necesita factura (DIAN).
+
+1. Mercado Pago → **Tus integraciones → Crear aplicación** (Checkout Pro). Confirma la tarifa y el plazo de
+   liberación en el panel de la cuenta de vendedor.
+2. **Webhooks → Configurar notificaciones → Modo productivo**: URL
+   `https://api.topi.cash/billing/webhook/mercadopago`, evento **Pagos** → Guardar → revela la clave secreta.
+3. Coolify (`topi-api`): `BILLING_PROVIDER=mercadopago`, `MP_ACCESS_TOKEN` (credencial de producción),
+   `MP_WEBHOOK_SECRET` y `BILLING_NOTIFICATION_URL`. Vuelve a desplegar.
+4. **Verificar:**
+   - `curl -X POST https://api.topi.cash/billing/webhook/mercadopago` sin firma → 401.
+   - En Tus integraciones → Webhooks → **Simular** (evento Pagos, cualquier Data ID) → 200 (el pago no existe
+     y se ignora).
+   - Un aporte real pequeño desde la app: la página de gracias pasa a aprobado, llega el recibo y aparece en
+     `/admin/dinero`. `SELECT status, raw_status FROM payments ORDER BY created_at DESC LIMIT 5;`
+5. Apagar: `BILLING_PROVIDER=` y desplegar (los pagos guardados se conservan).
 
 ---
 

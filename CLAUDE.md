@@ -112,6 +112,13 @@ plan/         plan de migración
   de tokens. Nombres de categorías/bancos/comercios solo con ≥ `domain.MinGroupUsers` (5) usuarios. Fundadores:
   `FOUNDER_CUTOFF` marca elegibles al arrancar; confirmar/quitar va con su fila de auditoría y nunca borra a nadie.
   Verificación manual: `infra/scripts/sql/admin-check.sql`.
+- Apoyar a Topi (`plan/22-modelo-negocio.md`, N1): pago único voluntario con Mercado Pago (Checkout Pro). Puerto
+  `Billing` (adaptador `adapter/billing/mercadopago`, HTTP sin SDK) y tabla `payments` (`id` = `external_reference`,
+  `provider_ref` único). El estado solo lo escriben el webhook `POST /billing/webhook/:provider` (firma `x-signature`
+  verificada, si no 401) o `GET /billing/payments/:id`, que consulta a Mercado Pago desde el servidor; el front nunca
+  marca un pago. `domain.DecidePayment` es idempotente y nunca retrocede un aprobado. Recibo `billing_generic` con
+  dedupe por pago y solo el id en el outbox (el monto lo pone el enricher). `BILLING_PROVIDER` vacío = apagado; fuera
+  de producción se ignoran los pagos `live_mode`. No se muestra Plus ni precios de suscripción.
 - Pagos de tarjeta por correo: el worker (`flag_card_payments`, sin tocar el prompt) los vuelve entrada de la tarjeta y
   la API los guarda con `transactions.needs_counterpart`: ya cuentan como transferencia. `link_pending_card_payments`
   liga solo el caso sin duda; si no, la app pregunta de qué cuenta salió. No uses `should_verify` para esto: abrir la
