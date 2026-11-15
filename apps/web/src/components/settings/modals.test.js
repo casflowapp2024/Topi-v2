@@ -5,8 +5,6 @@ import { Provider } from 'react-redux';
 import { createStore, applyMiddleware } from 'redux';
 import { thunk } from 'redux-thunk';
 import AccountSettings from '../../containers/AccountSettings';
-import Onboarding2 from '../../hocs/Onboarding2';
-import NextStepsPopover from '../onboarding2/NextStepsPopover';
 import InstallPwaModal from '../ui/InstallPwaModal';
 import ConexionErrorDisplay from './ConexionErrorDisplay';
 
@@ -30,10 +28,6 @@ jest.mock('./ProfileSetts', () => () => <div data-tab="profile" />);
 jest.mock('./ConexionesSetts', () => () => <div data-tab="connections" />);
 jest.mock('./EmailPrefsSetts', () => () => <div data-tab="emails" />);
 jest.mock('./Membership', () => () => null);
-jest.mock('../onboarding2/GoalSelection', () => () => <div data-step="1" />);
-jest.mock('../onboarding2/StepLinkEmail', () => () => <div data-step="2" />);
-jest.mock('../onboarding2/StepCreateAccount', () => () => <div data-step="3" />);
-jest.mock('../onboarding2/StepCompletion', () => () => <div data-step="4" />);
 global.IS_REACT_ACT_ENVIRONMENT = true;
 global.ResizeObserver = global.ResizeObserver || class { observe() {} unobserve() {} disconnect() {} };
 
@@ -79,43 +73,6 @@ test('Configuración: Modal con pestañas Perfil/Conexiones/Correos, cerrar sesi
   expect(logout).toHaveBeenCalled();
   await esc();
   expect(close).toHaveBeenCalled();
-  await m.unmount();
-});
-
-test('Onboarding: Modal no descartable (sin X ni Esc); "Hacerlo más tarde" lo cierra', async () => {
-  const m = await mount(<Onboarding2 NextStepsPopoverOnboarding={() => {}} />);
-  const d = dialog();
-  clean(d);
-  expect(d.querySelector('h2').textContent).toBe('Bienvenido a Topi!');
-  expect(d.textContent).toContain('Paso 1 de 4');
-  expect(d.querySelector('[aria-label="Cerrar"]')).toBeNull();
-  expect(d.querySelector('[aria-label="Paso anterior"]')).toBeNull();
-  await esc();
-  expect(dialog()).not.toBeNull();
-  // el paso 1 se puede saltar con la flecha; en el 2 (sin correo) no hay "siguiente"
-  await click(d.querySelector('[aria-label="Paso siguiente"]'));
-  expect(d.querySelector('[data-step]').dataset.step).toBe('2');
-  expect(d.querySelector('[aria-label="Paso siguiente"]')).toBeNull();
-  await click(byText(d, /Hacerlo más tarde/));
-  await act(async () => { await new Promise(r => setTimeout(r, 400)); });
-  expect(dialog()).toBeNull();
-  expect(localStorage.getItem('onboardingLastClosed')).not.toBeNull();
-  await m.unmount();
-});
-
-test('Siguientes pasos: Modal con los tres atajos y el botón al Inicio', async () => {
-  let open = true;
-  const m = await mount(<NextStepsPopover open setOpen={(v) => { open = v; }} />);
-  const d = dialog();
-  clean(d);
-  expect([...d.querySelectorAll('li button')].map(b => b.textContent)).toEqual([
-    expect.stringMatching(/^Cuentas/), expect.stringMatching(/^Categorías/), expect.stringMatching(/^Transacciones/),
-  ]);
-  await click(d.querySelectorAll('li button')[1]);
-  expect(mockNavigate).toEqual(['/dashboard/budgets']);
-  expect(open).toBe(false);
-  await click(byText(d.querySelector('footer'), /ir al Inicio/));
-  expect(mockNavigate).toEqual(['/dashboard/budgets', '/']);
   await m.unmount();
 });
 

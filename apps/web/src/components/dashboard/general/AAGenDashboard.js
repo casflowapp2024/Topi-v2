@@ -11,6 +11,7 @@ import HomePaceCard from './HomePaceCard';
 import HomeFlowCard from './HomeFlowCard';
 import HomeNetWorthCard from './HomeNetWorthCard';
 import ReviewInbox from './ReviewInbox';
+import OnboardingChecklist from './OnboardingChecklist';
 
 const AAGenDashboard = ({
     current_Month,
@@ -30,6 +31,8 @@ const AAGenDashboard = ({
 
     return (
         <div className="flex flex-col gap-2 lg:gap-6 pb-3 md:max-w-[560px] md:mx-auto lg:max-w-none">
+            {/* bienvenida con estado real y "todavía no vemos movimientos de tu banco" (plan/27 §B, §C) */}
+            <OnboardingChecklist />
             {/*
                 Una sola versión para todos los tamaños (antes había un bloque PC y otro móvil,
                 y cada componente se montaba y pedía sus datos dos veces).

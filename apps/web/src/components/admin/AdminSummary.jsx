@@ -121,6 +121,7 @@ const AdminSummary = ({ reloadKey }) => {
                 { key: 'c', label: 'Correo 24 h', align: 'right', render: (r) => fmtPct(r.connection_24h_pct) },
                 { key: 'f', label: 'Auto 48 h', align: 'right', render: (r) => fmtPct(r.first_auto_tx_48h_pct) },
                 { key: 'b', label: 'Presup. 7 d', align: 'right', render: (r) => fmtPct(r.budget_7d_pct) },
+                { key: 'm', label: 'Mediana a la 1.ª', align: 'right', render: (r) => (r.median_hours_to_first_auto == null ? '—' : `${fmtInt(r.median_hours_to_first_auto)} h`) },
               ]} />
             </div>
           )}

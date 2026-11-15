@@ -12,6 +12,8 @@ import {
 } from '@heroicons/react/20/solid'
 import { ThreeDots } from 'react-loader-spinner';
 import Alert2 from "../alert2";
+import GoogleUnverifiedHint from "./GoogleUnverifiedHint";
+import { suggestedProvider } from "./reconnect";
 
 const LinkTransEmailForm = ({
     closedForm,
@@ -35,12 +37,19 @@ const LinkTransEmailForm = ({
     const [loadingLink, setLoadingLink] = useState(false)
     const [codeReceived, setCodeReceived] = useState("")
     const [linkSucess, setLikSucces] = useState(false)
+    // el proveedor se sugiere por el dominio (Hotmail/Outlook/Live → Outlook) hasta que el usuario lo elija
+    const [providerTouched, setProviderTouched] = useState(Boolean(initialProvider))
 
     const onChangeForm = (e) => {
         if (e.target.name === "emailAutomated") {
-            console.log("changing emailAutomated", e.target.value)
-            setEmailAutomated(e.target.value);
+            const value = e.target.value;
+            setEmailAutomated(value);
+            if (!providerTouched && value.includes('@')) {
+                const suggested = suggestedProvider(value);
+                if (suggested !== provider) setProvider(suggested);
+            }
         } else {
+            setProviderTouched(true);
             setProvider(e.target.value);
         }
     };
@@ -253,6 +262,7 @@ const LinkTransEmailForm = ({
                             </div>
                         </div>
                     }
+                    {!loadingLink && provider === 'gmail' && <GoogleUnverifiedHint className="mt-3" />}
                 </>
             }
         </div>

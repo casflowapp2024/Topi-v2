@@ -51,6 +51,26 @@ const AdminReading = ({ reloadKey }) => {
         </Panel>
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Panel title="Conexiones caídas y reconexión" subtitle="Caídas iniciadas en los últimos 90 días (plan 27 §D)">
+          <StatGrid>
+            <Stat label="Caídas (90 d)" value={fmtInt(r.reconnect?.incidents_90d)} />
+            <Stat label="Abiertas hoy" value={fmtInt(r.reconnect?.open)} tone={r.reconnect?.open > 0 ? 'warn' : undefined} />
+            <Stat label="Reconectadas en 7 d" value={fmtPct(r.reconnect?.reconnected_7d_pct)} hint="de las caídas con 7 días o más" />
+            <Stat label="Mediana hasta reconectar" value={r.reconnect?.median_hours == null ? '—' : `${fmtInt(r.reconnect.median_hours)} h`} />
+          </StatGrid>
+        </Panel>
+        <Panel title="Sanas sin movimientos (48 h)" subtitle="Con cuentas ligadas y 0 transacciones leídas (plan 27 §C)">
+          <StatGrid>
+            <Stat label="Conexiones" value={fmtInt(r.unsupported?.connections)} tone={r.unsupported?.connections > 0 ? 'warn' : undefined} />
+            <Stat label="Usuarios" value={fmtInt(r.unsupported?.users)} />
+          </StatGrid>
+          <p className="text-xs font-medium text-ink-2 dark:text-gray-400 mt-3 mb-1">Por banco declarado (nombres con 5 usuarios o más)</p>
+          <BarList items={(r.unsupported?.by_bank || []).map((b) => ({ name: b.name === 'otros' ? 'Otros bancos' : b.name, value: b.count }))}
+            empty="Ninguna" />
+        </Panel>
+      </div>
+
       <Panel title="Correos procesados por día" subtitle="60 días">
         <DailyBars rows={dailyEmails} bars={[
           { key: 'emails_transaction', label: 'Con transacción', color: 'ingreso' },

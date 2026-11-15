@@ -10,8 +10,6 @@ import { request_init_categories, get_user_extra_data, add_user_extra_data, upda
 import { get_banks, get_official_banks } from '../redux/actions/cashflow';
 import { open_settings_modal, close_settings_modal } from '../redux/actions/ui';
 //Components
-import Onboarding2 from './Onboarding2';
-import NextStepsPopover from '../components/onboarding2/NextStepsPopover';
 import InstallPwaModal from '../components/ui/InstallPwaModal';
 import ConnectionDownBanner from '../components/navigation/ConnectionDownBanner';
 import VerifyEmailBanner from '../components/navigation/VerifyEmailBanner';
@@ -92,8 +90,6 @@ const Layout = ({
   }, [session_expired, navigate]);
 
   const [userDataRequested, setUserDataRequested] = useState(false);
-  const [openNextSteps, setOpenNextSteps] = useState(false);
-  const [forceEmailStep, setForceEmailStep] = useState(false);
   // Apoyar a Topi: el menú solo lo muestra si la API tiene un proveedor de pagos configurado
   const [billing, setBilling] = useState(null);
   const [supportOpen, setSupportOpen] = useState(false);
@@ -187,27 +183,6 @@ const Layout = ({
     }
   }
 
-  const onboardingCompletedUpdate = async () => {
-    if (user_extra_data && user_extra_data.onboarding_completed === false) {
-      if (first_steps && first_steps.email && first_steps.bank) {
-        await update_user_extra_data(
-          user_extra_data.utc_offset,
-          user_extra_data.whatsapp,
-          true,
-          user_extra_data.birthday,
-          user_extra_data.local_currency,
-          user_extra_data.language
-        )
-        get_user_extra_data();
-      }
-    }
-  }
-
-  const NextStepsPopoverOnboarding = async () => {
-    onboardingCompletedUpdate()
-    setOpenNextSteps(true)
-  }
-
   useEffect(() => {
     if (userDataRequested) {
       triger_set_initial_timezone();
@@ -222,10 +197,9 @@ const Layout = ({
     if (wasPromptedThisSession(userKey)) return;
     markPromptedThisSession(userKey);
 
+    // 'onboarding' (cuenta nueva sin correo): la checklist del Inicio guía (plan/27 §B), sin abrir un modal
     const action = connectEmailAction(automated_emails, user_extra_data.onboarding_completed);
-    if (action === 'onboarding') {
-      setForceEmailStep(true);
-    } else if (action === 'connect' && location.pathname !== '/dashboard/connect-email') {
+    if (action === 'connect' && location.pathname !== '/dashboard/connect-email') {
       navigate('/dashboard/connect-email');
     }
   }, [user, user_extra_data, first_steps.retrieved_email, automated_emails, location.pathname, navigate])
@@ -289,12 +263,6 @@ const Layout = ({
 
                 <ConnectionDownBanner />
                 <VerifyEmailBanner />
-
-                {user_extra_data.onboarding_completed === false && (
-                  <Onboarding2 NextStepsPopoverOnboarding={NextStepsPopoverOnboarding} forceEmailStep={forceEmailStep} />
-                )}
-
-                <NextStepsPopover open={openNextSteps} setOpen={setOpenNextSteps} />
 
 
                 <PageContainer as="main" className="md:py-1">
