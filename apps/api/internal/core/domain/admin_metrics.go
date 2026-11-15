@@ -158,6 +158,17 @@ type ReadingHealth struct {
 	JobsFailed7d int64             `json:"jobs_failed_7d"`
 	JobsPending  int64             `json:"jobs_pending"`
 	Daily        MetricSeries      `json:"daily"`
+	Reconnect    ReconnectStats    `json:"reconnect"`
+}
+
+// ReconnectStats: connections that went down in the last 90 days and how long they took to come back (plan/27 §D)
+type ReconnectStats struct {
+	Incidents90d int64 `json:"incidents_90d"`
+	Open         int64 `json:"open"`
+	// share of the incidents started at least 7 days ago that were reconnected within 7 days (nil: none yet)
+	Reconnected7dPct *float64 `json:"reconnected_7d_pct"`
+	// median hours from the error to the reconnect, over the reconnected ones (nil: none yet)
+	MedianHours *float64 `json:"median_hours"`
 }
 
 // ConnectionCount: connections by provider and state (ok | error | inactive)

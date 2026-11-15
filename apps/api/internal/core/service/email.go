@@ -15,6 +15,7 @@ import (
 
 type EmailService struct {
 	mail           port.MailService
+	events         port.ProductEventRecorder
 	repo           port.EmailRepository
 	email          port.EmailAPI
 	repoAccount    port.AccountRepository
@@ -59,7 +60,45 @@ func (e *EmailService) RegisterUserEmail(ctx context.Context, email *domain.Emai
 		return err
 	}
 
+	if email.Reconnected && email.ID != nil {
+		emit(ctx, e.events, domain.ProductEvent{
+			UserID: email.UserID, Name: domain.ProductEventConnectionReconnected,
+			Props: map[string]any{"email_id": *email.ID, "provider": email.Provider},
+		})
+		e.readAfterReconnect(ctx, email.UserID, *email.ID)
+	}
+
 	return nil
+}
+
+// SetEvents sets the recorder of product events (connection_reconnected)
+func (e *EmailService) SetEvents(events port.ProductEventRecorder) {
+	e.events = events
+}
+
+// readAfterReconnect asks for an immediate read (priority 1) of the accounts linked to a connection that came
+// back, so the gap while it was down is filled without waiting for the scheduler. Never fails the reconnect.
+func (e *EmailService) readAfterReconnect(ctx context.Context, userID string, emailID uint64) {
+	if e.accountService == nil || e.repoAccount == nil || e.email == nil {
+		return
+	}
+	accounts, err := e.accountService.GetAccounts(ctx, userID, 0, 100, enums.All)
+	if err != nil {
+		slog.Error("reconnect: could not list accounts", "email_id", emailID, "error", err)
+		return
+	}
+	var ids []uint64
+	for _, account := range accounts {
+		if account.Email.ID != nil && *account.Email.ID == emailID {
+			ids = append(ids, account.ID)
+		}
+	}
+	if len(ids) == 0 {
+		return
+	}
+	if _, err = e.ReadEmail(ctx, userID, ids); err != nil {
+		slog.Error("reconnect: could not enqueue the read", "email_id", emailID, "error", err)
+	}
 }
 
 func (e *EmailService) GetUserEmailToken(ctx context.Context, userID string, id uint64) (*domain.Email, error) {

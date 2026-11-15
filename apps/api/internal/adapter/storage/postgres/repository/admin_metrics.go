@@ -167,6 +167,22 @@ ORDER BY last_seen DESC LIMIT 10`)
   count(*) FILTER (WHERE status = 'failed' AND updated_at >= now() - interval '7 days'),
   count(*) FILTER (WHERE status = 'pending')
 FROM email_jobs`).Scan(&health.JobsFailed7d, &health.JobsPending)
+	if err != nil {
+		return health, mappers.MapPostgresErrorCode(err)
+	}
+
+	// connection_incidents (000046): time from the error to the reconnect
+	err = r.db.QueryRow(ctx, `SELECT
+  count(*),
+  count(*) FILTER (WHERE resolved_at IS NULL),
+  round(100.0 * count(*) FILTER (WHERE resolution = 'reconnected' AND resolved_at <= started_at + interval '7 days'
+                                 AND started_at <= now() - interval '7 days')
+        / nullif(count(*) FILTER (WHERE started_at <= now() - interval '7 days'), 0), 1)::float8,
+  (percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM resolved_at - started_at) / 3600)
+     FILTER (WHERE resolution = 'reconnected'))::float8
+FROM connection_incidents WHERE started_at >= now() - interval '90 days'`).Scan(
+		&health.Reconnect.Incidents90d, &health.Reconnect.Open,
+		&health.Reconnect.Reconnected7dPct, &health.Reconnect.MedianHours)
 	return health, mappers.MapPostgresErrorCode(err)
 }
 

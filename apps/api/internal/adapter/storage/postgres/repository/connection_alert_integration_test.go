@@ -24,6 +24,7 @@ func TestEmailRepository_ClaimConnectionAlert(t *testing.T) {
 	account := "ca-" + userID[:8] + "@example.com"
 	require.NoError(t, users.CreateUser(ctx, &domain.User{ID: userID, Email: account, Role: domain.RoleUser}))
 	t.Cleanup(func() {
+		_, _ = db.Exec(ctx, "DELETE FROM connection_incidents WHERE user_id = $1", userID)
 		_, _ = db.Exec(ctx, "DELETE FROM emails WHERE user_id = $1", userID)
 		_, _ = db.Exec(ctx, "DELETE FROM notification_prefs WHERE user_id = $1", userID)
 		_, _ = db.Exec(ctx, "DELETE FROM users WHERE id = $1", userID)

@@ -31,6 +31,8 @@ const (
 	ProductEventInsightDismissed  = "insight_dismissed"
 	ProductEventInsightFeedback   = "insight_feedback"
 	ProductEventAskTopiAsked      = "ask_topi_asked"
+	// ProductEventConnectionReconnected: a connection that was down was authorized again (plan/27 §D)
+	ProductEventConnectionReconnected = "connection_reconnected"
 )
 
 // Kinds of review_resolved (what was waiting in Por revisar)
@@ -43,15 +45,16 @@ const (
 
 // productEventProps lists the props each event accepts and whether each one is an id (number) or an enum
 var productEventProps = map[string]map[string]propKind{
-	ProductEventCategoryCorrected: {"transaction_id": propID},
-	ProductEventAmountCorrected:   {"transaction_id": propID},
-	ProductEventReviewResolved:    {"transaction_id": propID, "kind": propEnum, "dismissed": propBool},
-	ProductEventBudgetCreated:     {"category_id": propID},
-	ProductEventInsightDismissed:  {"insight": propEnum},
-	ProductEventInsightFeedback:   {"insight": propEnum, "useful": propBool},
-	ProductEventAskTopiAsked:      {},
-	ProductEventSupportStarted:    {},
-	ProductEventSupportApproved:   {},
+	ProductEventCategoryCorrected:     {"transaction_id": propID},
+	ProductEventAmountCorrected:       {"transaction_id": propID},
+	ProductEventReviewResolved:        {"transaction_id": propID, "kind": propEnum, "dismissed": propBool},
+	ProductEventBudgetCreated:         {"category_id": propID},
+	ProductEventInsightDismissed:      {"insight": propEnum},
+	ProductEventInsightFeedback:       {"insight": propEnum, "useful": propBool},
+	ProductEventAskTopiAsked:          {},
+	ProductEventConnectionReconnected: {"email_id": propID, "provider": propEnum},
+	ProductEventSupportStarted:        {},
+	ProductEventSupportApproved:       {},
 }
 
 var reviewKinds = map[string]bool{ReviewKindVerify: true, ReviewKindInstallments: true, ReviewKindCounterpart: true, ReviewKindTransfer: true}

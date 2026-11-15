@@ -37,7 +37,10 @@ func NewGmailAPI(config *config.Gmail) *API {
 }
 
 func (g *API) GetAuthURL() *string {
-	url := g.config.AuthCodeURL(enums.GmailStateToken, oauth2.AccessTypeOffline)
+	// prompt=consent: Google returns a refresh token only on consent, and without one reconnecting a connection
+	// that was removed (or whose grant is still alive) fails
+	url := g.config.AuthCodeURL(enums.GmailStateToken, oauth2.AccessTypeOffline,
+		oauth2.SetAuthURLParam("prompt", "consent"))
 	return &url
 }
 

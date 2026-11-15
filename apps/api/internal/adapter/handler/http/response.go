@@ -470,6 +470,8 @@ type EmailResponse struct {
 	Active   bool    `json:"active" example:"true"`
 	Provider string  `json:"provider,omitempty" example:"gmail"`
 	Error    *string `json:"error" example:"connection_failed"`
+	// since when it is down (plan/27 §D)
+	ErrorAt *time.Time `json:"error_at,omitempty"`
 }
 
 type CustomEmailResponse struct {
@@ -497,6 +499,7 @@ func newEmailListResponse(emails []domain.Email, limit, skip uint64) emailListRe
 			Active:   email.Active,
 			Provider: email.Provider,
 			Error:    email.Error,
+			ErrorAt:  email.ErrorAt,
 		})
 
 	}
