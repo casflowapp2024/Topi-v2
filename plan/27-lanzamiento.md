@@ -222,22 +222,73 @@ sin `admin_audit`:
 8. **I.1** → I.2 → I.3.
 
 ## Criterios de aceptación
+Verificados el 14-nov-2026 en la rama `feat/lanzamiento` (sin merge: JuanMa prueba primero). Evidencia local: Postgres 16
+en :54451 (`topi_test` con `schema_v17.sql` para integración, `topi_e2e` con usuarios ficticios `@topi.test`, copia del
+dump `topi_val`), API de la rama con `MAIL_PROVIDER=log`, build estático servido como nginx. Capturas y Lighthouse en
+`topiv2/capturas-lanzamiento/`.
+
 - [ ] Diagnóstico reproducible con un script SQL agregado (sin nombres ni correos) y corrido en producción.
-      (Script: `infra/scripts/sql/launch-diagnostic.sql` + `infra/scripts/prod/launch-diagnostic.sh`; en la copia del
-      dump con `as_of=2026-10-17` da exactamente la tabla de arriba. **Falta correrlo en producción.**)
-- [x] A (estado): En producción sin verificar, 18/100 usuarios de OAuth (14-nov-2026).
-- [ ] A: marca y acceso a datos enviados; CASA contratada o descartada con decisión
-      escrita; mientras tanto, tope de 100 usuarios de Gmail controlado.
-- [ ] B: checklist en el Inicio con estado real; "Leyendo tus correos…"; métrica "1.ª automática en 48 h" en el panel.
-- [ ] C: aviso en app y un correo por conexión tras 48 h sin transacciones; lista de bancos soportados; ningún cuerpo
-      de correo guardado en la base (test/revisión).
-- [ ] D: banner persistente con Reconectar en un toque; `error_at`; métrica de tiempo a reconectar.
-- [ ] E: opiniones en el panel (auditado), límite por usuario, aviso por correo sin el texto.
-- [ ] F: landing con qué lee/qué no lee, bancos, privacidad, FAQ; Lighthouse móvil ≥ 90; `robots.txt` y `sitemap.xml`.
-- [ ] G: envío uno a uno con vista previa, dedupe de 90 días, bloqueado para conexiones caídas sin D.
+      (`infra/scripts/sql/launch-diagnostic.sql` + `infra/scripts/prod/launch-diagnostic.sh`; en la copia del dump con
+      `as_of=2026-10-17` reproduce la tabla de arriba. **Falta correrlo en producción** — paso de JuanMa.)
+- [x] A (estado): En producción sin verificar, 18/100 usuarios de OAuth (14-nov-2026). Sin cambios al 14-nov (JuanMa).
+- [ ] A: marca y acceso a datos enviados; CASA contratada o descartada con decisión escrita; mientras tanto, tope de 100
+      usuarios de Gmail controlado. (Lo del código está listo: landing y Política con Uso limitado en F, aviso de "app no
+      verificada" antes del permiso, Outlook primero para Hotmail/Outlook/Live, cupos de Gmail en Panel → Lanzamiento.
+      **El envío a Google es de JuanMa.**)
+- [x] B: checklist en el Inicio con estado real; "Leyendo tus correos…"; métrica "1.ª automática en 48 h" en el panel.
+      (`GET /onboarding/status` y `GET /email/status`; `OnboardingChecklist` reemplaza el modal de Onboarding2;
+      `onboarding_step_completed` una vez por paso (índice único); panel: % 24 h, % 48 h y mediana de horas.)
+- [x] C: aviso en app y un correo por conexión tras 48 h sin transacciones; lista de bancos soportados; ningún cuerpo
+      de correo guardado en la base (test/revisión). (`UnsupportedBankNotice`, `bank_unsupported` con dedupe por
+      conexión y cancelado si empieza a leer, `GET /public/banks`, `TestNoEmailBodyStored`; buzón en
+      `BANK_SAMPLES_ADDRESS`, vacío hasta que JuanMa lo defina.)
+- [x] D: banner persistente con Reconectar en un toque; `error_at`; métrica de tiempo a reconectar.
+      (000046 `emails.error_at` + `connection_incidents`; reconectar reautoriza la misma conexión con lectura prioritaria
+      y `connection_reconnected`; Gmail con `prompt=consent`; "Ahora no" = 24 h; Lectura: % reconectado en 7 d y
+      mediana. En la copia del dump, las 3 conexiones caídas reciben `error_at` y su caída abierta.)
+- [x] E: opiniones en el panel (auditado), límite por usuario, aviso por correo sin el texto.
+      (000048 `feedback`; 3 por día → 429; Panel → Opiniones con id corto; `feedback_read` en `admin_audit`;
+      `admin_feedback` 1 por hora con solo el conteo.)
+- [x] F: landing con qué lee/qué no lee, bancos, privacidad, FAQ; Lighthouse móvil ≥ 90; `robots.txt` y `sitemap.xml`.
+      (Prerender en el build; Lighthouse móvil 12.2.1 con gzip como nginx: rendimiento 92, accesibilidad 100, buenas
+      prácticas 100, SEO 100. `main.js` de 1,2 MB a 328 KB. Sin precios, Plus ni Apoyar.)
+- [x] G: envío uno a uno con vista previa, dedupe de 90 días, bloqueado para conexiones caídas sin D.
+      (Decisión de JuanMa 14-nov: mensaje personal con su propio interruptor `email_personal` y su baja; 000049;
+      `REACTIVATION_DAILY_LIMIT`; `REACTIVATION_ALLOW_BROKEN=false` hasta que D esté en producción; el outbox guarda solo
+      el texto con `{nombre}`.)
 - [x] H: rutas del worker solo con `X-API-Key` (JWT de admin → 403, test); rutas sin uso eliminadas.
       (`ServiceOnlyMiddleware`; `service_routes_test.go`: las 5 rutas del worker con JWT de admin → 403, sin nada → 401,
       clave mala → 401; las 5 rutas eliminadas → 404; `/init/data` → 404 en producción; `/admin/*` con la `X-API-Key`
       → 403. Además el log de requests ya no guarda el correo del usuario.)
 - [ ] I: métricas de paso por etapa visibles en el panel; decisión de pasar de etapa anotada aquí con fecha.
-- [ ] Migraciones con `down`; `go test ./...`, tests del worker, jest y `npm run build` verdes; cero secretos.
+      (Panel → Lanzamiento con los criterios de I.1–I.3 y `launch_stages` auditado: hecho. **Falta la decisión real**:
+      cuando JuanMa empiece I.1, anotarla aquí con fecha.)
+- [x] Migraciones con `down`; `go test ./...`, tests del worker, jest y `npm run build` verdes; cero secretos.
+      (000046–000050, cada una `down`→`up` en `topi_test` y las cinco `up`→`down` sobre una copia del dump; `go test
+      ./...` 13 paquetes ok; integración ok; jest 154/154 — `App.test.js` falla igual que en `main`; `npm run build` ok;
+      el worker no cambió; `git grep` de secretos limpio.)
+
+## Hallazgos durante la implementación (14-nov-2026)
+- **Conectar o reconectar un correo fallaba desde 000039**: `RegisterEmail` hacía `RETURNING *` y leía 11 columnas
+  (ahora hay 12). El INSERT quedaba hecho pero la API respondía error y el front no pedía la primera lectura. Arreglado
+  con test de integración (90999c1). Revisar en producción las conexiones creadas desde el 8-nov.
+- El aviso `connection_down` guardaba la dirección de la conexión en el outbox y el log de requests guardaba el correo
+  del usuario: corregidos. El `logmailer` enmascara el destinatario fuera de local.
+- `/email/list` devolvía en `total` las conexiones de todos los usuarios: ahora solo las del usuario.
+- **Gemini y Uso limitado**: la Política dice que los datos de Gmail no se usan para entrenar modelos. Eso exige usar la
+  API de Gemini en el plan **de pago** (el gratuito permite a Google usar los datos para mejorar sus productos).
+  Confirmarlo antes de enviar el acceso a datos a Google.
+
+## Pasos manuales (JuanMa)
+1. **Google (§A)**: Search Console con `topi.cash` verificado (ya funciona el dominio); en Google Auth Platform →
+   Marca: página de inicio `https://topi.cash/`, Política `https://topi.cash/privacy-policy/`, Términos
+   `https://topi.cash/terms-of-service/`, logo, correo de soporte; enviar y esperar. Luego Acceso a datos:
+   justificación de `gmail.readonly` (texto en la sección 3 de la Política), video no listado del flujo completo
+   (registro → aviso de app no verificada → permiso → movimiento leído → desconectar). Después CASA Tier 2.
+2. **Buzón de ejemplos (§C)**: crear `bancos@topi.cash` (reenvío gratuito, p. ej. Cloudflare Email Routing o
+   ImprovMX, hacia el buzón del equipo) y poner `BANK_SAMPLES_ADDRESS` en Coolify.
+3. **Coolify (`topi-api`)**: `BANK_SAMPLES_ADDRESS`, `REACTIVATION_DAILY_LIMIT=5`, `REACTIVATION_ALLOW_BROKEN=false`
+   (en `true` solo cuando el banner de §D esté desplegado). `MAIL_REPLY_TO` ya existe y recibe el aviso de opiniones.
+4. **Front**: el contenedor usa el `nginx.conf` nuevo (`/` = landing prerenderizada, el resto `app.html`). Revisar tras
+   el deploy que `/`, `/login` y `/dashboard` cargan y que `robots.txt`/`sitemap.xml` responden.
+5. Correr `infra/scripts/prod/launch-diagnostic.sh --container <pg>` y, al empezar I.1, marcarla en Panel → Lanzamiento.
