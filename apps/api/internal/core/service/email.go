@@ -6,6 +6,7 @@ import (
 	"cash-flow/internal/enums"
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"strings"
 
@@ -149,9 +150,10 @@ func (e *EmailService) SaveEmailError(ctx context.Context, emailID uint64, error
 		return nil
 	}
 
+	// only the connection id: its address is filled in when sending (Enrich), never stored in the outbox
 	payload, _ := json.Marshal(map[string]any{
-		"connection_email": alert.ConnectionEmail,
-		"provider":         domain.ProviderLabel(alert.Provider),
+		"email_id": emailID,
+		"provider": domain.ProviderLabel(alert.Provider),
 	})
 	userID := alert.UserID
 	if _, err = e.mail.Enqueue(ctx, domain.OutboxEmail{
@@ -195,4 +197,28 @@ func (e *EmailService) ReadEmail(ctx context.Context, userID string, accountIDs 
 	response := e.email.ReadEmail(accountsDetails)
 
 	return response, nil
+}
+
+// Enrich fills the address of the connection when sending connection_down (implements MailEnricher). The
+// alert is cancelled when the connection is gone or was reconnected before the email went out.
+func (e *EmailService) Enrich(ctx context.Context, email domain.OutboxEmail, data map[string]any) error {
+	if _, ok := data["connection_email"]; ok {
+		return nil // queued before the address left the outbox
+	}
+	rawID, _ := data["email_id"].(float64)
+	if rawID <= 0 || email.UserID == nil {
+		return domain.ErrMailCancelled
+	}
+	connection, err := e.repo.GetEmail(ctx, *email.UserID, uint64(rawID), nil)
+	if errors.Is(err, domain.ErrDataNotFound) {
+		return domain.ErrMailCancelled
+	}
+	if err != nil {
+		return err
+	}
+	if connection.Error == nil || *connection.Error == "" {
+		return domain.ErrMailCancelled
+	}
+	data["connection_email"] = connection.Email
+	return nil
 }

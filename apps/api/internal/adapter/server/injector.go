@@ -197,6 +197,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 	emailRepository := dbrepository.NewEmailRepository(db)
 	emailService := service.NewEmailService(emailRepository, emailResource, accountRepo, accountService, transactionManager)
 	emailService.SetMail(mailService)
+	mailService.SetEnricher(domain.TemplateConnectionDown, emailService)
 	emailHandler := http.NewEmailHandler(emailService)
 
 	// Admin panel: precomputed metrics, users table and founders (plan/25)
