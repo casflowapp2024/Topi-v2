@@ -129,6 +129,10 @@ plan/         plan de migración
   paso se registra una vez). `bank_unsupported` una vez por conexión sana sin movimientos a las 48 h; los correos de
   ejemplo van al buzón `BANK_SAMPLES_ADDRESS`, nunca a la base. Opiniones en `feedback` (máx. 500, 3 por día), solo en
   el panel auditado; al equipo solo "hay N opiniones" (`admin_feedback`, 1 por hora, sin el texto).
+  Reactivación personal (`reactivation_personal`): uno a uno desde Usuarios → "Escribirle", con vista previa; el
+  outbox guarda solo el texto del equipo con `{nombre}` (el nombre lo pone el enricher); interruptor propio
+  `notification_prefs.email_personal` (baja `personal`), 90 días entre correos, `REACTIVATION_DAILY_LIMIT` y bloqueada
+  para conexiones caídas mientras `REACTIVATION_ALLOW_BROKEN=false`. Nunca masivo.
 - Pagos de tarjeta por correo: el worker (`flag_card_payments`, sin tocar el prompt) los vuelve entrada de la tarjeta y
   la API los guarda con `transactions.needs_counterpart`: ya cuentan como transferencia. `link_pending_card_payments`
   liga solo el caso sin duda; si no, la app pregunta de qué cuenta salió. No uses `should_verify` para esto: abrir la

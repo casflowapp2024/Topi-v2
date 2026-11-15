@@ -24,7 +24,7 @@ func newFeedbackRouter(t *testing.T) (*gin.Engine, *mock.MockUserService, *mock.
 	logger.Set(&config.App{Env: "test"})
 	router := gin.New()
 	routes := &Routes{UserHandler: &UserHandler{svc: users}, AdminHandler: NewAdminHandler(admin, nil),
-		FeedbackHandler: NewFeedbackHandler(feedback), Router: router}
+		FeedbackHandler: NewFeedbackHandler(feedback), ReactivationHandler: NewReactivationHandler(nil), Router: router}
 	routes.FeedbackRoutes()
 	return router, users, admin, feedback
 }
@@ -40,6 +40,19 @@ func TestFeedbackRoutes(t *testing.T) {
 		assert.Equal(t, http.StatusForbidden, w.Code)
 		w = doRequest(router, http.MethodPost, "/admin/feedback/1/read", map[string]string{"Authorization": "Bearer user-token"})
 		assert.Equal(t, http.StatusForbidden, w.Code)
+	})
+
+	t.Run("reactivation routes: admin only, one user per route", func(t *testing.T) {
+		router, users, _, _ := newFeedbackRouter(t)
+		users.EXPECT().Authorize(gomock.Any(), "user-token").Return(user, nil).Times(3)
+		for _, route := range []struct{ method, path string }{
+			{http.MethodGet, "/admin/users/u9/reactivation"},
+			{http.MethodPost, "/admin/users/u9/reactivation/preview"},
+			{http.MethodPost, "/admin/users/u9/reactivation"},
+		} {
+			w := doRequest(router, route.method, route.path, map[string]string{"Authorization": "Bearer user-token"})
+			assert.Equal(t, http.StatusForbidden, w.Code, route.path)
+		}
 	})
 
 	t.Run("an admin reads them and the access is audited", func(t *testing.T) {

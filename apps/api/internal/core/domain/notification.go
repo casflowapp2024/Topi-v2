@@ -23,6 +23,8 @@ func DefaultNotificationPrefs() NotificationPrefs {
 const (
 	UnsubMonthlySummary   = "monthly_summary"
 	UnsubConnectionAlerts = "connection_alerts"
+	// UnsubPersonal turns off the personal emails of the team (reactivation, plan/27 §G)
+	UnsubPersonal = "personal"
 )
 
 // UnsubscribeKind returns the preference a template belongs to ("" for transactional ones)
@@ -32,6 +34,8 @@ func UnsubscribeKind(template string) string {
 		return UnsubMonthlySummary
 	case TemplateConnectionDown, TemplateBankUnsupported:
 		return UnsubConnectionAlerts
+	case TemplateReactivation:
+		return UnsubPersonal
 	}
 	return ""
 }

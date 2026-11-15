@@ -118,6 +118,8 @@ var errorStatusMap = map[error]int{
 	domain.ErrUsernameExistsException:        http.StatusConflict,
 	domain.ErrLimitExceededException:         http.StatusTooManyRequests,
 	domain.ErrInvalidFeedback:                http.StatusBadRequest,
+	domain.ErrInvalidReactivation:            http.StatusBadRequest,
+	domain.ErrReactivationNotAllowed:         http.StatusConflict,
 	domain.ErrInvalidPasswordException:       http.StatusUnauthorized,
 	domain.ErrCodeMismatchException:          http.StatusUnauthorized,
 	domain.ErrNotAuthorizedException:         http.StatusUnauthorized,

@@ -5,6 +5,7 @@ import Button from '../ui/Button';
 import { getAdminUsers, isForbidden } from '../../apiCalls/admin';
 import { PanelError, SimpleTable, fmtInt, fmtDay, fmtDate, fmtDateTime } from './AdminUi';
 import { SkeletonRows } from '../ui/Skeleton';
+import ReactivationSheet from './ReactivationSheet';
 
 export const SEGMENTS = [
   { id: '', label: 'Todos' },
@@ -41,6 +42,8 @@ const AdminUsers = ({ reloadKey }) => {
   const [search, setSearch] = useState('');
   const [offset, setOffset] = useState(0);
   const [state, setState] = useState({ loading: true, data: null, error: null });
+  // "Escribirle" (plan/27 §G): una persona a la vez
+  const [writeTo, setWriteTo] = useState(null);
 
   useEffect(() => {
     const id = setTimeout(() => { setSearch(query.trim()); setOffset(0); }, 300);
@@ -92,6 +95,7 @@ const AdminUsers = ({ reloadKey }) => {
               { key: 'read', label: 'Último leído', render: (r) => fmtDateTime(r.last_email_read_at) },
               { key: 'auto', label: 'Auto. 30 d', align: 'right', render: (r) => fmtInt(r.auto_tx_30d) },
               { key: 'founder', label: 'Fundador', render: (r) => <FounderBadge row={r} /> },
+              { key: 'write', label: '', render: (r) => <Button size="sm" variant="ghost" onClick={() => setWriteTo(r)}>Escribirle</Button> },
             ]} />
           </div>
           {/* Móvil: lista */}
@@ -108,6 +112,7 @@ const AdminUsers = ({ reloadKey }) => {
                   Registro {fmtDate(r.signup_at)} · activo {fmtDay(r.last_active_day)} · {fmtInt(r.auto_tx_30d)} automáticas 30 d
                 </span>
                 <span className="text-xs text-gray-700 dark:text-gray-300">Conexiones sanas: {connections(r)}</span>
+                <div><Button size="sm" variant="ghost" onClick={() => setWriteTo(r)}>Escribirle</Button></div>
               </li>
             ))}
           </ul>
@@ -122,6 +127,7 @@ const AdminUsers = ({ reloadKey }) => {
           </div>
         </>
       )}
+      <ReactivationSheet user={writeTo} onClose={() => setWriteTo(null)} />
     </Card>
   );
 };

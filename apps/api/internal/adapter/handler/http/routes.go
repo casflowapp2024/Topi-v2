@@ -31,6 +31,7 @@ type Routes struct {
 	BillingHandler        *BillingHandler
 	ReadingHandler        *ReadingHandler
 	FeedbackHandler       *FeedbackHandler
+	ReactivationHandler   *ReactivationHandler
 	// Activity records the daily activity of the authenticated users (optional)
 	Activity port.ActivityTracker
 	Router   *gin.Engine
@@ -339,5 +340,11 @@ func (r *Routes) FeedbackRoutes() {
 	{
 		admin.GET("/feedback", r.FeedbackHandler.AdminList)
 		admin.POST("/feedback/:id/read", r.FeedbackHandler.AdminMarkRead)
+		// personal reactivation: one user per request, never bulk (plan/27 §G)
+		if r.ReactivationHandler != nil {
+			admin.GET("/users/:id/reactivation", r.ReactivationHandler.View)
+			admin.POST("/users/:id/reactivation/preview", r.ReactivationHandler.Preview)
+			admin.POST("/users/:id/reactivation", r.ReactivationHandler.Send)
+		}
 	}
 }

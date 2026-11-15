@@ -1,0 +1,5 @@
+{{define "content"}}
+{{range .paragraphs}}<p style="margin:0 0 14px 0;color:#374151;white-space:pre-line;">{{.}}</p>
+{{end}}{{if .founder}}<p style="margin:16px 0 14px 0;padding:12px 14px;background:#EEF0FE;border-radius:10px;color:#374151;">P. D.: como estuviste desde el principio, quedaste como <strong>fundador de Topi</strong>. Es nuestra forma de darte las gracias, no tienes que hacer nada.</p>
+{{end}}<p style="margin:16px 0 0 0;"><a href="{{.app_url}}" style="color:#5266EB;font-weight:600;">Abrir Topi</a></p>
+{{end}}

@@ -58,6 +58,8 @@ func (r *NotificationRepository) SetPref(ctx context.Context, userID, kind strin
 		column = "email_monthly_summary"
 	case domain.UnsubConnectionAlerts:
 		column = "email_connection_alerts"
+	case domain.UnsubPersonal:
+		column = "email_personal"
 	default:
 		return fmt.Errorf("unknown preference %q", kind)
 	}

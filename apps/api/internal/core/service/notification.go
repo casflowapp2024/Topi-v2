@@ -122,7 +122,7 @@ func (s *NotificationPrefsService) verify(token string) (userID, kind string, er
 	}
 
 	userID, kind, ok := strings.Cut(string(body), "|")
-	if !ok || userID == "" || (kind != domain.UnsubMonthlySummary && kind != domain.UnsubConnectionAlerts) {
+	if !ok || userID == "" || (kind != domain.UnsubMonthlySummary && kind != domain.UnsubConnectionAlerts && kind != domain.UnsubPersonal) {
 		return "", "", domain.ErrInvalidUnsubscribeToken
 	}
 	return userID, kind, nil

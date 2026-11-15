@@ -131,6 +131,7 @@ func (mh *MailHandler) UpdateNotificationPrefs(ctx *gin.Context) {
 var unsubscribeNames = map[string]string{
 	domain.UnsubMonthlySummary:   "el resumen mensual",
 	domain.UnsubConnectionAlerts: "los avisos de conexiones de correo",
+	domain.UnsubPersonal:         "los correos personales del equipo de Topi",
 }
 
 var unsubscribePage = template.Must(template.New("unsubscribe").Parse(`<!doctype html>

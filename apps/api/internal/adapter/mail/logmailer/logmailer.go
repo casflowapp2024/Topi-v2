@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync/atomic"
 )
 
@@ -26,11 +27,25 @@ func New(logBody bool) *Mailer {
 func (m *Mailer) Send(_ context.Context, msg domain.EmailMessage) (string, error) {
 	id := fmt.Sprintf("log-%d", m.seq.Add(1))
 
-	attrs := []any{"provider_id", id, "to", msg.To, "subject", msg.Subject, "template", msg.Tags["template"]}
+	// outside local the address is masked: no emails in the logs (plan/27)
+	to := MaskAddress(msg.To)
+	if m.LogBody {
+		to = msg.To
+	}
+	attrs := []any{"provider_id", id, "to", to, "subject", msg.Subject, "template", msg.Tags["template"]}
 	if m.LogBody {
 		attrs = append(attrs, "text", msg.Text)
 	}
 	slog.Info("mail (log, not sent)", attrs...)
 
 	return id, nil
+}
+
+// MaskAddress keeps the first letter and the domain: "a***@example.com"
+func MaskAddress(address string) string {
+	local, domain, ok := strings.Cut(address, "@")
+	if !ok || local == "" {
+		return "***"
+	}
+	return string([]rune(local)[0]) + "***@" + domain
 }

@@ -55,6 +55,7 @@ type Handlers struct {
 	Billing                *http.BillingHandler
 	Reading                *http.ReadingHandler
 	Feedback               *http.FeedbackHandler
+	Reactivation           *http.ReactivationHandler
 	Initialization         *http.InitDevHandler
 	CategoryInitialization *http.InitializationHandler
 	// Activity records the daily activity in AuthMiddleware
@@ -234,6 +235,19 @@ func NewInjector(settings *config.Configuration) *Injector {
 	mailService.SetEnricher(domain.TemplateAdminFeedback, feedbackService)
 	feedbackHandler := http.NewFeedbackHandler(feedbackService)
 
+	// Personal reactivation (plan/27 §G): one at a time, previewed with the same templates the outbox sends
+	previewRenderer, err := templates.New()
+	if err != nil {
+		slog.Error("mail templates are broken", "error", err)
+		os.Exit(1)
+	}
+	reactivationService := service.NewReactivationService(dbrepository.NewReactivationRepository(db), mailService,
+		previewRenderer, adminService, domain.ReactivationRules{
+			DailyLimit: settings.Launch.ReactivationDailyLimit, AllowBroken: settings.Launch.ReactivationAllowBroken,
+		}, settings.Mail.AppBaseURL)
+	mailService.SetEnricher(domain.TemplateReactivation, reactivationService)
+	reactivationHandler := http.NewReactivationHandler(reactivationService)
+
 	// Initialization Dev
 	initDevHandler := http.NewDevHandler(
 		categoryService,
@@ -267,6 +281,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 			Billing:                billingHandler,
 			Reading:                readingHandler,
 			Feedback:               feedbackHandler,
+			Reactivation:           reactivationHandler,
 			Initialization:         initDevHandler,
 			CategoryInitialization: InitHandler,
 			Activity:               service.NewActivityService(dbrepository.NewActivityRepository(db)),

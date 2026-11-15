@@ -43,6 +43,7 @@ const (
 	AdminActionFounderUnconfirm     = "founder_unconfirm"
 	AdminActionFounderConfirmActive = "founder_confirm_active"
 	AdminActionFeedbackRead         = "feedback_read"
+	AdminActionReactivationSent     = "reactivation_sent"
 )
 
 // AdminAudit is one row of admin_audit: who looked at or changed what in the panel

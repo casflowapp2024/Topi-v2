@@ -16,6 +16,9 @@ var sampleData = map[string]map[string]any{
 	"connection_down": {"connection_email": "ana.banco@gmail.com", "provider": "Gmail",
 		"unsubscribe_url": "https://api.topi.test/mail/unsubscribe?t=abc"},
 	"admin_feedback": {"count": 3},
+	"reactivation_personal": {"subject": "Rehicimos Topi: ¿qué te hizo dejarla?", "founder": true,
+		"paragraphs":      []string{"Hola Ana,", "Soy JuanMa, de Topi.", "JuanMa"},
+		"unsubscribe_url": "https://api.topi.test/mail/unsubscribe?t=abc"},
 	"bank_unsupported": {"supported_banks": "BBVA, Bancolombia, Nubank", "samples_address": "bancos@topi.test",
 		"unsubscribe_url": "https://api.topi.test/mail/unsubscribe?t=abc"},
 	// generic receipt / payment notice for the business model (N1/N3): every text comes from the caller

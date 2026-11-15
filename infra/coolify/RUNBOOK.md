@@ -527,6 +527,9 @@ Variables de `topi-api` (plantilla `api.env.template`):
   usan para agregar el banco y **se borran**; nunca se copian a la base ni al repo.
 - `REACTIVATION_DAILY_LIMIT` (5): correos de reactivación personal por día desde el panel.
 - `REACTIVATION_ALLOW_BROKEN` (`false`): ponerlo en `true` solo después de desplegar el banner de conexión caída (§D).
+- Reactivación: panel → Usuarios → **Escribirle** (una persona, vista previa, enviar). Es un mensaje personal con
+  su propia baja (`email_personal`); las respuestas llegan a `MAIL_REPLY_TO`. Nunca más de una vez en 90 días.
+- Opiniones: panel → **Opiniones**. El aviso "hay N opiniones nuevas" llega a `MAIL_REPLY_TO` (máx. 1 por hora).
 
 Qué hace la API sola al desplegar:
 - Cada hora, a las conexiones sanas con cuentas ligadas y **sin ninguna transacción 48 h después de conectarse** les
