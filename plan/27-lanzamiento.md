@@ -223,6 +223,8 @@ sin `admin_audit`:
 
 ## Criterios de aceptación
 - [ ] Diagnóstico reproducible con un script SQL agregado (sin nombres ni correos) y corrido en producción.
+      (Script: `infra/scripts/sql/launch-diagnostic.sql` + `infra/scripts/prod/launch-diagnostic.sh`; en la copia del
+      dump con `as_of=2026-10-17` da exactamente la tabla de arriba. **Falta correrlo en producción.**)
 - [x] A (estado): En producción sin verificar, 18/100 usuarios de OAuth (14-nov-2026).
 - [ ] A: marca y acceso a datos enviados; CASA contratada o descartada con decisión
       escrita; mientras tanto, tope de 100 usuarios de Gmail controlado.

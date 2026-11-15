@@ -526,6 +526,7 @@ Antes de activarlo: contador/abogado revisan el IVA (se envía `IVA 0`) y si el 
 | "Olvidé mi contraseña" | El usuario lo hace solo en `/forgot_password/` (código por correo). Respaldo si el correo falla: `SERVER$ /root/topi-scripts/prod/reset-password.sh --container <pg> <email>` (el usuario luego pide el código al entrar) |
 | Correos que no salen | `SELECT template, status, last_error, count(*) FROM email_outbox WHERE created_at > now() - interval '1 day' GROUP BY 1,2,3;` (B8.5) |
 | Estado de la migración de cuentas | `SERVER$ /root/topi-scripts/prod/auth-report.sh --container <pg> [dias]` |
+| Diagnóstico del lanzamiento (plan 27, solo conteos) | `SERVER$ /root/topi-scripts/prod/launch-diagnostic.sh --container <pg> [AAAA-MM-DD]` |
 | Smoke después de un deploy | `LOCAL$ infra/scripts/smoke-prod.sh` |
 | Probar el backup (mensual) | `SERVER$ .../prod/backup-check.sh ...` (B7.4) |
 | Consulta SQL manual | `SERVER$ docker exec -it <pg> psql -U topi -d cashflow` (nunca abrir 5432) |
