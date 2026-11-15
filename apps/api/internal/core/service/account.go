@@ -106,18 +106,6 @@ func (as *AccountService) AdminGetAccounts(
 	return accounts, nil
 }
 
-func (as *AccountService) AdminGetAccountsByBank(
-	ctx context.Context,
-	filters domain.AccountFilters,
-) ([]domain.BankAccountGroup, error) {
-	groups, err := as.repo.AdminGetAccountsByBank(ctx, filters)
-	if err != nil {
-		return nil, err
-	}
-
-	return groups, nil
-}
-
 func (as *AccountService) CalculateInitialBalance(
 	ctx context.Context,
 	userID string,

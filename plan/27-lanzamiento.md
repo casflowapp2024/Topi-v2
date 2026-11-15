@@ -235,6 +235,9 @@ sin `admin_audit`:
 - [ ] E: opiniones en el panel (auditado), límite por usuario, aviso por correo sin el texto.
 - [ ] F: landing con qué lee/qué no lee, bancos, privacidad, FAQ; Lighthouse móvil ≥ 90; `robots.txt` y `sitemap.xml`.
 - [ ] G: envío uno a uno con vista previa, dedupe de 90 días, bloqueado para conexiones caídas sin D.
-- [ ] H: rutas del worker solo con `X-API-Key` (JWT de admin → 403, test); rutas sin uso eliminadas.
+- [x] H: rutas del worker solo con `X-API-Key` (JWT de admin → 403, test); rutas sin uso eliminadas.
+      (`ServiceOnlyMiddleware`; `service_routes_test.go`: las 5 rutas del worker con JWT de admin → 403, sin nada → 401,
+      clave mala → 401; las 5 rutas eliminadas → 404; `/init/data` → 404 en producción; `/admin/*` con la `X-API-Key`
+      → 403. Además el log de requests ya no guarda el correo del usuario.)
 - [ ] I: métricas de paso por etapa visibles en el panel; decisión de pasar de etapa anotada aquí con fecha.
 - [ ] Migraciones con `down`; `go test ./...`, tests del worker, jest y `npm run build` verdes; cero secretos.

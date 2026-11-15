@@ -36,21 +36,6 @@ func (m *MockAccountRepository) EXPECT() *MockAccountRepositoryMockRecorder {
 	return m.recorder
 }
 
-// AdminGetAccountsByBank mocks base method.
-func (m *MockAccountRepository) AdminGetAccountsByBank(ctx context.Context, filters domain.AccountFilters) ([]domain.BankAccountGroup, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AdminGetAccountsByBank", ctx, filters)
-	ret0, _ := ret[0].([]domain.BankAccountGroup)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// AdminGetAccountsByBank indicates an expected call of AdminGetAccountsByBank.
-func (mr *MockAccountRepositoryMockRecorder) AdminGetAccountsByBank(ctx, filters interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdminGetAccountsByBank", reflect.TypeOf((*MockAccountRepository)(nil).AdminGetAccountsByBank), ctx, filters)
-}
-
 // AdminGetAccountsList mocks base method.
 func (m *MockAccountRepository) AdminGetAccountsList(ctx context.Context, filters domain.AccountFilters) ([]domain.Account, error) {
 	m.ctrl.T.Helper()
@@ -188,21 +173,6 @@ func (m *MockAccountService) AdminGetAccounts(ctx context.Context, filters domai
 func (mr *MockAccountServiceMockRecorder) AdminGetAccounts(ctx, filters interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdminGetAccounts", reflect.TypeOf((*MockAccountService)(nil).AdminGetAccounts), ctx, filters)
-}
-
-// AdminGetAccountsByBank mocks base method.
-func (m *MockAccountService) AdminGetAccountsByBank(ctx context.Context, filters domain.AccountFilters) ([]domain.BankAccountGroup, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AdminGetAccountsByBank", ctx, filters)
-	ret0, _ := ret[0].([]domain.BankAccountGroup)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// AdminGetAccountsByBank indicates an expected call of AdminGetAccountsByBank.
-func (mr *MockAccountServiceMockRecorder) AdminGetAccountsByBank(ctx, filters interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdminGetAccountsByBank", reflect.TypeOf((*MockAccountService)(nil).AdminGetAccountsByBank), ctx, filters)
 }
 
 // CalculateInitialBalance mocks base method.

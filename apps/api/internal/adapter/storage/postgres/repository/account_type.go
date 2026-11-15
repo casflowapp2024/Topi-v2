@@ -5,9 +5,7 @@ import (
 	"cash-flow/internal/core/domain"
 	"cash-flow/internal/enums"
 	"cash-flow/internal/mappers"
-	"cash-flow/internal/utils"
 	"context"
-	"time"
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -111,44 +109,4 @@ func (at AccountTypeRepository) GetAccountTypeList(ctx context.Context, skip uin
 	}
 
 	return accountTypes, nil
-}
-
-func (at AccountTypeRepository) UpdateAccountType(ctx context.Context, accountType *domain.AccountType) error {
-	typeString := utils.NullString(accountType.Name)
-
-	query := at.db.QueryBuilder.Update(enums.AccountTypeTableName).
-		Set("name", sq.Expr("COALESCE(?, name)", typeString)).
-		Set("updated_at", time.Now()).
-		Where(sq.Eq{"id": accountType.ID}).
-		Suffix("RETURNING " + accountTypeColumns)
-
-	sql, args, err := query.ToSql()
-	if err != nil {
-		return err
-	}
-
-	err = scanAccountType(at.db.QueryRow(ctx, sql, args...), accountType)
-
-	if err != nil {
-		return mappers.MapPostgresErrorCode(err)
-	}
-
-	return nil
-}
-
-func (at AccountTypeRepository) DeleteAccountType(ctx context.Context, id uint64) error {
-	query := at.db.QueryBuilder.Delete(enums.AccountTypeTableName).
-		Where(sq.Eq{"id": id})
-
-	sql, args, err := query.ToSql()
-	if err != nil {
-		return err
-	}
-
-	_, err = at.db.Exec(ctx, sql, args...)
-	if err != nil {
-		return mappers.MapPostgresErrorCode(err)
-	}
-
-	return nil
 }

@@ -190,37 +190,6 @@ type deleteUserExtraRequest struct {
 	ID uint64 `uri:"id" binding:"required" example:"1"`
 }
 
-// DeleteUserExtra godoc
-//
-//	@Summary		Delete user extra information
-//	@Description	Delete user extra information for the authenticated user
-//	@Tags			UserExtra
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	response		"User extra information deleted"
-//	@Failure		400	{object}	errorResponse	"Validation error"
-//	@Failure		401	{object}	errorResponse	"Unauthorized error"
-//	@Failure		404	{object}	errorResponse	"Data not found error"
-//	@Failure		500	{object}	errorResponse	"Internal server error"
-//	@Router			/user-extra [delete]
-//	@Security		BearerAuth
-func (uh *UserExtraHandler) DeleteUserExtra(ctx *gin.Context) {
-	var req deleteUserExtraRequest
-
-	if err := ctx.ShouldBindUri(&req); err != nil {
-		validationError(ctx, err)
-		return
-	}
-
-	err := uh.svc.Delete(ctx, req.ID)
-	if err != nil {
-		handleError(ctx, err)
-		return
-	}
-
-	handleSuccess(ctx, nil)
-}
-
 type adminUpdateReadEmailRequest struct {
 	UserID string `json:"user_id" binding:"required" example:"user-123"`
 	Read   bool   `json:"read" binding:"omitempty" example:"true"`

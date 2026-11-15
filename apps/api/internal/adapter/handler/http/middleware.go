@@ -106,7 +106,37 @@ func AuthMiddleware(auth port.UserService, trackers ...port.ActivityTracker) gin
 	}
 }
 
-// AdminMiddleware is a middleware to check if the user is an admin
+// ServiceOnlyMiddleware guards the routes only the worker calls (plan/27 §H): it accepts only X-API-Key
+// (INTERNAL_API_KEY) and rejects any bearer token with 403, an admin's included. A human who ever needs one
+// of these goes under /admin with AdminAuditMiddleware.
+func ServiceOnlyMiddleware(auth port.UserService) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		apiKey := ctx.GetHeader(enums.APIKeyHeader)
+		if apiKey == "" {
+			if ctx.GetHeader(enums.AuthorizationHeaderKey) != "" {
+				handleAbort(ctx, domain.ErrForbidden)
+				return
+			}
+			handleAbort(ctx, domain.ErrUnauthorized)
+			return
+		}
+
+		payload, err := auth.AuthorizeAPIKey(apiKey)
+		if err != nil {
+			handleAbort(ctx, err)
+			return
+		}
+
+		ctx.Set(enums.AuthorizationPayloadKey, payload)
+
+		defer logRequestMetricWithPayload(ctx, payload, nil)
+
+		ctx.Next()
+	}
+}
+
+// AdminMiddleware is a middleware to check if the user is an admin. Only people: the X-API-Key payload
+// (worker) is rejected, so every /admin access has a real admin in admin_audit.
 func AdminMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		payload, err := domain.GetAuthPayload(ctx, enums.AuthorizationPayloadKey)
@@ -115,7 +145,7 @@ func AdminMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		isAdmin := payload.Groups[enums.AdminRole]
+		isAdmin := payload.Groups[enums.AdminRole] && payload.UserID != serviceCallerID
 		if !isAdmin {
 			err = domain.ErrForbidden
 			handleAbort(ctx, err)
@@ -172,8 +202,8 @@ func logRequestMetricWithPayload(c *gin.Context, payload *domain.TokenPayload, e
 
 	ctxLogger := logger.Logger.WithRequest(requestIDStr, c.Request.Method, c.FullPath())
 	if payload != nil {
+		// user id only: no emails in the logs (plan/27)
 		ctxLogger = ctxLogger.WithUser(payload.UserID)
-		ctxLogger = ctxLogger.WithField("email", payload.Email)
 	}
 
 	ctxLogger.LogMetric(status, err)

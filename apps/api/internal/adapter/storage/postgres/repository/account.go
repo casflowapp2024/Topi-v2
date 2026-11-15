@@ -7,7 +7,6 @@ import (
 	"cash-flow/internal/mappers"
 	"cash-flow/internal/utils"
 	"context"
-	"encoding/json"
 	"errors"
 	"time"
 
@@ -430,92 +429,6 @@ func (ar *AccountRepository) AdminGetAccountsList(
 	}
 
 	return accounts, nil
-}
-
-func (ar *AccountRepository) AdminGetAccountsByBank(
-	ctx context.Context,
-	filters domain.AccountFilters,
-) ([]domain.BankAccountGroup, error) {
-	var groups []domain.BankAccountGroup
-
-	// Main query with aggregation
-	query := ar.db.QueryBuilder.Select(
-		"a.user_id",
-		"b.name AS bank_name",
-		"e.id AS email_id",
-		"e.email AS user_email",
-		"e.provider AS user_provider",
-		"b.email AS bank_email",
-		"json_agg(json_build_object('id', a.id, 'name', a.name, 'last_four_digits', a.last_four_digits) ORDER BY a.id) AS accounts",
-	).
-		From(enums.AccountTableName+" a").
-		LeftJoin(enums.BankTableName+" b ON a.bank_id = b.id AND a.user_id = b.user_id").
-		LeftJoin(enums.EmailTableName+" e ON a.email_id = e.id AND a.user_id = e.user_id").
-		Where(sq.NotEq{"b.email": ""}).
-		Where(sq.Expr("b.email IS NOT NULL")).
-		Where(sq.Expr("a.email_id IS NOT NULL")).
-		Where(sq.Expr("e.access_token IS NOT NULL")).
-		Where(sq.Expr("e.refresh_token IS NOT NULL")).
-		Where(sq.NotEq{"e.active": false}).
-		Where(sq.Eq{"e.error": nil}).
-		GroupBy("a.user_id", "b.name", "e.id", "e.email", "e.provider", "e.active", "e.access_token", "e.refresh_token", "b.email").
-		OrderBy("a.user_id", "b.name").
-		Limit(filters.Limit).
-		Offset(filters.Skip)
-
-	if len(filters.IDs) > 0 {
-		query = query.Where(sq.Eq{"a.id": filters.IDs})
-	}
-
-	sql, args, err := query.ToSql()
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := ar.db.Query(ctx, sql, args...)
-	defer rows.Close()
-	if err != nil {
-		return nil, mappers.MapPostgresErrorCode(err)
-	}
-
-	for rows.Next() {
-		var (
-			group        domain.BankAccountGroup
-			accountsJSON []byte
-			bankEmail    *string
-		)
-
-		err = rows.Scan(
-			&group.UserID,
-			&group.BankName,
-			&group.EmailID,
-			&group.UserEmail,
-			&group.UserProvider,
-			&bankEmail,
-			&accountsJSON,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		// Split bank email by comma and trim whitespace
-		group.SenderEmails = utils.SplitAndTrimEmails(bankEmail)
-
-		// Parse accounts JSON
-		var accounts []domain.AccountBasicInfo
-		if err = json.Unmarshal(accountsJSON, &accounts); err != nil {
-			return nil, err
-		}
-		group.Accounts = accounts
-
-		groups = append(groups, group)
-	}
-
-	if len(groups) == 0 {
-		return groups, domain.ErrDataNotFound
-	}
-
-	return groups, nil
 }
 
 // DisconnectEmail updates all accounts related to the specified email to set email_id to null

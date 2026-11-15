@@ -39,6 +39,11 @@ func (r *Routes) auth() gin.HandlerFunc {
 	return AuthMiddleware(r.UserHandler.svc, r.Activity)
 }
 
+// service is the middleware of the routes only the worker calls: X-API-Key only, any JWT gets 403
+func (r *Routes) service() gin.HandlerFunc {
+	return ServiceOnlyMiddleware(r.UserHandler.svc)
+}
+
 func (r *Routes) HealthRoutes() {
 	health := r.Router.Group("/")
 	{
@@ -112,13 +117,6 @@ func (r *Routes) AccountTypeRoutes() {
 	{
 		AuthType.GET("/:id", r.AccountTypeHandler.GetAccountType)
 		AuthType.GET("/list", r.AccountTypeHandler.GetAccountTypes)
-
-		admin := AuthType.Use(AdminMiddleware())
-		{
-			admin.POST("admin/create", r.AccountTypeHandler.CreateAccountType)
-			admin.PUT("admin/:id", r.AccountTypeHandler.UpdateAccountType)
-			admin.DELETE("admin/:id", r.AccountTypeHandler.DeleteAccountType)
-		}
 	}
 }
 
@@ -144,11 +142,8 @@ func (r *Routes) AccountsRoutes() {
 		AuthAccounts.GET("/:id/credit-card/cycles", r.CreditCardHandler.ListCreditCardCycles)
 	}
 
-	admin := AuthAccounts.Use(AdminMiddleware())
-	{
-		admin.GET("admin/list", r.AccountHandler.AdminGetAccounts)
-		admin.GET("admin/list/by-bank", r.AccountHandler.AdminGetAccountsByBank)
-	}
+	// worker only (X-API-Key)
+	r.Router.GET("/accounts/admin/list", r.service(), r.AccountHandler.AdminGetAccounts)
 }
 
 func (r *Routes) TransactionRoutes() {
@@ -168,12 +163,10 @@ func (r *Routes) TransactionRoutes() {
 		AuthTransactions.GET("/list", r.TransactionHandler.ListTransactions)
 		AuthTransactions.PUT("/:id", r.TransactionHandler.UpdateTransaction)
 		AuthTransactions.DELETE("/:id", r.TransactionHandler.DeleteTransaction)
-
-		admin := AuthTransactions.Use(AdminMiddleware())
-		{
-			admin.POST("admin/create", r.TransactionHandler.AdminCreateTransactions)
-		}
 	}
+
+	// worker only (X-API-Key)
+	r.Router.POST("/transactions/admin/create", r.service(), r.TransactionHandler.AdminCreateTransactions)
 }
 
 func (r *Routes) AnalysisRoutes() {
@@ -194,10 +187,13 @@ func (r *Routes) AnalysisRoutes() {
 	}
 }
 
-func (r *Routes) InitializationRoutes() {
+func (r *Routes) InitializationRoutes(environment string) {
 	AuthInit := r.Router.Group("/init").Use(r.auth())
 	{
-		AuthInit.POST("/data", r.InitDevHandler.Init)
+		// demo data: never in production
+		if environment != enums.Production {
+			AuthInit.POST("/data", r.InitDevHandler.Init)
+		}
 		AuthInit.POST("/resources", r.InitializationHandler.InitializeResources)
 	}
 }
@@ -211,11 +207,8 @@ func (r *Routes) UserExtraRoutes() {
 		AuthUserExtra.POST("base-currency", r.CurrencyChangeHandler.ChangeBaseCurrency)
 	}
 
-	admin := AuthUserExtra.Use(AdminMiddleware())
-	{
-		admin.DELETE("admin/:id", r.UserExtraHandler.DeleteUserExtra)
-		admin.PUT("admin/read-email", r.UserExtraHandler.AdminUpdateReadEmail)
-	}
+	// worker only (X-API-Key)
+	r.Router.PUT("/user-extra/admin/read-email", r.service(), r.UserExtraHandler.AdminUpdateReadEmail)
 }
 
 func (r *Routes) EmailRoutes() {
@@ -229,11 +222,9 @@ func (r *Routes) EmailRoutes() {
 		AuthEmail.POST("/read", r.EmailHandler.ReadEmail)
 	}
 
-	admin := AuthEmail.Use(AdminMiddleware())
-	{
-		admin.GET("/:user_id/:id", r.EmailHandler.GetEmailToken)
-		admin.PUT("/admin/error/:id", r.EmailHandler.SaveEmailError)
-	}
+	// worker only (X-API-Key): the OAuth token of a connection must never reach a person, admins included
+	r.Router.GET("/email/:user_id/:id", r.service(), r.EmailHandler.GetEmailToken)
+	r.Router.PUT("/email/admin/error/:id", r.service(), r.EmailHandler.SaveEmailError)
 }
 
 func (r *Routes) Init(env string) {
@@ -251,7 +242,7 @@ func (r *Routes) Init(env string) {
 	r.MailRoutes()
 	r.AdminRoutes()
 	r.BillingRoutes()
-	r.InitializationRoutes()
+	r.InitializationRoutes(env)
 	r.DocRoutes(env)
 }
 

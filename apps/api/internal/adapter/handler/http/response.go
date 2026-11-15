@@ -644,60 +644,6 @@ func newAdminAccountsResponse(accounts []domain.Account) map[string][]customAcco
 }
 
 // =============================================================================
-// Admin Accounts By Bank
-// =============================================================================
-
-type accountBasicInfo struct {
-	ID             uint64 `json:"id" example:"59"`
-	Name           string `json:"name" example:"Cuenta Ahorros - Bancolombia"`
-	LastFourDigits string `json:"last_four_digits" example:"1809"`
-}
-
-type usersAccountsByBankResponse struct {
-	AccountsByBank map[string][]accountsByBankResponse `json:"accounts_by_bank"`
-}
-
-type accountsByBankResponse struct {
-	Bank         string             `json:"bank" example:"Bancolombia"`
-	EmailID      uint64             `json:"email_id" example:"37"`
-	UserEmail    string             `json:"user_email" example:"user@example.com"`
-	UserProvider string             `json:"user_provider" example:"outlook"`
-	SenderEmails []string           `json:"sender_emails"`
-	Accounts     []accountBasicInfo `json:"accounts"`
-}
-
-func newAdminAccountsByBankResponse(groups []domain.BankAccountGroup) usersAccountsByBankResponse {
-	rsp := make(map[string][]accountsByBankResponse)
-
-	for _, group := range groups {
-		// Convert domain.AccountBasicInfo to response accountBasicInfo
-		accounts := make([]accountBasicInfo, len(group.Accounts))
-		for i, acc := range group.Accounts {
-			accounts[i] = accountBasicInfo{
-				ID:             acc.ID,
-				Name:           acc.Name,
-				LastFourDigits: acc.LastFourDigits,
-			}
-		}
-
-		bankResp := accountsByBankResponse{
-			Bank:         group.BankName,
-			EmailID:      group.EmailID,
-			UserEmail:    group.UserEmail,
-			UserProvider: group.UserProvider,
-			SenderEmails: group.SenderEmails,
-			Accounts:     accounts,
-		}
-
-		rsp[group.UserID] = append(rsp[group.UserID], bankResp)
-	}
-
-	return usersAccountsByBankResponse{
-		AccountsByBank: rsp,
-	}
-}
-
-// =============================================================================
 // Transaction
 // =============================================================================
 

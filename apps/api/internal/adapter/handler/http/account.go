@@ -336,44 +336,6 @@ func (ah *AccountHandler) AdminGetAccounts(ctx *gin.Context) {
 	handleSuccess(ctx, rsp)
 }
 
-// AdminGetAccountsByBank retrieves all accounts grouped by bank (Admin)
-//
-//	@Summary		Admin get accounts by bank
-//	@Description	Retrieves all accounts grouped by bank and email (Admin only)
-//	@Tags			Admin
-//	@Accept			json
-//	@Produce		json
-//	@Param			skip	query		int		false	"Skip"
-//	@Param			limit	query		int		false	"Limit"
-//	@Success		200		{object}	response{data=usersAccountsByBankResponse}	"List of accounts grouped by bank"
-//	@Failure		400		{object}	errorResponse	"Validation error"
-//	@Failure		401		{object}	errorResponse	"Unauthorized error"
-//	@Failure		500		{object}	errorResponse	"Internal server error"
-//	@Router			/accounts/admin/list/by-bank [get]
-func (ah *AccountHandler) AdminGetAccountsByBank(ctx *gin.Context) {
-	var req AdminGetAccountsRequest
-
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		validationError(ctx, err)
-		return
-	}
-
-	filters := domain.AccountFilters{
-		Skip:  req.Skip,
-		Limit: req.Limit,
-	}
-
-	groups, err := ah.svc.AdminGetAccountsByBank(ctx, filters)
-	if err != nil {
-		handleError(ctx, err)
-		return
-	}
-
-	accountsByBank := newAdminAccountsByBankResponse(groups)
-
-	handleSuccess(ctx, accountsByBank)
-}
-
 type calculateInitialBalanceRequest struct {
 	ID uint64 `uri:"id" binding:"required" example:"1"`
 }

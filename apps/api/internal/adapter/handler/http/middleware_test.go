@@ -53,13 +53,22 @@ func errorMessages(t *testing.T, w *httptest.ResponseRecorder) []string {
 func TestAuthMiddleware_APIKey(t *testing.T) {
 	servicePayload := &domain.TokenPayload{UserID: "service", Groups: map[string]bool{"admin": true}, Use: "access"}
 
-	t.Run("valid key reaches admin routes", func(t *testing.T) {
+	t.Run("valid key reaches authenticated routes", func(t *testing.T) {
+		router, svc := newAuthRouter(t)
+		svc.EXPECT().AuthorizeAPIKey("internal-key").Return(servicePayload, nil)
+
+		w := doRequest(router, http.MethodGet, "/private", map[string]string{"X-API-Key": "internal-key"})
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("valid key is not an admin session", func(t *testing.T) {
 		router, svc := newAuthRouter(t)
 		svc.EXPECT().AuthorizeAPIKey("internal-key").Return(servicePayload, nil)
 
 		w := doRequest(router, http.MethodGet, "/admin", map[string]string{"X-API-Key": "internal-key"})
 
-		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, http.StatusForbidden, w.Code)
 	})
 
 	t.Run("invalid key is rejected even with a bearer token", func(t *testing.T) {

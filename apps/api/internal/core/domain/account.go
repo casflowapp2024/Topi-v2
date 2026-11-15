@@ -282,24 +282,6 @@ func (a Accounts) buildAccountsMap() map[string]string {
 	return accountsMap
 }
 
-// BankAccountGroup represents accounts grouped by bank and user email
-type BankAccountGroup struct {
-	UserID       string
-	BankName     string
-	EmailID      uint64
-	UserEmail    string
-	UserProvider string
-	SenderEmails []string
-	Accounts     []AccountBasicInfo
-}
-
-// AccountBasicInfo contains minimal account information for grouping
-type AccountBasicInfo struct {
-	ID             uint64 `json:"id"`
-	Name           string `json:"name"`
-	LastFourDigits string `json:"last_four_digits"`
-}
-
 // buildClassesMap returns account_id: account class
 func (a Accounts) buildClassesMap() map[string]string {
 	classes := make(map[string]string, len(a))

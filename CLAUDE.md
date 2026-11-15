@@ -54,7 +54,9 @@ plan/         plan de migración
 - `user_id` en todas las tablas = `users.id` (para los migrados, el `sub` del proveedor anterior). No se transforma.
 - Auth: los strings de `core/domain/error.go` y el formato `{"messages": [...]}` son contrato con el front
   (compara textos exactos); la respuesta de login mantiene la forma de `domain.AuthTokens`.
-- Auth de servicios internos: `X-API-Key` (`INTERNAL_API_KEY`), comparada en tiempo constante.
+- Auth de servicios internos: `X-API-Key` (`INTERNAL_API_KEY`), comparada en tiempo constante. Las rutas que solo usa el
+  worker van con `ServiceOnlyMiddleware` (`r.service()`): solo `X-API-Key`, cualquier JWT (también de admin) → 403.
+  `/admin/*` es solo para personas (la `X-API-Key` → 403). Los logs de requests llevan el id del usuario, nunca su correo.
 - No confundir el login con Google (eliminado) con el OAuth de Gmail/Outlook para leer correos (se mantiene).
 - Web: Redux + thunk (`redux/actions`), Tailwind según `apps/web/brand_guidelines.md`. Formatos con los
   helpers de `src/components/helpers.js` (`formatMoney(monto, moneda)` —único formateador de dinero, es-CO,

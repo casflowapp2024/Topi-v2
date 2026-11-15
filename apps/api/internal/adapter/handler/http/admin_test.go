@@ -94,21 +94,16 @@ func TestAdminRoutes_AdminIsAudited(t *testing.T) {
 }
 
 func TestAdminRoutes_WorkerKeyIsNotAnAdminSession(t *testing.T) {
-	// the worker's X-API-Key is admin for internal routes; the panel audits it under "service"
-	router, users, admin := newAdminRouter(t)
+	// plan/27 §H: the panel is for people only; the worker's X-API-Key gets 403 and nothing is served
+	router, users, _ := newAdminRouter(t)
 	users.EXPECT().AuthorizeAPIKey("internal-key").
 		Return(&domain.TokenPayload{UserID: "service", Groups: map[string]bool{"admin": true}}, nil)
-	admin.EXPECT().Audit(gomock.Any(), gomock.Any()).DoAndReturn(func(_ any, audit domain.AdminAudit) error {
-		assert.Equal(t, "service", audit.AdminID)
-		return nil
-	})
-	admin.EXPECT().Cohorts(gomock.Any()).Return([]domain.Cohort{}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/admin/metrics/cohorts", nil)
 	req.Header.Set("X-API-Key", "internal-key")
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, http.StatusForbidden, w.Code)
 }
 
 func TestAdminRoutes_Founders(t *testing.T) {
