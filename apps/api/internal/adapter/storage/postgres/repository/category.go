@@ -26,7 +26,7 @@ func (cr CategoryRepository) CreateCategory(ctx context.Context, category *domai
 	query := cr.db.QueryBuilder.Insert(enums.CategoryTableName).
 		Columns("user_id", "name", "budget", "emoji", "income").
 		Values(category.UserID, category.Name, category.Budget, category.Emoji, category.Income).
-		Suffix("RETURNING *")
+		Suffix("RETURNING id, user_id, name, budget, is_editable, emoji, created_at, updated_at, income")
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -200,7 +200,7 @@ func (cr CategoryRepository) UpdateCategory(ctx context.Context, category *domai
 		Set("updated_at", time.Now()).
 		Where(sq.Eq{"id": category.ID}).
 		Where(sq.Eq{"user_id": category.UserID}).
-		Suffix("RETURNING *")
+		Suffix("RETURNING id, user_id, name, budget, is_editable, emoji, created_at, updated_at, income")
 
 	sql, args, err := query.ToSql()
 	if err != nil {

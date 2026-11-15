@@ -30,7 +30,7 @@ func (br BankRepository) CreateBank(ctx context.Context, bank *domain.Bank) erro
 			bank.Name,
 			bank.Email,
 		).
-		Suffix("RETURNING *")
+		Suffix("RETURNING id, name, email, created_at, updated_at, user_id")
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -130,7 +130,7 @@ func (br BankRepository) UpdateBank(ctx context.Context, bank *domain.Bank) erro
 		Set("email", bank.Email).
 		Where(sq.Eq{"id": bank.ID, "user_id": bank.UserID}).
 		Set("updated_at", time.Now()).
-		Suffix("RETURNING *")
+		Suffix("RETURNING id, name, email, created_at, updated_at, user_id")
 
 	sql, args, err := query.ToSql()
 	if err != nil {

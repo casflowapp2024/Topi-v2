@@ -43,7 +43,8 @@ func (e *EmailRepository) RegisterEmail(ctx context.Context, email *domain.Email
 			email.Active,
 			email.Provider,
 		).
-		Suffix("RETURNING *")
+		// explicit columns: RETURNING * breaks the scan every time emails gets a new column
+		Suffix("RETURNING id, user_id, email, access_token, refresh_token, token_type, active, created_at, updated_at, provider, error")
 
 	sql, args, err := query.ToSql()
 	if err != nil {
