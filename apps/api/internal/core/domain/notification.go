@@ -30,7 +30,7 @@ func UnsubscribeKind(template string) string {
 	switch template {
 	case TemplateMonthlySummary:
 		return UnsubMonthlySummary
-	case TemplateConnectionDown:
+	case TemplateConnectionDown, TemplateBankUnsupported:
 		return UnsubConnectionAlerts
 	}
 	return ""

@@ -29,6 +29,7 @@ type Routes struct {
 	InitializationHandler *InitializationHandler
 	AdminHandler          *AdminHandler
 	BillingHandler        *BillingHandler
+	ReadingHandler        *ReadingHandler
 	// Activity records the daily activity of the authenticated users (optional)
 	Activity port.ActivityTracker
 	Router   *gin.Engine
@@ -242,6 +243,7 @@ func (r *Routes) Init(env string) {
 	r.MailRoutes()
 	r.AdminRoutes()
 	r.BillingRoutes()
+	r.ReadingRoutes()
 	r.InitializationRoutes(env)
 	r.DocRoutes(env)
 }
@@ -311,4 +313,16 @@ func (r *Routes) BillingRoutes() {
 		auth.POST("/support", r.BillingHandler.StartSupport)
 		auth.GET("/payments/:id", r.BillingHandler.GetPayment)
 	}
+}
+
+// ReadingRoutes: reading status and welcome checklist (with session) and the public list of banks (plan/27 §B, §C)
+func (r *Routes) ReadingRoutes() {
+	r.Router.GET("/public/banks", PublicBanks)
+	if r.ReadingHandler == nil {
+		return
+	}
+	auth := r.auth()
+	r.Router.GET("/email/status", auth, r.ReadingHandler.Status)
+	r.Router.GET("/onboarding/status", auth, r.ReadingHandler.Onboarding)
+	r.Router.POST("/banks/sample-request", auth, r.ReadingHandler.BankSample)
 }

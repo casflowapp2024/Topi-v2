@@ -37,6 +37,8 @@ const (
 	TemplateConnectionDown = "connection_down"
 	TemplateMonthlySummary = "monthly_summary"
 	TemplateBillingGeneric = "billing_generic"
+	// TemplateBankUnsupported: a healthy connection with no transaction after 48 h (plan/27 §C)
+	TemplateBankUnsupported = "bank_unsupported"
 )
 
 // ErrMailRejected wraps provider errors that will not succeed on retry (invalid recipient, etc.)

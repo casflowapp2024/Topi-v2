@@ -53,6 +53,7 @@ type Handlers struct {
 	Mail                   *http.MailHandler
 	Admin                  *http.AdminHandler
 	Billing                *http.BillingHandler
+	Reading                *http.ReadingHandler
 	Initialization         *http.InitDevHandler
 	CategoryInitialization *http.InitializationHandler
 	// Activity records the daily activity in AuthMiddleware
@@ -65,6 +66,8 @@ type Resources struct {
 	Mail *service.MailOutboxService
 	// Notifications queues the monthly summaries in background (started by main)
 	Notifications *service.NotificationPrefsService
+	// Reading queues bank_unsupported for healthy connections without transactions (started by main)
+	Reading *service.ReadingAppService
 	// MailInterval is how often the outbox is processed
 	MailInterval time.Duration
 }
@@ -218,6 +221,12 @@ func NewInjector(settings *config.Configuration) *Injector {
 	adminHandler.SetBilling(billingService)
 	billingHandler := http.NewBillingHandler(billingService)
 
+	// Launch (plan/27 §B, §C): reading status, welcome checklist and "todavía no vemos movimientos de tu banco"
+	readingService := service.NewReadingService(dbrepository.NewReadingRepository(db), mailService, productEvents,
+		service.ReadingSettings{SamplesAddress: settings.Launch.BankSamplesAddress})
+	mailService.SetEnricher(domain.TemplateBankUnsupported, readingService)
+	readingHandler := http.NewReadingHandler(readingService)
+
 	// Initialization Dev
 	initDevHandler := http.NewDevHandler(
 		categoryService,
@@ -249,6 +258,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 			Mail:                   mailHandler,
 			Admin:                  adminHandler,
 			Billing:                billingHandler,
+			Reading:                readingHandler,
 			Initialization:         initDevHandler,
 			CategoryInitialization: InitHandler,
 			Activity:               service.NewActivityService(dbrepository.NewActivityRepository(db)),
@@ -257,6 +267,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 			DB:            db,
 			Mail:          mailService,
 			Notifications: notificationService,
+			Reading:       readingService,
 			MailInterval:  settings.Mail.OutboxInterval,
 		},
 	}

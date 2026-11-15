@@ -58,6 +58,8 @@ func main() {
 	go injector.Resources.Mail.Run(context.Background(), injector.Resources.MailInterval)
 	// Queue the monthly summaries (first days of the month, opt-in)
 	go injector.Resources.Notifications.RunScheduler(context.Background(), time.Hour)
+	// "Todavía no vemos movimientos de tu banco" (plan/27 §C): once per connection, after 48 h without transactions
+	go injector.Resources.Reading.RunScheduler(context.Background(), time.Hour)
 
 	// Start the HTTP server
 	router, listenAddr := http.NewRouter(settings.HTTP)
@@ -82,6 +84,7 @@ func main() {
 		MailHandler:           injector.Handlers.Mail,
 		AdminHandler:          injector.Handlers.Admin,
 		BillingHandler:        injector.Handlers.Billing,
+		ReadingHandler:        injector.Handlers.Reading,
 		InitDevHandler:        injector.Handlers.Initialization,
 		InitializationHandler: injector.Handlers.CategoryInitialization,
 		Router:                router.Router,

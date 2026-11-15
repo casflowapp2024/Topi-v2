@@ -119,6 +119,7 @@ func clearEnv(t *testing.T) {
 		"MAIL_REPLY_TO", "MAIL_DAILY_QUOTA", "MAIL_ONLY_TO", "APP_BASE_URL", "API_BASE_URL", "MAIL_OUTBOX_INTERVAL",
 		"FOUNDER_CUTOFF", "LLM_PRICE_IN_USD_PER_MTOK", "LLM_PRICE_OUT_USD_PER_MTOK", "SERVER_MONTHLY_COST_USD",
 		"BILLING_PROVIDER", "MP_ACCESS_TOKEN", "MP_WEBHOOK_SECRET", "MP_API_BASE", "SUPPORT_ENABLED",
+		"BANK_SAMPLES_ADDRESS", "REACTIVATION_DAILY_LIMIT", "REACTIVATION_ALLOW_BROKEN",
 	}
 	for _, key := range keys {
 		t.Setenv(key, "")
@@ -270,6 +271,27 @@ func TestNew_SupportEnabled(t *testing.T) {
 		once = sync.Once{}
 		assert.Equal(t, want, New().Billing.SupportEnabled, "SUPPORT_ENABLED=%q", value)
 	}
+}
+
+func TestNew_Launch(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("ENV_FILE", filepath.Join(os.TempDir(), "does-not-exist.env"))
+	once = sync.Once{}
+	launch := New().Launch
+	assert.Equal(t, "", launch.BankSamplesAddress)
+	assert.Equal(t, 5, launch.ReactivationDailyLimit)
+	assert.False(t, launch.ReactivationAllowBroken, "writing to broken connections is off by default")
+
+	clearEnv(t)
+	t.Setenv("ENV_FILE", filepath.Join(os.TempDir(), "does-not-exist.env"))
+	t.Setenv("BANK_SAMPLES_ADDRESS", " Bancos@Topi.cash ")
+	t.Setenv("REACTIVATION_DAILY_LIMIT", "2")
+	t.Setenv("REACTIVATION_ALLOW_BROKEN", "true")
+	once = sync.Once{}
+	launch = New().Launch
+	assert.Equal(t, "bancos@topi.cash", launch.BankSamplesAddress)
+	assert.Equal(t, 2, launch.ReactivationDailyLimit)
+	assert.True(t, launch.ReactivationAllowBroken)
 }
 
 func TestNew_Metrics(t *testing.T) {

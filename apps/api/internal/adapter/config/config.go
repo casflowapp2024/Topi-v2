@@ -33,6 +33,18 @@ type (
 		Mail    *Mail
 		Metrics *Metrics
 		Billing *Billing
+		Launch  *Launch
+	}
+	// Launch contains the settings of the public launch (plan/27-lanzamiento.md)
+	Launch struct {
+		// BankSamplesAddress is the team mailbox users forward a bank notification to (BANK_SAMPLES_ADDRESS).
+		// Empty: the app does not ask for samples. Those emails never reach the database.
+		BankSamplesAddress string
+		// ReactivationDailyLimit caps the personal reactivation emails sent per day (REACTIVATION_DAILY_LIMIT)
+		ReactivationDailyLimit int
+		// ReactivationAllowBroken lets the panel write to someone whose connection is down (REACTIVATION_ALLOW_BROKEN).
+		// Keep it false until the connection-down banner (plan/27 §D) is in production.
+		ReactivationAllowBroken bool
 	}
 	// Metrics contains the settings of the admin panel (plan/25-admin-metricas.md)
 	Metrics struct {
@@ -215,6 +227,7 @@ func New() *Configuration {
 			newMail(),
 			newMetrics(),
 			newBilling(),
+			newLaunch(),
 		}
 	})
 
@@ -267,6 +280,18 @@ func newMail() *Mail {
 		AppBaseURL:          strings.TrimRight(getEnvOrDefault("APP_BASE_URL", "http://localhost:3000"), "/"),
 		APIBaseURL:          strings.TrimRight(getEnvOrDefault("API_BASE_URL", "http://localhost:8080"), "/"),
 		OutboxInterval:      getEnvAsDuration("MAIL_OUTBOX_INTERVAL", 30*time.Second),
+	}
+}
+
+func newLaunch() *Launch {
+	limit := int(getEnvAsInt32("REACTIVATION_DAILY_LIMIT", 5))
+	if limit < 0 {
+		limit = 0
+	}
+	return &Launch{
+		BankSamplesAddress:      strings.ToLower(strings.TrimSpace(os.Getenv("BANK_SAMPLES_ADDRESS"))),
+		ReactivationDailyLimit:  limit,
+		ReactivationAllowBroken: strings.EqualFold(strings.TrimSpace(os.Getenv("REACTIVATION_ALLOW_BROKEN")), "true"),
 	}
 }
 

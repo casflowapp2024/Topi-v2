@@ -135,6 +135,10 @@ type ActivationRates struct {
 	Connection24hPct float64 `json:"connection_24h_pct"`
 	FirstAuto48hPct  float64 `json:"first_auto_tx_48h_pct"`
 	Budget7dPct      float64 `json:"budget_7d_pct"`
+	// median hours from signup (and from the first connection) to the first automatic transaction, over the
+	// users that got one (nil: nobody yet). plan/27 §B
+	MedianHoursToFirstAuto           *float64 `json:"median_hours_to_first_auto"`
+	MedianHoursConnectionToFirstAuto *float64 `json:"median_hours_connection_to_first_auto"`
 }
 
 // Cohort is the weekly retention over "al día" (S1, S4, S12). Eligible = users whose week k already ended.
@@ -159,6 +163,15 @@ type ReadingHealth struct {
 	JobsPending  int64             `json:"jobs_pending"`
 	Daily        MetricSeries      `json:"daily"`
 	Reconnect    ReconnectStats    `json:"reconnect"`
+	Unsupported  UnsupportedStats  `json:"unsupported"`
+}
+
+// UnsupportedStats: healthy connections with linked accounts and no transaction after 48 h (plan/27 §C).
+// Bank names only with >= MinGroupUsers users; the rest add up in "otros".
+type UnsupportedStats struct {
+	Connections int64       `json:"connections"`
+	Users       int64       `json:"users"`
+	ByBank      []NameCount `json:"by_bank"`
 }
 
 // ReconnectStats: connections that went down in the last 90 days and how long they took to come back (plan/27 §D)

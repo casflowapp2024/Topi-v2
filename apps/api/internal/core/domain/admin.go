@@ -33,6 +33,10 @@ const (
 	ProductEventAskTopiAsked      = "ask_topi_asked"
 	// ProductEventConnectionReconnected: a connection that was down was authorized again (plan/27 §D)
 	ProductEventConnectionReconnected = "connection_reconnected"
+	// ProductEventOnboardingStep: a step of the welcome checklist is done (once per user and step, plan/27 §B)
+	ProductEventOnboardingStep = "onboarding_step_completed"
+	// ProductEventBankSampleRequested: the user is going to forward a bank notification to the team (plan/27 §C)
+	ProductEventBankSampleRequested = "bank_sample_requested"
 )
 
 // Kinds of review_resolved (what was waiting in Por revisar)
@@ -53,6 +57,8 @@ var productEventProps = map[string]map[string]propKind{
 	ProductEventInsightFeedback:       {"insight": propEnum, "useful": propBool},
 	ProductEventAskTopiAsked:          {},
 	ProductEventConnectionReconnected: {"email_id": propID, "provider": propEnum},
+	ProductEventOnboardingStep:        {"step": propEnum},
+	ProductEventBankSampleRequested:   {"bank_id": propID},
 	ProductEventSupportStarted:        {},
 	ProductEventSupportApproved:       {},
 }
@@ -105,6 +111,9 @@ func (e ProductEvent) Validate() error {
 			if e.Name == ProductEventReviewResolved && key == "kind" && !reviewKinds[text] {
 				return ErrInvalidProductEvent
 			}
+			if e.Name == ProductEventOnboardingStep && key == "step" && !isOnboardingStep(text) {
+				return ErrInvalidProductEvent
+			}
 		}
 	}
 	return nil
@@ -131,4 +140,13 @@ func isEnumText(text string) bool {
 		}
 	}
 	return true
+}
+
+func isOnboardingStep(step string) bool {
+	for _, s := range OnboardingSteps {
+		if s == step {
+			return true
+		}
+	}
+	return false
 }

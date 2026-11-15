@@ -82,7 +82,15 @@ FROM admin_user_stats WHERE signup_at >= $1`, from).
 	rates.Connection24hPct = domain.Pct(float64(rates.Connection24h), total)
 	rates.FirstAuto48hPct = domain.Pct(float64(rates.FirstAuto48h), total)
 	rates.Budget7dPct = domain.Pct(float64(rates.Budget7d), total)
-	return rates, nil
+
+	err = r.db.QueryRow(ctx, `SELECT
+  (percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM first_auto_tx_at - signup_at) / 3600)
+     FILTER (WHERE first_auto_tx_at IS NOT NULL))::float8,
+  (percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM first_auto_tx_at - first_connection_at) / 3600)
+     FILTER (WHERE first_auto_tx_at IS NOT NULL AND first_connection_at IS NOT NULL
+             AND first_auto_tx_at >= first_connection_at))::float8
+FROM admin_user_stats WHERE signup_at >= $1`, from).Scan(&rates.MedianHoursToFirstAuto, &rates.MedianHoursConnectionToFirstAuto)
+	return rates, mappers.MapPostgresErrorCode(err)
 }
 
 // Cohorts of the last weeks (newest first)
@@ -183,7 +191,48 @@ FROM email_jobs`).Scan(&health.JobsFailed7d, &health.JobsPending)
 FROM connection_incidents WHERE started_at >= now() - interval '90 days'`).Scan(
 		&health.Reconnect.Incidents90d, &health.Reconnect.Open,
 		&health.Reconnect.Reconnected7dPct, &health.Reconnect.MedianHours)
-	return health, mappers.MapPostgresErrorCode(err)
+	if err != nil {
+		return health, mappers.MapPostgresErrorCode(err)
+	}
+
+	health.Unsupported, err = r.unsupported(ctx, domain.MinGroupUsers)
+	return health, err
+}
+
+// unsupported: healthy connections connected 48 h ago or more, with linked accounts and no automatic transaction,
+// grouped by the bank of those accounts (names only with >= minUsers users)
+func (r *AdminMetricsRepository) unsupported(ctx context.Context, minUsers int) (domain.UnsupportedStats, error) {
+	stats := domain.UnsupportedStats{ByBank: []domain.NameCount{}}
+	const silent = `SELECT e.id, e.user_id FROM emails e
+WHERE e.active AND coalesce(e.error, '') = '' AND e.created_at <= now() - interval '48 hours'
+  AND EXISTS (SELECT 1 FROM accounts a WHERE a.email_id = e.id AND a.user_id = e.user_id)
+  AND NOT EXISTS (SELECT 1 FROM transactions t JOIN accounts a ON a.id = t.account_id
+                  WHERE a.email_id = e.id AND a.user_id = e.user_id AND t.automated)`
+	if err := r.db.QueryRow(ctx, `SELECT count(*), count(DISTINCT user_id) FROM (`+silent+`) s`).
+		Scan(&stats.Connections, &stats.Users); err != nil {
+		return stats, mappers.MapPostgresErrorCode(err)
+	}
+	rows, err := r.db.Query(ctx, `WITH by_bank AS (
+  SELECT lower(trim(b.name)) AS bank_key, min(b.name) AS name, count(DISTINCT s.user_id) AS users
+  FROM (`+silent+`) s
+  JOIN accounts a ON a.email_id = s.id AND a.user_id = s.user_id
+  JOIN banks b ON b.id = a.bank_id
+  GROUP BY 1
+)
+SELECT CASE WHEN users >= $1 THEN name ELSE 'otros' END, sum(users)::bigint
+FROM by_bank GROUP BY 1 ORDER BY 2 DESC, 1`, minUsers)
+	if err != nil {
+		return stats, mappers.MapPostgresErrorCode(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var c domain.NameCount
+		if err = rows.Scan(&c.Name, &c.Count); err != nil {
+			return stats, err
+		}
+		stats.ByBank = append(stats.ByBank, c)
+	}
+	return stats, rows.Err()
 }
 
 func (r *AdminMetricsRepository) nameCounts(ctx context.Context, query string, args ...any) ([]domain.NameCount, error) {
