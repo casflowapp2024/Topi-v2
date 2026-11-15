@@ -30,6 +30,7 @@ type Routes struct {
 	AdminHandler          *AdminHandler
 	BillingHandler        *BillingHandler
 	ReadingHandler        *ReadingHandler
+	FeedbackHandler       *FeedbackHandler
 	// Activity records the daily activity of the authenticated users (optional)
 	Activity port.ActivityTracker
 	Router   *gin.Engine
@@ -244,6 +245,7 @@ func (r *Routes) Init(env string) {
 	r.AdminRoutes()
 	r.BillingRoutes()
 	r.ReadingRoutes()
+	r.FeedbackRoutes()
 	r.InitializationRoutes(env)
 	r.DocRoutes(env)
 }
@@ -325,4 +327,17 @@ func (r *Routes) ReadingRoutes() {
 	r.Router.GET("/email/status", auth, r.ReadingHandler.Status)
 	r.Router.GET("/onboarding/status", auth, r.ReadingHandler.Onboarding)
 	r.Router.POST("/banks/sample-request", auth, r.ReadingHandler.BankSample)
+}
+
+// FeedbackRoutes: "¿Qué le falta a Topi?" (with session) and its panel section (admin + audited). plan/27 §E
+func (r *Routes) FeedbackRoutes() {
+	if r.FeedbackHandler == nil || r.AdminHandler == nil {
+		return
+	}
+	r.Router.POST("/feedback", r.auth(), r.FeedbackHandler.Submit)
+	admin := r.Router.Group("/admin").Use(r.auth(), AdminMiddleware(), AdminAuditMiddleware(r.AdminHandler.svc))
+	{
+		admin.GET("/feedback", r.FeedbackHandler.AdminList)
+		admin.POST("/feedback/:id/read", r.FeedbackHandler.AdminMarkRead)
+	}
 }

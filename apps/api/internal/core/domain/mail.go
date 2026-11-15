@@ -39,6 +39,8 @@ const (
 	TemplateBillingGeneric = "billing_generic"
 	// TemplateBankUnsupported: a healthy connection with no transaction after 48 h (plan/27 §C)
 	TemplateBankUnsupported = "bank_unsupported"
+	// TemplateAdminFeedback: "hay N opiniones nuevas" to the team (never the text, plan/27 §E)
+	TemplateAdminFeedback = "admin_feedback"
 )
 
 // ErrMailRejected wraps provider errors that will not succeed on retry (invalid recipient, etc.)
@@ -51,7 +53,7 @@ var ErrMailNotAllowed = errors.New("recipient not allowed by MAIL_ONLY_TO")
 // (no unsubscribe link). The rest carry List-Unsubscribe.
 func IsTransactionalTemplate(template string) bool {
 	switch template {
-	case TemplatePasswordCode, TemplateVerifyEmail, TemplateBillingGeneric:
+	case TemplatePasswordCode, TemplateVerifyEmail, TemplateBillingGeneric, TemplateAdminFeedback:
 		return true
 	}
 	return false

@@ -54,6 +54,7 @@ type Handlers struct {
 	Admin                  *http.AdminHandler
 	Billing                *http.BillingHandler
 	Reading                *http.ReadingHandler
+	Feedback               *http.FeedbackHandler
 	Initialization         *http.InitDevHandler
 	CategoryInitialization *http.InitializationHandler
 	// Activity records the daily activity in AuthMiddleware
@@ -227,6 +228,12 @@ func NewInjector(settings *config.Configuration) *Injector {
 	mailService.SetEnricher(domain.TemplateBankUnsupported, readingService)
 	readingHandler := http.NewReadingHandler(readingService)
 
+	// "¿Qué le falta a Topi?" (plan/27 §E): the team gets "hay N opiniones nuevas" at MAIL_REPLY_TO, never the text
+	feedbackService := service.NewFeedbackService(dbrepository.NewFeedbackRepository(db), mailService, productEvents,
+		adminService, service.FeedbackSettings{TeamAddress: settings.Mail.ReplyTo})
+	mailService.SetEnricher(domain.TemplateAdminFeedback, feedbackService)
+	feedbackHandler := http.NewFeedbackHandler(feedbackService)
+
 	// Initialization Dev
 	initDevHandler := http.NewDevHandler(
 		categoryService,
@@ -259,6 +266,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 			Admin:                  adminHandler,
 			Billing:                billingHandler,
 			Reading:                readingHandler,
+			Feedback:               feedbackHandler,
 			Initialization:         initDevHandler,
 			CategoryInitialization: InitHandler,
 			Activity:               service.NewActivityService(dbrepository.NewActivityRepository(db)),

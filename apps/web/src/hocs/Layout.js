@@ -19,6 +19,7 @@ import AccountSettings, { SETTINGS_TABS } from '../containers/AccountSettings';
 import PageContainer from '../components/ui/PageContainer';
 import UserMenu from '../components/ui/UserMenu';
 import SupportSheet from '../components/support/SupportSheet';
+import FeedbackSheet from '../components/feedback/FeedbackSheet';
 import { getBillingConfig } from '../apiCalls/billing';
 import { themePreference, useResolvedDark } from '../components/ui/theme';
 import { ReactComponent as Cflogo } from '../assets/logos/T1.svg';
@@ -93,6 +94,8 @@ const Layout = ({
   // Apoyar a Topi: el menú solo lo muestra si la API tiene un proveedor de pagos configurado
   const [billing, setBilling] = useState(null);
   const [supportOpen, setSupportOpen] = useState(false);
+  // "¿Qué le falta a Topi?" (plan/27 §E)
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   useEffect(() => {
     if (!user_found) return undefined;
     let alive = true;
@@ -253,6 +256,7 @@ const Layout = ({
                         onOpenSettings={open_settings_modal}
                         onLogout={handleLogout}
                         onOpenSupport={billing ? () => setSupportOpen(true) : undefined}
+                        onOpenFeedback={() => setFeedbackOpen(true)}
                       />
                     </div>
                   </PageContainer>
@@ -304,6 +308,7 @@ const Layout = ({
           )}
 
           {billing && <SupportSheet open={supportOpen} onClose={() => setSupportOpen(false)} config={billing} />}
+          <FeedbackSheet open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
 
           <InstallPwaModal />
         </div>

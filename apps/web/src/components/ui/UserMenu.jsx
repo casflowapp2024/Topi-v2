@@ -1,6 +1,6 @@
 import { Menu, MenuButton, MenuItems, MenuItem, MenuSeparator } from '@headlessui/react';
 import { Link } from 'react-router-dom';
-import { Cog6ToothIcon, EnvelopeIcon, ArrowRightStartOnRectangleIcon, UserIcon, ChartBarSquareIcon, HeartIcon } from '@heroicons/react/20/solid';
+import { Cog6ToothIcon, EnvelopeIcon, ArrowRightStartOnRectangleIcon, UserIcon, ChartBarSquareIcon, HeartIcon, ChatBubbleLeftEllipsisIcon } from '@heroicons/react/20/solid';
 import { THEME_OPTIONS, segmentClass } from './ThemeSwitch';
 
 const itemClass = 'w-full flex items-center gap-2 px-3 h-9 rounded-xl text-sm text-gray-700 dark:text-gray-200 data-[focus]:bg-gray-100 dark:data-[focus]:bg-gray-700/60 transition-colors';
@@ -11,7 +11,7 @@ const itemClass = 'w-full flex items-center gap-2 px-3 h-9 rounded-xl text-sm te
  * El tema son tres opciones del menú para que se recorran con las flechas; headlessui les fija role=menuitem,
  * así que la elegida se anuncia con texto ("elegido") además de verse marcada.
  */
-const UserMenu = ({ user, theme, onThemeChange, onOpenSettings, onLogout, onOpenSupport }) => {
+const UserMenu = ({ user, theme, onThemeChange, onOpenSettings, onLogout, onOpenSupport, onOpenFeedback }) => {
   const fullName = [user?.name, user?.lastName].filter(Boolean).join(' ');
   return (
     <Menu>
@@ -36,6 +36,13 @@ const UserMenu = ({ user, theme, onThemeChange, onOpenSettings, onLogout, onOpen
             <EnvelopeIcon className="w-4 h-4 text-gray-400" aria-hidden="true" /> Conexiones
           </button>
         </MenuItem>
+        {onOpenFeedback && (
+          <MenuItem>
+            <button type="button" className={itemClass} onClick={onOpenFeedback}>
+              <ChatBubbleLeftEllipsisIcon className="w-4 h-4 text-gray-400" aria-hidden="true" /> ¿Qué le falta a Topi?
+            </button>
+          </MenuItem>
+        )}
         {onOpenSupport && (
           <MenuItem>
             <button type="button" className={itemClass} onClick={onOpenSupport}>

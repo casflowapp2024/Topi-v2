@@ -85,6 +85,7 @@ func main() {
 		AdminHandler:          injector.Handlers.Admin,
 		BillingHandler:        injector.Handlers.Billing,
 		ReadingHandler:        injector.Handlers.Reading,
+		FeedbackHandler:       injector.Handlers.Feedback,
 		InitDevHandler:        injector.Handlers.Initialization,
 		InitializationHandler: injector.Handlers.CategoryInitialization,
 		Router:                router.Router,

@@ -37,6 +37,8 @@ const (
 	ProductEventOnboardingStep = "onboarding_step_completed"
 	// ProductEventBankSampleRequested: the user is going to forward a bank notification to the team (plan/27 §C)
 	ProductEventBankSampleRequested = "bank_sample_requested"
+	// ProductEventFeedbackSent: the user sent "¿Qué le falta a Topi?" (no text in the event, plan/27 §E)
+	ProductEventFeedbackSent = "feedback_sent"
 )
 
 // Kinds of review_resolved (what was waiting in Por revisar)
@@ -59,6 +61,7 @@ var productEventProps = map[string]map[string]propKind{
 	ProductEventConnectionReconnected: {"email_id": propID, "provider": propEnum},
 	ProductEventOnboardingStep:        {"step": propEnum},
 	ProductEventBankSampleRequested:   {"bank_id": propID},
+	ProductEventFeedbackSent:          {},
 	ProductEventSupportStarted:        {},
 	ProductEventSupportApproved:       {},
 }

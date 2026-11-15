@@ -1,0 +1,9 @@
+{{define "subject"}}Hay opiniones nuevas en Topi{{end}}
+{{define "text"}}Hola equipo,
+
+Hay {{.count}} opinión(es) sin leer de "¿Qué le falta a Topi?".
+
+Léelas en el panel (el texto solo está ahí, no en este correo):
+{{.app_url}}/admin/opiniones
+
+— Topi{{end}}

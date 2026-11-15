@@ -123,6 +123,12 @@ plan/         plan de migración
   solo el id en el outbox (el monto lo pone el enricher). Se ofrece solo con `SUPPORT_ENABLED=true` (por defecto `false`:
   menú oculto y `POST /billing/support` 404, el webhook sigue) y `BILLING_PROVIDER`; fuera de producción solo
   cuentan las orders de prueba (`ORDTST...`). No se muestra Plus ni precios de suscripción.
+- Lanzamiento (`plan/27-lanzamiento.md`): conexión caída con `emails.error_at` + `connection_incidents` (reconectar =
+  registrar la misma dirección: `RegisterEmail` hace `ON CONFLICT`, conserva el id y las cuentas, cierra la caída y pide
+  lectura prioritaria; nunca borrar para reconectar). `GET /email/status` y `GET /onboarding/status` (estado real; cada
+  paso se registra una vez). `bank_unsupported` una vez por conexión sana sin movimientos a las 48 h; los correos de
+  ejemplo van al buzón `BANK_SAMPLES_ADDRESS`, nunca a la base. Opiniones en `feedback` (máx. 500, 3 por día), solo en
+  el panel auditado; al equipo solo "hay N opiniones" (`admin_feedback`, 1 por hora, sin el texto).
 - Pagos de tarjeta por correo: el worker (`flag_card_payments`, sin tocar el prompt) los vuelve entrada de la tarjeta y
   la API los guarda con `transactions.needs_counterpart`: ya cuentan como transferencia. `link_pending_card_payments`
   liga solo el caso sin duda; si no, la app pregunta de qué cuenta salió. No uses `should_verify` para esto: abrir la
