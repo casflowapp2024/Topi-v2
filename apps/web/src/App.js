@@ -7,9 +7,22 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 //google analytics
 import useAnalytics from './hocs/useAnalytics';
 
-import { lazy, Suspense } from 'react';
+import { lazy as lazyReact, Suspense } from 'react';
 //containers: la landing va en el bundle principal (se prerenderiza); el resto se carga al entrar (plan/27 §F)
 import Landing from './containers/Landing';
+// Tras un deploy, quien tenga la app abierta pide chunks que ya no existen (404): se recarga una vez para tomar el
+// index nuevo en vez de quedar en blanco. La marca evita un ciclo si el chunk de verdad falla.
+const RELOADED_KEY = 'topi.chunkReloadedAt';
+const lazy = (factory) => lazyReact(() => factory().catch((error) => {
+  let last = 0;
+  try { last = Number(sessionStorage.getItem(RELOADED_KEY) || 0); } catch { /* sin storage */ }
+  if (Date.now() - last > 60000) {
+    try { sessionStorage.setItem(RELOADED_KEY, String(Date.now())); } catch { /* sin storage */ }
+    window.location.reload();
+    return new Promise(() => {});
+  }
+  throw error;
+}));
 const Dashboard = lazy(() => import('./containers/Dashboard'));
 const Error404 = lazy(() => import('./containers/Error404'));
 const Transactions = lazy(() => import('./containers/Transactions'));
