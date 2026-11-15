@@ -39,7 +39,6 @@ import {
 
 } from '../actions/types';
 import { default_cats } from '../../components/info_arrays';
-import def from 'ajv/dist/vocabularies/discriminator';
 
 const initialState = {
 

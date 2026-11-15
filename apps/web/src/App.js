@@ -7,30 +7,36 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 //google analytics
 import useAnalytics from './hocs/useAnalytics';
 
-//containers
-import Dashboard from './containers/Dashboard';
-import Error404 from './containers/Error404'
-import Transactions from './containers/Transactions';
-import AccountSettings from './containers/AccountSettings';
-import Accounts from './containers/Accounts';
+import { lazy, Suspense } from 'react';
+//containers: la landing va en el bundle principal (se prerenderiza); el resto se carga al entrar (plan/27 §F)
 import Landing from './containers/Landing';
-import SignUpView from './containers/SignUpView';
-import PlanCategories from './containers/PlanCategories';
-import ForgotPassword from './containers/ForgotPassword';
-import GmailConnectAuthCallBack from './containers/GmailConnectAuthCallBack';
-import GlinkOauthPopupSuccess from './containers/GlinkOauthPopupSuccess';
-import TermsOfService from './containers/TermsOfService';
-import PrivacyPolicy from './containers/PrivacyPolicy';
-import LogInViewInside from './containers/LogInViewInside';
-import ConexionesSetts from './components/settings/ConexionesSetts';
-import ProfileSetts from './components/settings/ProfileSetts';
-import AAAcountsDashboard from './components/dashboard/productsAccounts/AAAcountsDashboard';
-import AABudgetDashboard from './components/dashboard/budgetCategories/AABudgetDashboard';
-import AAGenDashboard from './components/dashboard/general/AAGenDashboard';
-import Membership from './components/settings/Membership';
-import ConnectEmail from './components/conexions/ConnectEmail';
-import Admin from './containers/Admin';
-import SupportThanks from './containers/SupportThanks';
+const Dashboard = lazy(() => import('./containers/Dashboard'));
+const Error404 = lazy(() => import('./containers/Error404'));
+const Transactions = lazy(() => import('./containers/Transactions'));
+const AccountSettings = lazy(() => import('./containers/AccountSettings'));
+const Accounts = lazy(() => import('./containers/Accounts'));
+const SignUpView = lazy(() => import('./containers/SignUpView'));
+const PlanCategories = lazy(() => import('./containers/PlanCategories'));
+const ForgotPassword = lazy(() => import('./containers/ForgotPassword'));
+const GmailConnectAuthCallBack = lazy(() => import('./containers/GmailConnectAuthCallBack'));
+const GlinkOauthPopupSuccess = lazy(() => import('./containers/GlinkOauthPopupSuccess'));
+const TermsOfService = lazy(() => import('./containers/TermsOfService'));
+const PrivacyPolicy = lazy(() => import('./containers/PrivacyPolicy'));
+const LogInViewInside = lazy(() => import('./containers/LogInViewInside'));
+const ConexionesSetts = lazy(() => import('./components/settings/ConexionesSetts'));
+const ProfileSetts = lazy(() => import('./components/settings/ProfileSetts'));
+const AAAcountsDashboard = lazy(() => import('./components/dashboard/productsAccounts/AAAcountsDashboard'));
+const AABudgetDashboard = lazy(() => import('./components/dashboard/budgetCategories/AABudgetDashboard'));
+const AAGenDashboard = lazy(() => import('./components/dashboard/general/AAGenDashboard'));
+const Membership = lazy(() => import('./components/settings/Membership'));
+const ConnectEmail = lazy(() => import('./components/conexions/ConnectEmail'));
+const Admin = lazy(() => import('./containers/Admin'));
+const SupportThanks = lazy(() => import('./containers/SupportThanks'));
+// sub-rutas con su propio Suspense: al cambiar de pestaña la barra de la app no desaparece
+const inner = (Component) => (
+  <Suspense fallback={<div className="min-h-[40vh]" aria-busy="true" />}><Component /></Suspense>
+);
+
 //fondo blanco #FFFFFF
 //sombras blanco isabelino #e9e8ee
 //compplemento azul #5266EB
@@ -48,6 +54,7 @@ const AnalyticsWrapper = () => {
   useAnalytics();
   return (
     <Router>
+      <Suspense fallback={<div className="min-h-screen" aria-busy="true" />}>
       <Routes>
         <Route path="*" element={<Error404 />} />
 
@@ -57,18 +64,18 @@ const AnalyticsWrapper = () => {
         {/* ya no hay verificación por código ni login con Google: links viejos -> login */}
         <Route exact path='/verify_email/' element={<Navigate to="/login/" replace />} />
         <Route path="/dashboard/*" element={<Dashboard />}>
-          <Route index element={<AAGenDashboard />} />
-          <Route path="budgets" element={<AABudgetDashboard />} />
-          <Route path="accounts" element={<AAAcountsDashboard />} />
-          <Route path="transactions" element={<Transactions />} />
-          <Route path="connect-email" element={<ConnectEmail />} />
+          <Route index element={inner(AAGenDashboard)} />
+          <Route path="budgets" element={inner(AABudgetDashboard)} />
+          <Route path="accounts" element={inner(AAAcountsDashboard)} />
+          <Route path="transactions" element={inner(Transactions)} />
+          <Route path="connect-email" element={inner(ConnectEmail)} />
         </Route>
         <Route exact path='/create_account/' element={<SignUpView />} />
         <Route path='/settings/' element={<AccountSettings />}>
           <Route index element={<Navigate to="profile" replace />} />
-          <Route path="profile" element={<ProfileSetts />} />
-          <Route path="connections" element={<ConexionesSetts />} />
-          <Route path="membership" element={<Membership />} />
+          <Route path="profile" element={inner(ProfileSetts)} />
+          <Route path="connections" element={inner(ConexionesSetts)} />
+          <Route path="membership" element={inner(Membership)} />
         </Route>
         <Route exact path='/accounts/' element={<Accounts />} />
         <Route path='/apoyar/gracias' element={<SupportThanks />} />
@@ -81,6 +88,7 @@ const AnalyticsWrapper = () => {
         <Route exact path="/terms-of-service/" element={<TermsOfService />} />
         <Route exact path="/privacy-policy/" element={<PrivacyPolicy />} />
       </Routes>
+      </Suspense>
     </Router>
   );
 };

@@ -1,6 +1,16 @@
 import axios from 'axios';
-import { LOGIN_SUCCESS } from '../redux/actions/types';
-import { logout } from '../redux/actions/auth';
+import { LOGIN_SUCCESS, LOGOUT, REVOMVE_USER_FOUND } from '../redux/actions/types';
+
+// Mismo efecto que logout() de redux/actions/auth, sin importarlo: ese módulo trae helpers.js (moment-timezone) y este
+// archivo va en el bundle principal, el que carga la landing (plan/27 §F).
+const expireSession = (store) => {
+    const refresh_token = localStorage.getItem('refresh_token');
+    if (refresh_token) {
+        axios.post(`${process.env.REACT_APP_API_URL}/users/logout`, { refresh_token }).catch(() => { });
+    }
+    store.dispatch({ type: LOGOUT, payload: { expired: true } });
+    store.dispatch({ type: REVOMVE_USER_FOUND });
+};
 
 // Endpoints de auth: un 401 aquí es un error de credenciales, no una sesión vencida
 const AUTH_PATHS = [
@@ -117,7 +127,7 @@ export const setupAuthInterceptor = (store) => {
             } catch (refreshError) {
                 // solo la primera petición que falle cierra la sesión
                 if (store.getState().Auth?.isAuthenticated !== false) {
-                    store.dispatch(logout({ expired: true }));
+                    expireSession(store);
                 }
                 return Promise.reject(error);
             }

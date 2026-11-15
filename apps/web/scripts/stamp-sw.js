@@ -3,7 +3,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const file = path.join(__dirname, '..', 'build', 'service-worker.js');
+// BUILD_PATH: el mismo que usa react-scripts build (por defecto build/)
+const buildDir = process.env.BUILD_PATH ? path.resolve(process.env.BUILD_PATH) : path.join(__dirname, '..', 'build');
+const file = path.join(buildDir, 'service-worker.js');
 const buildId = process.env.BUILD_ID || new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
 const source = fs.readFileSync(file, 'utf8');
 if (!source.includes('__BUILD_ID__')) {

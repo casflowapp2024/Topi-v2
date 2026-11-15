@@ -1,5 +1,5 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+/* Inter se carga con <link> en public/index.html (en paralelo, sin bloquear el CSS: plan/27 §F) */
 
 @tailwind base;
 @tailwind components;

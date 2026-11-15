@@ -133,6 +133,12 @@ plan/         plan de migración
   outbox guarda solo el texto del equipo con `{nombre}` (el nombre lo pone el enricher); interruptor propio
   `notification_prefs.email_personal` (baja `personal`), 90 días entre correos, `REACTIVATION_DAILY_LIMIT` y bloqueada
   para conexiones caídas mientras `REACTIVATION_ALLOW_BROKEN=false`. Nunca masivo.
+  Landing pública (`components/landing/LandingPage.jsx`, componente puro sin redux/router): `npm run build` la
+  prerenderiza en `build/index.html` (`scripts/prerender.js`, sucrase) y deja `build/app.html` para las demás rutas
+  (nginx: `/` → index.html, el resto → app.html). Las rutas de la app van con `React.lazy`; nada del bundle principal
+  debe importar `redux/actions/*` ni `helpers.js` (traen moment-timezone). Sin precios, Plus ni Apoyar en la landing.
+  La Política de privacidad declara el Uso limitado de los datos de Google: si cambia lo que se lee o a quién se envía,
+  actualízala.
 - Pagos de tarjeta por correo: el worker (`flag_card_payments`, sin tocar el prompt) los vuelve entrada de la tarjeta y
   la API los guarda con `transactions.needs_counterpart`: ya cuentan como transferencia. `link_pending_card_payments`
   liga solo el caso sin duda; si no, la app pregunta de qué cuenta salió. No uses `should_verify` para esto: abrir la

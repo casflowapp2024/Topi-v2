@@ -1,3 +1,13 @@
-# https://www.robotstxt.org/robotstxt.html
+# Topi: la página pública y las legales se indexan; la app (con sesión) no.
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /settings
+Disallow: /accounts/
+Disallow: /plan/
+Disallow: /apoyar/
+Disallow: /glink-oauth-popup-success/
+Disallow: /gmail-auth-connect/
+
+Sitemap: https://topi.cash/sitemap.xml
