@@ -50,10 +50,10 @@ func TestReactivationDraft(t *testing.T) {
 
 	bad := []ReactivationDraft{
 		{Subject: "", Body: "hola"},
-		{Subject: "Hola {nombre}", Body: "hola"},                                // no names in subjects
-		{Subject: "Hola", Body: "Hola Ana, ¿qué pasó?"},                          // the name typed in: use {nombre}
-		{Subject: "Hola", Body: "Te escribo a ana.perez@example.com"},           // the email typed in
-		{Subject: "Hola", Body: string(make([]rune, 3001))},                     // too long
+		{Subject: "Hola {nombre}", Body: "hola"},                      // no names in subjects
+		{Subject: "Hola", Body: "Hola Ana, ¿qué pasó?"},               // the name typed in: use {nombre}
+		{Subject: "Hola", Body: "Te escribo a ana.perez@example.com"}, // the email typed in
+		{Subject: "Hola", Body: string(make([]rune, 3001))},           // too long
 	}
 	for _, d := range bad {
 		assert.ErrorIs(t, d.Validate(ana), ErrInvalidReactivation, d.Body)

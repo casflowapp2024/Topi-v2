@@ -56,6 +56,7 @@ type Handlers struct {
 	Reading                *http.ReadingHandler
 	Feedback               *http.FeedbackHandler
 	Reactivation           *http.ReactivationHandler
+	Launch                 *http.LaunchHandler
 	Initialization         *http.InitDevHandler
 	CategoryInitialization *http.InitializationHandler
 	// Activity records the daily activity in AuthMiddleware
@@ -248,6 +249,10 @@ func NewInjector(settings *config.Configuration) *Injector {
 	mailService.SetEnricher(domain.TemplateReactivation, reactivationService)
 	reactivationHandler := http.NewReactivationHandler(reactivationService)
 
+	// Staged rollout (plan/27 §I): criteria per stage on top of the panel metrics
+	launchHandler := http.NewLaunchHandler(service.NewLaunchService(dbrepository.NewLaunchRepository(db),
+		dbrepository.NewAdminMetricsRepository(db), adminService, dbrepository.NewFeedbackRepository(db)))
+
 	// Initialization Dev
 	initDevHandler := http.NewDevHandler(
 		categoryService,
@@ -282,6 +287,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 			Reading:                readingHandler,
 			Feedback:               feedbackHandler,
 			Reactivation:           reactivationHandler,
+			Launch:                 launchHandler,
 			Initialization:         initDevHandler,
 			CategoryInitialization: InitHandler,
 			Activity:               service.NewActivityService(dbrepository.NewActivityRepository(db)),

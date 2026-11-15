@@ -13,12 +13,14 @@ import AdminCatalog from '../components/admin/AdminCatalog';
 import AdminCosts from '../components/admin/AdminCosts';
 import AdminMoney from '../components/admin/AdminMoney';
 import AdminFeedback from '../components/admin/AdminFeedback';
+import AdminLaunch from '../components/admin/AdminLaunch';
 import { refreshAdminMetrics } from '../apiCalls/admin';
 
 // Panel de administración (plan/25): agregados, sin montos de nadie (salvo Dinero: los aportes a Topi, sin correos). Solo rol admin (la API lo exige
 // en cada ruta y audita cada acceso; el front solo esconde el enlace).
 export const ADMIN_TABS = [
   { id: 'resumen', label: 'Resumen', component: AdminSummary },
+  { id: 'lanzamiento', label: 'Lanzamiento', component: AdminLaunch },
   { id: 'usuarios', label: 'Usuarios', component: AdminUsers },
   { id: 'fundadores', label: 'Fundadores', component: AdminFounders },
   { id: 'lectura', label: 'Lectura', component: AdminReading },

@@ -87,6 +87,7 @@ func main() {
 		ReadingHandler:        injector.Handlers.Reading,
 		FeedbackHandler:       injector.Handlers.Feedback,
 		ReactivationHandler:   injector.Handlers.Reactivation,
+		LaunchHandler:         injector.Handlers.Launch,
 		InitDevHandler:        injector.Handlers.Initialization,
 		InitializationHandler: injector.Handlers.CategoryInitialization,
 		Router:                router.Router,

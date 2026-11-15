@@ -120,6 +120,7 @@ var errorStatusMap = map[error]int{
 	domain.ErrInvalidFeedback:                http.StatusBadRequest,
 	domain.ErrInvalidReactivation:            http.StatusBadRequest,
 	domain.ErrReactivationNotAllowed:         http.StatusConflict,
+	domain.ErrInvalidLaunchStage:             http.StatusBadRequest,
 	domain.ErrInvalidPasswordException:       http.StatusUnauthorized,
 	domain.ErrCodeMismatchException:          http.StatusUnauthorized,
 	domain.ErrNotAuthorizedException:         http.StatusUnauthorized,

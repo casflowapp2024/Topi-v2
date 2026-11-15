@@ -32,6 +32,7 @@ type Routes struct {
 	ReadingHandler        *ReadingHandler
 	FeedbackHandler       *FeedbackHandler
 	ReactivationHandler   *ReactivationHandler
+	LaunchHandler         *LaunchHandler
 	// Activity records the daily activity of the authenticated users (optional)
 	Activity port.ActivityTracker
 	Router   *gin.Engine
@@ -345,6 +346,11 @@ func (r *Routes) FeedbackRoutes() {
 			admin.GET("/users/:id/reactivation", r.ReactivationHandler.View)
 			admin.POST("/users/:id/reactivation/preview", r.ReactivationHandler.Preview)
 			admin.POST("/users/:id/reactivation", r.ReactivationHandler.Send)
+		}
+		// staged rollout: criteria per stage and when each one started (plan/27 §I)
+		if r.LaunchHandler != nil {
+			admin.GET("/launch", r.LaunchHandler.Report)
+			admin.PUT("/launch/stages/:stage", r.LaunchHandler.SetStage)
 		}
 	}
 }
