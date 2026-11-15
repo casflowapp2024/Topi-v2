@@ -13,7 +13,7 @@ import { open_settings_modal, close_settings_modal } from '../redux/actions/ui';
 import Onboarding2 from './Onboarding2';
 import NextStepsPopover from '../components/onboarding2/NextStepsPopover';
 import InstallPwaModal from '../components/ui/InstallPwaModal';
-import Warnings from '../components/navigation/Warnings';
+import ConnectionDownBanner from '../components/navigation/ConnectionDownBanner';
 import VerifyEmailBanner from '../components/navigation/VerifyEmailBanner';
 import PeriodSelector from '../components/navigation/PeriodSelector';
 import { connectEmailAction, wasPromptedThisSession, markPromptedThisSession } from '../components/conexions/emailConnection';
@@ -287,7 +287,7 @@ const Layout = ({
                 {/* Spacer for fixed header */}
                 <div className="h-[53px] md:h-[62px] w-full"></div>
 
-                <Warnings />
+                <ConnectionDownBanner />
                 <VerifyEmailBanner />
 
                 {user_extra_data.onboarding_completed === false && (

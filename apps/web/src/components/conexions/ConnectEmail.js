@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 //redux
 import { connect } from 'react-redux';
-import { get_automated_emails, delete_automated_email } from '../../redux/actions/conexions';
-import { setAlert } from '../../redux/actions/alert';
 //components
 import LinkTransEmailForm from './LinkTransEmailForm';
 import { emailsAutomationErrors } from '../errosMaping';
@@ -14,10 +12,7 @@ import { CheckCircleIcon, EnvelopeIcon, ExclamationTriangleIcon } from '@heroico
 // Pantalla a la que llega, al iniciar sesión, quien no tiene ninguna conexión de correo utilizable.
 const ConnectEmail = ({
     //actions
-    get_automated_emails,
-    delete_automated_email,
     linkEmailAndReadNow,
-    setAlert,
     //state
     automated_emails,
 }) => {
@@ -26,7 +21,6 @@ const ConnectEmail = ({
     // 'form' | 'linking' | 'read' | 'no_accounts' | 'error'
     const [status, setStatus] = useState('form');
     const [reconnect, setReconnect] = useState(null); // {email, provider} a precargar en el formulario
-    const [removing, setRemoving] = useState(null);
 
     const broken = brokenEmails(automated_emails);
 
@@ -40,17 +34,9 @@ const ConnectEmail = ({
         setStatus(await linkEmailAndReadNow(emailAddress));
     };
 
-    // El refresh token viejo no sirve: se elimina la conexión y se vuelve a autorizar.
-    const handleReconnect = async (email) => {
-        setRemoving(email.id);
-        const deleted = await delete_automated_email(email.id);
-        await get_automated_emails(0, 20);
-        setRemoving(null);
-        if (deleted === true) {
-            setReconnect({ email: email.email, provider: email.provider });
-        } else {
-            setAlert('Algo salió mal, intenta de nuevo', true, 'text-white', 'bg-red-500', 3000);
-        }
+    // Se vuelve a autorizar la misma dirección: la API reutiliza la conexión (y sus cuentas) y limpia el error.
+    const handleReconnect = (email) => {
+        setReconnect({ email: email.email, provider: email.provider });
     };
 
     const errorText = (code) => {
@@ -91,10 +77,9 @@ const ConnectEmail = ({
                                         </div>
                                         <button
                                             onClick={() => handleReconnect(email)}
-                                            disabled={removing !== null}
                                             className="w-full md:w-max shrink-0 bg-[#5266EB] text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-60"
                                         >
-                                            {removing === email.id ? 'Desconectando…' : 'Reconectar'}
+                                            Reconectar
                                         </button>
                                     </div>
                                 ))}
@@ -176,8 +161,5 @@ const mapStateToProps = state => ({
 });
 
 export default connect(mapStateToProps, {
-    get_automated_emails,
-    delete_automated_email,
     linkEmailAndReadNow,
-    setAlert,
 })(ConnectEmail);
