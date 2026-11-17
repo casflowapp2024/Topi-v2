@@ -235,9 +235,9 @@ func TestAccounts_BuildReadEmailRequests_GroupsBySender(t *testing.T) {
 	nubank := "nu@nu.com.co"
 
 	accounts := Accounts{
-		{ID: 1, UserID: "u1", LastFourDigits: "1111", Bank: Bank{Email: &bancolombia}, Email: Email{ID: &gmailID, Email: "u1@gmail.com", Provider: "gmail"}},
-		{ID: 2, UserID: "u1", LastFourDigits: "2222", Bank: Bank{Email: &bancolombia}, Email: Email{ID: &gmailID, Email: "u1@gmail.com", Provider: "gmail"}},
-		{ID: 3, UserID: "u1", LastFourDigits: "3333", Bank: Bank{Email: &nubank}, Email: Email{ID: &outlookID, Email: "u1@outlook.com", Provider: "outlook"}},
+		{ID: 1, UserID: "u1", LastFourDigits: "1111", Bank: Bank{Name: "Bancolombia", Email: &bancolombia}, Email: Email{ID: &gmailID, Email: "u1@gmail.com", Provider: "gmail"}},
+		{ID: 2, UserID: "u1", LastFourDigits: "2222", Bank: Bank{Name: "Bancolombia", Email: &bancolombia}, Email: Email{ID: &gmailID, Email: "u1@gmail.com", Provider: "gmail"}},
+		{ID: 3, UserID: "u1", LastFourDigits: "3333", Bank: Bank{Name: "Banco Propio", Email: &nubank}, Email: Email{ID: &outlookID, Email: "u1@outlook.com", Provider: "outlook"}},
 	}
 
 	requests := accounts.BuildReadEmailRequests()
@@ -253,6 +253,7 @@ func TestAccounts_BuildReadEmailRequests_GroupsBySender(t *testing.T) {
 			UserID: "u1", Email: "u1@outlook.com", EmailID: 9, Provider: "outlook", SenderEmail: nubank,
 			Accounts: map[string]string{"3333": "3"}, Currencies: map[string]string{"3": "COP"},
 			Classes: map[string]string{"3": "deposit"}, Onboarding: true,
+			Verify: true, // plan/30: a bank the user typed goes to Por revisar
 		}, requests[1])
 		assert.Equal(t, "9:nu@nu.com.co", requests[1].DedupeKey())
 	}

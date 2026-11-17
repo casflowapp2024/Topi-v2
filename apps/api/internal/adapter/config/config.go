@@ -37,9 +37,6 @@ type (
 	}
 	// Launch contains the settings of the public launch (plan/27-lanzamiento.md)
 	Launch struct {
-		// BankSamplesAddress is the team mailbox users forward a bank notification to (BANK_SAMPLES_ADDRESS).
-		// Empty: the app does not ask for samples. Those emails never reach the database.
-		BankSamplesAddress string
 		// ReactivationDailyLimit caps the personal reactivation emails sent per day (REACTIVATION_DAILY_LIMIT)
 		ReactivationDailyLimit int
 		// ReactivationAllowBroken lets the panel write to someone whose connection is down (REACTIVATION_ALLOW_BROKEN).
@@ -289,7 +286,6 @@ func newLaunch() *Launch {
 		limit = 0
 	}
 	return &Launch{
-		BankSamplesAddress:      strings.ToLower(strings.TrimSpace(os.Getenv("BANK_SAMPLES_ADDRESS"))),
 		ReactivationDailyLimit:  limit,
 		ReactivationAllowBroken: strings.EqualFold(strings.TrimSpace(os.Getenv("REACTIVATION_ALLOW_BROKEN")), "true"),
 	}

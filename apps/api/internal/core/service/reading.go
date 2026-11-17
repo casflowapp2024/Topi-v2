@@ -7,35 +7,27 @@ import (
 	"encoding/json"
 	"log/slog"
 	"strconv"
-	"strings"
 	"time"
 )
 
 // unsupportedBatch bounds the bank_unsupported emails queued per run (they also go through the daily quota)
 const unsupportedBatch = 50
 
-// ReadingSettings are the launch settings the reading status needs
-type ReadingSettings struct {
-	// SamplesAddress is the team mailbox for bank notification samples ("" = not asked)
-	SamplesAddress string
-}
-
 // ReadingAppService implements port.ReadingService, the bank_unsupported scheduler and its MailEnricher
 // (plan/27 §B and §C)
 type ReadingAppService struct {
-	repo     port.ReadingRepository
-	mail     port.MailService
-	events   port.ProductEventRecorder
-	settings ReadingSettings
-	now      func() time.Time
+	repo   port.ReadingRepository
+	mail   port.MailService
+	events port.ProductEventRecorder
+	now    func() time.Time
 }
 
 // NewReadingService creates the reading status service
-func NewReadingService(repo port.ReadingRepository, mail port.MailService, events port.ProductEventRecorder, settings ReadingSettings) *ReadingAppService {
-	return &ReadingAppService{repo: repo, mail: mail, events: events, settings: settings, now: time.Now}
+func NewReadingService(repo port.ReadingRepository, mail port.MailService, events port.ProductEventRecorder) *ReadingAppService {
+	return &ReadingAppService{repo: repo, mail: mail, events: events, now: time.Now}
 }
 
-// Status: every connection with its reading state, the banks Topi reads and where to send a sample
+// Status: every connection with its reading state (per bank too) and the banks Topi reads
 func (s *ReadingAppService) Status(ctx context.Context, userID string) (*domain.ReadingStatus, error) {
 	connections, err := s.repo.ConnectionStatuses(ctx, userID)
 	if err != nil {
@@ -48,7 +40,6 @@ func (s *ReadingAppService) Status(ctx context.Context, userID string) (*domain.
 	return &domain.ReadingStatus{
 		Connections:    connections,
 		SupportedBanks: domain.SupportedBanks(),
-		SamplesAddress: s.settings.SamplesAddress,
 	}, nil
 }
 
@@ -66,26 +57,6 @@ func (s *ReadingAppService) Onboarding(ctx context.Context, userID string) (*dom
 		}
 	}
 	return &status, nil
-}
-
-// RequestBankSample returns the team address to forward a bank notification to and records
-// bank_sample_requested. The email itself goes to the team mailbox: Topi never stores it.
-func (s *ReadingAppService) RequestBankSample(ctx context.Context, userID string, bankID *uint64) (string, error) {
-	if s.settings.SamplesAddress == "" {
-		return "", domain.ErrDataNotFound
-	}
-	props := map[string]any{}
-	if bankID != nil {
-		owns, err := s.repo.OwnsBank(ctx, userID, *bankID)
-		if err != nil {
-			return "", err
-		}
-		if owns {
-			props["bank_id"] = *bankID
-		}
-	}
-	emit(ctx, s.events, domain.ProductEvent{UserID: userID, Name: domain.ProductEventBankSampleRequested, Props: props})
-	return s.settings.SamplesAddress, nil
 }
 
 // ScheduleUnsupportedAlerts queues bank_unsupported (priority 3, once per connection) for the healthy
@@ -151,7 +122,5 @@ func (s *ReadingAppService) Enrich(ctx context.Context, email domain.OutboxEmail
 	if !still {
 		return domain.ErrMailCancelled
 	}
-	data["supported_banks"] = strings.Join(domain.SupportedBanks(), ", ")
-	data["samples_address"] = s.settings.SamplesAddress
 	return nil
 }

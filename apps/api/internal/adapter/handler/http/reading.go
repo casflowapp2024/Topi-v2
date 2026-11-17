@@ -48,32 +48,6 @@ func (h *ReadingHandler) Onboarding(ctx *gin.Context) {
 	handleSuccess(ctx, status)
 }
 
-type bankSampleRequest struct {
-	BankID *uint64 `json:"bank_id"`
-}
-
-// BankSample is POST /banks/sample-request: where to forward a bank notification (the app never stores it)
-func (h *ReadingHandler) BankSample(ctx *gin.Context) {
-	userID, err := domain.GetAuthUserID(ctx, enums.AuthorizationPayloadKey)
-	if err != nil {
-		handleError(ctx, err)
-		return
-	}
-	var req bankSampleRequest
-	if ctx.Request.ContentLength > 0 {
-		if err = ctx.ShouldBindJSON(&req); err != nil {
-			validationError(ctx, err)
-			return
-		}
-	}
-	address, err := h.svc.RequestBankSample(ctx, *userID, req.BankID)
-	if err != nil {
-		handleError(ctx, err)
-		return
-	}
-	handleSuccess(ctx, gin.H{"address": address})
-}
-
 // PublicBanks is GET /public/banks: names of the banks Topi reads (landing and the "no movements" notice)
 func PublicBanks(ctx *gin.Context) {
 	ctx.Header("Cache-Control", "public, max-age=3600")

@@ -107,6 +107,7 @@ func TestEmailHandler_ReadEmail_EnqueuesJob(t *testing.T) {
 		Currencies:  map[string]string{"10": "COP"},
 		Classes:     map[string]string{"10": "deposit"},
 		Onboarding:  true,
+		Verify:      true, // "banco" de prueba: no es oficial (plan/30)
 	}, store.payloads[0])
 
 	var rsp struct {

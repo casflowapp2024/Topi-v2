@@ -1,9 +1,7 @@
 {{define "content"}}
 <p style="margin:0 0 16px 0;font-size:18px;font-weight:700;color:#111827;">Todavía no vemos movimientos de tu banco</p>
-<p style="margin:0 0 12px 0;color:#374151;">Conectaste tu correo a Topi hace un par de días, pero todavía no hemos podido leer ningún movimiento de tu banco.</p>
-<p style="margin:0 0 12px 0;color:#374151;">Lo más común es que tu banco aún no esté entre los que Topi sabe leer. Hoy leemos: <strong>{{.supported_banks}}</strong>.</p>
-{{if .samples_address}}<p style="margin:0 0 12px 0;color:#374151;">¿Nos ayudas a agregarlo? Reenvía un correo de notificación de tu banco (por ejemplo, el aviso de una compra) a <strong>{{.samples_address}}</strong>. Solo lo usamos para aprender a leer ese banco y después lo borramos; nunca queda en la app.</p>{{end}}
-<p style="margin:0 0 24px 0;color:#374151;">También puede pasar que las notificaciones de tu banco lleguen a otro correo.</p>
+<p style="margin:0 0 12px 0;color:#374151;">Conectaste tu correo a Topi, pero todavía no hemos podido anotar movimientos de tu banco.</p>
+<p style="margin:0 0 24px 0;color:#374151;">Casi siempre es porque tu banco te escribe desde otro correo. En el Inicio de Topi verás qué encontramos y podrás corregir el remitente en un minuto.</p>
 <p style="margin:0 0 24px 0;">
   <a href="{{.app_url}}/dashboard" style="display:inline-block;padding:12px 20px;background:#5266EB;color:#ffffff;border-radius:10px;font-weight:600;text-decoration:none;">Revisar en Topi</a>
 </p>

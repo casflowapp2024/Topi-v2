@@ -328,7 +328,6 @@ func (r *Routes) ReadingRoutes() {
 	auth := r.auth()
 	r.Router.GET("/email/status", auth, r.ReadingHandler.Status)
 	r.Router.GET("/onboarding/status", auth, r.ReadingHandler.Onboarding)
-	r.Router.POST("/banks/sample-request", auth, r.ReadingHandler.BankSample)
 }
 
 // FeedbackRoutes: "¿Qué le falta a Topi?" (with session) and its panel section (admin + audited). plan/27 §E

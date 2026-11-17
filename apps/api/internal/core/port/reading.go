@@ -25,9 +25,8 @@ type ReadingRepository interface {
 	OwnsBank(ctx context.Context, userID string, bankID uint64) (bool, error)
 }
 
-// ReadingService is GET /email/status, GET /onboarding/status and the bank sample request
+// ReadingService is GET /email/status and GET /onboarding/status
 type ReadingService interface {
 	Status(ctx context.Context, userID string) (*domain.ReadingStatus, error)
 	Onboarding(ctx context.Context, userID string) (*domain.OnboardingStatus, error)
-	RequestBankSample(ctx context.Context, userID string, bankID *uint64) (string, error)
 }

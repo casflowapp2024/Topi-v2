@@ -278,18 +278,15 @@ func TestNew_Launch(t *testing.T) {
 	t.Setenv("ENV_FILE", filepath.Join(os.TempDir(), "does-not-exist.env"))
 	once = sync.Once{}
 	launch := New().Launch
-	assert.Equal(t, "", launch.BankSamplesAddress)
 	assert.Equal(t, 5, launch.ReactivationDailyLimit)
 	assert.False(t, launch.ReactivationAllowBroken, "writing to broken connections is off by default")
 
 	clearEnv(t)
 	t.Setenv("ENV_FILE", filepath.Join(os.TempDir(), "does-not-exist.env"))
-	t.Setenv("BANK_SAMPLES_ADDRESS", " Bancos@Topi.cash ")
 	t.Setenv("REACTIVATION_DAILY_LIMIT", "2")
 	t.Setenv("REACTIVATION_ALLOW_BROKEN", "true")
 	once = sync.Once{}
 	launch = New().Launch
-	assert.Equal(t, "bancos@topi.cash", launch.BankSamplesAddress)
 	assert.Equal(t, 2, launch.ReactivationDailyLimit)
 	assert.True(t, launch.ReactivationAllowBroken)
 }

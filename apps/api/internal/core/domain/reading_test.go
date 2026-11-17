@@ -90,3 +90,13 @@ func TestLaunchEvents_ClosedProps(t *testing.T) {
 		assert.ErrorIs(t, e.Validate(), ErrInvalidProductEvent, e.Name)
 	}
 }
+
+func TestComputeBankReading(t *testing.T) {
+	assert.Equal(t, BankOK, ComputeBankReading(BankReadFacts{Senders: 1, ReadSenders: 1, Found: 9, Transactions: 3}))
+	assert.Equal(t, BankReading, ComputeBankReading(BankReadFacts{Senders: 2, ReadSenders: 1, Found: 4}))
+	assert.Equal(t, BankNoEmails, ComputeBankReading(BankReadFacts{Senders: 1, ReadSenders: 1}))
+	assert.Equal(t, BankNoEmails, ComputeBankReading(BankReadFacts{}), "a bank with no sender: ask for it")
+	assert.Equal(t, BankUnreadable, ComputeBankReading(BankReadFacts{Senders: 2, ReadSenders: 2, Found: 5}))
+	assert.Equal(t, "", ComputeBankReading(BankReadFacts{Senders: 1, ReadSenders: 1, LegacySender: 1}),
+		"read before plan/30: fall back to the 48 h rule")
+}

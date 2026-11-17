@@ -6,6 +6,7 @@ import (
 	"cash-flow/internal/mappers"
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -54,9 +55,21 @@ FROM emails e WHERE e.user_id = $1 ORDER BY e.id`, userID)
 		return nil, err
 	}
 
-	banks, err := r.db.Query(ctx, `SELECT DISTINCT a.email_id, b.id, b.name
-FROM accounts a JOIN banks b ON b.id = a.bank_id
-WHERE a.user_id = $1 AND a.email_id IS NOT NULL ORDER BY b.name`, userID)
+	// per bank: its senders, what their first reads found and the automatic transactions of its accounts here
+	banks, err := r.db.Query(ctx, `SELECT l.email_id, b.id, b.name, coalesce(b.email, ''),
+  coalesce(s.read_senders, 0), coalesce(s.legacy, 0), coalesce(s.found, 0),
+  (SELECT count(*) FROM transactions t JOIN accounts a ON a.id = t.account_id
+     WHERE a.email_id = l.email_id AND a.bank_id = b.id AND a.user_id = l.user_id AND t.automated)
+FROM (SELECT DISTINCT email_id, bank_id, user_id FROM accounts WHERE user_id = $1 AND email_id IS NOT NULL) l
+JOIN banks b ON b.id = l.bank_id
+LEFT JOIN LATERAL (
+  SELECT count(*) AS read_senders, count(*) FILTER (WHERE st.first_read_at IS NULL) AS legacy,
+         sum(coalesce(st.first_found, 0)) AS found
+  FROM email_sync_state st
+  WHERE st.email_id = l.email_id
+    AND lower(st.sender_email) = ANY (SELECT lower(trim(x)) FROM unnest(string_to_array(coalesce(b.email, ''), ',')) AS x)
+) s ON true
+ORDER BY b.name`, userID)
 	if err != nil {
 		return nil, mappers.MapPostgresErrorCode(err)
 	}
@@ -64,15 +77,31 @@ WHERE a.user_id = $1 AND a.email_id IS NOT NULL ORDER BY b.name`, userID)
 	for banks.Next() {
 		var emailID uint64
 		var bank domain.ConnectionBank
-		if err = banks.Scan(&emailID, &bank.ID, &bank.Name); err != nil {
+		var facts domain.BankReadFacts
+		if err = banks.Scan(&emailID, &bank.ID, &bank.Name, &bank.Sender, &facts.ReadSenders, &facts.LegacySender,
+			&facts.Found, &facts.Transactions); err != nil {
 			return nil, err
 		}
 		if i, ok := index[emailID]; ok {
+			facts.Senders = countSenders(bank.Sender)
 			bank.Supported = domain.IsSupportedBank(bank.Name)
+			bank.Found = facts.Found
+			bank.Reading = domain.ComputeBankReading(facts)
 			statuses[i].Banks = append(statuses[i].Banks, bank)
 		}
 	}
 	return statuses, banks.Err()
+}
+
+// countSenders: non empty addresses of a comma separated banks.email
+func countSenders(raw string) int {
+	n := 0
+	for _, part := range strings.Split(raw, ",") {
+		if strings.Contains(part, "@") {
+			n++
+		}
+	}
+	return n
 }
 
 // OnboardingFacts: the real state of the four steps of the checklist

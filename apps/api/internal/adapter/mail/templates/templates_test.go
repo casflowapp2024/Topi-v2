@@ -19,7 +19,7 @@ var sampleData = map[string]map[string]any{
 	"reactivation_personal": {"subject": "Rehicimos Topi: ¿qué te hizo dejarla?", "founder": true,
 		"paragraphs":      []string{"Hola Ana,", "Soy JuanMa, de Topi.", "JuanMa"},
 		"unsubscribe_url": "https://api.topi.test/mail/unsubscribe?t=abc"},
-	"bank_unsupported": {"supported_banks": "BBVA, Bancolombia, Nubank", "samples_address": "bancos@topi.test",
+	"bank_unsupported": {
 		"unsubscribe_url": "https://api.topi.test/mail/unsubscribe?t=abc"},
 	// generic receipt / payment notice for the business model (N1/N3): every text comes from the caller
 	"billing_generic": {"subject": "Recibo de tu aporte a Topi", "heading": "¡Gracias por apoyar a Topi!",

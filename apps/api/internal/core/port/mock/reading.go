@@ -164,21 +164,6 @@ func (mr *MockReadingServiceMockRecorder) Onboarding(ctx, userID interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Onboarding", reflect.TypeOf((*MockReadingService)(nil).Onboarding), ctx, userID)
 }
 
-// RequestBankSample mocks base method.
-func (m *MockReadingService) RequestBankSample(ctx context.Context, userID string, bankID *uint64) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RequestBankSample", ctx, userID, bankID)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// RequestBankSample indicates an expected call of RequestBankSample.
-func (mr *MockReadingServiceMockRecorder) RequestBankSample(ctx, userID, bankID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequestBankSample", reflect.TypeOf((*MockReadingService)(nil).RequestBankSample), ctx, userID, bankID)
-}
-
 // Status mocks base method.
 func (m *MockReadingService) Status(ctx context.Context, userID string) (*domain.ReadingStatus, error) {
 	m.ctrl.T.Helper()

@@ -24,11 +24,52 @@ const (
 	ReadingOK            = "ok"
 )
 
+// Reading states of a bank inside a connection (plan/30 bloque 4): decided with the first read, not after 48 h
+const (
+	BankReading    = "reading"    // some sender not read yet
+	BankOK         = "ok"         // it has automatic transactions
+	BankNoEmails   = "no_emails"  // read and nothing from its sender: ask the user for the right sender
+	BankUnreadable = "unreadable" // emails found but no transaction: Topi does not read that bank yet
+)
+
 // ConnectionBank is a bank of an account linked to a connection
 type ConnectionBank struct {
 	ID        uint64 `json:"id"`
 	Name      string `json:"name"`
 	Supported bool   `json:"supported"`
+	// Sender is the address (or comma separated addresses) Topi reads for this bank
+	Sender string `json:"sender"`
+	// Reading is one of the Bank* states; "" for connections read before plan/30 (no first read recorded)
+	Reading string `json:"reading"`
+	// Found is how many emails of its senders the first read listed
+	Found int64 `json:"found"`
+}
+
+// BankReadFacts are the counts behind ConnectionBank.Reading
+type BankReadFacts struct {
+	Senders      int   // senders configured for the bank
+	ReadSenders  int   // senders with a sync state
+	LegacySender int   // senders read before the first read was recorded
+	Found        int64 // emails listed by the first reads
+	Transactions int64 // automatic transactions of the bank's accounts on this connection
+}
+
+// ComputeBankReading decides the state of a bank from its first reads
+func ComputeBankReading(f BankReadFacts) string {
+	switch {
+	case f.Transactions > 0:
+		return BankOK
+	case f.Senders == 0:
+		return BankNoEmails // a bank with no sender cannot be read: ask for it
+	case f.ReadSenders < f.Senders:
+		return BankReading
+	case f.LegacySender > 0:
+		return ""
+	case f.Found == 0:
+		return BankNoEmails
+	default:
+		return BankUnreadable
+	}
 }
 
 // ConnectionStatus is what the app shows about one connection
@@ -59,6 +100,9 @@ func (c *ConnectionStatus) ComputeReading(now time.Time) {
 		c.Reading = ReadingNoAccounts
 	case c.TransactionsCreated > 0:
 		c.Reading = ReadingOK
+	case c.allBanksSilent():
+		// the first read already said it: no need to wait 48 h (plan/30 bloque 4)
+		c.Reading = ReadingNoTransaction
 	case now.Sub(c.ConnectedAt) < UnsupportedAfter:
 		c.Reading = ReadingFirst
 	default:
@@ -66,12 +110,23 @@ func (c *ConnectionStatus) ComputeReading(now time.Time) {
 	}
 }
 
+// allBanksSilent: every bank was read and none of them gave a transaction
+func (c *ConnectionStatus) allBanksSilent() bool {
+	if len(c.Banks) == 0 {
+		return false
+	}
+	for _, b := range c.Banks {
+		if b.Reading != BankNoEmails && b.Reading != BankUnreadable {
+			return false
+		}
+	}
+	return true
+}
+
 // ReadingStatus is GET /email/status
 type ReadingStatus struct {
 	Connections    []ConnectionStatus `json:"connections"`
 	SupportedBanks []string           `json:"supported_banks"`
-	// SamplesAddress is where to forward a bank notification ("" = the app does not ask for one)
-	SamplesAddress string `json:"samples_address"`
 }
 
 // SupportedBanks are the banks Topi reads today (names only)

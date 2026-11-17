@@ -64,6 +64,9 @@ type ReadEmailBodyRequest struct {
 	// Classes is account_id: account class. A card payment is an income of a credit account.
 	Classes    map[string]string `json:"classes,omitempty"`
 	Onboarding bool              `json:"onboarding"`
+	// Verify: the bank is not one Topi reads officially (the user typed its sender), so every transaction of
+	// this read goes to Por revisar until the bank is made official (plan/30 bloque 4)
+	Verify bool `json:"verify,omitempty"`
 }
 
 // DedupeKey identifies the (connection, sender) pair in email_jobs: at most one pending or

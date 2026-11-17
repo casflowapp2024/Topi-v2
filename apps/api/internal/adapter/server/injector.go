@@ -227,8 +227,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 	billingHandler := http.NewBillingHandler(billingService)
 
 	// Launch (plan/27 §B, §C): reading status, welcome checklist and "todavía no vemos movimientos de tu banco"
-	readingService := service.NewReadingService(dbrepository.NewReadingRepository(db), mailService, productEvents,
-		service.ReadingSettings{SamplesAddress: settings.Launch.BankSamplesAddress})
+	readingService := service.NewReadingService(dbrepository.NewReadingRepository(db), mailService, productEvents)
 	mailService.SetEnricher(domain.TemplateBankUnsupported, readingService)
 	readingHandler := http.NewReadingHandler(readingService)
 
