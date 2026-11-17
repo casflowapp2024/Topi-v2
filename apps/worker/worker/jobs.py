@@ -186,7 +186,9 @@ class JobProcessor:
             raise PermanentJobError(f"remitente vacío o inválido: {sender_email!r}")
 
         # 2. desde dónde leer
-        last_run = self.db.get_last_run(email_id, sender_email) or first_read_since(self.now(), self.settings.timezone)
+        previous_run = self.db.get_last_run(email_id, sender_email)
+        first_read = previous_run is None
+        last_run = previous_run or first_read_since(self.now(), self.settings.timezone)
         since = last_run - timedelta(minutes=self.settings.sync_overlap_minutes)
         listing_started = self.now()
 
@@ -262,6 +264,9 @@ class JobProcessor:
                 }
                 if item.confidence is not None and item.confidence < self.settings.confidence_threshold:
                     transaction["should_verify"] = True
+                if payload.get("verify"):
+                    # banco que no es oficial (el usuario escribió el remitente): todo a Por revisar (plan/30)
+                    transaction["should_verify"] = True
                 transactions.append(transaction)
                 messages_with_tx.setdefault(email.id, []).append(transaction)
 
@@ -278,7 +283,8 @@ class JobProcessor:
             raise TransientError(f"{len(failures)} mensaje(s) no se pudieron procesar; se reintenta el job")
 
         if not self.settings.dry_run:
-            self.db.set_last_run(email_id, sender_email, listing_started)
+            self.db.set_last_run(email_id, sender_email, listing_started,
+                                 first_found=len(refs) if first_read else None)
             result.last_run_updated = True
 
         return result

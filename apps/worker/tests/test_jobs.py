@@ -340,3 +340,35 @@ def test_a_failure_after_a_batch_retries_without_duplicates():
 def test_first_read_window(now, expected):
     from worker.jobs import first_read_since
     assert first_read_since(now, "America/Bogota") == expected
+
+
+# plan/30, bloque 4: la primera lectura anota cuántos correos encontró; las siguientes no lo tocan
+def test_first_read_records_how_many_emails_it_found():
+    processor, db, _, _, _ = make(MESSAGES)
+    db.last_runs.clear()
+
+    assert processor.handle(job()) == "done"
+    assert db.first_found == {(7, SENDER): 3}
+
+    assert processor.handle(job(job_id=2)) == "done"
+    assert db.first_found == {(7, SENDER): 3}
+
+
+def test_first_read_with_nothing_found_records_zero():
+    processor, db, _, _, _ = make([])
+    db.last_runs.clear()
+    processor.handle(job())
+    assert db.first_found == {(7, SENDER): 0}
+
+
+def test_dry_run_records_nothing_about_the_first_read():
+    processor, db, _, _, _ = make(MESSAGES, dry_run=True)
+    db.last_runs.clear()
+    processor.handle(job())
+    assert db.first_found == {}
+
+
+def test_bank_that_is_not_official_goes_to_review():
+    processor, _, api, _, _ = make([email("m1", "TX:1111:50000")])
+    assert processor.handle(job(verify=True)) == "done"
+    assert api.create_calls[0][0]["should_verify"] is True

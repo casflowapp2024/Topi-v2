@@ -88,10 +88,33 @@ VALUES ($1, $2, 'gmail', 'm1', 'banco', now(), 'gemini', 'transaction'), ($1, $2
 	assert.Equal(t, int64(2), byID[reading].EmailsProcessed)
 	assert.Equal(t, int64(1), byID[reading].TransactionsCreated)
 	assert.NotNil(t, byID[reading].LastReadAt)
-	assert.Equal(t, []domain.ConnectionBank{{ID: supported, Name: "Bancolombia", Supported: true}}, byID[reading].Banks)
+	assert.Equal(t, []domain.ConnectionBank{{ID: supported, Name: "Bancolombia", Supported: true, Sender: "x@banco.test",
+		Reading: domain.BankOK}}, byID[reading].Banks)
 	assert.Equal(t, domain.ReadingNoTransaction, byID[silent].Reading)
-	assert.Equal(t, []domain.ConnectionBank{{ID: unknown, Name: "Banco Raro", Supported: false}}, byID[silent].Banks)
+	assert.Equal(t, []domain.ConnectionBank{{ID: unknown, Name: "Banco Raro", Supported: false, Sender: "x@raro.test",
+		Reading: domain.BankReading}}, byID[silent].Banks, "never read: still reading (the 48 h rule still applies)")
 	assert.Equal(t, domain.ReadingNoAccounts, byID[lonely].Reading)
+
+	// plan/30: the first read decides the bank state (case of the sender ignored)
+	exec(`INSERT INTO email_sync_state (email_id, sender_email, last_run, first_found, first_read_at)
+VALUES ($1, 'X@Raro.test', now(), 0, now())`, silent)
+	bankOf := func() domain.ConnectionBank {
+		t.Helper()
+		all, sErr := repo.ConnectionStatuses(ctx, userID)
+		require.NoError(t, sErr)
+		for _, s := range all {
+			if s.ID == silent {
+				return s.Banks[0]
+			}
+		}
+		t.Fatal("connection not found")
+		return domain.ConnectionBank{}
+	}
+	assert.Equal(t, domain.BankNoEmails, bankOf().Reading)
+	exec(`UPDATE email_sync_state SET first_found = 4 WHERE email_id = $1`, silent)
+	assert.Equal(t, domain.BankUnreadable, bankOf().Reading)
+	assert.Equal(t, int64(4), bankOf().Found)
+	exec(`DELETE FROM email_sync_state WHERE email_id = $1`, silent)
 
 	facts, err = repo.OnboardingFacts(ctx, userID)
 	require.NoError(t, err)

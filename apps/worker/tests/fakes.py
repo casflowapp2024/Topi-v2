@@ -12,6 +12,7 @@ from worker.providers.base import EmailMessage, MessageRef
 class FakeDB:
     def __init__(self):
         self.last_runs: dict[tuple[int, str], datetime] = {}
+        self.first_found: dict[tuple[int, str], int] = {}
         self.processed: dict[tuple[int, str], dict] = {}
         self.jobs: dict[int, dict] = {}
         self.llm_usage: list[tuple] = []
@@ -20,8 +21,10 @@ class FakeDB:
     def get_last_run(self, email_id, sender):
         return self.last_runs.get((email_id, sender))
 
-    def set_last_run(self, email_id, sender, value):
+    def set_last_run(self, email_id, sender, value, first_found=None):
         self.last_runs[(email_id, sender)] = value
+        if first_found is not None:
+            self.first_found.setdefault((email_id, sender), first_found)
 
     # processed_emails
     def done_message_ids(self, email_id, ids):

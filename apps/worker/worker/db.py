@@ -144,16 +144,21 @@ class Database:
             ).fetchone()
         return row["last_run"] if row else None
 
-    def set_last_run(self, email_id: int, sender_email: str, last_run: datetime) -> None:
+    def set_last_run(self, email_id: int, sender_email: str, last_run: datetime,
+                     first_found: int | None = None) -> None:
+        """Mueve last_run. En la primera lectura (first_found) guarda además cuántos correos encontró: con eso la
+        app sabe enseguida si el remitente no tiene correos o si hay correos que aún no sabe leer (plan/30)."""
         with self.pool.connection() as conn:
             conn.execute(
                 """
-                INSERT INTO email_sync_state (email_id, sender_email, last_run)
-                VALUES (%s, %s, %s)
+                INSERT INTO email_sync_state (email_id, sender_email, last_run, first_found, first_read_at)
+                VALUES (%s, %s, %s, %s, CASE WHEN %s::int IS NULL THEN NULL ELSE now() END)
                 ON CONFLICT (email_id, sender_email)
-                DO UPDATE SET last_run = EXCLUDED.last_run, updated_at = now()
+                DO UPDATE SET last_run = EXCLUDED.last_run, updated_at = now(),
+                  first_found = coalesce(email_sync_state.first_found, EXCLUDED.first_found),
+                  first_read_at = coalesce(email_sync_state.first_read_at, EXCLUDED.first_read_at)
                 """,
-                (email_id, sender_email, last_run),
+                (email_id, sender_email, last_run, first_found, first_found),
             )
 
     # ------------------------------------------------------------------ processed_emails
