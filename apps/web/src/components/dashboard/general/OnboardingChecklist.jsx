@@ -42,6 +42,7 @@ const STEP_TEXT = {
     review: {
         title: 'Revisa tus movimientos',
         detail: 'Topi pone una categoría a cada movimiento. Confirma las que no supo y dinos si alguna compra fue a cuotas.',
+        cta: { to: '/dashboard?revisar=1', label: 'Revisar movimientos' },
     },
 };
 

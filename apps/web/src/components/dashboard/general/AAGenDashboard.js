@@ -15,12 +15,15 @@ import ReviewInbox from './ReviewInbox';
 import OnboardingChecklist from './OnboardingChecklist';
 import AccountCreate from '../../accounts/AccountCreate';
 import BudgetQuickCreate from './BudgetQuickCreate';
+import ReviewModal from './ReviewModal';
 
 // ?crear-cuenta=1 abre "Agregar cuenta" sobre el Inicio: después de conectar el correo, el usuario crea la cuenta
 // de su banco sin perder de vista el paso a paso (plan/30)
 export const CREATE_ACCOUNT_PARAM = 'crear-cuenta';
 // ?crear-presupuesto=1: el presupuesto también se crea sin salir del Inicio (plan/31)
 export const CREATE_BUDGET_PARAM = 'crear-presupuesto';
+// ?revisar=1: "Revisar movimientos" uno a uno (plan/31)
+export const REVIEW_PARAM = 'revisar';
 
 const AAGenDashboard = ({
     current_Month,
@@ -37,6 +40,7 @@ const AAGenDashboard = ({
     const creatingAccount = params.get(CREATE_ACCOUNT_PARAM) === '1';
     const setCreatingAccount = (open) => setFlag(CREATE_ACCOUNT_PARAM, open);
     const creatingBudget = params.get(CREATE_BUDGET_PARAM) === '1';
+    const reviewing = params.get(REVIEW_PARAM) === '1';
 
     // Mientras llega el mes nuevo se mantienen las cifras anteriores atenuadas
     const [loadingReport, setLoadingReport] = useState(true);
@@ -54,6 +58,7 @@ const AAGenDashboard = ({
             <OnboardingChecklist />
             <AccountCreate openCreateBox={creatingAccount} setOpenCreateBox={setCreatingAccount} />
             <BudgetQuickCreate open={creatingBudget} onClose={() => setFlag(CREATE_BUDGET_PARAM, false)} />
+            <ReviewModal open={reviewing} onClose={() => setFlag(REVIEW_PARAM, false)} />
             {/*
                 Una sola versión para todos los tamaños (antes había un bloque PC y otro móvil,
                 y cada componente se montaba y pedía sus datos dos veces).

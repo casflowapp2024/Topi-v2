@@ -357,7 +357,10 @@ const ReviewInbox = ({
     <Card aria-label="Por revisar" className="h-full flex flex-col">
       <CardHeader title={total > 0 ? `Por revisar · ${total}` : 'Por revisar'}
         action={total > 1 && (
-          <button type="button" onClick={seeAll} className="shrink-0 text-xs font-medium text-topi-600 dark:text-topi-200 hover:underline">Ver todo</button>
+          <span className="flex items-center gap-3">
+            <button type="button" onClick={() => navigate('/dashboard?revisar=1')} className="shrink-0 text-xs font-medium text-topi-600 dark:text-topi-200 hover:underline">Revisar todo</button>
+            <button type="button" onClick={seeAll} className="shrink-0 text-xs font-medium text-ink-2 dark:text-gray-400 hover:underline">Ver todo</button>
+          </span>
         )} />
       {loading ? (
         <SkeletonRows rows={3} />
