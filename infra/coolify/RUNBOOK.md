@@ -522,9 +522,7 @@ Antes de activarlo: contador/abogado revisan el IVA (se envía `IVA 0`) y si el 
 ## B10. Lanzamiento público (plan/27)
 
 Variables de `topi-api` (plantilla `api.env.template`):
-- `BANK_SAMPLES_ADDRESS`: buzón del equipo (fuera de la app) al que el usuario reenvía un correo de notificación de un
-  banco que Topi aún no lee. Vacío = la app y el correo `bank_unsupported` no lo piden. Los correos que lleguen ahí se
-  usan para agregar el banco y **se borran**; nunca se copian a la base ni al repo.
+- `BANK_SAMPLES_ADDRESS` se retiró en el plan 30: ya no se piden correos de ejemplo. Si está en Coolify, bórrala.
 - `REACTIVATION_DAILY_LIMIT` (5): correos de reactivación personal por día desde el panel.
 - `REACTIVATION_ALLOW_BROKEN` (`false`): ponerlo en `true` solo después de desplegar el banner de conexión caída (§D).
 - Reactivación: panel → Usuarios → **Escribirle** (una persona, vista previa, enviar). Es un mensaje personal con

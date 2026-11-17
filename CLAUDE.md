@@ -126,8 +126,11 @@ plan/         plan de migración
 - Lanzamiento (`plan/27-lanzamiento.md`): conexión caída con `emails.error_at` + `connection_incidents` (reconectar =
   registrar la misma dirección: `RegisterEmail` hace `ON CONFLICT`, conserva el id y las cuentas, cierra la caída y pide
   lectura prioritaria; nunca borrar para reconectar). `GET /email/status` y `GET /onboarding/status` (estado real; cada
-  paso se registra una vez). `bank_unsupported` una vez por conexión sana sin movimientos a las 48 h; los correos de
-  ejemplo van al buzón `BANK_SAMPLES_ADDRESS`, nunca a la base. Opiniones en `feedback` (máx. 500, 3 por día), solo en
+  paso se registra una vez). Banco sin movimientos (plan/30): lo decide la primera lectura de cada remitente
+  (`email_sync_state.first_found`); `GET /email/status` trae `reading` por banco (`no_emails` → la app pide el
+  remitente correcto y confirma el dominio; `unreadable` → "aún no sabemos leerlos"). No se piden correos de ejemplo ni
+  se listan bancos. Remitentes que no son oficiales (`IsOfficialSender`) van a Por revisar (`verify` en el job).
+  `bank_unsupported` (correo) una vez por conexión sana sin movimientos a las 48 h. Opiniones en `feedback` (máx. 500, 3 por día), solo en
   el panel auditado; al equipo solo "hay N opiniones" (`admin_feedback`, 1 por hora, sin el texto).
   Reactivación personal (`reactivation_personal`): uno a uno desde Usuarios → "Escribirle", con vista previa; el
   outbox guarda solo el texto del equipo con `{nombre}` (el nombre lo pone el enricher); interruptor propio

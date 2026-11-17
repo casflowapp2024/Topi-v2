@@ -246,7 +246,7 @@ func (a Accounts) BuildReadEmailRequests() []ReadEmailBodyRequest {
 			Currencies:  Accounts(accounts).buildCurrenciesMap(),
 			Classes:     Accounts(accounts).buildClassesMap(),
 			Onboarding:  true,
-			Verify:      !IsSupportedBank(firstAccount.Bank.Name),
+			Verify:      !IsOfficialSender(firstAccount.Bank.Name, *firstAccount.Bank.Email),
 		}
 
 		requests = append(requests, request)

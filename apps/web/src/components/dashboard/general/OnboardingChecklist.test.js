@@ -37,7 +37,7 @@ afterEach(() => {
 });
 
 const steps = (done) => ['connect_email', 'first_auto_tx', 'review', 'budget'].map((id) => ({ id, done: done.includes(id) }));
-const reading = (connections, extra = {}) => ({ connections, supported_banks: ['BBVA', 'Bancolombia'], samples_address: '', ...extra });
+const reading = (connections, extra = {}) => ({ connections, supported_banks: ['BBVA', 'Bancolombia'], ...extra });
 
 test('cuenta nueva: 4 pasos, el primero con su acción', async () => {
   await mount(<OnboardingChecklist now={() => NOW}
@@ -76,25 +76,46 @@ test('completa: se oculta', async () => {
   expect(container.textContent).toBe('');
 });
 
-test('banco no soportado: aviso aunque la checklist esté completa, con los bancos que se leen', async () => {
+test('banco sin correos de su remitente: pregunta el remitente aunque la checklist esté completa, sin lista de bancos', async () => {
   await mount(<OnboardingChecklist now={() => NOW}
     load={async () => ({ steps: steps(['connect_email', 'first_auto_tx', 'review', 'budget']), complete: true })}
-    loadReading={async () => reading([{ id: 2, reading: 'no_transactions', banks: [{ id: 9, name: 'Banco Raro', supported: false }] }])} />);
-  expect(container.textContent).toContain('Todavía no vemos movimientos de tu banco');
-  expect(container.textContent).toContain('Banco Raro');
-  expect(container.textContent).toContain('Hoy leemos: BBVA, Bancolombia');
-  expect(container.textContent).not.toContain('Ayudar a agregar mi banco'); // sin buzón configurado no se pide
+    loadReading={async () => reading([{ id: 2, reading: 'no_transactions', banks: [{ id: 9, name: 'ARQ', supported: false,
+      sender: 'no-reply@arqfinance.com', reading: 'no_emails', found: 0, account_ids: [4] }] }])} />);
+  expect(container.textContent).toContain('No encontramos correos de ARQ');
+  expect(container.textContent).toContain('no-reply@arqfinance.com');
+  expect(container.textContent).toContain('¿Desde qué correo te escribe tu banco?');
+  expect(container.textContent).not.toContain('Hoy leemos');
+  expect(container.textContent).not.toContain('Reenvía');
 });
 
-test('pedir el correo de ejemplo registra el evento y muestra el buzón del equipo', async () => {
-  axios.post.mockResolvedValue({ data: { data: { address: 'bancos@topi.test' } } });
-  const connection = { id: 2, reading: 'no_transactions', banks: [{ id: 9, name: 'Banco Raro', supported: false }] };
-  await mount(<UnsupportedBankNotice connection={connection} supportedBanks={['BBVA']} samplesAddress="bancos@topi.test" />);
-  const button = [...container.querySelectorAll('button')].find(b => b.textContent === 'Ayudar a agregar mi banco');
-  await act(async () => { button.click(); });
-  expect(axios.post).toHaveBeenCalledWith(expect.stringContaining('/banks/sample-request'), { bank_id: 9 }, expect.any(Object));
-  expect(container.textContent).toContain('bancos@topi.test');
-  expect(container.textContent).toContain('No queda guardado en Topi');
+test('correos encontrados que aún no sabemos leer: lo dice y no pide nada', async () => {
+  await mount(<OnboardingChecklist now={() => NOW}
+    load={async () => ({ steps: steps(['connect_email']), complete: false, pending_review: 0 })}
+    loadReading={async () => reading([{ id: 2, reading: 'no_transactions', banks: [{ id: 9, name: 'ARQ', supported: false,
+      sender: 'no-reply@arqfinance.com', reading: 'unreadable', found: 6, account_ids: [4] }] }])} />);
+  expect(container.textContent).toContain('Aún no sabemos leer los correos de ARQ');
+  expect(container.textContent).toContain('Encontramos 6 correos');
+  expect(container.querySelector('input')).toBeNull();
+});
+
+test('corregir el remitente: confirma el dominio, guarda y vuelve a leer las cuentas de ese banco', async () => {
+  const save = jest.fn(async () => {});
+  const onSaved = jest.fn();
+  const bank = { id: 9, name: 'Davibank', sender: 'viejo@banco.co', reading: 'no_emails', found: 0, account_ids: [4, 5] };
+  await mount(<UnsupportedBankNotice bank={bank} save={save} onSaved={onSaved} />);
+  const input = container.querySelector('input');
+  const setValue = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  await act(async () => {
+    setValue.call(input, 'DAVIbankInforma@davibank.com');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await act(async () => { container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+  expect(container.textContent).toContain('Topi leerá solo los correos de @davibank.com');
+  const ok = [...container.querySelectorAll('button')].find(b => b.textContent === 'Confirmar');
+  await act(async () => { ok.click(); });
+  expect(save).toHaveBeenCalledWith(bank, 'DAVIbankInforma@davibank.com', [4, 5]);
+  expect(onSaved).toHaveBeenCalled();
+  expect(container.textContent).toContain('Estamos leyendo los correos de @davibank.com');
 });
 
 test('readingLine y timeAgo', () => {

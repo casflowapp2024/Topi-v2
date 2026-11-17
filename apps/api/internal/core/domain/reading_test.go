@@ -100,3 +100,12 @@ func TestComputeBankReading(t *testing.T) {
 	assert.Equal(t, "", ComputeBankReading(BankReadFacts{Senders: 1, ReadSenders: 1, LegacySender: 1}),
 		"read before plan/30: fall back to the 48 h rule")
 }
+
+func TestIsOfficialSender(t *testing.T) {
+	assert.True(t, IsOfficialSender("BBVA", "bbva@bbvanet.com.co"))
+	assert.True(t, IsOfficialSender("bbva", " BBVA@bbvanet.com.co "))
+	assert.False(t, IsOfficialSender("BBVA", "otro@bbva.com"), "an official bank with a sender the user typed")
+	assert.False(t, IsOfficialSender("ARQ", "no-reply@arqfinance.com"))
+	assert.True(t, IsOfficialSender("BBVA", "BBVA@bbvanet.com.co,notificacionesBreB@bbva.com"))
+	assert.False(t, IsOfficialSender("BBVA", "BBVA@bbvanet.com.co,otro@x.co"))
+}

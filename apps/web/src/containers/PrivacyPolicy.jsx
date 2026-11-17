@@ -3,7 +3,7 @@ import { SiteFooter } from '../components/landing/LandingPage';
 import { SITE_URL, SUPPORT_EMAIL } from '../components/landing/site';
 import usePageMeta from '../hocs/usePageMeta';
 
-export const PRIVACY_UPDATED = '14 de noviembre de 2026';
+export const PRIVACY_UPDATED = '17 de noviembre de 2026';
 
 const H2 = ({ id, children }) => (
   <h2 id={id} className="scroll-mt-20 mt-10 text-xl font-bold text-gray-900 dark:text-white">{children}</h2>
@@ -86,7 +86,7 @@ const PrivacyPolicy = () => {
           <code> offline_access</code> (para leer sin que abras la app). Con ese permiso Topi:
         </P>
         <UL>
-          <li><strong>Busca solo los correos de los remitentes de tus bancos</strong> (por ejemplo, las alertas de compra). No pide, abre ni lista tus demás correos.</li>
+          <li><strong>Busca solo los correos de los remitentes de tus bancos</strong>: los que Topi ya conoce o el que tú le indicas como el correo de tu banco (por ejemplo, las alertas de compra). No pide, abre ni lista tus demás correos.</li>
           <li>De cada notificación extrae el monto, la fecha, el comercio o descripción y la cuenta, y crea el movimiento en tu cuenta de Topi. Para hacerlo, el texto de esa notificación se procesa con la API de Gemini de Google, solo para extraer el movimiento.</li>
           <li><strong>No guarda el cuerpo de los correos.</strong> Guarda el movimiento extraído y un identificador del mensaje para no leerlo dos veces.</li>
           <li>No puede enviar, borrar ni modificar correos, y no se conecta a tu banco ni puede mover tu dinero.</li>
@@ -141,8 +141,7 @@ const PrivacyPolicy = () => {
 
         <H2 id="conservacion">8. Cuánto tiempo los guardamos</H2>
         <P>
-          Guardamos los datos de tu cuenta mientras la tengas. Los eventos de uso se guardan hasta 13 meses. Los correos de
-          ejemplo que nos reenvíes para agregar un banco se borran después de usarlos. Si pides eliminar tu cuenta,
+          Guardamos los datos de tu cuenta mientras la tengas. Los eventos de uso se guardan hasta 13 meses. Si pides eliminar tu cuenta,
           borramos tus datos, salvo lo que la ley nos obligue a conservar.
         </P>
 

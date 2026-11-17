@@ -59,7 +59,9 @@ FROM emails e WHERE e.user_id = $1 ORDER BY e.id`, userID)
 	banks, err := r.db.Query(ctx, `SELECT l.email_id, b.id, b.name, coalesce(b.email, ''),
   coalesce(s.read_senders, 0), coalesce(s.legacy, 0), coalesce(s.found, 0),
   (SELECT count(*) FROM transactions t JOIN accounts a ON a.id = t.account_id
-     WHERE a.email_id = l.email_id AND a.bank_id = b.id AND a.user_id = l.user_id AND t.automated)
+     WHERE a.email_id = l.email_id AND a.bank_id = b.id AND a.user_id = l.user_id AND t.automated),
+  ARRAY(SELECT a.id FROM accounts a WHERE a.email_id = l.email_id AND a.bank_id = b.id AND a.user_id = l.user_id
+        ORDER BY a.id)
 FROM (SELECT DISTINCT email_id, bank_id, user_id FROM accounts WHERE user_id = $1 AND email_id IS NOT NULL) l
 JOIN banks b ON b.id = l.bank_id
 LEFT JOIN LATERAL (
@@ -78,9 +80,14 @@ ORDER BY b.name`, userID)
 		var emailID uint64
 		var bank domain.ConnectionBank
 		var facts domain.BankReadFacts
+		var accountIDs []int64
 		if err = banks.Scan(&emailID, &bank.ID, &bank.Name, &bank.Sender, &facts.ReadSenders, &facts.LegacySender,
-			&facts.Found, &facts.Transactions); err != nil {
+			&facts.Found, &facts.Transactions, &accountIDs); err != nil {
 			return nil, err
+		}
+		bank.AccountIDs = make([]uint64, 0, len(accountIDs))
+		for _, accountID := range accountIDs {
+			bank.AccountIDs = append(bank.AccountIDs, uint64(accountID))
 		}
 		if i, ok := index[emailID]; ok {
 			facts.Senders = countSenders(bank.Sender)

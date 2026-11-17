@@ -43,6 +43,8 @@ type ConnectionBank struct {
 	Reading string `json:"reading"`
 	// Found is how many emails of its senders the first read listed
 	Found int64 `json:"found"`
+	// AccountIDs are the accounts of this bank linked to the connection (to read them again after a fix)
+	AccountIDs []uint64 `json:"account_ids"`
 }
 
 // BankReadFacts are the counts behind ConnectionBank.Reading
@@ -141,6 +143,35 @@ func IsSupportedBank(name string) bool {
 		if normalizeBankName(official) == key {
 			return true
 		}
+	}
+	return false
+}
+
+// IsOfficialSender: the bank is official and the sender is one of its official addresses. A sender the user
+// typed (custom bank, or an official bank with another sender) is not: its transactions go to Por revisar.
+func IsOfficialSender(bankName, sender string) bool {
+	key := normalizeBankName(bankName)
+	for official, senders := range enums.OfficialBanks {
+		if normalizeBankName(official) != key {
+			continue
+		}
+		allowed := map[string]bool{}
+		for _, s := range strings.Split(senders, ",") {
+			allowed[strings.ToLower(strings.TrimSpace(s))] = true
+		}
+		// sender may be one address or the comma separated list of the bank: all of them must be official
+		found := false
+		for _, s := range strings.Split(sender, ",") {
+			s = strings.ToLower(strings.TrimSpace(s))
+			if s == "" {
+				continue
+			}
+			if !allowed[s] {
+				return false
+			}
+			found = true
+		}
+		return found
 	}
 	return false
 }

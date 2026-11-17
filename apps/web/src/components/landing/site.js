@@ -29,7 +29,7 @@ export const FAQ = [
   },
   {
     q: '¿Y si mi banco no aparece en la lista?',
-    a: 'Puedes registrar tus movimientos a mano mientras tanto y escribirnos: con un correo de ejemplo de tu banco aprendemos a leerlo. Esos correos se borran después de usarlos.',
+    a: 'Puedes crearlo tú e indicar el correo desde el que te escribe: Topi leerá solo ese remitente. Mientras aprendemos a leer ese banco, sus movimientos llegan a Por revisar para que los confirmes.',
   },
   {
     q: '¿Cómo desconecto mi correo o borro mi cuenta?',

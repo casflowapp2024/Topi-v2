@@ -68,7 +68,7 @@ VALUES ($1, $2, 'a', 'r', 'Bearer', 'gmail', now() - interval '3 days') RETURNIN
 VALUES ($1, 'Cuenta ' || $2, $2, $3, 1, 0, 'COP', $4) RETURNING id`, userID, digits, bank, email)
 	}
 	readingAccount := account(supported, reading, "1111")
-	account(unknown, silent, "2222")
+	silentAccount := account(unknown, silent, "2222")
 
 	exec(`INSERT INTO transactions (user_id, category_id, account_id, description, expense, amount, date, automated, should_verify, currency)
 VALUES ($1, $2, $3, 'compra', true, 10000, now(), true, true, 'COP')`, userID, category, readingAccount)
@@ -89,10 +89,10 @@ VALUES ($1, $2, 'gmail', 'm1', 'banco', now(), 'gemini', 'transaction'), ($1, $2
 	assert.Equal(t, int64(1), byID[reading].TransactionsCreated)
 	assert.NotNil(t, byID[reading].LastReadAt)
 	assert.Equal(t, []domain.ConnectionBank{{ID: supported, Name: "Bancolombia", Supported: true, Sender: "x@banco.test",
-		Reading: domain.BankOK}}, byID[reading].Banks)
+		Reading: domain.BankOK, AccountIDs: []uint64{readingAccount}}}, byID[reading].Banks)
 	assert.Equal(t, domain.ReadingNoTransaction, byID[silent].Reading)
 	assert.Equal(t, []domain.ConnectionBank{{ID: unknown, Name: "Banco Raro", Supported: false, Sender: "x@raro.test",
-		Reading: domain.BankReading}}, byID[silent].Banks, "never read: still reading (the 48 h rule still applies)")
+		Reading: domain.BankReading, AccountIDs: []uint64{silentAccount}}}, byID[silent].Banks, "never read: still reading (the 48 h rule still applies)")
 	assert.Equal(t, domain.ReadingNoAccounts, byID[lonely].Reading)
 
 	// plan/30: the first read decides the bank state (case of the sender ignored)
@@ -162,7 +162,6 @@ VALUES ($1, $2, $3, 'nevera', true, 900000, now(), true, true, 'COP')`, userID, 
 	assert.Empty(t, claimFor(), "never twice for the same connection")
 
 	// a transaction arrives before sending: the email is cancelled by the enricher
-	silentAccount := id("SELECT id FROM accounts WHERE email_id = $1", silent)
 	exec(`INSERT INTO transactions (user_id, category_id, account_id, description, expense, amount, date, automated, currency)
 VALUES ($1, $2, $3, 'compra', true, 5000, now(), true, 'COP')`, userID, category, silentAccount)
 	still, err = repo.StillUnsupported(ctx, userID, silent)

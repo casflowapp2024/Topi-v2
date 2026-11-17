@@ -52,7 +52,8 @@ const TONES = {
 
 /**
  * Bienvenida en el Inicio (plan/27 §B): checklist de 4 pasos con el estado real de la API (no del front), que se
- * oculta al completarse, más el estado "Leyendo tus correos…" y el aviso de banco no soportado (§C).
+ * oculta al completarse, más el estado "Leyendo tus correos…" y, por banco, el aviso que pide el remitente o dice
+ * que aún no sabemos leerlo (plan/30).
  */
 export const OnboardingChecklist = ({ load = getOnboardingStatus, loadReading = getReadingStatus, now = Date.now }) => {
     const [onboarding, setOnboarding] = useState(null);
@@ -103,13 +104,24 @@ export const OnboardingChecklist = ({ load = getOnboardingStatus, loadReading = 
     const closeDone = () => { storage.clear(); setClosing(false); };
 
     const connections = reading?.connections || [];
-    const silent = connections.filter(c => c.reading === 'no_transactions');
+    // un aviso por banco que no está dando movimientos (plan/30); las conexiones leídas antes del plan 30 no
+    // traen estado por banco: se pregunta el remitente del primero
+    const silentBanks = connections
+        .filter(c => c.reading !== 'down' && c.reading !== 'inactive')
+        .flatMap(c => {
+            const flagged = (c.banks || []).filter(b => b.reading === 'no_emails' || b.reading === 'unreadable');
+            if (flagged.length > 0) return flagged.map(b => ({ connection: c.id, bank: b }));
+            if (c.reading === 'no_transactions' && (c.banks || [])[0]) {
+                return [{ connection: c.id, bank: { ...c.banks[0], reading: 'no_emails' } }];
+            }
+            return [];
+        });
     const lines = connections.map(c => ({ id: c.id, line: readingLine(c, now()) }))
         .filter(x => x.line && x.line.title !== 'Todavía no vemos movimientos de tu banco');
 
-    const notices = silent.map(c => (
-        <UnsupportedBankNotice key={`u${c.id}`} connection={c}
-            supportedBanks={reading?.supported_banks || []} samplesAddress={reading?.samples_address || ''} />
+    const fixedSender = () => { watchUntil.current = now() + WATCH_MS; tick(); };
+    const notices = silentBanks.map(({ connection, bank }) => (
+        <UnsupportedBankNotice key={`u${connection}-${bank.id}`} bank={bank} onSaved={fixedSender} />
     ));
 
     if (onboarding?.complete && closing) {
