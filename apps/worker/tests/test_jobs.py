@@ -300,3 +300,43 @@ def test_a_failing_usage_write_never_fails_the_job():
     db.record_llm_usage = boom
 
     assert processor.handle(job()) == "done"
+
+
+# plan/30, bloque 3: se crean por tandas mientras se lee
+def test_creates_in_batches_while_reading():
+    messages = [email(f"m{i}", f"TX:1111:{1000 * i}") for i in range(1, 8)]
+    processor, db, api, _, _ = make(messages)
+
+    assert processor.handle(job()) == "done"
+
+    assert [len(call) for call in api.create_calls] == [3, 3, 1]
+    assert len(api.created) == 7
+
+
+def test_a_failure_after_a_batch_retries_without_duplicates():
+    from google.genai import errors as genai_errors
+
+    overloaded = genai_errors.ServerError(503, {"error": {"code": 503, "message": "overloaded", "status": "UNAVAILABLE"}})
+    messages = [email(f"m{i}", f"TX:1111:{1000 * i}") for i in range(1, 6)]
+    extractor = FakeExtractor(fail_for={"m4": overloaded})
+    processor, db, api, _, _ = make(messages, extractor=extractor)
+
+    assert processor.handle(job()) == "retry"
+    assert [len(call) for call in api.create_calls] == [3, 1]     # la tanda de m1–m3 ya está en la API
+    assert len(api.created) == 4
+
+    extractor.fail_for.clear()
+    assert processor.handle(job(job_id=2, attempts=2)) == "done"
+    assert len(api.created) == 5                                  # solo m4: nada duplicado
+    assert extractor.calls[-1] == "m4"
+
+
+# plan/30, D4: la primera lectura trae el mes anterior antes del día 12
+@pytest.mark.parametrize("now, expected", [
+    (datetime(2026, 11, 11, 15, 0, tzinfo=timezone.utc), datetime(2026, 10, 1, 5, 0, tzinfo=timezone.utc)),
+    (datetime(2026, 11, 12, 15, 0, tzinfo=timezone.utc), datetime(2026, 11, 1, 5, 0, tzinfo=timezone.utc)),
+    (datetime(2026, 1, 3, 15, 0, tzinfo=timezone.utc), datetime(2025, 12, 1, 5, 0, tzinfo=timezone.utc)),
+])
+def test_first_read_window(now, expected):
+    from worker.jobs import first_read_since
+    assert first_read_since(now, "America/Bogota") == expected

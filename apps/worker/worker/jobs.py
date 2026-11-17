@@ -67,9 +67,25 @@ class JobResult:
 
 
 def first_day_of_month(now: datetime, tz: str) -> datetime:
-    """Sin estado previo se lee desde el primer día del mes (comportamiento original), en hora Bogotá."""
+    """Día 1 del mes en curso a las 00:00, en la zona del usuario (hora Bogotá)."""
     local = now.astimezone(ZoneInfo(tz))
     return local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+# Antes de este día del mes, la primera lectura trae también el mes anterior completo (plan/30, D4): quien se
+# registra a comienzos de mes ve movimientos de entrada y no un mes casi vacío.
+PREVIOUS_MONTH_UNTIL_DAY = 12
+
+# Cada cuántos correos con movimientos se crean en la API: el Inicio se llena mientras se lee (plan/30, bloque 3)
+FLUSH_EVERY = 3
+
+
+def first_read_since(now: datetime, tz: str) -> datetime:
+    """Desde dónde lee la primera vez un remitente: el mes en curso, o también el anterior antes del día 12."""
+    start = first_day_of_month(now, tz)
+    if now.astimezone(ZoneInfo(tz)).day < PREVIOUS_MONTH_UNTIL_DAY:
+        start = (start - timedelta(days=1)).replace(day=1)
+    return start
 
 
 class JobProcessor:
@@ -170,7 +186,7 @@ class JobProcessor:
             raise PermanentJobError(f"remitente vacío o inválido: {sender_email!r}")
 
         # 2. desde dónde leer
-        last_run = self.db.get_last_run(email_id, sender_email) or first_day_of_month(self.now(), self.settings.timezone)
+        last_run = self.db.get_last_run(email_id, sender_email) or first_read_since(self.now(), self.settings.timezone)
         since = last_run - timedelta(minutes=self.settings.sync_overlap_minutes)
         listing_started = self.now()
 
@@ -249,7 +265,28 @@ class JobProcessor:
                 transactions.append(transaction)
                 messages_with_tx.setdefault(email.id, []).append(transaction)
 
-        # 5. cuentas y creación (idempotente por source_message_id)
+            # 5. se crean por tandas mientras se lee, no al final (idempotente por source_message_id)
+            if len(messages_with_tx) >= FLUSH_EVERY:
+                self._flush(user_id, email_id, transactions, messages_with_tx, accounts, currencies, classes,
+                            failures, result)
+                transactions, messages_with_tx = [], {}
+
+        self._flush(user_id, email_id, transactions, messages_with_tx, accounts, currencies, classes, failures, result)
+
+        # 6. mover last_run solo si todo salió bien
+        if failures:
+            raise TransientError(f"{len(failures)} mensaje(s) no se pudieron procesar; se reintenta el job")
+
+        if not self.settings.dry_run:
+            self.db.set_last_run(email_id, sender_email, listing_started)
+            result.last_run_updated = True
+
+        return result
+
+    def _flush(self, user_id: str, email_id: int, transactions: list[dict[str, Any]],
+               messages_with_tx: dict[str, list[dict]], accounts: dict[str, str], currencies: dict[str, str],
+               classes: dict[str, str], failures: list[str], result: JobResult) -> None:
+        """Cuentas, moneda, pagos de tarjeta y creación en la API de una tanda; marca sus mensajes."""
         if transactions:
             map_account_ids(transactions, accounts)
             flagged = flag_currency_mismatch(transactions, currencies)
@@ -277,7 +314,7 @@ class JobProcessor:
                 to_send.append(item)
 
             if self.settings.dry_run:
-                result.would_create = to_send
+                result.would_create.extend(to_send)
                 for t in to_send:
                     logger.info("dry run: crearía transacción", extra={"email_id": email_id, **t})
             elif to_send:
@@ -286,18 +323,8 @@ class JobProcessor:
                 for row in created["transactions"]:
                     ids_by_message.setdefault(row.get("source_message_id"), []).append(int(row["id"]))
                     result.created.append(int(row["id"]))
-                result.skipped_api = created["skipped"]
+                result.skipped_api.extend(created["skipped"])
                 for message_id in messages_with_tx:
                     if message_id in failures:
                         continue
                     self.db.update_message(email_id, message_id, "transaction", ids_by_message.get(message_id, []))
-
-        # 6. mover last_run solo si todo salió bien
-        if failures:
-            raise TransientError(f"{len(failures)} mensaje(s) no se pudieron procesar; se reintenta el job")
-
-        if not self.settings.dry_run:
-            self.db.set_last_run(email_id, sender_email, listing_started)
-            result.last_run_updated = True
-
-        return result
