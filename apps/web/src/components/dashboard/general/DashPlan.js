@@ -42,8 +42,10 @@ const DashPlan = ({
 
 
   // Solo las categorías con presupuesto (las demás salían "de $0 · 100%"); su gasto va en una línea aparte (plan/30)
-  const budgeted = (expenses_report || []).filter(c => Number(c.budget) > 0);
-  const unbudgeted = (expenses_report || []).filter(c => !(Number(c.budget) > 0))
+  // la API manda el presupuesto de las categorías de gasto en negativo
+  const hasBudget = (c) => Math.abs(Number(c.budget) || 0) > 0;
+  const budgeted = (expenses_report || []).filter(hasBudget);
+  const unbudgeted = (expenses_report || []).filter(c => !hasBudget(c))
     .reduce((sum, c) => sum + Math.abs(Number(c.value || c.expenses) || 0), 0);
 
   return (
@@ -77,7 +79,7 @@ const DashPlan = ({
                             decClass="text-[10px] xl:text-xs"
                           />
                           {/* <span className='text-[12px] xl:text-sm'>{formatMoney(category.expenses)}</span> */}
-                          <span className='pl-1 text-xs w-full text-left text-ink-2 dark:text-gray-400'>de {formatMoney(category.budget)}</span>
+                          <span className='pl-1 text-xs w-full text-left text-ink-2 dark:text-gray-400'>de {formatMoney(Math.abs(Number(category.budget) || 0))}</span>
                         </div>
                         <span className="text-[11px] xl:text-[14px] font-medium ">
                           {getPerc0(category.usage)}

@@ -32,7 +32,7 @@ const vsLastMonth = (spent, history_dash, year, month) => {
 export const budgetedSpent = (report) => {
   if (!Array.isArray(report)) return null;
   return report
-    .filter(c => Number(c.budget) > 0)
+    .filter(c => Math.abs(Number(c.budget) || 0) > 0) // la API lo manda en negativo para los gastos
     .reduce((sum, c) => sum + Math.abs(Number(c.value ?? c.expenses) || 0), 0);
 };
 

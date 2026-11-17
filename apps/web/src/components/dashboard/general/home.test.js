@@ -193,7 +193,7 @@ test('Patrimonio: pide la historia y muestra flecha, palabra y monto', async () 
 test('Ritmo: con presupuesto parcial, cuenta solo las categorías con presupuesto', () => {
   const { budgetedSpent } = require('./HomePaceCard');
   const report = [
-    { name: 'babies', budget: 200000, value: -50000 },
+    { name: 'babies', budget: -200000, value: -50000 }, // así lo manda la API
     { name: 'salud', budget: 0, value: -785820 },
   ];
   expect(budgetedSpent(report)).toBe(50000);

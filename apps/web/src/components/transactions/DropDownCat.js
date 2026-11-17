@@ -51,6 +51,10 @@ const DropDownCat = ({
             // Check if the click was on the filter button or inside the popup
             const isDropListOpen = event.target.closest('button[onClick*="handleOpenFilterPopUp"]');
             const isInsideList = listDropRef.current && listDropRef.current.contains(event.target);
+            // un diálogo abierto desde aquí (el selector de emojis de la categoría nueva) se pinta en un portal:
+            // sus clics no son "afuera" (plan/30)
+            const dialog = event.target.closest && event.target.closest('[role="dialog"]');
+            if (dialog && listDropRef.current && !dialog.contains(listDropRef.current)) return;
             
             if (!isDropListOpen && !isInsideList) {
                 event.stopPropagation();
