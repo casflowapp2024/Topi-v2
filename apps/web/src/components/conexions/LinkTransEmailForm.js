@@ -113,11 +113,11 @@ const LinkTransEmailForm = ({
 
         // Listen for a message from the popup
         window.addEventListener("message", function handleMessage(event) {
+            // solo la ventana emergente de Topi (mismo origen) puede entregar el código
+            if (event.origin !== window.origin || !event.data) return;
 
             const { code } = event.data;
             if (code) {
-                console.log("Authorization code received:", code);
-
                 setCodeReceived(code)
 
                 // Clean up the listener

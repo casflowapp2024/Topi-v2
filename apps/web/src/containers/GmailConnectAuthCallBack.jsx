@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import OAuthPopupCard from "./OAuthPopupCard";
 
 const GmailConnectAuthCallBack = () => {
   const navigate = useNavigate();
@@ -7,7 +8,8 @@ const GmailConnectAuthCallBack = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
-    const error = params.get("error_description");
+    // Google manda solo `error` (p. ej. access_denied al cancelar); Microsoft además `error_description`
+    const error = params.get("error_description") || params.get("error");
 
     if (code) {
       // ✅ Redirect to a React route with the code in query
@@ -17,7 +19,7 @@ const GmailConnectAuthCallBack = () => {
     }
   }, []);
 
-  return <p>Redirigiéndote a CashFlow…</p>;
+  return <OAuthPopupCard state="loading" title="Conectando tu correo…" />;
 };
 
 export default GmailConnectAuthCallBack;
