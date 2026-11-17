@@ -29,6 +29,7 @@ export const buildReviewQueue = (verify, installments) => [
 
 const REASON = {
     verify: 'Topi no estaba seguro de la categoría. ¿Dónde va este gasto?',
+    verifyIncome: 'Topi no estaba seguro de la categoría. ¿De dónde viene este ingreso?',
     installments: '¿Esta compra fue a cuotas? Así repartimos el gasto en los meses que corresponde.',
 };
 
@@ -67,13 +68,14 @@ export const ReviewModal = ({
 
     const budgeted = useMemo(() => new Set((expenses_report || [])
         .filter(c => Math.abs(Number(c.budget) || 0) > 0).map(c => c.category_id)), [expenses_report]);
-    // las que tienen presupuesto primero
-    const categories = useMemo(() => [...(user_categories?.items || [])]
-        .filter(c => Number(c.id) > 0 && !c.income)
-        .sort((a, b) => Number(budgeted.has(b.id)) - Number(budgeted.has(a.id))), [user_categories, budgeted]);
-
     const total = (queue?.length || 0) + done;
     const item = queue && queue.length ? queue[position % queue.length] : null;
+    // un ingreso va a categorías de ingreso y un gasto a las de gasto; las que tienen presupuesto primero
+    const isIncome = item ? item.tx.expense === false : false;
+    const categories = useMemo(() => [...(user_categories?.items || [])]
+        // la sugerida siempre se ofrece, aunque sea del otro tipo (así se puede confirmar con un toque)
+        .filter(c => Number(c.id) > 0 && (Boolean(c.income) === isIncome || c.id === item?.tx.category?.id))
+        .sort((a, b) => Number(budgeted.has(b.id)) - Number(budgeted.has(a.id))), [user_categories, budgeted, isIncome, item]);
     const sameMerchant = item?.kind === 'verify'
         ? queue.filter(q => q.kind === 'verify' && q.key !== item.key && merchantKey(q.tx.description) === merchantKey(item.tx.description))
         : [];
@@ -103,7 +105,7 @@ export const ReviewModal = ({
     const createAndChoose = async () => {
         if (!newName.trim()) return;
         setBusy(true);
-        const created = await create_category(newName.trim(), 0, newEmoji, false);
+        const created = await create_category(newName.trim(), 0, newEmoji, isIncome);
         setBusy(false);
         if (!created?.res) {
             setAlert('No se pudo crear la categoría, intenta de nuevo.', false, 'text-white', 'bg-red-500', 4000);
@@ -173,7 +175,7 @@ export const ReviewModal = ({
                             className="text-base font-semibold tabular-nums text-gray-900 dark:text-gray-100" />
                     </div>
 
-                    <p className="text-sm text-gray-700 dark:text-gray-300">{REASON[item.kind]}</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{REASON[item.kind === 'verify' && isIncome ? 'verifyIncome' : item.kind]}</p>
 
                     {item.kind === 'verify' ? (
                         <div className="flex flex-col gap-3">

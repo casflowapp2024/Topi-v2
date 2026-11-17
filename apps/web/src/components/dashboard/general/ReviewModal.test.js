@@ -14,7 +14,7 @@ global.ResizeObserver = global.ResizeObserver || class { observe() {} unobserve(
 
 const tx = (id, description, extra = {}) => ({ id, description, amount: 19400, amount_base: 19400, currency: 'COP', expense: true,
   date: '2026-11-16', account: { id: 1, name: 'TC davibank' }, category: { id: 2, name: 'transporte' }, should_verify: true, ...extra });
-const categories = { items: [{ id: 2, name: 'transporte', emoji: '' }, { id: 3, name: 'comida', emoji: '' }, { id: 7, name: 'babies', emoji: '' }] };
+const categories = { items: [{ id: 2, name: 'transporte', emoji: '' }, { id: 3, name: 'comida', emoji: '' }, { id: 7, name: 'babies', emoji: '' }, { id: 8, name: 'salario', emoji: '', income: true }] };
 
 let el; let root;
 const mount = async (props) => {
@@ -74,4 +74,15 @@ test('saltar y crear una categoría desde la ventana', async () => {
   await act(async () => { button('Crear y usar').click(); });
   expect(create_category).toHaveBeenCalledWith('Mercado', 0, '', false);
   expect(update_transaction).toHaveBeenCalledWith(2, 9, 1, 'Carulla', true, 19400, '2026-11-16', true);
+});
+
+test('un ingreso pregunta de dónde viene y ofrece las categorías de ingreso', async () => {
+  await mount({
+    update_transaction: jest.fn(async () => true), create_category: jest.fn(), saveInstallments: jest.fn(),
+    loadVerify: async () => ({ items: [tx(1, 'Deel', { expense: false })] }),
+    loadInstallments: async () => ({ items: [] }),
+  });
+  expect(document.body.textContent).toContain('¿De dónde viene este ingreso?');
+  expect(button('Salario')).toBeTruthy();
+  expect(button('Comida')).toBeFalsy();
 });
