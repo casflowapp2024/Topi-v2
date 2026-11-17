@@ -45,7 +45,7 @@ func TestNewOnboardingStatus(t *testing.T) {
 
 	empty := NewOnboardingStatus(OnboardingFacts{})
 	assert.False(t, empty.Complete)
-	assert.Equal(t, []string{StepConnectEmail, StepFirstAutoTx, StepReview, StepBudget}, []string{
+	assert.Equal(t, []string{StepConnectEmail, StepFirstAutoTx, StepBudget, StepReview}, []string{
 		empty.Steps[0].ID, empty.Steps[1].ID, empty.Steps[2].ID, empty.Steps[3].ID})
 	assert.Empty(t, empty.DoneSteps())
 

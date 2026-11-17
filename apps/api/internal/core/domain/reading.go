@@ -231,8 +231,9 @@ const (
 	StepBudget       = "budget"
 )
 
-// OnboardingSteps in the order the checklist shows them
-var OnboardingSteps = []string{StepConnectEmail, StepFirstAutoTx, StepReview, StepBudget}
+// OnboardingSteps in the order the checklist shows them. The budget goes before the review (plan/31): with a
+// budget in mind, giving each movement its category makes sense
+var OnboardingSteps = []string{StepConnectEmail, StepFirstAutoTx, StepBudget, StepReview}
 
 // OnboardingFacts come from the database (never from the front)
 type OnboardingFacts struct {

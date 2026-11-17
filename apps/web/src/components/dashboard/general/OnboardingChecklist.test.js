@@ -36,7 +36,7 @@ afterEach(() => {
   sessionStorage.clear();
 });
 
-const steps = (done) => ['connect_email', 'first_auto_tx', 'review', 'budget'].map((id) => ({ id, done: done.includes(id) }));
+const steps = (done) => ['connect_email', 'first_auto_tx', 'budget', 'review'].map((id) => ({ id, done: done.includes(id) }));
 const reading = (connections, extra = {}) => ({ connections, supported_banks: ['BBVA', 'Bancolombia'], ...extra });
 
 test('cuenta nueva: 4 pasos, el primero con su acción', async () => {
@@ -47,7 +47,7 @@ test('cuenta nueva: 4 pasos, el primero con su acción', async () => {
   expect(container.textContent).toContain('0 de 4');
   const link = [...container.querySelectorAll('a')].find(a => a.textContent === 'Conectar correo');
   expect(link.getAttribute('href')).toBe('/dashboard/connect-email');
-  expect(container.textContent).not.toContain('Ir a Presupuestos'); // solo la acción del siguiente paso
+  expect(container.textContent).not.toContain('Crear presupuesto'); // solo la acción del siguiente paso
 });
 
 test('tras conectar: "Leyendo tus correos…" con el banco esperado y la última lectura', async () => {

@@ -34,14 +34,14 @@ const STEP_TEXT = {
         title: 'Recibe tu primer movimiento leído',
         detail: 'Llega solo, sin digitar nada, en cuanto ligues la cuenta de tu banco.',
     },
-    review: {
-        title: 'Revisa lo que está en Por revisar',
-        detail: 'Confirma los movimientos que Topi no pudo clasificar del todo.',
-    },
     budget: {
         title: 'Pon tu primer presupuesto',
-        detail: 'Elige una categoría y cuánto quieres gastar al mes.',
-        cta: { to: '/dashboard/budgets', label: 'Ir a Presupuestos' },
+        detail: 'Elige una categoría, como Comida o Transporte, y cuánto quieres gastar al mes.',
+        cta: { to: '/dashboard/budgets', label: 'Crear presupuesto' },
+    },
+    review: {
+        title: 'Revisa tus movimientos',
+        detail: 'Topi pone una categoría a cada movimiento. Confirma las que no supo y dinos si alguna compra fue a cuotas.',
     },
 };
 
