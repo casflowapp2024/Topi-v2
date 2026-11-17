@@ -266,7 +266,12 @@ func (s *MailOutboxService) deliver(ctx context.Context, email domain.OutboxEmai
 	}
 
 	if err := s.repo.MarkSent(ctx, email.ID, providerID); err != nil {
+		// It went out: never send it again (plan/30, D3). Without the provider id (a clash on its unique index is
+		// the usual cause) it stays sent; only the webhook loses the link to this row.
 		slog.Error("mail: sent but could not mark it", "outbox_id", email.ID, "error", err)
+		if err = s.repo.MarkSent(ctx, email.ID, ""); err != nil {
+			slog.Error("mail: sent and still not marked, it may be sent again", "outbox_id", email.ID, "error", err)
+		}
 		return
 	}
 	slog.Info("mail: sent", "outbox_id", email.ID, "template", email.Template)

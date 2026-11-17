@@ -195,7 +195,9 @@ export const OnboardingChecklist = ({ load = getOnboardingStatus, loadReading = 
                             <div key={id} role="status" className={`rounded-xl px-3 py-2 text-sm ${TONES[line.tone]}`}>
                                 <p className="font-medium">{line.title}</p>
                                 {line.detail && <p className="text-xs mt-0.5 text-gray-600 dark:text-gray-300">{line.detail}</p>}
-                                {line.tone === 'warn' && <Link to="/dashboard/accounts" className="text-xs font-medium text-topi-600 dark:text-topi-200 hover:underline">Ir a Cuentas</Link>}
+                                {line.tone === 'warn' && (line.createAccount
+                                    ? <Link to="/dashboard?crear-cuenta=1" className="text-xs font-medium text-topi-600 dark:text-topi-200 hover:underline">Crear la cuenta de tu banco</Link>
+                                    : <Link to="/dashboard/accounts" className="text-xs font-medium text-topi-600 dark:text-topi-200 hover:underline">Ir a Cuentas</Link>)}
                             </div>
                         ))}
                     </div>

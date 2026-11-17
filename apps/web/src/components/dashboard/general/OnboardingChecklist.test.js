@@ -120,7 +120,7 @@ test('corregir el remitente: confirma el dominio, guarda y vuelve a leer las cue
 
 test('readingLine y timeAgo', () => {
   expect(readingLine({ reading: 'ok' })).toBeNull();
-  expect(readingLine({ reading: 'no_accounts', provider: 'outlook' }).title).toContain('Outlook');
+  expect(readingLine({ reading: 'no_accounts', provider: 'outlook' }).detail).toContain('Outlook');
   expect(timeAgo(new Date(NOW - 3 * 3600000).toISOString(), NOW)).toBe('hace 3 h');
   expect(timeAgo(new Date(NOW - 2 * 86400000).toISOString(), NOW)).toBe('hace 2 días');
   expect(timeAgo(null, NOW)).toBeNull();

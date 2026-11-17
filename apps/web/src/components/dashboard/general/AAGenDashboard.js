@@ -3,6 +3,7 @@ import { connect } from 'react-redux';
 import { get_financial_report } from "../../../redux/actions/reports";
 //react
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 //components
 import DashAccounts from "./DashAccounts";
 import DashPlan from "./DashPlan";
@@ -12,12 +13,25 @@ import HomeFlowCard from './HomeFlowCard';
 import HomeNetWorthCard from './HomeNetWorthCard';
 import ReviewInbox from './ReviewInbox';
 import OnboardingChecklist from './OnboardingChecklist';
+import AccountCreate from '../../accounts/AccountCreate';
+
+// ?crear-cuenta=1 abre "Agregar cuenta" sobre el Inicio: después de conectar el correo, el usuario crea la cuenta
+// de su banco sin perder de vista el paso a paso (plan/30)
+export const CREATE_ACCOUNT_PARAM = 'crear-cuenta';
 
 const AAGenDashboard = ({
     current_Month,
     current_Year,
     get_financial_report,
 }) => {
+
+    const [params, setParams] = useSearchParams();
+    const creatingAccount = params.get(CREATE_ACCOUNT_PARAM) === '1';
+    const setCreatingAccount = (open) => {
+        const next = new URLSearchParams(params);
+        if (open) next.set(CREATE_ACCOUNT_PARAM, '1'); else next.delete(CREATE_ACCOUNT_PARAM);
+        setParams(next, { replace: true });
+    };
 
     // Mientras llega el mes nuevo se mantienen las cifras anteriores atenuadas
     const [loadingReport, setLoadingReport] = useState(true);
@@ -33,6 +47,7 @@ const AAGenDashboard = ({
         <div className="flex flex-col gap-2 lg:gap-6 pb-3 md:max-w-[560px] md:mx-auto lg:max-w-none">
             {/* bienvenida con estado real y "todavía no vemos movimientos de tu banco" (plan/27 §B, §C) */}
             <OnboardingChecklist />
+            <AccountCreate openCreateBox={creatingAccount} setOpenCreateBox={setCreatingAccount} />
             {/*
                 Una sola versión para todos los tamaños (antes había un bloque PC y otro móvil,
                 y cada componente se montaba y pedía sus datos dos veces).

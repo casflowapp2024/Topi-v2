@@ -188,3 +188,21 @@ test('Patrimonio: pide la historia y muestra flecha, palabra y monto', async () 
   expect(el.textContent).not.toMatch(/aportaste|ganancia/);
   act(() => root.unmount());
 });
+
+// plan/30: con presupuesto en una sola categoría, se compara con lo gastado en ella
+test('Ritmo: con presupuesto parcial, cuenta solo las categorías con presupuesto', () => {
+  const { budgetedSpent } = require('./HomePaceCard');
+  const report = [
+    { name: 'babies', budget: 200000, value: -50000 },
+    { name: 'salud', budget: 0, value: -785820 },
+  ];
+  expect(budgetedSpent(report)).toBe(50000);
+  expect(budgetedSpent(null)).toBeNull();
+
+  const budget = 200000;
+  const expected = getDailyAllowance(budget, 50000, Y, M);
+  const { el, root } = render(<HomePaceCard />, reports({ history_dash: history(budget), expenses_report: report }));
+  expect(el.textContent).toContain(`Quedan ${formatMoney(expected.left)}`);
+  expect(el.textContent).toContain('en tus categorías con presupuesto');
+  act(() => root.unmount());
+});

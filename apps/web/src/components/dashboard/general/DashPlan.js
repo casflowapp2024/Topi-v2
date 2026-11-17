@@ -41,6 +41,11 @@ const DashPlan = ({
 
 
 
+  // Solo las categorías con presupuesto (las demás salían "de $0 · 100%"); su gasto va en una línea aparte (plan/30)
+  const budgeted = (expenses_report || []).filter(c => Number(c.budget) > 0);
+  const unbudgeted = (expenses_report || []).filter(c => !(Number(c.budget) > 0))
+    .reduce((sum, c) => sum + Math.abs(Number(c.value || c.expenses) || 0), 0);
+
   return (
     <div className='h-auto md:h-[410px] lg:h-full bg-white border border-gray-200 rounded-2xl shadow dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300'>
       <div className="flex flex-col py-4 px-3 w-full lg:h-full">
@@ -52,9 +57,10 @@ const DashPlan = ({
           {loadingReport && !expenses_report ?
             <SkeletonRows rows={5} withBar /> :
             <>
-              {expenses_report ? (
+              {budgeted.length > 0 ? (
+                <>
                 <ul role="list" className="">
-                  {expenses_report.map((category) => (
+                  {budgeted.map((category) => (
                     <li key={category.category_id} className="py-[5px] lg:px-1">
                       <div className="flex flex-row justify-start">
                         {category.emoji && category.emoji !== "" && (
@@ -65,7 +71,7 @@ const DashPlan = ({
                       <div className="flex flex-row items-center justify-between py-1 text-gray-900 dark:text-gray-100">
                         <div className='font-medium flex flex-col xl:flex-row items-center justify-start'>
                           <FormatMoneyShowDecs
-                            numb={category.value || category.expenses || 0}
+                            numb={Math.abs(Number(category.value || category.expenses) || 0)}
                             showDecimals={true}
                             intClass="text-xs xl:text-sm"
                             decClass="text-[10px] xl:text-xs"
@@ -81,6 +87,12 @@ const DashPlan = ({
                     </li>
                   ))}
                 </ul>
+                {unbudgeted > 0 && (
+                  <p className="pt-2 mt-1 border-t border-gray-100 dark:border-gray-700 text-xs text-ink-2 dark:text-gray-400 lg:px-1">
+                    Sin presupuesto: {formatMoney(unbudgeted)}
+                  </p>
+                )}
+                </>
               ) : (
                 <EmptyState compact icon={ChartPieIcon} title="Sin presupuestos este mes" description="Crea presupuestos por categoría en la pestaña Presupuestos para ver aquí cómo vas." />
               )}

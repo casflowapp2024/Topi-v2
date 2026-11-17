@@ -8,6 +8,7 @@ import CurrencySelect from "../ui/CurrencySelect";
 import { fetch_fx_rate } from "../../redux/actions/fx";
 import Field, { Input, Select } from "../ui/Field";
 import { InformationCircleIcon } from "@heroicons/react/20/solid";
+import { isUsableEmail } from "../conexions/emailConnection";
 
 const LABEL = "text-sm font-medium text-gray-700 dark:text-gray-300";
 
@@ -47,6 +48,11 @@ const EditCreateFinAccountForm = ({
     const initialAmount = Number(formatedCurrToNumber(String(initia_balance_amount ?? '')));
 
     const [bankAutomated, setBankAutomated] = useState(true);
+    // Con una sola conexión que funciona no hay nada que elegir: la cuenta se liga a ella y el interruptor se
+    // oculta tras "Cambiar" (plan/30). Con más de una, se muestra como siempre.
+    const usableEmails = (automatedEmails || []).filter(isUsableEmail);
+    const [showReadChoice, setShowReadChoice] = useState(false);
+    const singleEmail = usableEmails.length === 1 && !showReadChoice && automated === true ? usableEmails[0] : null;
     //const [activeTooltip, setActiveTooltip] = useState(null);
     const [emailSelected, setEmailSelected] = useState(createAccountData.gmailPersonalEmail || "");
 
@@ -171,7 +177,13 @@ const EditCreateFinAccountForm = ({
             {/* SECCION AUTOMATIZACION */}
             {contexWindow !== "onboarding" ?
                 <>
-                    {bankAutomated === true ?
+                    {bankAutomated === true && singleEmail ?
+                        <div className="sm:col-span-2 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-topi-50 dark:bg-gray-800 p-3 text-sm text-gray-700 dark:text-gray-200">
+                            <span>Leeremos sus movimientos de <strong className="break-all">{singleEmail.email}</strong>.</span>
+                            <button type="button" onClick={() => setShowReadChoice(true)}
+                                className="font-medium text-topi-600 dark:text-topi-200 hover:underline">Cambiar</button>
+                        </div>
+                    : bankAutomated === true ?
                         <>
                             {/* automatizada */}
                             <div className="sm:col-span-2">

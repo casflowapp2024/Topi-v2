@@ -42,8 +42,9 @@ export const readingLine = (connection, now = Date.now()) => {
         case 'no_accounts':
             return {
                 tone: 'warn',
-                title: `Tu correo de ${providerName(connection.provider)} no tiene cuentas ligadas`,
-                detail: 'Crea (o edita) la cuenta del banco que te notifica a ese correo para que Topi sepa dónde anotar los movimientos.',
+                title: 'Falta un paso: crea la cuenta de tu banco',
+                detail: `Tu correo de ${providerName(connection.provider)} ya está conectado. Crea la cuenta del banco que te escribe ahí para que Topi sepa dónde anotar tus movimientos.`,
+                createAccount: true,
             };
         case 'no_transactions':
             return {

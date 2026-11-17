@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 //redux
 
 //components
 import EmojiPicker, { Emoji } from "emoji-picker-react";
 import { CursorArrowRaysIcon } from '@heroicons/react/20/solid'
 import { emojis_cats } from "../info_arrays";
+import Modal from "../ui/Modal";
 
 function DropDownEmoji({
   selectedEmoji,
@@ -49,29 +50,9 @@ function DropDownEmoji({
   const dropAccountsRef = useRef(null)
   const handleEmojiClick = (emojiData) => {
     setSelectedEmoji(emojiData.unified); // Store Unicode identifier
-    console.log("Emoji Selected:", emojiData.unified); // Debugging log
     setDropdownOpen(false);
   };
 
-  useEffect(() => {
-      const handleClickOutside = (event) => {
-          if (dropAccountsRef.current && !dropAccountsRef.current.contains(event.target)) {
-            setDropdownOpen(false);
-          }
-      };
-
-      // Add event listener
-      document.addEventListener('mousedown', handleClickOutside);
-
-      // Cleanup the event listener
-      return () => {
-          document.removeEventListener('mousedown', handleClickOutside);
-      };
-  }, []);
-
-  let EmojiPickerWidth = "100%";
-  /* if (windowContext === "onboarding") {
-    EmojiPickerWidth = "896px";} */
 
 
   return (
@@ -99,37 +80,19 @@ function DropDownEmoji({
         </div>
       </div>
 
-      {/* Dropdown menu */}
-      {dropdownOpen && (
-        <div id="dropdownEmoji" className={`${windowContext === "trans" ? '' : ''} fixed z-30 inset-0 justify-center`}>
-          <div className="bg-transparent rounded-xl p-1 shadow-lg flex flex-col">
-            <div className="z-50 w-full bg-white flex justify-end border-t border-x rounded-t-xl border-gray-200 overflow-hidden">
-              <button type="button"
-              className="p-1 pr-3 bg-white  text-gray-500 hover:text-black"
-              onClick={toggleDropdown}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="-my-2">
-              <EmojiPicker 
-              emojiStyle="apple" 
-              onEmojiClick={handleEmojiClick} 
-              height={580}
-              width={EmojiPickerWidth}
-              allowExpandReactions={false}
-              previewConfig={{
-                showPreview: false
-              }}
-              categories={emojis_cats}
-              
-              />
-            </div>
-
-            
-          </div>
-        </div>
-      )}
+      {/* Selector en un diálogo de la app: centrado y por encima de la barra de navegación; hoja inferior en
+          móvil (plan/30). Antes era un panel fijo de ancho completo que quedaba debajo de la barra. */}
+      <Modal open={dropdownOpen} onClose={() => setDropdownOpen(false)} title="Elige un ícono" size="md" bodyClassName="p-0">
+        <EmojiPicker
+          emojiStyle="apple"
+          onEmojiClick={handleEmojiClick}
+          height={420}
+          width="100%"
+          allowExpandReactions={false}
+          previewConfig={{ showPreview: false }}
+          categories={emojis_cats}
+        />
+      </Modal>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { isUsableEmail } from '../conexions/emailConnection';
 import { useEffect, useState } from "react";
 
 //components
@@ -187,10 +188,10 @@ const AccountCreate = ({
     useEffect(() => {
 
         if (automatedEmails) {
-            // Aquí puedes realizar alguna acción cuando se abra el popover
+            // al abrir: la primera conexión que funciona (una caída no lee nada)
             setCreateAccountData((prevData) => ({
                 ...prevData,
-                gmailPersonalEmail: automatedEmails[0],
+                gmailPersonalEmail: automatedEmails.find(isUsableEmail) || automatedEmails[0],
             }));
         }
         // Aquí puedes realizar alguna acción cuando se abra el popover

@@ -6,6 +6,7 @@ import (
 	"cash-flow/internal/core/domain"
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"log/slog"
 	"strings"
 	"sync/atomic"
@@ -25,7 +26,8 @@ func New(logBody bool) *Mailer {
 
 // Send writes the email to the log and returns a fake provider id
 func (m *Mailer) Send(_ context.Context, msg domain.EmailMessage) (string, error) {
-	id := fmt.Sprintf("log-%d", m.seq.Add(1))
+	// unique across restarts: a counter alone repeated "log-1" and clashed with email_outbox.provider_id (plan/30)
+	id := fmt.Sprintf("log-%d-%s", m.seq.Add(1), uuid.NewString()[:8])
 
 	// outside local the address is masked: no emails in the logs (plan/27)
 	to := MaskAddress(msg.To)

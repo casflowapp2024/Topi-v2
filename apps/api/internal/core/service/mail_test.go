@@ -27,6 +27,8 @@ type fakeOutbox struct {
 	seq       int64
 	statuses  map[string]string // users.email_status by user id
 	sentToday int               // emails sent before the test (quota)
+	// markSentErr fails MarkSent while it carries a provider id (clash on the unique index)
+	markSentErr error
 	now       func() time.Time
 }
 
@@ -131,6 +133,9 @@ func (f *fakeOutbox) set(id int64, fn func(*domain.OutboxEmail)) error {
 }
 
 func (f *fakeOutbox) MarkSent(_ context.Context, id int64, providerID string) error {
+	if providerID != "" && f.markSentErr != nil {
+		return f.markSentErr
+	}
 	return f.set(id, func(r *domain.OutboxEmail) {
 		now := f.now()
 		r.Status, r.ProviderID, r.SentAt = domain.OutboxSent, &providerID, &now
@@ -568,4 +573,19 @@ func TestMail_HandleEvent(t *testing.T) {
 	id := f.enqueue(t, domain.TemplateConnectionDown, domain.MailPriorityNotification, "a@example.com")
 	_, _ = f.svc.ProcessOnce(ctx)
 	assert.Equal(t, domain.OutboxSuppressed, f.repo.rows[id].Status)
+}
+
+// plan/30, D3: sent but the provider id could not be saved: it stays sent and is never sent again
+func TestMail_SentButNotMarkedIsNotSentAgain(t *testing.T) {
+	f := newMailFixture(t, MailSettings{BatchSize: 10})
+	f.repo.markSentErr = errors.New("duplicate provider_id")
+	f.enqueue(t, domain.TemplateConnectionDown, domain.MailPriorityNotification, "alert@example.com")
+
+	_, err := f.svc.ProcessOnce(context.Background())
+	require.NoError(t, err)
+	_, err = f.svc.ProcessOnce(context.Background())
+	require.NoError(t, err)
+
+	assert.Len(t, f.mailer.messages(), 1)
+	require.Len(t, f.repo.byStatus(domain.OutboxSent), 1)
 }

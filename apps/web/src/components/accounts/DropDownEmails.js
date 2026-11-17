@@ -93,7 +93,7 @@ const DropDownEmails = ({
                                 >
                                     <PlusIcon className="w-4 h-4 text-topi-600 dark:text-topi-200" />
                                     <span className="text-topi-600 dark:text-topi-200">
-                                        Vincula nuevo email a CashFlow
+                                        Conecta otro correo a Topi
                                     </span>
                                 </div>  
                                 {options!==null%options&&options?

@@ -28,12 +28,25 @@ const vsLastMonth = (spent, history_dash, year, month) => {
  * Primera tarjeta del inicio: ¿cómo voy este mes? Lo usado (mtd_budget) es lo mismo que suma
  * Presupuestos: los gastos más lo movido a inversiones, que sale del dinero disponible sin ser gasto.
  */
-const HomePaceCard = ({ history_dash, expenses_report_full, current_Month, current_Year, loading }) => {
+// Lo gastado en las categorías que tienen presupuesto (null sin el reporte por categoría)
+export const budgetedSpent = (report) => {
+  if (!Array.isArray(report)) return null;
+  return report
+    .filter(c => Number(c.budget) > 0)
+    .reduce((sum, c) => sum + Math.abs(Number(c.value ?? c.expenses) || 0), 0);
+};
+
+const HomePaceCard = ({ history_dash, expenses_report, expenses_report_full, current_Month, current_Year, loading }) => {
   const year = Number(current_Year);
   const month = Number(current_Month);
   const budget = Math.abs(Number(history_dash?.expense_budget) || 0);
   const mtd = history_dash?.daily?.mtd_budget || history_dash?.daily?.mtd_expense || [];
-  const spent = Math.abs(Number(mtd[mtd.length - 1]) || 0);
+  const allSpent = Math.abs(Number(mtd[mtd.length - 1]) || 0);
+  // Con presupuesto solo en algunas categorías, lo que se compara con él es lo gastado en ellas: si no, un solo
+  // presupuesto pequeño decía "Te pasaste" por gastos de otras categorías (plan/30)
+  const inBudgeted = budget > 0 ? budgetedSpent(expenses_report) : null;
+  const partial = inBudgeted !== null && inBudgeted < allSpent;
+  const spent = partial ? inBudgeted : allSpent;
   const allowance = getDailyAllowance(budget, spent, year, month);
   const future = new Date(year, month - 1, 1) > new Date();
   const status = budget > 0 ? getBudgetStatus((spent / budget) * 100, { pace: getMonthPace(year, month) }) : null;
@@ -55,7 +68,7 @@ const HomePaceCard = ({ history_dash, expenses_report_full, current_Month, curre
       <>
         <Headline label="Hoy puedes gastar" value={formatMoney(allowance.perDay)} />
         <p className="flex flex-wrap items-center gap-x-2 text-xs text-ink-2 dark:text-gray-400">
-          <span>Quedan {formatMoney(allowance.left)} para {allowance.daysLeft} {allowance.daysLeft === 1 ? 'día' : 'días'}</span>
+          <span>Quedan {formatMoney(allowance.left)} para {allowance.daysLeft} {allowance.daysLeft === 1 ? 'día' : 'días'}{partial ? ' en tus categorías con presupuesto' : ''}</span>
           <BudgetStatusLabel status={status} />
         </p>
       </>
@@ -101,6 +114,7 @@ const HomePaceCard = ({ history_dash, expenses_report_full, current_Month, curre
 
 const mapStateToProps = (state) => ({
   history_dash: state.Reports.history_dash,
+  expenses_report: state.Reports.expenses_report,
   expenses_report_full: state.Reports.expenses_report_full,
   current_Month: state.Reports.current_Month,
   current_Year: state.Reports.current_Year,

@@ -15,7 +15,9 @@ jest.mock('axios', () => {
 jest.mock('react-router-dom', () => ({
   Link: ({ children, to, ...p }) => <a href={String(to)} {...p}>{children}</a>,
   useNavigate: () => () => {},
+  useSearchParams: () => [new URLSearchParams(''), () => {}],
 }), { virtual: true });
+jest.mock('../../accounts/AccountCreate', () => ({ openCreateBox }) => (openCreateBox ? <div data-card="crear-cuenta" /> : null));
 jest.mock('./HomePaceCard', () => () => <div data-card="ritmo" />);
 jest.mock('./HomeFlowCard', () => () => <div data-card="flujo" />);
 jest.mock('./HomeNetWorthCard', () => () => <div data-card="patrimonio" />);

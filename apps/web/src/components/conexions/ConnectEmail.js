@@ -29,9 +29,13 @@ const ConnectEmail = ({
         navigate('/dashboard');
     };
 
+    // Conectado: al Inicio, donde se ve la lectura en vivo; sin cuentas, con "Agregar cuenta" ya abierto (plan/30)
     const handleLinked = async (emailAddress) => {
         setStatus('linking');
-        setStatus(await linkEmailAndReadNow(emailAddress));
+        const result = await linkEmailAndReadNow(emailAddress);
+        if (result === 'no_accounts') navigate('/dashboard?crear-cuenta=1');
+        else if (result === 'read') navigate('/dashboard');
+        else setStatus(result);
     };
 
     // Se vuelve a autorizar la misma dirección: la API reutiliza la conexión (y sus cuentas) y limpia el error.

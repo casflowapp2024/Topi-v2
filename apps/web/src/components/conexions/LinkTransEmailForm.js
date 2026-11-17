@@ -144,17 +144,11 @@ const LinkTransEmailForm = ({
 
 
 
-            if (contextWindow === "settings" || contextWindow === "onboarding") {
-                setAlert(`El correo ${emailAutomated} fue vinculado exitosamente con CashFlow!`, true, "text-white", "bg-green-500", false)
-                /* if (contextWindow === "onboarding") {
-                    
-                } */
-            } else {
-                console.log("linktransemailform")
-                console.log(response_automated_emails, emailAutomated)
+            // aviso corto: uno sin duración quedaba pegado y aparecía después en otros modales (plan/30)
+            if (contextWindow !== "settings" && contextWindow !== "onboarding") {
                 onSelectValue(findElmentByEmail(response_automated_emails, emailAutomated))
-                setAlert(`El correo ${emailAutomated} fue vinculado exitosamente con CashFlow!`, true, "text-white", "bg-green-500", 3000)
             }
+            setAlert(`Correo conectado: ${emailAutomated}`, true, "text-white", "bg-green-500", 3000)
             setLoadingLink(false)
             setLikSucces(true)
             if (onLinked) {
@@ -212,7 +206,7 @@ const LinkTransEmailForm = ({
                                 visible={true}
                             />
                             <div className="dark:text-gray-200">
-                                Vinculando correo <span className='font-semibold'>{emailAutomated}</span> a CashFlow...
+                                Vinculando correo <span className='font-semibold'>{emailAutomated}</span> a Topi…
                             </div>
                         </div>
                         :
