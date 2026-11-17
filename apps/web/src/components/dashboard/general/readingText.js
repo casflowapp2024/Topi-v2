@@ -20,8 +20,51 @@ const bankList = (banks) => (banks || []).map(b => b.name).join(', ');
  * Una línea por conexión: qué pasa con la lectura. Devuelve { tone, title, detail } o null si no hay nada
  * que decir (lectura funcionando).
  */
+// "Listo" se muestra este tiempo después de terminar la lectura (plan/31)
+export const DONE_VISIBLE_MS = 10 * 60 * 1000;
+
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+/**
+ * Avance de la última lectura prioritaria (plan/31). Devuelve { tone, title, detail, progress } o null.
+ * progress (0–1) solo mientras lee.
+ */
+export const jobLine = (job, now = Date.now()) => {
+    if (!job) return null;
+    const listed = Number(job.listed) || 0;
+    const processed = Math.min(Number(job.processed) || 0, listed);
+    const created = Number(job.created) || 0;
+    switch (job.state) {
+        case 'queued':
+            return { tone: 'info', title: 'Preparando la lectura de tus correos…', detail: 'Empieza en unos segundos.', progress: 0 };
+        case 'running':
+            return {
+                tone: 'info',
+                title: listed > 0 ? `Leyendo ${processed} de ${plural(listed, 'correo')}…` : 'Buscando los correos de tu banco…',
+                detail: created > 0 ? `${plural(created, 'movimiento')} hasta ahora. Puedes seguir usando Topi mientras tanto.` : 'Puedes seguir usando Topi mientras tanto.',
+                progress: listed > 0 ? processed / listed : 0,
+            };
+        case 'done': {
+            const finished = job.finished_at ? new Date(job.finished_at).getTime() : now;
+            if (created === 0 || now - finished > DONE_VISIBLE_MS) return null;
+            return {
+                tone: 'ok',
+                title: `Listo: encontramos ${plural(created, 'movimiento')} en tus correos`,
+                detail: 'Ya están en tu Inicio. De aquí en adelante Topi los lee solo, cada hora.',
+            };
+        }
+        case 'failed':
+            return { tone: 'warn', title: 'No pudimos terminar de leer tus correos', detail: 'Lo reintentamos solos en unos minutos.', retrying: true };
+        default:
+            return null;
+    }
+};
+
 export const readingLine = (connection, now = Date.now()) => {
     if (!connection) return null;
+    // mientras hay una lectura en curso (o recién terminada), su avance manda (plan/31)
+    const job = jobLine(connection.job, now);
+    if (job) return job;
     const banks = bankList(connection.banks);
     const lastRead = timeAgo(connection.last_read_at, now);
     const processed = Number(connection.emails_processed) || 0;

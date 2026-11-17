@@ -9,7 +9,7 @@ import { readingLine } from './readingText';
 
 // Mientras se lee por primera vez (o justo después de ligar una cuenta) el estado se pide cada 5 s, con tope:
 // así el Inicio se llena en vivo sin quedarse consultando para siempre (plan/30, bloque 2)
-export const FAST_MS = 5 * 1000;
+export const FAST_MS = 3 * 1000;
 export const WATCH_MS = 10 * 60 * 1000;
 
 // "¡Listo!" sale solo si en esta sesión se vio el checklist sin terminar (no a quien lo terminó hace meses)
@@ -45,7 +45,27 @@ const STEP_TEXT = {
     },
 };
 
+const ReadingLines = ({ lines, className = '' }) => (lines.length === 0 ? null : (
+    <div className={`flex flex-col gap-2 ${className}`}>
+        {lines.map(({ id, line }) => (
+            <div key={id} role="status" className={`rounded-xl px-3 py-2 text-sm ${TONES[line.tone]}`}>
+                <p className="font-medium">{line.title}</p>
+                {line.detail && <p className="text-xs mt-0.5 text-gray-600 dark:text-gray-300">{line.detail}</p>}
+                {typeof line.progress === 'number' && (
+                    <div className="h-1.5 mt-2 rounded-full bg-white/70 dark:bg-gray-800 overflow-hidden" role="progressbar"
+                        aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(line.progress * 100)}>
+                        <div className="h-full bg-topi-500 rounded-full transition-all duration-500" style={{ width: `${Math.max(4, Math.round(line.progress * 100))}%` }} />
+                    </div>
+                )}
+                {line.tone === 'warn' && line.createAccount && <Link to="/dashboard?crear-cuenta=1" className="text-xs font-medium text-topi-600 dark:text-topi-200 hover:underline">Crear la cuenta de tu banco</Link>}
+                {line.tone === 'warn' && !line.createAccount && !line.retrying && <Link to="/dashboard/accounts" className="text-xs font-medium text-topi-600 dark:text-topi-200 hover:underline">Ir a Cuentas</Link>}
+            </div>
+        ))}
+    </div>
+));
+
 const TONES = {
+    ok: 'bg-status-ok-soft dark:bg-emerald-950/40 text-gray-800 dark:text-gray-100',
     info: 'bg-topi-50 dark:bg-gray-700/60 text-gray-800 dark:text-gray-100',
     warn: 'bg-amber-50 dark:bg-amber-950/40 text-gray-800 dark:text-gray-100',
 };
@@ -83,7 +103,8 @@ export const OnboardingChecklist = ({ load = getOnboardingStatus, loadReading = 
     const tick = useCallback(async () => {
         clearTimeout(timer.current);
         const r = await refresh();
-        const firstRead = (r?.connections || []).some(c => c.reading === 'reading_first');
+        const firstRead = (r?.connections || []).some(c => c.reading === 'reading_first'
+            || c.job?.state === 'queued' || c.job?.state === 'running');
         if (alive.current && (firstRead || now() < watchUntil.current)) {
             timer.current = setTimeout(tick, FAST_MS);
         }
@@ -146,7 +167,15 @@ export const OnboardingChecklist = ({ load = getOnboardingStatus, loadReading = 
     }
 
     if (!onboarding || onboarding.complete) {
-        return notices.length > 0 ? <div className="flex flex-col gap-2 lg:gap-6">{notices}</div> : null;
+        // terminado el onboarding, una lectura nueva (otra cuenta, otro correo) también muestra su avance
+        const jobLines = lines.filter(({ line }) => line.tone === 'ok' || typeof line.progress === 'number');
+        if (notices.length === 0 && jobLines.length === 0) return null;
+        return (
+            <div className="flex flex-col gap-2 lg:gap-6">
+                {jobLines.length > 0 && <Card><ReadingLines lines={jobLines} /></Card>}
+                {notices}
+            </div>
+        );
     }
 
     const steps = onboarding.steps || [];
@@ -189,19 +218,7 @@ export const OnboardingChecklist = ({ load = getOnboardingStatus, loadReading = 
                         );
                     })}
                 </ol>
-                {lines.length > 0 && (
-                    <div className="flex flex-col gap-2 mt-4">
-                        {lines.map(({ id, line }) => (
-                            <div key={id} role="status" className={`rounded-xl px-3 py-2 text-sm ${TONES[line.tone]}`}>
-                                <p className="font-medium">{line.title}</p>
-                                {line.detail && <p className="text-xs mt-0.5 text-gray-600 dark:text-gray-300">{line.detail}</p>}
-                                {line.tone === 'warn' && (line.createAccount
-                                    ? <Link to="/dashboard?crear-cuenta=1" className="text-xs font-medium text-topi-600 dark:text-topi-200 hover:underline">Crear la cuenta de tu banco</Link>
-                                    : <Link to="/dashboard/accounts" className="text-xs font-medium text-topi-600 dark:text-topi-200 hover:underline">Ir a Cuentas</Link>)}
-                            </div>
-                        ))}
-                    </div>
-                )}
+                <ReadingLines lines={lines} className="mt-4" />
             </Card>
             {notices}
         </div>

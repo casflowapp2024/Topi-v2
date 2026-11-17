@@ -15,6 +15,7 @@ class FakeDB:
         self.first_found: dict[tuple[int, str], int] = {}
         self.processed: dict[tuple[int, str], dict] = {}
         self.jobs: dict[int, dict] = {}
+        self.progress: dict[int, list[dict]] = {}
         self.llm_usage: list[tuple] = []
 
     # sync state
@@ -41,6 +42,9 @@ class FakeDB:
     # jobs
     def record_llm_usage(self, *, user_id, feature, model, tokens_in, tokens_out):
         self.llm_usage.append((user_id, feature, model, tokens_in, tokens_out))
+
+    def set_job_progress(self, job_id, progress):
+        self.progress.setdefault(job_id, []).append(dict(progress))
 
     def complete_job(self, job_id):
         self.jobs[job_id] = {"status": "done"}

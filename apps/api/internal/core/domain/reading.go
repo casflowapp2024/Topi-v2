@@ -89,6 +89,53 @@ type ConnectionStatus struct {
 	LastTransactionAt   *time.Time       `json:"last_transaction_at"`
 	Banks               []ConnectionBank `json:"banks"`
 	Reading             string           `json:"reading"`
+	// Job is the last priority read ("leer ahora") of the last 24 h, nil if there is none (plan/31)
+	Job *ReadingJob `json:"job"`
+}
+
+// States of the last priority read of a connection
+const (
+	JobQueued  = "queued"
+	JobRunning = "running"
+	JobDone    = "done"
+	JobFailed  = "failed"
+)
+
+// ReadingJob is the progress of the last priority read: counts only
+type ReadingJob struct {
+	State      string     `json:"state"`
+	Listed     int64      `json:"listed"`
+	Processed  int64      `json:"processed"`
+	Created    int64      `json:"created"`
+	FinishedAt *time.Time `json:"finished_at,omitempty"`
+}
+
+// ReadingJobFacts are the counts of the jobs of that read (one per sender)
+type ReadingJobFacts struct {
+	Jobs, Running, Pending, Failed int64
+	Listed, Processed, Created     int64
+	LastUpdate                     time.Time
+}
+
+// NewReadingJob decides the state of a read from its jobs
+func NewReadingJob(f ReadingJobFacts) *ReadingJob {
+	if f.Jobs == 0 {
+		return nil
+	}
+	job := &ReadingJob{Listed: f.Listed, Processed: f.Processed, Created: f.Created}
+	switch {
+	case f.Running > 0:
+		job.State = JobRunning
+	case f.Pending > 0:
+		job.State = JobQueued
+	case f.Failed == f.Jobs:
+		job.State = JobFailed
+	default:
+		job.State = JobDone
+		at := f.LastUpdate
+		job.FinishedAt = &at
+	}
+	return job
 }
 
 // ComputeReading sets Reading from the facts of the connection

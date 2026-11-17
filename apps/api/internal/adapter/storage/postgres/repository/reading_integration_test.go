@@ -116,6 +116,22 @@ VALUES ($1, 'X@Raro.test', now(), 0, now())`, silent)
 	assert.Equal(t, int64(4), bankOf().Found)
 	exec(`DELETE FROM email_sync_state WHERE email_id = $1`, silent)
 
+	// plan/31: progress of the last priority read
+	exec(`INSERT INTO email_jobs (payload, priority, status, progress, dedupe_key)
+VALUES (jsonb_build_object('user_id', $1::text, 'email_id', $2::bigint), 1, 'running', '{"listed": 22, "processed": 12, "created": 5}', 'rd-' || $1::text)`,
+		userID, reading)
+	t.Cleanup(func() { _, _ = db.Exec(ctx, "DELETE FROM email_jobs WHERE dedupe_key = 'rd-' || $1::text", userID) })
+	all, err := repo.ConnectionStatuses(ctx, userID)
+	require.NoError(t, err)
+	for _, s := range all {
+		if s.ID == reading {
+			require.NotNil(t, s.Job)
+			assert.Equal(t, domain.ReadingJob{State: domain.JobRunning, Listed: 22, Processed: 12, Created: 5}, *s.Job)
+		} else {
+			assert.Nil(t, s.Job)
+		}
+	}
+
 	facts, err = repo.OnboardingFacts(ctx, userID)
 	require.NoError(t, err)
 	assert.Equal(t, domain.OnboardingFacts{HasConnection: true, HasAutoTx: true, PendingReview: 1}, facts)

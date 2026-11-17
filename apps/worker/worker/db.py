@@ -87,6 +87,11 @@ class Database:
             )
             return cur.rowcount
 
+    def set_job_progress(self, job_id: int, progress: dict) -> None:
+        """Conteos del avance del job (plan/31): la app muestra "Leyendo 12 de 22 correos"."""
+        with self.pool.connection() as conn:
+            conn.execute("UPDATE email_jobs SET progress = %s WHERE id = %s", (Jsonb(progress), job_id))
+
     def complete_job(self, job_id: int) -> None:
         self._finish(job_id, "done", None)
 

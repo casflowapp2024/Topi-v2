@@ -372,3 +372,19 @@ def test_bank_that_is_not_official_goes_to_review():
     processor, _, api, _, _ = make([email("m1", "TX:1111:50000")])
     assert processor.handle(job(verify=True)) == "done"
     assert api.create_calls[0][0]["should_verify"] is True
+
+
+# plan/31, bloque A: el avance del job se publica al listar, después de cada correo y al final
+def test_job_progress_is_published_while_reading():
+    processor, db, api, _, _ = make(MESSAGES)
+    assert processor.handle(job(job_id=5)) == "done"
+    steps = db.progress[5]
+    assert steps[0] == {"listed": 3, "processed": 0, "created": 0}
+    assert [s["processed"] for s in steps[1:4]] == [1, 2, 3]
+    assert steps[-1] == {"listed": 3, "processed": 3, "created": len(api.created)}
+
+
+def test_dry_run_publishes_no_progress():
+    processor, db, _, _, _ = make(MESSAGES, dry_run=True)
+    processor.handle(job(job_id=5))
+    assert db.progress == {}

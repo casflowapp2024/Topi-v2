@@ -109,3 +109,14 @@ func TestIsOfficialSender(t *testing.T) {
 	assert.True(t, IsOfficialSender("BBVA", "BBVA@bbvanet.com.co,notificacionesBreB@bbva.com"))
 	assert.False(t, IsOfficialSender("BBVA", "BBVA@bbvanet.com.co,otro@x.co"))
 }
+
+func TestNewReadingJob(t *testing.T) {
+	assert.Nil(t, NewReadingJob(ReadingJobFacts{}))
+	assert.Equal(t, JobRunning, NewReadingJob(ReadingJobFacts{Jobs: 2, Running: 1, Pending: 1, Listed: 22, Processed: 12}).State)
+	assert.Equal(t, JobQueued, NewReadingJob(ReadingJobFacts{Jobs: 1, Pending: 1}).State)
+	assert.Equal(t, JobFailed, NewReadingJob(ReadingJobFacts{Jobs: 1, Failed: 1}).State)
+	done := NewReadingJob(ReadingJobFacts{Jobs: 2, Failed: 1, Listed: 22, Processed: 22, Created: 21})
+	assert.Equal(t, JobDone, done.State, "one sender failed, the other read: done")
+	assert.NotNil(t, done.FinishedAt)
+	assert.Equal(t, int64(21), done.Created)
+}

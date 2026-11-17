@@ -112,7 +112,7 @@ class JobProcessor:
         payload = job.payload or {}
         context = {"job_id": job.id, "email_id": payload.get("email_id"), "attempt": job.attempts}
         try:
-            result = self.process(payload)
+            result = self.process(payload, job_id=job.id)
         except Exception as exc:  # noqa: BLE001 - todo se clasifica
             return self._on_error(job, payload, classify(exc), context)
 
@@ -166,7 +166,20 @@ class JobProcessor:
         except Exception as exc:  # noqa: BLE001 - la métrica no puede tumbar la lectura
             logger.warning("no se pudo registrar el uso del modelo", extra={"error": str(exc)})
 
-    def process(self, payload: dict[str, Any]) -> JobResult:
+    def _progress(self, job_id: int | None, result: JobResult) -> None:
+        """Avance del job para la app (plan/31): solo conteos. Nunca hace fallar el job."""
+        if job_id is None or self.settings.dry_run:
+            return
+        try:
+            self.db.set_job_progress(job_id, {
+                "listed": result.listed,
+                "processed": result.skipped_seen + result.extracted + result.failed_messages,
+                "created": len(result.created),
+            })
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("no se pudo guardar el avance del job", extra={"job_id": job_id, "error": str(exc)})
+
+    def process(self, payload: dict[str, Any], job_id: int | None = None) -> JobResult:
         missing = [f for f in REQUIRED_FIELDS if f not in payload]
         if missing:
             raise PermanentJobError(f"payload incompleto, faltan: {', '.join(missing)}")
@@ -198,6 +211,7 @@ class JobProcessor:
         refs = list(provider.list_messages(senders, since))
 
         result = JobResult(listed=len(refs))
+        self._progress(job_id, result)
 
         # onboarding: el correo ya se pudo leer (como en la Lambda, aunque falle algo después)
         if payload.get("onboarding") and not self.settings.dry_run:
@@ -275,8 +289,10 @@ class JobProcessor:
                 self._flush(user_id, email_id, transactions, messages_with_tx, accounts, currencies, classes,
                             failures, result)
                 transactions, messages_with_tx = [], {}
+            self._progress(job_id, result)
 
         self._flush(user_id, email_id, transactions, messages_with_tx, accounts, currencies, classes, failures, result)
+        self._progress(job_id, result)
 
         # 6. mover last_run solo si todo salió bien
         if failures:

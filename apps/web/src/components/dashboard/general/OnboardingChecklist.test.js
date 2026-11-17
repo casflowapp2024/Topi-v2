@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import axios from 'axios';
 import { OnboardingChecklist } from './OnboardingChecklist';
 import UnsupportedBankNotice from './UnsupportedBankNotice';
-import { readingLine, timeAgo } from './readingText';
+import { readingLine, timeAgo, jobLine } from './readingText';
 import { emitDataChanged, onDataChanged, kindOfRequest } from '../../../lib/dataEvents';
 
 jest.mock('axios', () => {
@@ -184,4 +184,34 @@ test('kindOfRequest: qué escrituras avisan', () => {
   expect(kindOfRequest('post', `${base}/transactions/9/installments`)).toBe('review');
   expect(kindOfRequest('get', `${base}/transactions/list`)).toBeNull();
   expect(kindOfRequest('post', `${base}/feedback`)).toBeNull();
+});
+
+// plan/31, bloque A: avance de la lectura y fin claro
+test('jobLine: preparando, leyendo N de M, listo y fallo', () => {
+  expect(jobLine({ state: 'queued' }).title).toContain('Preparando');
+  const running = jobLine({ state: 'running', listed: 22, processed: 12, created: 5 });
+  expect(running.title).toBe('Leyendo 12 de 22 correos…');
+  expect(running.detail).toContain('5 movimientos');
+  expect(running.progress).toBeCloseTo(12 / 22);
+  const done = jobLine({ state: 'done', listed: 22, processed: 22, created: 21, finished_at: new Date(NOW - 60000).toISOString() }, NOW);
+  expect(done.title).toBe('Listo: encontramos 21 movimientos en tus correos');
+  expect(jobLine({ state: 'done', created: 21, finished_at: new Date(NOW - 11 * 60000).toISOString() }, NOW)).toBeNull();
+  expect(jobLine({ state: 'done', created: 0, finished_at: new Date(NOW).toISOString() }, NOW)).toBeNull();
+  expect(jobLine({ state: 'failed' }).title).toContain('No pudimos terminar');
+});
+
+test('mientras lee: barra de progreso en el checklist', async () => {
+  await mount(<OnboardingChecklist now={() => NOW}
+    load={async () => ({ steps: steps(['connect_email']), complete: false, pending_review: 0 })}
+    loadReading={async () => reading([{ id: 1, provider: 'gmail', reading: 'reading_first', banks: [],
+      job: { state: 'running', listed: 22, processed: 11, created: 4 } }])} />);
+  expect(container.textContent).toContain('Leyendo 11 de 22 correos…');
+  expect(container.querySelector('[role="progressbar"]').getAttribute('aria-valuenow')).toBe('50');
+});
+
+test('con el onboarding terminado, una lectura nueva también muestra su avance', async () => {
+  await mount(<OnboardingChecklist now={() => NOW}
+    load={async () => ({ steps: steps(['connect_email', 'first_auto_tx', 'review', 'budget']), complete: true })}
+    loadReading={async () => reading([{ id: 1, reading: 'ok', banks: [], job: { state: 'running', listed: 4, processed: 1, created: 0 } }])} />);
+  expect(container.textContent).toContain('Leyendo 1 de 4 correos…');
 });

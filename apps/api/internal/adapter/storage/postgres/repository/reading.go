@@ -55,6 +55,39 @@ FROM emails e WHERE e.user_id = $1 ORDER BY e.id`, userID)
 		return nil, err
 	}
 
+	// the last priority read of each connection (plan/31): its jobs, one per sender, started together
+	jobs, err := r.db.Query(ctx, `WITH recent AS (
+  SELECT (payload->>'email_id')::bigint AS email_id, status, progress, created_at, updated_at
+  FROM email_jobs
+  WHERE priority = 1 AND created_at > now() - interval '24 hours' AND payload->>'user_id' = $1
+), last AS (SELECT email_id, max(created_at) AS at FROM recent GROUP BY email_id)
+SELECT r.email_id, count(*),
+  count(*) FILTER (WHERE r.status = 'running'), count(*) FILTER (WHERE r.status = 'pending'),
+  count(*) FILTER (WHERE r.status = 'failed'),
+  coalesce(sum((r.progress->>'listed')::bigint), 0), coalesce(sum((r.progress->>'processed')::bigint), 0),
+  coalesce(sum((r.progress->>'created')::bigint), 0), max(r.updated_at)
+FROM recent r JOIN last l ON l.email_id = r.email_id AND r.created_at >= l.at - interval '5 minutes'
+GROUP BY r.email_id`, userID)
+	if err != nil {
+		return nil, mappers.MapPostgresErrorCode(err)
+	}
+	for jobs.Next() {
+		var emailID uint64
+		var f domain.ReadingJobFacts
+		if err = jobs.Scan(&emailID, &f.Jobs, &f.Running, &f.Pending, &f.Failed, &f.Listed, &f.Processed, &f.Created,
+			&f.LastUpdate); err != nil {
+			jobs.Close()
+			return nil, err
+		}
+		if i, ok := index[emailID]; ok {
+			statuses[i].Job = domain.NewReadingJob(f)
+		}
+	}
+	jobs.Close()
+	if err = jobs.Err(); err != nil {
+		return nil, err
+	}
+
 	// per bank: its senders, what their first reads found and the automatic transactions of its accounts here
 	banks, err := r.db.Query(ctx, `SELECT l.email_id, b.id, b.name, coalesce(b.email, ''),
   coalesce(s.read_senders, 0), coalesce(s.legacy, 0), coalesce(s.found, 0),
