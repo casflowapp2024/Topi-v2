@@ -212,7 +212,10 @@ export const OnboardingChecklist = ({ load = getOnboardingStatus, loadReading = 
                                     </p>
                                     {!step.done && <p className="text-xs text-gray-600 dark:text-gray-300">{detail}</p>}
                                     {!step.done && isNext && text.cta && (
-                                        <Link to={text.cta.to} className="text-sm font-medium text-topi-600 dark:text-topi-200 hover:underline w-max">{text.cta.label}</Link>
+                                        <Link to={text.cta.to}
+                                            className="mt-1 inline-flex items-center justify-center w-max rounded-xl bg-topi-500 hover:bg-topi-600 px-4 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900">
+                                            {text.cta.label}
+                                        </Link>
                                     )}
                                 </div>
                             </li>

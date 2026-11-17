@@ -14,7 +14,8 @@ global.ResizeObserver = global.ResizeObserver || class { observe() {} unobserve(
 
 const tx = (id, description, extra = {}) => ({ id, description, amount: 19400, amount_base: 19400, currency: 'COP', expense: true,
   date: '2026-11-16', account: { id: 1, name: 'TC davibank' }, category: { id: 2, name: 'transporte' }, should_verify: true, ...extra });
-const categories = { items: [{ id: 2, name: 'transporte', emoji: '' }, { id: 3, name: 'comida', emoji: '' }, { id: 7, name: 'babies', emoji: '' }, { id: 8, name: 'salario', emoji: '', income: true }] };
+const categories = { items: [{ id: 2, name: 'transporte', emoji: '' }, { id: 3, name: 'comida', emoji: '' }, { id: 7, name: 'babies', emoji: '' }, { id: 8, name: 'salario', emoji: '', income: true },
+  { id: -2, name: 'Servicios', emoji: '1f4a1', userCat: false, income: false }, { id: -1, name: 'Comida', emoji: '', userCat: true, income: false }] };
 
 let el; let root;
 const mount = async (props) => {
@@ -42,7 +43,7 @@ test('recorre: categoría aplicada a todos los del mismo comercio y luego cuotas
     loadInstallments: async () => ({ items: [tx(4, 'Homecenter', { amount: 332400 })] }),
   });
   expect(document.body.textContent).toContain('1 de 4');
-  expect(document.body.textContent).toContain('Topi no estaba seguro de la categoría');
+  expect(document.body.textContent).toContain('Elige la categoría que corresponde a este gasto.');
   expect(document.body.textContent).toContain('Aplicar a los otros 1');
   expect(document.querySelector('[aria-label="tiene presupuesto"]')).not.toBeNull();
   await act(async () => { button('Comida').click(); });
@@ -82,7 +83,21 @@ test('un ingreso pregunta de dónde viene y ofrece las categorías de ingreso', 
     loadVerify: async () => ({ items: [tx(1, 'Deel', { expense: false })] }),
     loadInstallments: async () => ({ items: [] }),
   });
-  expect(document.body.textContent).toContain('¿De dónde viene este ingreso?');
+  expect(document.body.textContent).toContain('Elige la categoría que corresponde a este ingreso.');
   expect(button('Salario')).toBeTruthy();
   expect(button('Comida')).toBeFalsy();
+});
+
+test('las categorías recomendadas que aún no existen se crean al elegirlas', async () => {
+  const update_transaction = jest.fn(async () => true);
+  const create_category = jest.fn(async () => ({ res: true, id: 12 }));
+  await mount({
+    update_transaction, create_category, saveInstallments: jest.fn(),
+    loadVerify: async () => ({ items: [tx(1, 'Enel')] }),
+    loadInstallments: async () => ({ items: [] }),
+  });
+  expect([...document.querySelectorAll('button')].filter(b => b.textContent.trim() === 'Comida')).toHaveLength(1); // la que ya tiene no se repite
+  await act(async () => { button('Servicios').click(); });
+  expect(create_category).toHaveBeenCalledWith('Servicios', 0, '1f4a1', false);
+  expect(update_transaction.mock.calls[0][1]).toBe(12);
 });

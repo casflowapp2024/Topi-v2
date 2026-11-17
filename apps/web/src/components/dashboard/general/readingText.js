@@ -41,7 +41,7 @@ export const jobLine = (job, now = Date.now()) => {
             return {
                 tone: 'info',
                 title: listed > 0 ? `Leyendo ${processed} de ${plural(listed, 'correo')}…` : 'Buscando los correos de tu banco…',
-                detail: created > 0 ? `${plural(created, 'movimiento')} hasta ahora. Puedes seguir usando Topi mientras tanto.` : 'Puedes seguir usando Topi mientras tanto.',
+                detail: created > 0 ? `${plural(created, 'movimiento')} hasta ahora.` : null,
                 progress: listed > 0 ? processed / listed : 0,
             };
         case 'done': {

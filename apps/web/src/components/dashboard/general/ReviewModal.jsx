@@ -28,8 +28,8 @@ export const buildReviewQueue = (verify, installments) => [
 ];
 
 const REASON = {
-    verify: 'Topi no estaba seguro de la categoría. ¿Dónde va este gasto?',
-    verifyIncome: 'Topi no estaba seguro de la categoría. ¿De dónde viene este ingreso?',
+    verify: 'Elige la categoría que corresponde a este gasto.',
+    verifyIncome: 'Elige la categoría que corresponde a este ingreso.',
     installments: '¿Esta compra fue a cuotas? Así repartimos el gasto en los meses que corresponde.',
 };
 
@@ -76,6 +76,9 @@ export const ReviewModal = ({
         // la sugerida siempre se ofrece, aunque sea del otro tipo (así se puede confirmar con un toque)
         .filter(c => Number(c.id) > 0 && (Boolean(c.income) === isIncome || c.id === item?.tx.category?.id))
         .sort((a, b) => Number(budgeted.has(b.id)) - Number(budgeted.has(a.id))), [user_categories, budgeted, isIncome, item]);
+    // recomendadas que el usuario aún no tiene (id negativo): se crean al elegirlas, así no tiene que inventarlas
+    const suggestions = useMemo(() => (user_categories?.items || [])
+        .filter(c => Number(c.id) < 0 && !c.userCat && Boolean(c.income) === isIncome), [user_categories, isIncome]);
     const sameMerchant = item?.kind === 'verify'
         ? queue.filter(q => q.kind === 'verify' && q.key !== item.key && merchantKey(q.tx.description) === merchantKey(item.tx.description))
         : [];
@@ -100,6 +103,18 @@ export const ReviewModal = ({
             return;
         }
         resolve(solved);
+    };
+
+    const chooseSuggestion = async (suggestion) => {
+        setBusy(true);
+        const created = await create_category(suggestion.name, 0, suggestion.emoji, Boolean(suggestion.income));
+        setBusy(false);
+        if (!created?.res) {
+            setAlert('No se pudo crear la categoría, intenta de nuevo.', false, 'text-white', 'bg-red-500', 4000);
+            return;
+        }
+        get_user_categories(0, 50);
+        await chooseCategory(created.id);
     };
 
     const createAndChoose = async () => {
@@ -194,6 +209,13 @@ export const ReviewModal = ({
                                         </button>
                                     );
                                 })}
+                                {suggestions.map(c => (
+                                    <button key={c.id} type="button" disabled={busy} onClick={() => chooseSuggestion(c)}
+                                        className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-60">
+                                        {c.emoji && <Emoji unified={c.emoji.toLowerCase()} emojiStyle="apple" size={16} />}
+                                        {capitalizeWords(c.name)}
+                                    </button>
+                                ))}
                                 {!creating && (
                                     <button type="button" onClick={() => setCreating(true)} disabled={busy}
                                         className="inline-flex items-center gap-1 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-medium text-topi-600 dark:text-topi-200">
