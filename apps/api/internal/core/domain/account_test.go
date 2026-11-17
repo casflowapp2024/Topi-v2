@@ -257,3 +257,15 @@ func TestAccounts_BuildReadEmailRequests_GroupsBySender(t *testing.T) {
 		assert.Equal(t, "9:nu@nu.com.co", requests[1].DedupeKey())
 	}
 }
+
+func TestAccount_ChangesReading(t *testing.T) {
+	one, two := uint64(1), uint64(2)
+	before := &Account{Bank: Bank{ID: 1}, LastFourDigits: "1558", Email: Email{ID: &one}}
+
+	assert.False(t, (&Account{Bank: Bank{ID: 1}, LastFourDigits: "1558", Email: Email{ID: &one}}).ChangesReading(before))
+	assert.True(t, (&Account{Bank: Bank{ID: 1}, LastFourDigits: "1558", Email: Email{ID: &two}}).ChangesReading(before))
+	assert.True(t, (&Account{Bank: Bank{ID: 3}, LastFourDigits: "1558", Email: Email{ID: &one}}).ChangesReading(before))
+	assert.True(t, (&Account{Bank: Bank{ID: 1}, LastFourDigits: "0000", Email: Email{ID: &one}}).ChangesReading(before))
+	assert.True(t, (&Account{Bank: Bank{ID: 1}, Email: Email{ID: &one}}).ChangesReading(&Account{Bank: Bank{ID: 1}}))
+	assert.False(t, (&Account{Bank: Bank{ID: 3}}).ChangesReading(before), "sin correo no hay qué leer")
+}

@@ -202,6 +202,8 @@ func NewInjector(settings *config.Configuration) *Injector {
 
 	emailRepository := dbrepository.NewEmailRepository(db)
 	emailService := service.NewEmailService(emailRepository, emailResource, accountRepo, accountService, transactionManager)
+	// linking an account to a connection asks for its first read right away (plan/30 bloque 1)
+	accountService.SetReadRequester(emailService)
 	emailService.SetMail(mailService)
 	mailService.SetEnricher(domain.TemplateConnectionDown, emailService)
 	emailService.SetEvents(productEvents)

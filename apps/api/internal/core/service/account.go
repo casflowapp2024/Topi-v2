@@ -4,11 +4,35 @@ import (
 	"cash-flow/internal/core/domain"
 	"cash-flow/internal/core/port"
 	"context"
+	"log/slog"
 )
+
+// AccountReadRequester asks for the priority read ("leer ahora") of accounts linked to a connection. It is
+// EmailService.ReadEmail, set with SetReadRequester because EmailService already depends on AccountService.
+type AccountReadRequester interface {
+	ReadEmail(ctx context.Context, userID string, accountIDs []uint64) (*domain.ReadEmailResponse, error)
+}
 
 type AccountService struct {
 	repo    port.AccountRepository
 	trxRepo port.TransactionRepository
+	reader  AccountReadRequester
+}
+
+// SetReadRequester wires the priority read that follows linking an account to a connection (plan/30 bloque 1)
+func (as *AccountService) SetReadRequester(reader AccountReadRequester) {
+	as.reader = reader
+}
+
+// requestRead asks for the first read of a just linked account. Only healthy connections get a job (the query
+// behind ReadEmail skips inactive or broken ones) and it never fails the account change.
+func (as *AccountService) requestRead(ctx context.Context, account *domain.Account) {
+	if as.reader == nil || account.Email.ID == nil || *account.Email.ID == 0 || account.ID == 0 {
+		return
+	}
+	if _, err := as.reader.ReadEmail(context.WithoutCancel(ctx), account.UserID, []uint64{account.ID}); err != nil {
+		slog.Error("account: could not request the read", "account_id", account.ID, "error", err)
+	}
 }
 
 func NewAccountService(
@@ -33,6 +57,7 @@ func (as *AccountService) CreateAccount(ctx context.Context, account *domain.Acc
 		return err
 	}
 
+	as.requestRead(ctx, account)
 	return nil
 }
 
@@ -82,6 +107,9 @@ func (as *AccountService) UpdateAccount(ctx context.Context, account *domain.Acc
 		return err
 	}
 
+	if account.ChangesReading(actualAccount) {
+		as.requestRead(ctx, account)
+	}
 	return nil
 }
 

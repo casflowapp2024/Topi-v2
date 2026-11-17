@@ -81,6 +81,18 @@ func (a *Account) IsSame(expected *Account) bool {
 		sameEmailID
 }
 
+// ChangesReading: the update links the account to another connection, bank or card number, so what the worker
+// reads for it changes and a new read is worth asking for
+func (a *Account) ChangesReading(before *Account) bool {
+	if a == nil || before == nil || a.Email.ID == nil {
+		return false
+	}
+	newEmail := before.Email.ID == nil || *before.Email.ID != *a.Email.ID
+	newBank := a.Bank.ID != 0 && a.Bank.ID != before.Bank.ID
+	newDigits := a.LastFourDigits != "" && a.LastFourDigits != before.LastFourDigits
+	return newEmail || newBank || newDigits
+}
+
 func (a *Account) IsEmpty() bool {
 	emptyName := a.Name == ""
 	emptyLastFourDigits := a.LastFourDigits == ""
