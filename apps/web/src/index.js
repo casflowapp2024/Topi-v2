@@ -4,9 +4,12 @@ import './styles/index.css';
 import App from './App';
 import store from './store';
 import { setupAuthInterceptor, whenRefreshIdle } from './lib/authInterceptor';
+import { setupDataEvents } from './lib/dataEvents';
 
 // renueva la sesión con el refresh token ante un 401
 setupAuthInterceptor(store);
+// avisa a las tarjetas del Inicio cuando cambian movimientos, cuentas o presupuestos (plan/30)
+setupDataEvents();
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 

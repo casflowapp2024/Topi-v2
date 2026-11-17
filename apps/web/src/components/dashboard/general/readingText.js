@@ -24,6 +24,8 @@ export const readingLine = (connection, now = Date.now()) => {
     if (!connection) return null;
     const banks = bankList(connection.banks);
     const lastRead = timeAgo(connection.last_read_at, now);
+    const processed = Number(connection.emails_processed) || 0;
+    const created = Number(connection.transactions_created) || 0;
     switch (connection.reading) {
         case 'reading_first':
             return {
@@ -31,8 +33,10 @@ export const readingLine = (connection, now = Date.now()) => {
                 title: 'Leyendo tus correos…',
                 detail: [
                     banks ? `Esperamos movimientos de ${banks}.` : null,
-                    lastRead ? `Última lectura ${lastRead}.` : 'La primera lectura empieza en unos minutos.',
-                    'La primera trae los movimientos de los últimos días.',
+                    processed > 0
+                        ? `Revisamos ${processed} correo${processed === 1 ? '' : 's'}${created > 0 ? ` · ${created} movimiento${created === 1 ? '' : 's'}` : ''}.`
+                        : (lastRead ? `Última lectura ${lastRead}.` : 'Suele tardar menos de un minuto.'),
+                    'La primera trae tus movimientos recientes.',
                 ].filter(Boolean).join(' '),
             };
         case 'no_accounts':

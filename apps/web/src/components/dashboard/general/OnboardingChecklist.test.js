@@ -5,6 +5,7 @@ import axios from 'axios';
 import { OnboardingChecklist } from './OnboardingChecklist';
 import UnsupportedBankNotice from './UnsupportedBankNotice';
 import { readingLine, timeAgo } from './readingText';
+import { emitDataChanged, onDataChanged, kindOfRequest } from '../../../lib/dataEvents';
 
 jest.mock('axios', () => {
   const noop = { use() {} };
@@ -31,6 +32,8 @@ afterEach(() => {
   act(() => root.unmount());
   container.remove();
   jest.clearAllMocks();
+  jest.useRealTimers();
+  sessionStorage.clear();
 });
 
 const steps = (done) => ['connect_email', 'first_auto_tx', 'review', 'budget'].map((id) => ({ id, done: done.includes(id) }));
@@ -56,14 +59,14 @@ test('tras conectar: "Leyendo tus correos…" con el banco esperado y la última
   expect(container.textContent).toContain('Leyendo tus correos…');
   expect(container.textContent).toContain('Esperamos movimientos de Bancolombia');
   expect(container.textContent).toContain('hace 5 min');
-  expect(container.textContent).toContain('los últimos días');
+  expect(container.textContent).toContain('tus movimientos recientes');
 });
 
 test('Por revisar muestra cuántos hay', async () => {
   await mount(<OnboardingChecklist now={() => NOW}
     load={async () => ({ steps: steps(['connect_email', 'first_auto_tx']), complete: false, pending_review: 2 })}
     loadReading={async () => reading([])} />);
-  expect(container.textContent).toContain('Tienes 2 movimientos por revisar');
+  expect(container.textContent).toContain('Te quedan 2 por revisar');
 });
 
 test('completa: se oculta', async () => {
@@ -100,4 +103,64 @@ test('readingLine y timeAgo', () => {
   expect(timeAgo(new Date(NOW - 3 * 3600000).toISOString(), NOW)).toBe('hace 3 h');
   expect(timeAgo(new Date(NOW - 2 * 86400000).toISOString(), NOW)).toBe('hace 2 días');
   expect(timeAgo(null, NOW)).toBeNull();
+});
+
+// plan/30, bloque 2: el Inicio en vivo
+test('mientras lee: cada 5 s, cuenta lo revisado y avisa a las demás tarjetas cuando llega algo', async () => {
+  jest.useFakeTimers();
+  const seen = [];
+  const off = onDataChanged((kind) => seen.push(kind));
+  let processed = 0;
+  const loadReading = jest.fn(async () => reading([{ id: 1, provider: 'gmail', reading: 'reading_first',
+    emails_processed: processed, transactions_created: 0, banks: [{ id: 3, name: 'Davibank', supported: true }] }]));
+  await mount(<OnboardingChecklist now={() => NOW}
+    load={async () => ({ steps: steps(['connect_email']), complete: false, pending_review: 0 })} loadReading={loadReading} />);
+  expect(container.textContent).toContain('Suele tardar menos de un minuto');
+
+  processed = 12;
+  await act(async () => { jest.advanceTimersByTime(5000); });
+  expect(loadReading).toHaveBeenCalledTimes(2);
+  expect(container.textContent).toContain('Revisamos 12 correos');
+  expect(seen).toEqual(['transactions']);
+  off();
+});
+
+test('una revisión o un presupuesto vuelven a pedir el estado', async () => {
+  const load = jest.fn(async () => ({ steps: steps(['connect_email', 'first_auto_tx']), complete: false, pending_review: 3 }));
+  await mount(<OnboardingChecklist now={() => NOW} load={load} loadReading={async () => reading([])} />);
+  expect(load).toHaveBeenCalledTimes(1);
+  await act(async () => { emitDataChanged('review'); });
+  await act(async () => { emitDataChanged('budget'); });
+  expect(load).toHaveBeenCalledTimes(3);
+});
+
+test('al terminar en esta sesión: "¡Listo!" hasta que se descarta', async () => {
+  let complete = false;
+  const load = async () => ({ steps: steps(complete ? ['connect_email', 'first_auto_tx', 'review', 'budget'] : ['connect_email', 'first_auto_tx', 'review']), complete, pending_review: 0 });
+  await mount(<OnboardingChecklist now={() => NOW} load={load} loadReading={async () => reading([])} />);
+  expect(container.textContent).toContain('3 de 4');
+  complete = true;
+  await act(async () => { emitDataChanged('budget'); });
+  expect(container.textContent).toContain('¡Listo!');
+  const button = [...container.querySelectorAll('button')].find(b => b.textContent === 'Entendido');
+  await act(async () => { button.click(); });
+  expect(container.textContent).toBe('');
+});
+
+test('quien ya lo había terminado no ve el "¡Listo!"', async () => {
+  await mount(<OnboardingChecklist now={() => NOW}
+    load={async () => ({ steps: steps(['connect_email', 'first_auto_tx', 'review', 'budget']), complete: true })}
+    loadReading={async () => reading([])} />);
+  expect(container.textContent).toBe('');
+});
+
+test('kindOfRequest: qué escrituras avisan', () => {
+  const base = process.env.REACT_APP_API_URL || '';
+  expect(kindOfRequest('post', `${base}/accounts/create`)).toBe('account');
+  expect(kindOfRequest('put', `${base}/accounts/12`)).toBe('account');
+  expect(kindOfRequest('post', `${base}/email/register?code=x`)).toBe('connection');
+  expect(kindOfRequest('put', `${base}/categories/5/budgets`)).toBe('budget');
+  expect(kindOfRequest('post', `${base}/transactions/9/installments`)).toBe('review');
+  expect(kindOfRequest('get', `${base}/transactions/list`)).toBeNull();
+  expect(kindOfRequest('post', `${base}/feedback`)).toBeNull();
 });

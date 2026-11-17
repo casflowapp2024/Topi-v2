@@ -97,6 +97,17 @@ VALUES ($1, $2, 'gmail', 'm1', 'banco', now(), 'gemini', 'transaction'), ($1, $2
 	require.NoError(t, err)
 	assert.Equal(t, domain.OnboardingFacts{HasConnection: true, HasAutoTx: true, PendingReview: 1}, facts)
 
+	// plan/30: a big card purchase read from email also waits for its installments; it counts like in the inbox
+	card := id(`INSERT INTO accounts (user_id, name, last_four_digits, bank_id, type_id, initial_balance, currency)
+VALUES ($1, 'TC RD', '3333', $2, 4, 0, 'COP') RETURNING id`, userID, supported)
+	exec(`INSERT INTO transactions (user_id, category_id, account_id, description, expense, amount, date, automated, should_verify, currency)
+VALUES ($1, $2, $3, 'nevera', true, 900000, now(), true, true, 'COP')`, userID, category, card)
+	facts, err = repo.OnboardingFacts(ctx, userID)
+	require.NoError(t, err)
+	assert.Equal(t, int64(3), facts.PendingReview, "2 por verificar + 1 pregunta de cuotas")
+	exec("DELETE FROM transactions WHERE account_id = $1", card)
+	exec("DELETE FROM accounts WHERE id = $1", card)
+
 	// steps recorded once
 	recorded, err := repo.RecordOnboardingSteps(ctx, userID, []string{domain.StepConnectEmail, domain.StepFirstAutoTx})
 	require.NoError(t, err)

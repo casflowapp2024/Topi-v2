@@ -1,13 +1,28 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircleIcon } from '@heroicons/react/20/solid';
 import Card from '../../ui/Card';
 import UnsupportedBankNotice from './UnsupportedBankNotice';
 import { getOnboardingStatus, getReadingStatus } from '../../../apiCalls/reading';
+import { emitDataChanged, onDataChanged } from '../../../lib/dataEvents';
 import { readingLine } from './readingText';
 
-// Mientras una conexión está en su primera lectura, el estado se refresca cada minuto
-const REFRESH_MS = 60 * 1000;
+// Mientras se lee por primera vez (o justo después de ligar una cuenta) el estado se pide cada 5 s, con tope:
+// así el Inicio se llena en vivo sin quedarse consultando para siempre (plan/30, bloque 2)
+export const FAST_MS = 5 * 1000;
+export const WATCH_MS = 10 * 60 * 1000;
+
+// "¡Listo!" sale solo si en esta sesión se vio el checklist sin terminar (no a quien lo terminó hace meses)
+const SEEN_KEY = 'topi_onboarding_en_curso';
+const storage = {
+    get: () => { try { return sessionStorage.getItem(SEEN_KEY) === '1'; } catch (_) { return false; } },
+    set: () => { try { sessionStorage.setItem(SEEN_KEY, '1'); } catch (_) { /* sin storage: no hay cierre */ } },
+    clear: () => { try { sessionStorage.removeItem(SEEN_KEY); } catch (_) { /* nada */ } },
+};
+
+// huella de lo leído: cambia cuando el worker procesa correos o crea movimientos
+const totals = (reading) => (reading?.connections || [])
+    .map(c => `${c.id}:${c.emails_processed || 0}:${c.transactions_created || 0}`).join('|');
 
 const STEP_TEXT = {
     connect_email: {
@@ -17,7 +32,7 @@ const STEP_TEXT = {
     },
     first_auto_tx: {
         title: 'Recibe tu primer movimiento leído',
-        detail: 'Llega solo, sin digitar nada, unos minutos después de conectar.',
+        detail: 'Llega solo, sin digitar nada, en cuanto ligues la cuenta de tu banco.',
     },
     review: {
         title: 'Revisa lo que está en Por revisar',
@@ -42,26 +57,50 @@ const TONES = {
 export const OnboardingChecklist = ({ load = getOnboardingStatus, loadReading = getReadingStatus, now = Date.now }) => {
     const [onboarding, setOnboarding] = useState(null);
     const [reading, setReading] = useState(null);
+    const [closing, setClosing] = useState(false);
+    const lastTotals = useRef(null);
+    const watchUntil = useRef(0);
+    const timer = useRef(null);
+    const alive = useRef(true);
 
     const refresh = useCallback(async () => {
         const [o, r] = await Promise.all([load().catch(() => null), loadReading().catch(() => null)]);
+        if (!alive.current) return r;
         setOnboarding(o);
         setReading(r);
+        // llegaron movimientos o correos leídos: que las demás tarjetas del Inicio se actualicen
+        if (r) {
+            const t = totals(r);
+            if (lastTotals.current !== null && t !== lastTotals.current) emitDataChanged('transactions');
+            lastTotals.current = t;
+        }
+        if (o && !o.complete) storage.set();
+        if (o?.complete && storage.get()) setClosing(true);
         return r;
     }, [load, loadReading]);
 
+    const tick = useCallback(async () => {
+        clearTimeout(timer.current);
+        const r = await refresh();
+        const firstRead = (r?.connections || []).some(c => c.reading === 'reading_first');
+        if (alive.current && (firstRead || now() < watchUntil.current)) {
+            timer.current = setTimeout(tick, FAST_MS);
+        }
+    }, [refresh, now]);
+
     useEffect(() => {
-        let alive = true;
-        let timer;
-        const tick = async () => {
-            const r = await refresh();
-            if (alive && (r?.connections || []).some(c => c.reading === 'reading_first')) {
-                timer = setTimeout(tick, REFRESH_MS);
-            }
-        };
+        alive.current = true;
         tick();
-        return () => { alive = false; clearTimeout(timer); };
-    }, [refresh]);
+        const off = onDataChanged((kind) => {
+            if (kind === 'transactions') return; // lo emite este mismo componente
+            // una cuenta o un correo nuevo arrancan una lectura: mirar de cerca un rato
+            if (kind === 'account' || kind === 'connection') watchUntil.current = now() + WATCH_MS;
+            tick();
+        });
+        return () => { alive.current = false; clearTimeout(timer.current); off(); };
+    }, [tick, now]);
+
+    const closeDone = () => { storage.clear(); setClosing(false); };
 
     const connections = reading?.connections || [];
     const silent = connections.filter(c => c.reading === 'no_transactions');
@@ -72,6 +111,27 @@ export const OnboardingChecklist = ({ load = getOnboardingStatus, loadReading = 
         <UnsupportedBankNotice key={`u${c.id}`} connection={c}
             supportedBanks={reading?.supported_banks || []} samplesAddress={reading?.samples_address || ''} />
     ));
+
+    if (onboarding?.complete && closing) {
+        return (
+            <div className="flex flex-col gap-2 lg:gap-6">
+                <Card aria-labelledby="onboarding-done-title">
+                    <div className="flex items-start gap-3">
+                        <CheckCircleIcon className="w-7 h-7 text-green-600 dark:text-green-400 shrink-0" aria-hidden="true" />
+                        <div className="flex flex-col gap-1 min-w-0">
+                            <h2 id="onboarding-done-title" className="text-base font-semibold text-gray-900 dark:text-white">¡Listo! Topi ya anota tus movimientos solo</h2>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Cada vez que tu banco te escriba, lo verás aquí. Solo revisa lo que llegue a Por revisar.</p>
+                        </div>
+                        <button type="button" onClick={closeDone}
+                            className="ml-auto shrink-0 text-sm font-medium text-topi-600 dark:text-topi-200 hover:underline">
+                            Entendido
+                        </button>
+                    </div>
+                </Card>
+                {notices}
+            </div>
+        );
+    }
 
     if (!onboarding || onboarding.complete) {
         return notices.length > 0 ? <div className="flex flex-col gap-2 lg:gap-6">{notices}</div> : null;
@@ -96,7 +156,7 @@ export const OnboardingChecklist = ({ load = getOnboardingStatus, loadReading = 
                         const text = STEP_TEXT[step.id] || { title: step.id };
                         const isNext = step.id === next;
                         const detail = step.id === 'review' && onboarding.pending_review > 0
-                            ? `Tienes ${onboarding.pending_review} movimiento${onboarding.pending_review === 1 ? '' : 's'} por revisar en el Inicio.`
+                            ? `Te ${onboarding.pending_review === 1 ? 'queda 1' : `quedan ${onboarding.pending_review}`} por revisar aquí abajo, en Por revisar.`
                             : text.detail;
                         return (
                             <li key={step.id} className={`flex gap-3 ${step.done ? 'opacity-70' : ''}`}>

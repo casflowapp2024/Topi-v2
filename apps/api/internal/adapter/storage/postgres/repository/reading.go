@@ -82,9 +82,11 @@ func (r *ReadingRepository) OnboardingFacts(ctx context.Context, userID string) 
   EXISTS (SELECT 1 FROM emails WHERE user_id = $1),
   EXISTS (SELECT 1 FROM transactions WHERE user_id = $1 AND automated),
   EXISTS (SELECT 1 FROM product_events WHERE user_id = $1 AND name = 'review_resolved'),
-  (SELECT count(*) FROM transactions WHERE user_id = $1 AND (should_verify OR needs_counterpart)),
+  (SELECT count(*) FROM transactions WHERE user_id = $1 AND (should_verify OR needs_counterpart))
+    + (SELECT count(*) FROM transactions t WHERE t.user_id = $1 AND `+domain.NeedsInstallmentsSQL("$2", "$3")+`),
   EXISTS (SELECT 1 FROM categories WHERE user_id = $1 AND budget > 0)
-    OR EXISTS (SELECT 1 FROM product_events WHERE user_id = $1 AND name = 'budget_created')`, userID).Scan(
+    OR EXISTS (SELECT 1 FROM product_events WHERE user_id = $1 AND name = 'budget_created')`,
+		userID, domain.InstallmentsFrom, domain.InstallmentPromptMin).Scan(
 		&f.HasConnection, &f.HasAutoTx, &f.ReviewResolved, &f.PendingReview, &f.HasBudget)
 	return f, mappers.MapPostgresErrorCode(err)
 }

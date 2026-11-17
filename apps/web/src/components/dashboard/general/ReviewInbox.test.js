@@ -191,3 +191,15 @@ test('Si la API falla no dice "Todo al día"', async () => {
   expect(button(el, 'Reintentar')).toBeTruthy();
   await act(async () => root.unmount());
 });
+
+// plan/30: lo que el worker crea mientras el Inicio está abierto aparece sin recargar
+test('Con la señal de movimientos nuevos, la bandeja vuelve a pedir la cola', async () => {
+  const { emitDataChanged } = require('../../../lib/dataEvents');
+  api([], []);
+  const { el, root } = await mount(state({ Fx: { net_worth: { accounts: [] } } }));
+  expect(title(el)).toBe('Por revisar');
+  api([tx(1), tx(3)], []);
+  await act(async () => { emitDataChanged('transactions'); });
+  expect(title(el)).toBe('Por revisar · 2');
+  await act(async () => root.unmount());
+});

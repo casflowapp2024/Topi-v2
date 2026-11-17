@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import moment from 'moment-timezone';
 import { connect } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +14,7 @@ import {
 } from '../../../redux/actions/cashflow';
 import { get_expenses_report, get_financial_report, get_history_dash } from '../../../redux/actions/reports';
 import { get_net_worth } from '../../../redux/actions/fx';
+import { onDataChanged } from '../../../lib/dataEvents';
 import { setAlert } from '../../../redux/actions/alert';
 import { dismiss_transfer_candidate, fetch_transfer_candidates, link_transfer } from '../../../redux/actions/transfers';
 import { fetch_credit_cards, fetch_installment_reviews, save_installments } from '../../../redux/actions/creditCards';
@@ -136,6 +137,16 @@ const ReviewInbox = ({
     get_expenses_report(`${current_Year}-${month}-01`);
     get_net_worth();
   };
+
+  // Movimientos leídos del correo mientras el Inicio está abierto (plan/30): la cola y las cifras del mes se
+  // actualizan solas, sin recargar
+  const refreshReportsRef = useRef(refreshReports);
+  refreshReportsRef.current = refreshReports;
+  useEffect(() => onDataChanged((kind) => {
+    if (kind !== 'transactions') return;
+    load();
+    refreshReportsRef.current();
+  }), [load]);
 
   // Atenúa el ítem y lo saca cuando termina la transición; ahí baja el contador
   const leave = (key, remove) => {

@@ -17,6 +17,16 @@ var InstallmentsFrom = time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC)
 // currency): asking for every purchase would fill the inbox.
 const InstallmentPromptMin = 200000
 
+// NeedsInstallmentsSQL is the condition (over transactions t) of a card purchase whose installments the inbox
+// asks about. fromParam and minParam are the placeholders of InstallmentsFrom and InstallmentPromptMin ("?" for
+// squirrel, "$n" for raw SQL); the inbox and the welcome checklist count with the same rule (plan/30 bloque 2).
+func NeedsInstallmentsSQL(fromParam, minParam string) string {
+	return `t.expense AND t.automated AND t.installments IS NULL AND t.installments_reviewed_at IS NULL
+			AND t.transfer_group_id IS NULL AND NOT t.needs_counterpart AND t.date >= ` + fromParam + `
+			AND t.account_id IN (SELECT a.id FROM accounts a JOIN account_types at ON at.id = a.type_id AND at.class = 'credit')
+			AND t.amount_base >= ` + minParam + `::numeric * fx_rate_at('COP', user_base_currency(t.user_id), t.date::date)`
+}
+
 // InstallmentFilter selects a schedule: the installments that fall in a month (the first one is the
 // purchase itself, so it is left out) or all the installments of a purchase.
 type InstallmentFilter struct {
@@ -243,11 +253,7 @@ func (f *TransactionFilters) ApplyTransactionsQueryFilters(
 	}
 
 	if f.NeedsInstallments != nil && *f.NeedsInstallments {
-		query = query.Where(`t.expense AND t.automated AND t.installments IS NULL AND t.installments_reviewed_at IS NULL
-			AND t.transfer_group_id IS NULL AND NOT t.needs_counterpart AND t.date >= ?
-			AND t.account_id IN (SELECT a.id FROM accounts a JOIN account_types at ON at.id = a.type_id AND at.class = 'credit')
-			AND t.amount_base >= ?::numeric * fx_rate_at('COP', user_base_currency(t.user_id), t.date::date)`,
-			InstallmentsFrom, InstallmentPromptMin)
+		query = query.Where(NeedsInstallmentsSQL("?", "?"), InstallmentsFrom, InstallmentPromptMin)
 	}
 
 	if f.Transfer != nil {
