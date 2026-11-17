@@ -37,7 +37,7 @@ const STEP_TEXT = {
     budget: {
         title: 'Pon tu primer presupuesto',
         detail: 'Elige una categoría, como Comida o Transporte, y cuánto quieres gastar al mes.',
-        cta: { to: '/dashboard/budgets', label: 'Crear presupuesto' },
+        cta: { to: '/dashboard?crear-presupuesto=1', label: 'Crear presupuesto' },
     },
     review: {
         title: 'Revisa tus movimientos',

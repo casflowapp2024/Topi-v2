@@ -111,7 +111,7 @@ test('Ritmo: sin presupuestos invita a crearlos y compara con el mes anterior', 
   expect(el.textContent).toContain('Gastado este mes');
   expect(el.textContent).toContain(formatMoney(600000));
   expect(el.textContent).toContain(`el mes anterior, ${formatMoney(900000)}`);
-  expect(el.querySelector('a[href="budgets"]').textContent).toBe('Crear presupuesto');
+  expect(el.querySelector('a[href="/dashboard?crear-presupuesto=1"]').textContent).toBe('Crear presupuesto'); // plan/31: sin salir del Inicio
   act(() => root.unmount());
 });
 

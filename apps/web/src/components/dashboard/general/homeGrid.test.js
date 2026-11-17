@@ -17,6 +17,7 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => () => {},
   useSearchParams: () => [new URLSearchParams(''), () => {}],
 }), { virtual: true });
+jest.mock('./BudgetQuickCreate', () => () => null);
 jest.mock('../../accounts/AccountCreate', () => ({ openCreateBox }) => (openCreateBox ? <div data-card="crear-cuenta" /> : null));
 jest.mock('./HomePaceCard', () => () => <div data-card="ritmo" />);
 jest.mock('./HomeFlowCard', () => () => <div data-card="flujo" />);

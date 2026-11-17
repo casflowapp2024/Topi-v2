@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { connect } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { get_expenses_report } from '../../../redux/actions/reports';
 import { formatMoney, capitalizeWords, getPerc0, formatDate } from '../../helpers';
 import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/20/solid';
@@ -96,7 +97,9 @@ const DashPlan = ({
                 )}
                 </>
               ) : (
-                <EmptyState compact icon={ChartPieIcon} title="Sin presupuestos este mes" description="Crea presupuestos por categoría en la pestaña Presupuestos para ver aquí cómo vas." />
+                <EmptyState compact icon={ChartPieIcon} title="Sin presupuestos este mes"
+                  description="Elige una categoría y cuánto quieres gastar al mes para ver aquí cómo vas."
+                  action={<Link to="/dashboard?crear-presupuesto=1" className="inline-flex items-center rounded-xl bg-topi-500 hover:bg-topi-600 px-3 py-1.5 text-sm font-medium text-white">Crear presupuesto</Link>} />
               )}
 
             </>

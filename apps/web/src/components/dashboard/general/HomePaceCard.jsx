@@ -89,7 +89,7 @@ const HomePaceCard = ({ history_dash, expenses_report, expenses_report_full, cur
       <>
         <Headline label={allowance ? 'Gastado este mes' : 'Gastaste'} value={formatMoney(spent)} />
         {compare && <p className="text-xs text-ink-2 dark:text-gray-400">{compare.text}</p>}
-        <Link to="budgets" className="text-xs font-medium text-topi-600 dark:text-topi-200 hover:underline">Crear presupuesto</Link>
+        <Link to="/dashboard?crear-presupuesto=1" className="text-xs font-medium text-topi-600 dark:text-topi-200 hover:underline">Crear presupuesto</Link>
       </>
     );
   }
