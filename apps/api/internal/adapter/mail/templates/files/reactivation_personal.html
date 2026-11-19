@@ -1,5 +1,9 @@
 {{define "content"}}
 {{range .paragraphs}}<p style="margin:0 0 14px 0;color:#374151;white-space:pre-line;">{{.}}</p>
-{{end}}{{if .founder}}<p style="margin:16px 0 14px 0;padding:12px 14px;background:#EEF0FE;border-radius:10px;color:#374151;">P. D.: como estuviste desde el principio, quedaste como <strong>fundador de Topi</strong>. Es nuestra forma de darte las gracias, no tienes que hacer nada.</p>
-{{end}}<p style="margin:16px 0 0 0;"><a href="{{.app_url}}" style="color:#5266EB;font-weight:600;">Abrir Topi</a></p>
+{{end}}{{if .founder}}<p style="margin:16px 0 14px 0;padding:12px 14px;background:#EEF0FE;border-radius:10px;color:#374151;">P. D.: eres <strong>fundador de Topi</strong>. Estamos en beta y, si vuelves a usarla, ese lugar es tuyo para siempre: lo que hoy es gratis sigue gratis, y cuando lancemos funciones de pago, para ti también serán gratis, de por vida.</p>
+{{end}}<p style="margin:20px 0 16px 0;">
+  <a href="{{.app_url}}/dashboard" style="display:inline-block;padding:12px 20px;background:#5266EB;color:#ffffff;border-radius:10px;font-weight:600;text-decoration:none;">Volver a Topi</a>
+</p>
+{{if .unsubscribe_url}}<p style="margin:0;color:#6b7280;font-size:13px;">¿Prefieres no saber más de Topi? <a href="{{.unsubscribe_url}}" style="color:#6b7280;">Darme de baja para siempre</a>.</p>
+{{end}}
 {{end}}

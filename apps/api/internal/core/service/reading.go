@@ -20,6 +20,14 @@ type ReadingAppService struct {
 	mail   port.MailService
 	events port.ProductEventRecorder
 	now    func() time.Time
+	// alertsSince: bank_unsupported only for connections created from then (nil = all). plan/27: the people with old
+	// connections get a personal email from the panel (Usuarios → Escribirle), not the automatic one.
+	alertsSince *time.Time
+}
+
+// SetAlertsSince limits bank_unsupported to the connections created from that moment (BANK_UNSUPPORTED_ALERT_SINCE)
+func (s *ReadingAppService) SetAlertsSince(since *time.Time) {
+	s.alertsSince = since
 }
 
 // NewReadingService creates the reading status service
@@ -65,7 +73,7 @@ func (s *ReadingAppService) ScheduleUnsupportedAlerts(ctx context.Context) (int,
 	if s.mail == nil {
 		return 0, nil
 	}
-	alerts, err := s.repo.ClaimUnsupportedAlerts(ctx, domain.UnsupportedAfter, unsupportedBatch)
+	alerts, err := s.repo.ClaimUnsupportedAlerts(ctx, domain.UnsupportedAfter, s.alertsSince, unsupportedBatch)
 	if err != nil {
 		return 0, err
 	}

@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"cash-flow/internal/core/domain"
 	"regexp"
 	"strings"
 	"testing"
@@ -16,8 +17,9 @@ var sampleData = map[string]map[string]any{
 	"connection_down": {"connection_email": "ana.banco@gmail.com", "provider": "Gmail",
 		"unsubscribe_url": "https://api.topi.test/mail/unsubscribe?t=abc"},
 	"admin_feedback": {"count": 3},
-	"reactivation_personal": {"subject": "Rehicimos Topi: ¿qué te hizo dejarla?", "founder": true,
-		"paragraphs":      []string{"Hola Ana,", "Soy JuanMa, de Topi.", "JuanMa"},
+	// the default text of the panel, as it reaches the person (preview of what friends and founders get)
+	"reactivation_personal": {"subject": domain.DefaultReactivationSubject, "founder": true,
+		"paragraphs":      domain.ReactivationDraft{Body: domain.DefaultReactivationBody}.Paragraphs("Ana"),
 		"unsubscribe_url": "https://api.topi.test/mail/unsubscribe?t=abc"},
 	"bank_unsupported": {
 		"unsubscribe_url": "https://api.topi.test/mail/unsubscribe?t=abc"},

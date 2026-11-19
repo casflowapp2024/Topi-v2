@@ -24,16 +24,25 @@ const (
 )
 
 // DefaultReactivationSubject and DefaultReactivationBody are the starting text (editable before sending)
-const DefaultReactivationSubject = "Rehicimos Topi: ¿qué te hizo dejarla?"
+const DefaultReactivationSubject = "Hace rato no te vemos en Topi"
 
 const DefaultReactivationBody = `Hola {nombre},
 
-Soy JuanMa, de Topi. Te escribo porque estuviste con nosotros desde el principio y quería contarte que rehicimos Topi desde cero: ahora lee las notificaciones de tus bancos y arma tus finanzas sin que digites nada, y si deja de leer tu correo te avisa para reconectarlo en un toque.
+Soy JuanMa, de Topi. Vi que hace rato no entras y quería escribirte yo mismo, porque fuiste de las primeras personas en confiar en Topi.
 
-Me ayudaría mucho saber: ¿qué te hizo dejar de usarla? Puedes responder este correo, lo leo yo.
+En estos meses la rehicimos desde cero. Hoy Topi:
+• Lee las notificaciones de tus bancos (Gmail u Outlook) y anota tus movimientos sola, sin que digites nada.
+• Te pregunta solo lo que no sabe clasificar, en «Por revisar».
+• Lleva tus presupuestos mes a mes, tus tarjetas de crédito con cortes y cuotas, varias monedas y tu patrimonio.
+• Te avisa si deja de leer tu correo, para reconectarlo en un toque.
 
-Gracias por haber confiado en Topi tan temprano.
+Lo que viene: avisos del día con lo importante de tus finanzas, notificaciones en el celular y poder preguntarle a Topi sobre tu dinero.
 
+Y te quiero preguntar algo: ¿por qué dejaste de usarla? ¿Qué le falta a Topi para que te sirva? Responde este correo, lo leo yo, y lo que me digas cambia lo que hacemos.
+
+Si prefieres que no te escribamos más, al final de este correo hay un enlace para darte de baja para siempre.
+
+Gracias,
 JuanMa`
 
 // Reasons why the panel cannot write to someone (the button is disabled with this reason)

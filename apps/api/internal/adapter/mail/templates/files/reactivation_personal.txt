@@ -1,8 +1,8 @@
 {{define "subject"}}{{.subject}}{{end}}
 {{define "text"}}{{range .paragraphs}}{{.}}
 
-{{end}}{{if .founder}}P. D.: como estuviste desde el principio, quedaste como fundador de Topi. Es nuestra forma de darte las gracias, no tienes que hacer nada.
+{{end}}{{if .founder}}P. D.: eres fundador de Topi. Estamos en beta y, si vuelves a usarla, ese lugar es tuyo para siempre: lo que hoy es gratis sigue gratis, y cuando lancemos funciones de pago, para ti también serán gratis, de por vida.
 
-{{end}}Topi: {{.app_url}}
+{{end}}Volver a Topi: {{.app_url}}/dashboard
 {{if .unsubscribe_url}}
-No quiero más correos personales del equipo: {{.unsubscribe_url}}{{end}}{{end}}
+Darme de baja para siempre de estos correos: {{.unsubscribe_url}}{{end}}{{end}}

@@ -18,7 +18,8 @@ type ReadingRepository interface {
 	// ClaimUnsupportedAlerts marks (unsupported_alert_at) up to limit healthy connections with linked accounts,
 	// connected at least `after` ago, without any automatic transaction, never alerted, whose user wants
 	// connection alerts; returns who to tell
-	ClaimUnsupportedAlerts(ctx context.Context, after time.Duration, limit int) ([]domain.UnsupportedAlert, error)
+	// connections created before since (nil = no limit) are left out
+	ClaimUnsupportedAlerts(ctx context.Context, after time.Duration, since *time.Time, limit int) ([]domain.UnsupportedAlert, error)
 	// StillUnsupported: the connection exists, is healthy and still has no automatic transaction
 	StillUnsupported(ctx context.Context, userID string, emailID uint64) (bool, error)
 	// OwnsBank: the bank is one of the user's

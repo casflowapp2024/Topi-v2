@@ -531,8 +531,9 @@ Variables de `topi-api` (plantilla `api.env.template`):
 
 Qué hace la API sola al desplegar:
 - Cada hora, a las conexiones sanas con cuentas ligadas y **sin ninguna transacción 48 h después de conectarse** les
-  encola una vez `bank_unsupported` (prioridad 3, respeta "avisos de conexión" y la baja). En el primer despliegue
-  saldrán a la vez las conexiones antiguas que nunca leyeron nada (en el dump de octubre eran 4).
+  encola una vez `bank_unsupported` (prioridad 3, respeta "avisos de conexión" y la baja), solo si la conexión se creó
+  desde `BANK_UNSUPPORTED_ALERT_SINCE` (poner el día del deploy). A las conexiones viejas que nunca leyeron nada (en el
+  dump de octubre eran 4) no les sale el automático: se les escribe a mano desde Usuarios → Escribirle.
 - Diagnóstico del embudo: `prod/launch-diagnostic.sh --container <pg> [AAAA-MM-DD]` (solo conteos).
 
 ---

@@ -191,12 +191,14 @@ const healthyWithoutTransactions = `e.active AND coalesce(e.error, '') = ''
   AND NOT EXISTS (SELECT 1 FROM transactions t JOIN accounts a ON a.id = t.account_id
                   WHERE a.email_id = e.id AND a.user_id = e.user_id AND t.automated)`
 
-// ClaimUnsupportedAlerts marks and returns the connections that are due for the bank_unsupported email
-func (r *ReadingRepository) ClaimUnsupportedAlerts(ctx context.Context, after time.Duration, limit int) ([]domain.UnsupportedAlert, error) {
+// ClaimUnsupportedAlerts marks and returns the connections that are due for the bank_unsupported email. since (optional)
+// leaves out the connections created before it: the old ones get a personal email from the panel instead.
+func (r *ReadingRepository) ClaimUnsupportedAlerts(ctx context.Context, after time.Duration, since *time.Time, limit int) ([]domain.UnsupportedAlert, error) {
 	rows, err := r.db.Query(ctx, `WITH due AS (
   SELECT e.id FROM emails e JOIN users u ON u.id = e.user_id
   WHERE e.unsupported_alert_at IS NULL
     AND e.created_at <= now() - make_interval(secs => $1)
+    AND ($3::timestamptz IS NULL OR e.created_at >= $3::timestamptz)
     AND `+healthyWithoutTransactions+`
     AND coalesce(u.email_status, 'ok') NOT IN ('bounced', 'complained')
     AND COALESCE((SELECT p.email_connection_alerts FROM notification_prefs p WHERE p.user_id = e.user_id), true)
@@ -206,7 +208,7 @@ func (r *ReadingRepository) ClaimUnsupportedAlerts(ctx context.Context, after ti
 UPDATE emails e SET unsupported_alert_at = now()
 FROM due, users u
 WHERE e.id = due.id AND u.id = e.user_id
-RETURNING e.id, e.user_id, u.email`, after.Seconds(), limit)
+RETURNING e.id, e.user_id, u.email`, after.Seconds(), limit, since)
 	if err != nil {
 		return nil, mappers.MapPostgresErrorCode(err)
 	}

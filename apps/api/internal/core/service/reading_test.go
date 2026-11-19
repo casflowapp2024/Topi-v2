@@ -78,7 +78,7 @@ func newReadingServiceRepo(t *testing.T) (*ReadingAppService, *mock.MockReadingR
 
 func TestReading_ScheduleUnsupportedAlerts(t *testing.T) {
 	svc, repo, mail, _ := newReadingService(t)
-	repo.EXPECT().ClaimUnsupportedAlerts(gomock.Any(), domain.UnsupportedAfter, unsupportedBatch).Return([]domain.UnsupportedAlert{
+	repo.EXPECT().ClaimUnsupportedAlerts(gomock.Any(), domain.UnsupportedAfter, (*time.Time)(nil), unsupportedBatch).Return([]domain.UnsupportedAlert{
 		{EmailID: 7, UserID: "u1", UserEmail: "ana@example.com"},
 	}, nil)
 

@@ -37,18 +37,18 @@ func (m *MockReadingRepository) EXPECT() *MockReadingRepositoryMockRecorder {
 }
 
 // ClaimUnsupportedAlerts mocks base method.
-func (m *MockReadingRepository) ClaimUnsupportedAlerts(ctx context.Context, after time.Duration, limit int) ([]domain.UnsupportedAlert, error) {
+func (m *MockReadingRepository) ClaimUnsupportedAlerts(ctx context.Context, after time.Duration, since *time.Time, limit int) ([]domain.UnsupportedAlert, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClaimUnsupportedAlerts", ctx, after, limit)
+	ret := m.ctrl.Call(m, "ClaimUnsupportedAlerts", ctx, after, since, limit)
 	ret0, _ := ret[0].([]domain.UnsupportedAlert)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ClaimUnsupportedAlerts indicates an expected call of ClaimUnsupportedAlerts.
-func (mr *MockReadingRepositoryMockRecorder) ClaimUnsupportedAlerts(ctx, after, limit interface{}) *gomock.Call {
+func (mr *MockReadingRepositoryMockRecorder) ClaimUnsupportedAlerts(ctx, after, since, limit interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClaimUnsupportedAlerts", reflect.TypeOf((*MockReadingRepository)(nil).ClaimUnsupportedAlerts), ctx, after, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClaimUnsupportedAlerts", reflect.TypeOf((*MockReadingRepository)(nil).ClaimUnsupportedAlerts), ctx, after, since, limit)
 }
 
 // ConnectionStatuses mocks base method.

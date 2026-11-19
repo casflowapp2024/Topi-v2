@@ -42,6 +42,10 @@ type (
 		// ReactivationAllowBroken lets the panel write to someone whose connection is down (REACTIVATION_ALLOW_BROKEN).
 		// Keep it false until the connection-down banner (plan/27 §D) is in production.
 		ReactivationAllowBroken bool
+		// BankAlertSince: the automatic "todavía no vemos movimientos de tu banco" email only for connections created
+		// from this date (BANK_UNSUPPORTED_ALERT_SINCE, YYYY-MM-DD; empty = all). Set it to the deploy day so the old
+		// connections get a personal email from the panel instead.
+		BankAlertSince *time.Time
 	}
 	// Metrics contains the settings of the admin panel (plan/25-admin-metricas.md)
 	Metrics struct {
@@ -285,9 +289,14 @@ func newLaunch() *Launch {
 	if limit < 0 {
 		limit = 0
 	}
+	since, err := parseCutoff(os.Getenv("BANK_UNSUPPORTED_ALERT_SINCE"))
+	if err != nil {
+		slog.Warn("BANK_UNSUPPORTED_ALERT_SINCE ignored", "error", err)
+	}
 	return &Launch{
 		ReactivationDailyLimit:  limit,
 		ReactivationAllowBroken: strings.EqualFold(strings.TrimSpace(os.Getenv("REACTIVATION_ALLOW_BROKEN")), "true"),
+		BankAlertSince:          since,
 	}
 }
 

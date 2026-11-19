@@ -229,6 +229,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 	// Launch (plan/27 §B, §C): reading status, welcome checklist and "todavía no vemos movimientos de tu banco"
 	readingService := service.NewReadingService(dbrepository.NewReadingRepository(db), mailService, productEvents)
 	mailService.SetEnricher(domain.TemplateBankUnsupported, readingService)
+	readingService.SetAlertsSince(settings.Launch.BankAlertSince)
 	readingHandler := http.NewReadingHandler(readingService)
 
 	// "¿Qué le falta a Topi?" (plan/27 §E): the team gets "hay N opiniones nuevas" at MAIL_REPLY_TO, never the text

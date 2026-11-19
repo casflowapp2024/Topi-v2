@@ -160,7 +160,7 @@ VALUES ($1, $2, $3, 'nevera', true, 900000, now(), true, true, 'COP')`, userID, 
 
 	// bank_unsupported: only the silent connection, and only once
 	claimFor := func() []uint64 {
-		alerts, err := repo.ClaimUnsupportedAlerts(ctx, domain.UnsupportedAfter, 1000)
+		alerts, err := repo.ClaimUnsupportedAlerts(ctx, domain.UnsupportedAfter, nil, 1000)
 		require.NoError(t, err)
 		var mine []uint64
 		for _, a := range alerts {
