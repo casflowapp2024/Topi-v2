@@ -35,6 +35,9 @@ type TransactionRepository interface {
 	// LinkPendingCardPayments links the card payments waiting for their other leg when exactly one
 	// expense matches; returns how many it linked
 	LinkPendingCardPayments(ctx context.Context, userID string) (int, error)
+	// LearnAccountIdentifier teaches toAccountID the digits an email transaction had when the user moved it there,
+	// and moves the other pending ones with the same digits (plan/32)
+	LearnAccountIdentifier(ctx context.Context, userID, hint string, fromBankID, toAccountID uint64) (*domain.LearnedIdentifiers, error)
 	// DismissCounterpart stops asking for the other leg of a card payment
 	DismissCounterpart(ctx context.Context, userID string, id uint64) error
 	// SuggestCounterpartAccount returns the account that most often paid into this one (nil if none)

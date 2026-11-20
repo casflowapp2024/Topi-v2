@@ -365,7 +365,7 @@ func TestAccountHandler_UpdateAccount(t *testing.T) {
 			accountID: "1",
 			requestBody: updateAccountRequest{
 				Name:           "Updated Bank",
-				LastFourDigits: "4321",
+				LastFourDigits: strPtr("4321"),
 				BankID:         2,
 				TypeID:         1,
 				InitialBalance: 200.0,
@@ -393,7 +393,7 @@ func TestAccountHandler_UpdateAccount(t *testing.T) {
 			accountID: "1",
 			requestBody: updateAccountRequest{
 				Name:           "Updated Bank",
-				LastFourDigits: "4321",
+				LastFourDigits: strPtr("4321"),
 				BankID:         2,
 				TypeID:         1,
 			},
@@ -409,7 +409,7 @@ func TestAccountHandler_UpdateAccount(t *testing.T) {
 			accountID: "invalid",
 			requestBody: updateAccountRequest{
 				Name:           "Updated Bank",
-				LastFourDigits: "4321",
+				LastFourDigits: strPtr("4321"),
 				BankID:         2,
 				TypeID:         1,
 			},
@@ -436,7 +436,7 @@ func TestAccountHandler_UpdateAccount(t *testing.T) {
 			accountID: "1",
 			requestBody: updateAccountRequest{
 				Name:           "Updated Bank",
-				LastFourDigits: "4321",
+				LastFourDigits: strPtr("4321"),
 				BankID:         2,
 				TypeID:         1,
 			},
@@ -812,3 +812,5 @@ func setupAccountAuthContext(ctx *gin.Context, userID string) {
 func uint64Ptr(v uint64) *uint64 {
 	return &v
 }
+
+func strPtr(value string) *string { return &value }

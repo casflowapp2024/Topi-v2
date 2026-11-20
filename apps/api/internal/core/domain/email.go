@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 )
@@ -58,6 +59,9 @@ type ReadEmailBodyRequest struct {
 	Provider    string            `json:"user_provider"`
 	SenderEmail string            `json:"sender_email"`
 	Accounts    map[string]string `json:"accounts"` // account_number: account_id
+	// AccountIDs: open accounts of the group that are not investments, oldest first. An email whose digits are
+	// unknown goes to the only one without review, or to the first one for review (plan/32). Old jobs lack it.
+	AccountIDs []string `json:"account_ids,omitempty"`
 	// Currencies is account_id: ISO 4217 currency. The worker marks a transaction for review
 	// (should_verify) when the email mentions another currency. Optional: old jobs do not have it.
 	Currencies map[string]string `json:"currencies,omitempty"`
@@ -75,12 +79,23 @@ func (r *ReadEmailBodyRequest) DedupeKey() string {
 	return fmt.Sprintf("%d:%s", r.EmailID, r.SenderEmail)
 }
 
+// GetAccounts: every account of the request, also the ones without digits (Classes has them all)
 func (r *ReadEmailBodyRequest) GetAccounts() []string {
-	accountIDs := make([]string, 0, len(r.Accounts))
-
-	for _, accountID := range r.Accounts {
-		accountIDs = append(accountIDs, accountID)
+	seen := make(map[string]bool, len(r.Classes)+len(r.Accounts))
+	accountIDs := make([]string, 0, len(r.Classes)+len(r.Accounts))
+	add := func(id string) {
+		if !seen[id] {
+			seen[id] = true
+			accountIDs = append(accountIDs, id)
+		}
 	}
+	for _, accountID := range r.Accounts {
+		add(accountID)
+	}
+	for accountID := range r.Classes {
+		add(accountID)
+	}
+	sort.Strings(accountIDs)
 
 	return accountIDs
 }

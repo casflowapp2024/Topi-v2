@@ -163,3 +163,45 @@ func (as *AccountService) CalculateInitialBalance(
 
 	return account, nil
 }
+
+// ListIdentifiers: the digits that recognise the account in bank emails (plan/32)
+func (as *AccountService) ListIdentifiers(ctx context.Context, userID string, accountID uint64) ([]domain.AccountIdentifier, error) {
+	if _, err := as.repo.GetAccount(ctx, userID, accountID); err != nil {
+		return nil, err
+	}
+	return as.repo.ListIdentifiers(ctx, userID, accountID)
+}
+
+// AddIdentifier: the user adds digits to an account (an additional or renewed card). Investments are not
+// recognised by digits. New digits can match emails already read, so a read is asked for.
+func (as *AccountService) AddIdentifier(
+	ctx context.Context, userID string, accountID uint64, digits string,
+) (*domain.AccountIdentifier, error) {
+	if !domain.IsAccountDigits(digits) {
+		return nil, domain.ErrInvalidAccountDigits
+	}
+	account, err := as.repo.GetAccount(ctx, userID, accountID)
+	if err != nil {
+		return nil, err
+	}
+	if account.Type.ClassOrDefault() == domain.AccountClassInvestment {
+		return nil, domain.ErrInvestmentIdentifier
+	}
+
+	identifier := &domain.AccountIdentifier{
+		UserID: userID, AccountID: accountID, Digits: digits, Source: domain.IdentifierSourceUser,
+	}
+	if err = as.repo.CreateIdentifier(ctx, identifier); err != nil {
+		return nil, err
+	}
+	if identifier.AccountID != accountID {
+		return nil, domain.ErrIdentifierTaken
+	}
+
+	as.requestRead(ctx, account)
+	return identifier, nil
+}
+
+func (as *AccountService) DeleteIdentifier(ctx context.Context, userID string, accountID, id uint64) error {
+	return as.repo.DeleteIdentifier(ctx, userID, accountID, id)
+}

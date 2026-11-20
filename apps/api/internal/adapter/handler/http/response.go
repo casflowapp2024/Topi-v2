@@ -73,6 +73,9 @@ var errorStatusMap = map[error]int{
 	domain.ErrCurrencyChangeNotUndoable: http.StatusConflict,
 	domain.ErrInvalidCreditCard:         http.StatusBadRequest,
 	domain.ErrNotCreditAccount:          http.StatusBadRequest,
+	domain.ErrIdentifierTaken:           http.StatusConflict,
+	domain.ErrInvalidAccountDigits:      http.StatusBadRequest,
+	domain.ErrInvestmentIdentifier:      http.StatusBadRequest,
 
 	// Token Errors
 	domain.ErrExpiredToken:               http.StatusUnauthorized,
@@ -599,6 +602,9 @@ type customAccountResponse struct {
 	Bank           *customBankResponse  `json:"bank,omitempty"`
 	Type           *accountTypeResponse `json:"type,omitempty"`
 	EmailID        *uint64              `json:"email_id"`
+	// Identifiers: every digits that recognise the account (plan/32); Closed accounts take no movement without digits
+	Identifiers []string `json:"identifiers"`
+	Closed      bool     `json:"closed"`
 	*customAutomationResponse
 }
 
@@ -628,6 +634,8 @@ func newAdminAccountResponse(account *domain.Account) customAccountResponse {
 		AccountClass:             account.Type.ClassOrDefault(),
 		customAutomationResponse: &automation,
 		EmailID:                  account.Email.ID,
+		Identifiers:              identifiersOrEmpty(account.Identifiers),
+		Closed:                   account.ClosedAt != nil,
 	}
 }
 
@@ -681,6 +689,25 @@ type transactionResponse struct {
 	InstallmentAmountBase *string `json:"installment_amount_base" example:"200000"`
 	// NeedsCounterpart: card payment waiting for the account it was paid from
 	NeedsCounterpart bool `json:"needs_counterpart" example:"false"`
+	// SourceAccountHint: the four digits the email had (null when none or not read from an email)
+	SourceAccountHint *string `json:"source_account_hint" example:"1234"`
+	// Learned: only in the answer of an update that moved an email transaction to another account (plan/32)
+	Learned *learnedIdentifierResponse `json:"learned_identifier,omitempty"`
+}
+
+type learnedIdentifierResponse struct {
+	// Learned: the digits now recognise the account
+	Learned bool   `json:"learned" example:"true"`
+	Digits  string `json:"digits" example:"1234"`
+	// Moved: other transactions waiting for review with the same digits that went to the account
+	Moved int `json:"moved" example:"3"`
+}
+
+func newLearnedIdentifierResponse(learned *domain.LearnedIdentifiers) *learnedIdentifierResponse {
+	if learned == nil || learned.Digits == "" {
+		return nil
+	}
+	return &learnedIdentifierResponse{Learned: learned.Learned, Digits: learned.Digits, Moved: learned.Moved}
 }
 
 // installmentAmounts is what a purchase weighs each month, if the reports spread it
@@ -745,13 +772,15 @@ func newTransactionResponse(transaction *domain.Transaction) transactionResponse
 			Bank:           newBank,
 			Type:           newType,
 		},
-		Currency:         transaction.Currency,
-		FxRate:           decimalString(transaction.FxRate),
-		FxRateSource:     transaction.FxRateSource,
-		AmountBase:       decimalString(transaction.AmountBase),
-		TransferGroupID:  transaction.TransferGroupID,
-		Installments:     transaction.Installments,
-		NeedsCounterpart: transaction.NeedsCounterpart,
+		Currency:          transaction.Currency,
+		FxRate:            decimalString(transaction.FxRate),
+		FxRateSource:      transaction.FxRateSource,
+		AmountBase:        decimalString(transaction.AmountBase),
+		TransferGroupID:   transaction.TransferGroupID,
+		Installments:      transaction.Installments,
+		NeedsCounterpart:  transaction.NeedsCounterpart,
+		SourceAccountHint: transaction.SourceAccountHint,
+		Learned:           newLearnedIdentifierResponse(transaction.Learned),
 
 		InstallmentAmount:     installmentAmount,
 		InstallmentAmountBase: installmentAmountBase,
@@ -1157,5 +1186,27 @@ func newAccountAnalysisResponse(analysis *domain.AccountAnalysis) AccountAnalysi
 			Year:    analysis.Year,
 			Month:   analysis.Month,
 		},
+	}
+}
+
+func identifiersOrEmpty(identifiers []string) []string {
+	if identifiers == nil {
+		return []string{}
+	}
+	return identifiers
+}
+
+type accountIdentifierResponse struct {
+	ID     uint64 `json:"id" example:"1"`
+	Digits string `json:"digits" example:"1234"`
+	// Source: user (typed) or learned (from the user's corrections)
+	Source    string `json:"source" example:"learned"`
+	CreatedAt string `json:"created_at" example:"2026-11-20T15:00:00Z"`
+}
+
+func newAccountIdentifierResponse(identifier domain.AccountIdentifier) accountIdentifierResponse {
+	return accountIdentifierResponse{
+		ID: identifier.ID, Digits: identifier.Digits, Source: identifier.Source,
+		CreatedAt: identifier.CreatedAt.UTC().Format(time.RFC3339),
 	}
 }

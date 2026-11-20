@@ -17,6 +17,10 @@ type AccountRepository interface {
 	UpdateAccount(ctx context.Context, account *domain.Account) error
 	DeleteAccount(ctx context.Context, userID string, id uint64) error
 	DisconnectEmail(ctx context.Context, tx pgx.Tx, userID string, emailID uint64) error
+	// Identifiers (plan/32): digits that recognise the account in bank emails
+	ListIdentifiers(ctx context.Context, userID string, accountID uint64) ([]domain.AccountIdentifier, error)
+	CreateIdentifier(ctx context.Context, identifier *domain.AccountIdentifier) error
+	DeleteIdentifier(ctx context.Context, userID string, accountID, id uint64) error
 }
 
 type AccountService interface {
@@ -27,4 +31,7 @@ type AccountService interface {
 	UpdateAccount(ctx context.Context, account *domain.Account) error
 	DeleteAccount(ctx context.Context, userID string, id uint64) error
 	CalculateInitialBalance(ctx context.Context, userID string, accountID uint64) (*domain.Account, error)
+	ListIdentifiers(ctx context.Context, userID string, accountID uint64) ([]domain.AccountIdentifier, error)
+	AddIdentifier(ctx context.Context, userID string, accountID uint64, digits string) (*domain.AccountIdentifier, error)
+	DeleteIdentifier(ctx context.Context, userID string, accountID, id uint64) error
 }

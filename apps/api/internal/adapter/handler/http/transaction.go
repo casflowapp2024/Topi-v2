@@ -384,6 +384,8 @@ type adminTransactionRequest struct {
 	SourceMessageID *string `json:"source_message_id" binding:"omitempty,max=512" example:"18c2f0a1b2c3d4e5"`
 	// CardPayment: a card payment read from an email. It waits for its other leg until it is linked.
 	CardPayment bool `json:"card_payment" binding:"omitempty" example:"false"`
+	// SourceAccountHint: the four digits the email reader saw. Anything else is ignored (plan/32).
+	SourceAccountHint string `json:"source_account_hint" binding:"omitempty" example:"1234"`
 }
 
 // AdminCreateTransactions godoc
@@ -433,6 +435,10 @@ func (ph *TransactionHandler) AdminCreateTransactions(ctx *gin.Context) {
 
 			SourceMessageID:  t.SourceMessageID,
 			NeedsCounterpart: t.CardPayment,
+		}
+		if domain.IsAccountDigits(t.SourceAccountHint) {
+			hint := t.SourceAccountHint
+			transactions[i].SourceAccountHint = &hint
 		}
 	}
 

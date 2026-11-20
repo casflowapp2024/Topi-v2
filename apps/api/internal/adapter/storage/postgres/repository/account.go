@@ -7,6 +7,7 @@ import (
 	"cash-flow/internal/mappers"
 	"cash-flow/internal/utils"
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
@@ -253,6 +254,9 @@ func (ar *AccountRepository) UpdateAccount(ctx context.Context, account *domain.
 	emailID := utils.NullPointerUint64(account.Email.ID)
 	name := utils.NullString(account.Name)
 	lastFourDigits := utils.NullString(account.LastFourDigits)
+	if account.ClearLastFourDigits {
+		lastFourDigits = sql.NullString{String: "", Valid: true}
+	}
 
 	query := ar.db.QueryBuilder.Update(enums.AccountTableName).
 		Set("bank_id", sq.Expr("COALESCE(?, bank_id)", bankID)).
@@ -348,6 +352,7 @@ func (ar *AccountRepository) AdminGetAccountsList(
 		"e.refresh_token",
 		"e.active",
 		"e.provider",
+		identifiersColumn,
 		"("+totalSQL+") as total",
 	).
 		From(enums.AccountTableName + " a").
@@ -410,6 +415,7 @@ func (ar *AccountRepository) AdminGetAccountsList(
 			&refreshToken,
 			&active,
 			&provider,
+			&account.Identifiers,
 			&account.Total,
 		)
 
@@ -487,6 +493,9 @@ func mapAccountError(err error) error {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.ConstraintName == "accounts_currency_fkey" {
 		return domain.ErrInvalidCurrency
+	}
+	if errors.As(err, &pgErr) && pgErr.ConstraintName == identifierUniqueConstraint {
+		return domain.ErrIdentifierTaken
 	}
 	return mappers.MapPostgresErrorCode(err)
 }

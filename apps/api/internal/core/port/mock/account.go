@@ -65,6 +65,20 @@ func (mr *MockAccountRepositoryMockRecorder) CreateAccount(ctx, account interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAccount", reflect.TypeOf((*MockAccountRepository)(nil).CreateAccount), ctx, account)
 }
 
+// CreateIdentifier mocks base method.
+func (m *MockAccountRepository) CreateIdentifier(ctx context.Context, identifier *domain.AccountIdentifier) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateIdentifier", ctx, identifier)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateIdentifier indicates an expected call of CreateIdentifier.
+func (mr *MockAccountRepositoryMockRecorder) CreateIdentifier(ctx, identifier interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdentifier", reflect.TypeOf((*MockAccountRepository)(nil).CreateIdentifier), ctx, identifier)
+}
+
 // DeleteAccount mocks base method.
 func (m *MockAccountRepository) DeleteAccount(ctx context.Context, userID string, id uint64) error {
 	m.ctrl.T.Helper()
@@ -77,6 +91,20 @@ func (m *MockAccountRepository) DeleteAccount(ctx context.Context, userID string
 func (mr *MockAccountRepositoryMockRecorder) DeleteAccount(ctx, userID, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAccount", reflect.TypeOf((*MockAccountRepository)(nil).DeleteAccount), ctx, userID, id)
+}
+
+// DeleteIdentifier mocks base method.
+func (m *MockAccountRepository) DeleteIdentifier(ctx context.Context, userID string, accountID, id uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteIdentifier", ctx, userID, accountID, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteIdentifier indicates an expected call of DeleteIdentifier.
+func (mr *MockAccountRepositoryMockRecorder) DeleteIdentifier(ctx, userID, accountID, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdentifier", reflect.TypeOf((*MockAccountRepository)(nil).DeleteIdentifier), ctx, userID, accountID, id)
 }
 
 // DisconnectEmail mocks base method.
@@ -123,6 +151,21 @@ func (mr *MockAccountRepositoryMockRecorder) GetAccountsList(ctx, userID, skip, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountsList", reflect.TypeOf((*MockAccountRepository)(nil).GetAccountsList), ctx, userID, skip, limit, accountTypes)
 }
 
+// ListIdentifiers mocks base method.
+func (m *MockAccountRepository) ListIdentifiers(ctx context.Context, userID string, accountID uint64) ([]domain.AccountIdentifier, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListIdentifiers", ctx, userID, accountID)
+	ret0, _ := ret[0].([]domain.AccountIdentifier)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListIdentifiers indicates an expected call of ListIdentifiers.
+func (mr *MockAccountRepositoryMockRecorder) ListIdentifiers(ctx, userID, accountID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIdentifiers", reflect.TypeOf((*MockAccountRepository)(nil).ListIdentifiers), ctx, userID, accountID)
+}
+
 // UpdateAccount mocks base method.
 func (m *MockAccountRepository) UpdateAccount(ctx context.Context, account *domain.Account) error {
 	m.ctrl.T.Helper()
@@ -158,6 +201,21 @@ func NewMockAccountService(ctrl *gomock.Controller) *MockAccountService {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockAccountService) EXPECT() *MockAccountServiceMockRecorder {
 	return m.recorder
+}
+
+// AddIdentifier mocks base method.
+func (m *MockAccountService) AddIdentifier(ctx context.Context, userID string, accountID uint64, digits string) (*domain.AccountIdentifier, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddIdentifier", ctx, userID, accountID, digits)
+	ret0, _ := ret[0].(*domain.AccountIdentifier)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddIdentifier indicates an expected call of AddIdentifier.
+func (mr *MockAccountServiceMockRecorder) AddIdentifier(ctx, userID, accountID, digits interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddIdentifier", reflect.TypeOf((*MockAccountService)(nil).AddIdentifier), ctx, userID, accountID, digits)
 }
 
 // AdminGetAccounts mocks base method.
@@ -218,6 +276,20 @@ func (mr *MockAccountServiceMockRecorder) DeleteAccount(ctx, userID, id interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAccount", reflect.TypeOf((*MockAccountService)(nil).DeleteAccount), ctx, userID, id)
 }
 
+// DeleteIdentifier mocks base method.
+func (m *MockAccountService) DeleteIdentifier(ctx context.Context, userID string, accountID, id uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteIdentifier", ctx, userID, accountID, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteIdentifier indicates an expected call of DeleteIdentifier.
+func (mr *MockAccountServiceMockRecorder) DeleteIdentifier(ctx, userID, accountID, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdentifier", reflect.TypeOf((*MockAccountService)(nil).DeleteIdentifier), ctx, userID, accountID, id)
+}
+
 // GetAccount mocks base method.
 func (m *MockAccountService) GetAccount(ctx context.Context, userID string, id uint64) (*domain.Account, error) {
 	m.ctrl.T.Helper()
@@ -246,6 +318,21 @@ func (m *MockAccountService) GetAccounts(ctx context.Context, userID string, ski
 func (mr *MockAccountServiceMockRecorder) GetAccounts(ctx, userID, skip, limit, filter interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccounts", reflect.TypeOf((*MockAccountService)(nil).GetAccounts), ctx, userID, skip, limit, filter)
+}
+
+// ListIdentifiers mocks base method.
+func (m *MockAccountService) ListIdentifiers(ctx context.Context, userID string, accountID uint64) ([]domain.AccountIdentifier, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListIdentifiers", ctx, userID, accountID)
+	ret0, _ := ret[0].([]domain.AccountIdentifier)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListIdentifiers indicates an expected call of ListIdentifiers.
+func (mr *MockAccountServiceMockRecorder) ListIdentifiers(ctx, userID, accountID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIdentifiers", reflect.TypeOf((*MockAccountService)(nil).ListIdentifiers), ctx, userID, accountID)
 }
 
 // UpdateAccount mocks base method.

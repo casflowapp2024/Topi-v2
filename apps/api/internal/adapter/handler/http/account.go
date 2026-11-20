@@ -20,8 +20,10 @@ func NewAccountHandler(svc port.AccountService) *AccountHandler {
 }
 
 type createAccountRequest struct {
-	Name           string  `json:"name" binding:"required" example:"Bancolombia Savings"`
-	LastFourDigits string  `json:"last_four_digits" binding:"required,four_digits" example:"1234"`
+	Name string `json:"name" binding:"required" example:"Bancolombia Savings"`
+	// LastFourDigits are optional (plan/32): without them Topi recognises the account by its bank and learns the
+	// digits from the user's corrections
+	LastFourDigits string  `json:"last_four_digits" binding:"omitempty,four_digits" example:"1234"`
 	BankID         uint64  `json:"bank_id" binding:"required" example:"1"`
 	TypeID         uint64  `json:"type_id" binding:"required,account_type" example:"12"`
 	InitialBalance float64 `json:"initial_balance" example:"0.01"`
@@ -178,8 +180,9 @@ func (ah *AccountHandler) GetAccounts(ctx *gin.Context) {
 }
 
 type updateAccountRequest struct {
-	Name           string  `json:"name" binding:"required" example:"Bancolombia Savings"`
-	LastFourDigits string  `json:"last_four_digits" binding:"required,four_digits" example:"1234"`
+	Name string `json:"name" binding:"required" example:"Bancolombia Savings"`
+	// LastFourDigits: missing keeps the typed number, "" removes it
+	LastFourDigits *string `json:"last_four_digits" binding:"omitempty" example:"1234"`
 	BankID         uint64  `json:"bank_id" binding:"required" example:"1"`
 	TypeID         uint64  `json:"type_id" binding:"required,account_type" example:"12"`
 	InitialBalance float64 `json:"initial_balance" example:"0.01"`
@@ -223,16 +226,26 @@ func (ah *AccountHandler) UpdateAccount(ctx *gin.Context) {
 		return
 	}
 
+	var digits string
+	if req.LastFourDigits != nil {
+		digits = *req.LastFourDigits
+		if digits != "" && !domain.IsAccountDigits(digits) {
+			handleError(ctx, domain.ErrInvalidAccountDigits)
+			return
+		}
+	}
+
 	account := &domain.Account{
-		ID:             id,
-		UserID:         *userID,
-		Name:           req.Name,
-		LastFourDigits: req.LastFourDigits,
-		InitialBalance: req.InitialBalance,
-		Currency:       req.Currency,
-		Bank:           domain.Bank{ID: req.BankID},
-		Type:           domain.AccountType{ID: req.TypeID},
-		Email:          domain.Email{ID: req.EmailID},
+		ID:                  id,
+		UserID:              *userID,
+		Name:                req.Name,
+		LastFourDigits:      digits,
+		ClearLastFourDigits: req.LastFourDigits != nil && digits == "",
+		InitialBalance:      req.InitialBalance,
+		Currency:            req.Currency,
+		Bank:                domain.Bank{ID: req.BankID},
+		Type:                domain.AccountType{ID: req.TypeID},
+		Email:               domain.Email{ID: req.EmailID},
 	}
 
 	err = ah.svc.UpdateAccount(ctx, account)

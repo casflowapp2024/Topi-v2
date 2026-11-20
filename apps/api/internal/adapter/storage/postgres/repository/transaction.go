@@ -20,11 +20,11 @@ import (
 // Explicit (not "*") so adding columns to the table does not break the scans.
 const transactionColumns = "id, user_id, category_id, account_id, description, expense, amount, date, " +
 	"automated, should_verify, checked, created_at, updated_at, raw_description, " +
-	"currency, fx_rate::text, fx_rate_source, amount_base::text, transfer_group_id::text, installments, needs_counterpart"
+	"currency, fx_rate::text, fx_rate_source, amount_base::text, transfer_group_id::text, installments, needs_counterpart, source_account_hint"
 
 const transactionColumnsT = "t.id, t.user_id, t.category_id, t.account_id, t.description, t.expense, t.amount, t.date, " +
 	"t.automated, t.should_verify, t.checked, t.created_at, t.updated_at, t.raw_description, " +
-	"t.currency, t.fx_rate::text, t.fx_rate_source, t.amount_base::text, t.transfer_group_id::text, t.installments, t.needs_counterpart"
+	"t.currency, t.fx_rate::text, t.fx_rate_source, t.amount_base::text, t.transfer_group_id::text, t.installments, t.needs_counterpart, t.source_account_hint"
 
 // TransactionRepository implements port.TransactionRepository interface
 // and provides access to the postgres database
@@ -93,6 +93,7 @@ func (tr *TransactionRepository) CreateTransaction(
 		&transaction.TransferGroupID,
 		&transaction.Installments,
 		&transaction.NeedsCounterpart,
+		&transaction.SourceAccountHint,
 	)
 
 	if err != nil {
@@ -148,6 +149,7 @@ func (tr *TransactionRepository) GetTransactionByID(
 		&transaction.TransferGroupID,
 		&transaction.Installments,
 		&transaction.NeedsCounterpart,
+		&transaction.SourceAccountHint,
 		&transaction.Category.Name,
 		&transaction.Category.Emoji,
 		&transaction.Account.Name,
@@ -254,6 +256,7 @@ func (tr *TransactionRepository) ListTransactions(
 			&transaction.TransferGroupID,
 			&transaction.Installments,
 			&transaction.NeedsCounterpart,
+			&transaction.SourceAccountHint,
 			&transaction.Category.Name,
 			&transaction.Category.Emoji,
 			&transaction.Account.Name,
@@ -389,6 +392,7 @@ func (tr *TransactionRepository) UpdateTransaction(ctx context.Context, transact
 		&transaction.TransferGroupID,
 		&transaction.Installments,
 		&transaction.NeedsCounterpart,
+		&transaction.SourceAccountHint,
 	)
 
 	if err != nil {
@@ -469,6 +473,7 @@ func (tr *TransactionRepository) AdminCreateTransactions(
 				"checked",
 				"source_message_id",
 				"needs_counterpart",
+				"source_account_hint",
 			).
 			Values(
 				transaction.UserID,
@@ -484,6 +489,7 @@ func (tr *TransactionRepository) AdminCreateTransactions(
 				transaction.Checked,
 				transaction.SourceMessageID,
 				transaction.NeedsCounterpart,
+				transaction.SourceAccountHint,
 			).
 			Suffix("ON CONFLICT (user_id, source_message_id) WHERE source_message_id IS NOT NULL DO NOTHING " +
 				"RETURNING " + transactionColumns + ", source_message_id")
@@ -516,6 +522,7 @@ func (tr *TransactionRepository) AdminCreateTransactions(
 			&created.TransferGroupID,
 			&created.Installments,
 			&created.NeedsCounterpart,
+			&created.SourceAccountHint,
 			&created.SourceMessageID,
 		)
 		if errors.Is(err, pgx.ErrNoRows) {

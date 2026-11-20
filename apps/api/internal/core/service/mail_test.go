@@ -29,7 +29,7 @@ type fakeOutbox struct {
 	sentToday int               // emails sent before the test (quota)
 	// markSentErr fails MarkSent while it carries a provider id (clash on the unique index)
 	markSentErr error
-	now       func() time.Time
+	now         func() time.Time
 }
 
 func newFakeOutbox(now func() time.Time) *fakeOutbox {
@@ -271,7 +271,6 @@ func newMailFixture(t *testing.T, settings MailSettings) *mailFixture {
 	f.svc.now = now
 	return f
 }
-
 
 func (f *mailFixture) enqueue(t *testing.T, template string, priority int16, to string) int64 {
 	t.Helper()

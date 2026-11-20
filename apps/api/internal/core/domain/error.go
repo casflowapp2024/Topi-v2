@@ -106,6 +106,12 @@ var (
 	ErrInvalidCreditCard = errors.New("invalid credit card: days 1-31, limit and rate of zero or more")
 	// ErrNotCreditAccount is an error for when card terms are set on an account that is not a credit card
 	ErrNotCreditAccount = errors.New("only credit card accounts have card terms")
+	// ErrIdentifierTaken is an error for when the digits already recognise another account of the same bank
+	ErrIdentifierTaken = errors.New("those digits already belong to another account of the bank")
+	// ErrInvalidAccountDigits is an error for when the account digits are not exactly four numbers
+	ErrInvalidAccountDigits = errors.New("the account digits must be four numbers")
+	// ErrInvestmentIdentifier is an error for when digits are added to an investment account
+	ErrInvestmentIdentifier = errors.New("investment accounts are not recognised by digits")
 )
 
 // Account Type Errors

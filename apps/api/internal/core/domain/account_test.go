@@ -2,6 +2,7 @@ package domain
 
 import (
 	"testing"
+	"time"
 
 	"cash-flow/internal/enums"
 
@@ -245,13 +246,13 @@ func TestAccounts_BuildReadEmailRequests_GroupsBySender(t *testing.T) {
 	if assert.Len(t, requests, 2) {
 		assert.Equal(t, ReadEmailBodyRequest{
 			UserID: "u1", Email: "u1@gmail.com", EmailID: 7, Provider: "gmail", SenderEmail: bancolombia,
-			Accounts: map[string]string{"1111": "1", "2222": "2"}, Currencies: map[string]string{"1": "COP", "2": "COP"},
+			Accounts: map[string]string{"1111": "1", "2222": "2"}, AccountIDs: []string{"1", "2"}, Currencies: map[string]string{"1": "COP", "2": "COP"},
 			Classes: map[string]string{"1": "deposit", "2": "deposit"}, Onboarding: true,
 		}, requests[0])
 		// before the fix the second group reused the first account's connection and all accounts
 		assert.Equal(t, ReadEmailBodyRequest{
 			UserID: "u1", Email: "u1@outlook.com", EmailID: 9, Provider: "outlook", SenderEmail: nubank,
-			Accounts: map[string]string{"3333": "3"}, Currencies: map[string]string{"3": "COP"},
+			Accounts: map[string]string{"3333": "3"}, AccountIDs: []string{"3"}, Currencies: map[string]string{"3": "COP"},
 			Classes: map[string]string{"3": "deposit"}, Onboarding: true,
 			Verify: true, // plan/30: a bank the user typed goes to Por revisar
 		}, requests[1])
@@ -269,4 +270,49 @@ func TestAccount_ChangesReading(t *testing.T) {
 	assert.True(t, (&Account{Bank: Bank{ID: 1}, LastFourDigits: "0000", Email: Email{ID: &one}}).ChangesReading(before))
 	assert.True(t, (&Account{Bank: Bank{ID: 1}, Email: Email{ID: &one}}).ChangesReading(&Account{Bank: Bank{ID: 1}}))
 	assert.False(t, (&Account{Bank: Bank{ID: 3}}).ChangesReading(before), "sin correo no hay qué leer")
+}
+
+func TestAccounts_BuildReadEmailRequests_Identifiers(t *testing.T) {
+	emailID := uint64(7)
+	sender := "alertas@banco.com"
+	closed := time.Now()
+	base := Account{UserID: "u1", Bank: Bank{ID: 4, Name: "Banco", Email: &sender}, Email: Email{ID: &emailID, Email: "u1@gmail.com"}}
+	card, renewed, noDigits, investment, closedAccount := base, base, base, base, base
+	card.ID, card.Type, card.LastFourDigits = 5, AccountType{Class: AccountClassCredit}, "1111"
+	card.Identifiers = []string{"1111", "2222"}                           // an additional card learned
+	renewed.ID, renewed.Type = 3, AccountType{Class: AccountClassDeposit} // no digits typed
+	noDigits.ID, noDigits.Type, noDigits.Identifiers = 4, AccountType{Class: AccountClassDeposit}, []string{}
+	investment.ID, investment.Type, investment.Identifiers = 6, AccountType{Class: AccountClassInvestment}, []string{"9999"}
+	closedAccount.ID, closedAccount.Type, closedAccount.ClosedAt = 7, AccountType{Class: AccountClassDeposit}, &closed
+
+	requests := Accounts{card, renewed, noDigits, investment, closedAccount}.BuildReadEmailRequests()
+
+	if assert.Len(t, requests, 1) {
+		// no "" key (an email without digits must not match an account without them) and no investments
+		assert.Equal(t, map[string]string{"1111": "5", "2222": "5"}, requests[0].Accounts)
+		// open accounts that are not investments, oldest first
+		assert.Equal(t, []string{"3", "4", "5"}, requests[0].AccountIDs)
+		assert.Equal(t, []string{"3", "4", "5", "6", "7"}, requests[0].GetAccounts())
+	}
+}
+
+func TestAccounts_SameReadAs(t *testing.T) {
+	gmail, outlook := uint64(1), uint64(2)
+	accounts := Accounts{
+		{ID: 10, Bank: Bank{ID: 1}, Email: Email{ID: &gmail}},
+		{ID: 11, Bank: Bank{ID: 1}, Email: Email{ID: &gmail}},
+		{ID: 12, Bank: Bank{ID: 2}, Email: Email{ID: &gmail}},
+		{ID: 13, Bank: Bank{ID: 1}, Email: Email{ID: &outlook}},
+		{ID: 14, Bank: Bank{ID: 1}},
+	}
+	assert.Equal(t, []uint64{10, 11}, accounts.SameReadAs([]uint64{11}))
+	assert.Equal(t, []uint64{14}, accounts.SameReadAs([]uint64{14}))
+	assert.Equal(t, []uint64{10, 11, 12}, accounts.SameReadAs([]uint64{10, 12}))
+}
+
+func TestAccount_ClearLastFourDigits(t *testing.T) {
+	clear := &Account{Name: "Visa", ClearLastFourDigits: true}
+	assert.False(t, clear.IsEmpty())
+	assert.False(t, clear.IsSame(&Account{Name: "Visa", LastFourDigits: "1234"}))
+	assert.True(t, (&Account{ClearLastFourDigits: true}).IsSame(&Account{})) // nothing to clear
 }

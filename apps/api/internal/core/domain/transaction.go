@@ -87,6 +87,11 @@ type Transaction struct {
 	// NeedsCounterpart: a card payment read from an email whose outgoing leg is still missing. It
 	// already counts as a transfer; the app asks the user which account paid.
 	NeedsCounterpart bool
+	// SourceAccountHint: the four digits the email reader saw (nil = none). Moving the transaction to another
+	// account teaches that account those digits (plan/32 bloque C).
+	SourceAccountHint *string
+	// Learned is what the last update learned from the correction (only set by UpdateTransaction)
+	Learned *LearnedIdentifiers
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

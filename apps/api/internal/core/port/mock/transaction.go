@@ -107,35 +107,6 @@ func (mr *MockTransactionRepositoryMockRecorder) DeleteTransaction(ctx, id, user
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTransaction", reflect.TypeOf((*MockTransactionRepository)(nil).DeleteTransaction), ctx, id, userID)
 }
 
-// SetInstallments mocks base method.
-func (m *MockTransactionRepository) SetInstallments(ctx context.Context, userID string, id uint64, installments int16) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetInstallments", ctx, userID, id, installments)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetInstallments indicates an expected call of SetInstallments.
-func (mr *MockTransactionRepositoryMockRecorder) SetInstallments(ctx, userID, id, installments interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetInstallments", reflect.TypeOf((*MockTransactionRepository)(nil).SetInstallments), ctx, userID, id, installments)
-}
-
-// ListInstallments mocks base method.
-func (m *MockTransactionRepository) ListInstallments(ctx context.Context, userID string, filter domain.InstallmentFilter) ([]domain.Installment, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListInstallments", ctx, userID, filter)
-	ret0, _ := ret[0].([]domain.Installment)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListInstallments indicates an expected call of ListInstallments.
-func (mr *MockTransactionRepositoryMockRecorder) ListInstallments(ctx, userID, filter interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListInstallments", reflect.TypeOf((*MockTransactionRepository)(nil).ListInstallments), ctx, userID, filter)
-}
-
 // DismissCounterpart mocks base method.
 func (m *MockTransactionRepository) DismissCounterpart(ctx context.Context, userID string, id uint64) error {
 	m.ctrl.T.Helper()
@@ -179,6 +150,21 @@ func (mr *MockTransactionRepositoryMockRecorder) GetTransactionByID(ctx, userID,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionByID", reflect.TypeOf((*MockTransactionRepository)(nil).GetTransactionByID), ctx, userID, id)
 }
 
+// LearnAccountIdentifier mocks base method.
+func (m *MockTransactionRepository) LearnAccountIdentifier(ctx context.Context, userID, hint string, fromBankID, toAccountID uint64) (*domain.LearnedIdentifiers, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LearnAccountIdentifier", ctx, userID, hint, fromBankID, toAccountID)
+	ret0, _ := ret[0].(*domain.LearnedIdentifiers)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LearnAccountIdentifier indicates an expected call of LearnAccountIdentifier.
+func (mr *MockTransactionRepositoryMockRecorder) LearnAccountIdentifier(ctx, userID, hint, fromBankID, toAccountID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LearnAccountIdentifier", reflect.TypeOf((*MockTransactionRepository)(nil).LearnAccountIdentifier), ctx, userID, hint, fromBankID, toAccountID)
+}
+
 // LinkPendingCardPayments mocks base method.
 func (m *MockTransactionRepository) LinkPendingCardPayments(ctx context.Context, userID string) (int, error) {
 	m.ctrl.T.Helper()
@@ -206,6 +192,21 @@ func (m *MockTransactionRepository) LinkTransactions(ctx context.Context, link *
 func (mr *MockTransactionRepositoryMockRecorder) LinkTransactions(ctx, link interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkTransactions", reflect.TypeOf((*MockTransactionRepository)(nil).LinkTransactions), ctx, link)
+}
+
+// ListInstallments mocks base method.
+func (m *MockTransactionRepository) ListInstallments(ctx context.Context, userID string, filter domain.InstallmentFilter) ([]domain.Installment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListInstallments", ctx, userID, filter)
+	ret0, _ := ret[0].([]domain.Installment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListInstallments indicates an expected call of ListInstallments.
+func (mr *MockTransactionRepositoryMockRecorder) ListInstallments(ctx, userID, filter interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListInstallments", reflect.TypeOf((*MockTransactionRepository)(nil).ListInstallments), ctx, userID, filter)
 }
 
 // ListTransactions mocks base method.
@@ -248,6 +249,20 @@ func (m *MockTransactionRepository) PredictTransactionCategory(ctx context.Conte
 func (mr *MockTransactionRepositoryMockRecorder) PredictTransactionCategory(ctx, descriptions, cpr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PredictTransactionCategory", reflect.TypeOf((*MockTransactionRepository)(nil).PredictTransactionCategory), ctx, descriptions, cpr)
+}
+
+// SetInstallments mocks base method.
+func (m *MockTransactionRepository) SetInstallments(ctx context.Context, userID string, id uint64, installments int16) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetInstallments", ctx, userID, id, installments)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetInstallments indicates an expected call of SetInstallments.
+func (mr *MockTransactionRepositoryMockRecorder) SetInstallments(ctx, userID, id, installments interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetInstallments", reflect.TypeOf((*MockTransactionRepository)(nil).SetInstallments), ctx, userID, id, installments)
 }
 
 // SuggestCounterpartAccount mocks base method.
@@ -373,35 +388,6 @@ func (mr *MockTransactionServiceMockRecorder) DeleteTransaction(ctx, userID, id 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTransaction", reflect.TypeOf((*MockTransactionService)(nil).DeleteTransaction), ctx, userID, id)
 }
 
-// SetInstallments mocks base method.
-func (m *MockTransactionService) SetInstallments(ctx context.Context, userID string, id uint64, installments int16) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetInstallments", ctx, userID, id, installments)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetInstallments indicates an expected call of SetInstallments.
-func (mr *MockTransactionServiceMockRecorder) SetInstallments(ctx, userID, id, installments interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetInstallments", reflect.TypeOf((*MockTransactionService)(nil).SetInstallments), ctx, userID, id, installments)
-}
-
-// ListInstallments mocks base method.
-func (m *MockTransactionService) ListInstallments(ctx context.Context, userID string, filter domain.InstallmentFilter) ([]domain.Installment, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListInstallments", ctx, userID, filter)
-	ret0, _ := ret[0].([]domain.Installment)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListInstallments indicates an expected call of ListInstallments.
-func (mr *MockTransactionServiceMockRecorder) ListInstallments(ctx, userID, filter interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListInstallments", reflect.TypeOf((*MockTransactionService)(nil).ListInstallments), ctx, userID, filter)
-}
-
 // DismissCounterpart mocks base method.
 func (m *MockTransactionService) DismissCounterpart(ctx context.Context, userID string, id uint64) error {
 	m.ctrl.T.Helper()
@@ -459,6 +445,21 @@ func (mr *MockTransactionServiceMockRecorder) LinkTransfer(ctx, link interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkTransfer", reflect.TypeOf((*MockTransactionService)(nil).LinkTransfer), ctx, link)
 }
 
+// ListInstallments mocks base method.
+func (m *MockTransactionService) ListInstallments(ctx context.Context, userID string, filter domain.InstallmentFilter) ([]domain.Installment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListInstallments", ctx, userID, filter)
+	ret0, _ := ret[0].([]domain.Installment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListInstallments indicates an expected call of ListInstallments.
+func (mr *MockTransactionServiceMockRecorder) ListInstallments(ctx, userID, filter interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListInstallments", reflect.TypeOf((*MockTransactionService)(nil).ListInstallments), ctx, userID, filter)
+}
+
 // ListTransactions mocks base method.
 func (m *MockTransactionService) ListTransactions(ctx context.Context, filters domain.TransactionFilters) ([]domain.Transaction, error) {
 	m.ctrl.T.Helper()
@@ -487,6 +488,20 @@ func (m *MockTransactionService) ListTransferCandidates(ctx context.Context, use
 func (mr *MockTransactionServiceMockRecorder) ListTransferCandidates(ctx, userID, limit interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTransferCandidates", reflect.TypeOf((*MockTransactionService)(nil).ListTransferCandidates), ctx, userID, limit)
+}
+
+// SetInstallments mocks base method.
+func (m *MockTransactionService) SetInstallments(ctx context.Context, userID string, id uint64, installments int16) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetInstallments", ctx, userID, id, installments)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetInstallments indicates an expected call of SetInstallments.
+func (mr *MockTransactionServiceMockRecorder) SetInstallments(ctx, userID, id, installments interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetInstallments", reflect.TypeOf((*MockTransactionService)(nil).SetInstallments), ctx, userID, id, installments)
 }
 
 // SuggestCounterpartAccount mocks base method.

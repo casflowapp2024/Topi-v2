@@ -220,9 +220,11 @@ func (e *EmailService) ReadEmail(ctx context.Context, userID string, accountIDs 
 		return nil, err
 	}
 
-	// Call AdminGetAccountsList to extract the required information
+	// Call AdminGetAccountsList to extract the required information. The job carries every account of the same
+	// connection and bank, not only the requested ones: an email without known digits goes to the only account
+	// of the bank without review, which is right only when the job knows them all (plan/32)
 	filters := domain.AccountFilters{
-		IDs:   accountIDs,
+		IDs:   domain.Accounts(userAccounts).SameReadAs(accountIDs),
 		Skip:  0,
 		Limit: 100,
 	}

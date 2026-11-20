@@ -39,6 +39,8 @@ const (
 	ProductEventBankSampleRequested = "bank_sample_requested"
 	// ProductEventFeedbackSent: the user sent "¿Qué le falta a Topi?" (no text in the event, plan/27 §E)
 	ProductEventFeedbackSent = "feedback_sent"
+	// ProductEventIdentifierLearned: moving an email transaction taught its account the digits (plan/32; no digits)
+	ProductEventIdentifierLearned = "account_identifier_learned"
 )
 
 // Kinds of review_resolved (what was waiting in Por revisar)
@@ -62,6 +64,7 @@ var productEventProps = map[string]map[string]propKind{
 	ProductEventOnboardingStep:        {"step": propEnum},
 	ProductEventBankSampleRequested:   {"bank_id": propID},
 	ProductEventFeedbackSent:          {},
+	ProductEventIdentifierLearned:     {"moved": propBool},
 	ProductEventSupportStarted:        {},
 	ProductEventSupportApproved:       {},
 }

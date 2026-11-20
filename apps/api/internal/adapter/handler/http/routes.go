@@ -144,6 +144,9 @@ func (r *Routes) AccountsRoutes() {
 		AuthAccounts.GET("/:id/credit-card", r.CreditCardHandler.GetCreditCard)
 		AuthAccounts.PUT("/:id/credit-card", r.CreditCardHandler.SaveCreditCard)
 		AuthAccounts.GET("/:id/credit-card/cycles", r.CreditCardHandler.ListCreditCardCycles)
+		AuthAccounts.GET("/:id/identifiers", r.AccountHandler.ListIdentifiers)
+		AuthAccounts.POST("/:id/identifiers", r.AccountHandler.AddIdentifier)
+		AuthAccounts.DELETE("/:id/identifiers/:identifier_id", r.AccountHandler.DeleteIdentifier)
 	}
 
 	// worker only (X-API-Key)

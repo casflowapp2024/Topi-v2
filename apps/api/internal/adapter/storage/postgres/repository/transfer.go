@@ -74,6 +74,7 @@ func insertTransferLeg(ctx context.Context, tx pgx.Tx, leg transferLeg) (domain.
 		&created.TransferGroupID,
 		&created.Installments,
 		&created.NeedsCounterpart,
+		&created.SourceAccountHint,
 	)
 	return created, mappers.MapPostgresErrorCode(err)
 }

@@ -88,14 +88,35 @@ func (ts *TransactionService) UpdateTransaction(ctx context.Context, transaction
 		return domain.ErrNoUpdatedData
 	}
 
+	movedTo := transaction.Account.ID
+
 	err = ts.repo.UpdateTransaction(ctx, transaction)
 	if err != nil {
 		return err
 	}
 
 	ts.emitUpdateEvents(ctx, actualTransaction, transaction)
+	transaction.Learned = ts.learnIdentifier(ctx, actualTransaction, movedTo)
 
 	return nil
+}
+
+// learnIdentifier: an email transaction moved to another account teaches that account the digits the email had
+// (plan/32 bloque C). The update is already stored: a failure here only means nothing was learned.
+func (ts *TransactionService) learnIdentifier(ctx context.Context, actual *domain.Transaction, movedTo uint64) *domain.LearnedIdentifiers {
+	if !actual.Automated || actual.SourceAccountHint == nil || movedTo == 0 || movedTo == actual.Account.ID {
+		return nil
+	}
+	learned, err := ts.repo.LearnAccountIdentifier(ctx, actual.UserID, *actual.SourceAccountHint, actual.Account.Bank.ID, movedTo)
+	if err != nil {
+		slog.Error("learning the account digits", "transaction_id", actual.ID, "error", err)
+		return nil
+	}
+	if learned.Learned {
+		emit(ctx, ts.events, domain.ProductEvent{UserID: actual.UserID, Name: domain.ProductEventIdentifierLearned,
+			Props: map[string]any{"moved": learned.Moved > 0}})
+	}
+	return learned
 }
 
 // emitUpdateEvents: the user corrected what the email reader wrote (category or amount), or opened a

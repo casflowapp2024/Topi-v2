@@ -141,9 +141,7 @@ func lowercaseValidator(fl validator.FieldLevel) bool {
 }
 
 func lastFourDigitsValidator(fl validator.FieldLevel) bool {
-	number := fl.Field().String()
-	length := len(number)
-	return length == 4
+	return domain.IsAccountDigits(fl.Field().String())
 }
 
 func validateTimeFormat(fl validator.FieldLevel) bool {
