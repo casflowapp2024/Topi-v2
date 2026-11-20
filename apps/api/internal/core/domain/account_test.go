@@ -284,11 +284,12 @@ func TestAccounts_BuildReadEmailRequests_Identifiers(t *testing.T) {
 	noDigits.ID, noDigits.Type, noDigits.Identifiers = 4, AccountType{Class: AccountClassDeposit}, []string{}
 	investment.ID, investment.Type, investment.Identifiers = 6, AccountType{Class: AccountClassInvestment}, []string{"9999"}
 	closedAccount.ID, closedAccount.Type, closedAccount.ClosedAt = 7, AccountType{Class: AccountClassDeposit}, &closed
+	closedAccount.Identifiers = []string{"7777"}
 
 	requests := Accounts{card, renewed, noDigits, investment, closedAccount}.BuildReadEmailRequests()
 
 	if assert.Len(t, requests, 1) {
-		// no "" key (an email without digits must not match an account without them) and no investments
+		// no "" key (an email without digits must not match an account without them), no investments, no closed
 		assert.Equal(t, map[string]string{"1111": "5", "2222": "5"}, requests[0].Accounts)
 		// open accounts that are not investments, oldest first
 		assert.Equal(t, []string{"3", "4", "5"}, requests[0].AccountIDs)

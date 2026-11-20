@@ -19,7 +19,7 @@ def transform_automations_msgs(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Agrupa las cuentas de `/accounts/admin/list` por (correo del usuario, remitente) y arma el
     payload de cada job (el mismo contrato que usaba la cola de AWS). Lógica original de general_utils.
 
-    plan/32: `accounts` va de cada identificador (dígitos) a su cuenta, sin "" ni inversiones; `account_ids` son las
+    plan/32: `accounts` va de cada identificador (dígitos) a su cuenta, sin "", inversiones ni cerradas; `account_ids` son las
     cuentas abiertas que no son inversión, de la más antigua a la más nueva (las candidatas sin dígitos conocidos)."""
     result = []
     user_accounts = data.get("data", {}).get("user_accounts", {})
@@ -56,11 +56,11 @@ def transform_automations_msgs(data: Dict[str, Any]) -> List[Dict[str, Any]]:
 
                 group = grouped_accounts[group_key]
                 account_class = account.get("account_class") or "deposit"
-                if account_class != "investment":
+                # las inversiones y las cuentas cerradas no reciben movimientos por dígitos
+                if account_class != "investment" and not account.get("closed"):
                     for digits in account_identifiers(account):
                         group["accounts"][digits] = account_id
-                    if not account.get("closed"):
-                        group["account_ids"].append(account_id)
+                    group["account_ids"].append(account_id)
                 group["currencies"][account_id] = account.get("currency") or "COP"
                 group["classes"][account_id] = account_class
             except KeyError as e:

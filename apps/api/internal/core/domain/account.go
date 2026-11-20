@@ -318,11 +318,12 @@ func (a Accounts) groupAccountsByEmail() map[accountGroupKey][]Account {
 }
 
 // buildAccountsMap maps every identifier (digits) of the group to its account id. Investment accounts are left
-// out: their balance comes from valuations, not from what the emails say (plan/32).
+// out (their balance comes from valuations, not from what the emails say) and so are closed ones, which take no
+// new movements (plan/32).
 func (a Accounts) buildAccountsMap() map[string]string {
 	accountsMap := make(map[string]string, len(a))
 	for _, account := range a {
-		if account.Type.ClassOrDefault() == AccountClassInvestment {
+		if account.ClosedAt != nil || account.Type.ClassOrDefault() == AccountClassInvestment {
 			continue
 		}
 		for _, digits := range account.identifiers() {

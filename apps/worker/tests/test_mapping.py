@@ -50,12 +50,12 @@ def test_transform_uses_identifiers_and_leaves_out_investments_and_closed():
         {"id": 9, "last_four_digits": "", "identifiers": [], **common},                       # sin dígitos
         {"id": 5, "last_four_digits": "1111", "identifiers": ["1111", "2222"], "account_class": "credit", **common},
         {"id": 6, "last_four_digits": "3333", "identifiers": ["3333"], "account_class": "investment", **common},
-        {"id": 7, "last_four_digits": "", "identifiers": [], "closed": True, **common},
+        {"id": 7, "last_four_digits": "7777", "identifiers": ["7777"], "closed": True, **common},
     ]}}}
 
     [payload] = transform_automations_msgs(data)
 
-    assert payload["accounts"] == {"1111": "5", "2222": "5"}  # sin "" ni inversiones
+    assert payload["accounts"] == {"1111": "5", "2222": "5"}  # sin "", inversiones ni cerradas
     assert payload["account_ids"] == ["5", "9"]  # abiertas y no inversiones, la más antigua primero
     assert payload["classes"] == {"9": "deposit", "5": "credit", "6": "investment", "7": "deposit"}
 
