@@ -58,7 +58,7 @@ const TransSumm = ({
 
                     <span>Fecha: {parseDatetimetoDateStrFormat(parseDatetoDatetimeBrow(detailInfo.date && detailInfo.date, "YYYY-MM-DD HH:mm:ss Z"), "DD-MM-YYYY")}</span>
 
-                    <span>Producto: {detailInfo.account && detailInfo.account.name} - {detailInfo.account && detailInfo.account.last_four_digits}</span>
+                    <span>Producto: {detailInfo.account && detailInfo.account.name}{detailInfo.account?.last_four_digits ? ` - ${detailInfo.account.last_four_digits}` : ''}</span>
 
                     {detailInfo.installments > 1 && <span> Cuotas: {detailInfo.installments}</span>}
                     {!create && <InstallmentSchedule transactionId={detailInfo.id} installments={detailInfo.installments} />}

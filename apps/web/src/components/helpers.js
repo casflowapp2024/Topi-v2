@@ -47,6 +47,10 @@ export const classOfTypeId = (typeId, accountTypes) => {
 export const accountClass = (account) => account?.type?.class || classOfTypeId(account?.type?.id ?? account?.type_id);
 export const isCreditAccount = (account) => accountClass(account) === 'credit';
 export const isInvestmentAccount = (account) => accountClass(account) === 'investment';
+// Dígitos de una cuenta (plan/32): opcionales; vacío o exactamente 4 números
+export const isValidAccountDigits = (digits) => !digits || /^[0-9]{4}$/.test(String(digits).trim());
+// " ••1234" para mostrar junto al nombre, o "" si la cuenta no tiene dígitos
+export const accountDigitsSuffix = (account, sep = ' ') => (account?.last_four_digits ? `${sep}••${account.last_four_digits}` : '');
 // Cuentas cerradas: conservan su historia pero no se ofrecen para movimientos nuevos
 export const isOpenAccount = (account) => !account?.closed_at;
 // Tarjetas con compras en el último corte, sin ningún pago registrado desde el cierre y con fecha límite

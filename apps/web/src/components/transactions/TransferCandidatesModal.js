@@ -9,7 +9,7 @@ import { link_transfer, dismiss_transfer_candidate } from '../../redux/actions/t
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import EmptyState from '../ui/EmptyState';
-import { formatMoney } from '../helpers';
+import { accountDigitsSuffix, formatMoney } from '../helpers';
 
 const CONFIDENCE = {
     high: { label: 'Muy probable', icon: CheckCircleIcon, className: 'bg-status-ok-soft text-money-in dark:bg-emerald-500/15 dark:text-money-in-dark' },
@@ -39,7 +39,7 @@ const TransferCandidatesModal = ({ open, onClose, candidates, setCandidates, use
 
     const accountName = (id) => {
         const a = accounts.find(x => String(x.id) === String(id));
-        return a ? `${a.name} ••${a.last_four_digits}` : 'Cuenta';
+        return a ? `${a.name}${accountDigitsSuffix(a)}` : 'Cuenta';
     };
     // al ligar, las otras parejas con alguna de esas transacciones dejan de ser posibles
     const removeUsing = (c) => setCandidates(list => list.filter(x =>

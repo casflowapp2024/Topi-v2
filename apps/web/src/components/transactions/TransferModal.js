@@ -11,7 +11,7 @@ import InputMoneyInt2Decs from '../InputMoneyInt2Decs';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import Field, { Input, Select } from '../ui/Field';
-import { formatMoney, formatedCurrToNumber, getCurrency, isOpenAccount } from '../helpers';
+import { accountDigitsSuffix, formatMoney, formatedCurrToNumber, getCurrency, isOpenAccount } from '../helpers';
 
 
 const toNumber = (value) => {
@@ -130,13 +130,13 @@ const TransferModal = ({ open, onClose, user_accounts, user_categories, default_
                 <form id="transfer-form" onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="Desde" id="transferFrom">
                         <Select value={form.fromId} onChange={e => set({ fromId: e.target.value, receivedTouched: false })}>
-                            {accounts.map(a => <option key={a.id} value={a.id}>{a.name} ••{a.last_four_digits} · {a.currency || 'COP'}</option>)}
+                            {accounts.map(a => <option key={a.id} value={a.id}>{a.name}{accountDigitsSuffix(a)} · {a.currency || 'COP'}</option>)}
                         </Select>
                     </Field>
                     <Field label="Hacia" id="transferTo">
                         <Select value={form.toId} onChange={e => set({ toId: e.target.value, receivedTouched: false })}>
                             {accounts.map(a => <option key={a.id} value={a.id} disabled={String(a.id) === String(form.fromId)}>
-                                {a.name} ••{a.last_four_digits} · {a.currency || 'COP'}</option>)}
+                                {a.name}{accountDigitsSuffix(a)} · {a.currency || 'COP'}</option>)}
                         </Select>
                     </Field>
 

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 //redux
 import { connect } from 'react-redux'
-import { delete_transaction, get_user_transactions, update_transaction, update_transaction_local } from '../../redux/actions/cashflow';
+import { delete_transaction, get_user_transactions, take_learned_identifier, update_transaction, update_transaction_local } from '../../redux/actions/cashflow';
+import { updatedMessage } from './learnedMessage';
+
 import { get_user_categories, create_category } from '../../redux/actions/cashflow';
 import { get_accounts_status_by_period, get_history_accounts_by_month, get_history_dash, get_history_category_by_month, get_expenses_report } from '../../redux/actions/reports';
 import { setAlert } from '../../redux/actions/alert';
@@ -286,7 +288,7 @@ function TransactionDetail({
             setTimeout(() => {
                 setLoadingUpdate(false)
                 setOpenEditTrans(false)
-                setAlert("Transaccion actualizada", true, "text-white", "bg-green-500", 5000)
+                setAlert(updatedMessage(take_learned_identifier()), true, "text-white", "bg-green-500", 6000)
             }, 200)
 
         } else {
@@ -404,6 +406,7 @@ function TransactionDetail({
                                 user_accounts={user_accounts}
                                 date={date}
                                 setDate={setDate}
+                                sourceAccountHint={detailInfo.source_account_hint}
                             />
                         </form>
                     ) : (

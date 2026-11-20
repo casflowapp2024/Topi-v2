@@ -58,7 +58,7 @@ const AccCard = ({
 
                     </div>
                     <span className=" text-[15px] text-end ">
-                            ****{lastFourDigits}
+                            {lastFourDigits ? `****${lastFourDigits}` : ''}
                     </span>
                     
                 </div>

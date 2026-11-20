@@ -7,7 +7,7 @@ import { get_net_worth, fetch_fx_rate } from '../../redux/actions/fx';
 import { link_transfer, unlink_transfer, fetch_transfer_candidates, dismiss_counterpart, fetch_counterpart_suggestion } from '../../redux/actions/transfers';
 import InputMoneyInt2Decs from '../InputMoneyInt2Decs';
 import Button from '../ui/Button';
-import { formatMoney, formatedCurrToNumber, isOpenAccount } from '../helpers';
+import { accountDigitsSuffix, formatMoney, formatedCurrToNumber, isOpenAccount } from '../helpers';
 
 const fieldClass = 'bg-gray-50 p-2 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white';
 
@@ -78,7 +78,7 @@ const TransferLinkSection = ({ detailInfo, setDetailInfo, onChanged, user_accoun
     const counterpartAmount = amount === null ? prefilled : toNumber(amount);
     const accountName = (accountIdValue) => {
         const a = accounts.find(x => String(x.id) === String(accountIdValue));
-        return a ? `${a.name} ••${a.last_four_digits}` : 'otra cuenta';
+        return a ? `${a.name}${accountDigitsSuffix(a)}` : 'otra cuenta';
     };
     const valid = choice.startsWith('tx:') || (choice === 'account' && target && (!crossCurrency || counterpartAmount > 0));
 
@@ -212,7 +212,7 @@ const TransferLinkSection = ({ detailInfo, setDetailInfo, onChanged, user_accoun
                     </label>
                     <select id="transferLinkAccount" value={accountId} onChange={e => setAccountId(e.target.value)} className={fieldClass}>
                         <option value="">Elige una cuenta</option>
-                        {others.map(a => <option key={a.id} value={a.id}>{a.name} ••{a.last_four_digits} · {a.currency || 'COP'}</option>)}
+                        {others.map(a => <option key={a.id} value={a.id}>{a.name}{accountDigitsSuffix(a)} · {a.currency || 'COP'}</option>)}
                     </select>
                     {crossCurrency && (
                         <div>

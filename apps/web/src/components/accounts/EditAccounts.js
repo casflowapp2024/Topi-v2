@@ -5,7 +5,7 @@ import { connect } from 'react-redux'
 import { get_user_accounts, update_account } from '../../redux/actions/cashflow';
 import { setAlert } from '../../redux/actions/alert';
 //components
-import { findElmentById, formatedCurrToNumber } from '../helpers';
+import { findElmentById, formatedCurrToNumber, isValidAccountDigits } from '../helpers';
 import EditCreateFinAccountForm from './EditCreateFinAccountForm';
 import AccountCurrencyTools from './AccountCurrencyTools';
 import Button from '../ui/Button';
@@ -35,7 +35,7 @@ function EditAccounts({
   const [updatedSuccess, setUpdatedSuccess] = useState(false)
   const [updateAccountData, setUpdateAccData] = useState({
     name: detailInfo.name,
-    last_four_digits: detailInfo.last_four_digits,
+    last_four_digits: detailInfo.last_four_digits || '',
     bankId: detailInfo.bank.id,
     accountType: detailInfo.type.id,
     initia_balance_amount: detailInfo.initial_balance,
@@ -120,12 +120,12 @@ function EditAccounts({
     }));
   };
 
-  const verifyData = (id) => {
-    console.log(parseInt(id))
-    if (parseInt(id) >= 0) {
+  // los dígitos son opcionales (plan/32): vacío los quita
+  const verifyData = (digits) => {
+    if (isValidAccountDigits(digits)) {
       return true
     } else {
-      setAlert('Los últimos dígitos de la cuenta deben ser solo números.', false, 'text-white', 'bg-red-500', 4000)
+      setAlert('Los últimos dígitos deben ser 4 números, o déjalos vacíos.', false, 'text-white', 'bg-red-500', 4000)
       return false
     }
   }
@@ -150,7 +150,7 @@ function EditAccounts({
         parseInt(detailInfo.id),
         updateAccountData.name,
         parseInt(updateAccountData.accountType),
-        updateAccountData.last_four_digits,
+        (updateAccountData.last_four_digits || '').trim(),
         parseInt(updateAccountData.bankId),
         parseFloat(formatedCurrToNumber(updateAccountData.initia_balance_amount)),
         email_id,
@@ -177,7 +177,7 @@ function EditAccounts({
         setIsFailed(true)
         setLoadingUpdate(false)
         if (updated === 409) {
-          setAlert("Está cuenta ya existe!", false, "text-white", "bg-red-500", 4000)
+          setAlert("Esos dígitos ya son de otra cuenta de este banco.", false, "text-white", "bg-red-500", 4000)
         } else if (updated === 400) {
           setAlert("La cuenta no fue actualizada, no hay data para actualizar!", false, "text-white", "bg-red-500", 4000)
         } else {

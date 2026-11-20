@@ -766,6 +766,15 @@ export const fetch_review_transactions = async (limit = 10) => {
     }
 };
 
+// Lo que aprendió la última actualización (plan/32): {learned, digits, moved} o null. Quien muestra el aviso lo lee
+// una vez con take_learned_identifier.
+let lastLearnedIdentifier = null;
+export const take_learned_identifier = () => {
+    const learned = lastLearnedIdentifier;
+    lastLearnedIdentifier = null;
+    return learned;
+};
+
 export const update_transaction = (
     tran_id,
     category_id,
@@ -808,6 +817,7 @@ export const update_transaction = (
     try {
         const res = await axios.put(`${process.env.REACT_APP_API_URL}/transactions/${tran_id}`, body, config);
         if (res.status === 200) {
+            lastLearnedIdentifier = res.data?.data?.learned_identifier || null;
             dispatch({
                 type: UPDATE_USER_TRANSACTION_SUCCESS,
                 payload: res.data

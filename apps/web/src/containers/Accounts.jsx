@@ -117,7 +117,7 @@ const Accounts = ({
                                         {account.name}
                                         </p>
                                         <p class="text-sm text-gray-500 truncate dark:text-gray-400">
-                                        ****{account.last_four_digits}
+                                        {account.last_four_digits ? `****${account.last_four_digits}` : account.bank?.name}
                                         </p>
                                     </div>
                                     <div class="flex flex-col items-right text-base font-semibold text-gray-900 dark:text-white">

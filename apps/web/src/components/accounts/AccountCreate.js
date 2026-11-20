@@ -7,7 +7,7 @@ import Alert from '../alert';
 import Alert2 from "../alert2";
 import AccCard from "./AccCard";
 import EditCreateFinAccountForm from "./EditCreateFinAccountForm";
-import { formatedCurrToNumber, findElmentById } from '../helpers';
+import { classOfTypeId, formatedCurrToNumber, findElmentById, isValidAccountDigits } from '../helpers';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 //redux
@@ -31,7 +31,8 @@ const AccountCreate = ({
     banks,
     accountTypesOptions,
     automatedEmails,
-    create_personal_bank
+    create_personal_bank,
+    hasAccounts,
 }) => {
 
     const [loadingCreate, setLoadingCreate] = useState(false)
@@ -91,20 +92,26 @@ const AccountCreate = ({
         }, 900)
     };
 
-    const verifyData = (id) => {
-        if (parseInt(id) >= 0) {
+    // los dígitos son opcionales (plan/32): vacío o 4 números
+    const verifyData = (digits) => {
+        if (isValidAccountDigits(digits)) {
             return true
         } else {
-            setAlert('Los últimos dígitos de la cuenta deben ser solo números.', false, 'text-white', 'bg-red-500', 4000)
+            setAlert('Los últimos dígitos deben ser 4 números, o déjalos vacíos.', false, 'text-white', 'bg-red-500', 4000)
             return false
         }
     }
+    // la primera cuenta (onboarding) no pide dígitos: Topi la reconoce por el banco; las inversiones tampoco
+    const askDigits = Boolean(hasAccounts);
+    const digitsToSend = () => (askDigits
+        && classOfTypeId(createAccountData.accountType, accountTypesOptions?.items) !== 'investment'
+        ? (createAccountData.last_four_digits || '').trim() : '');
 
     const onSubmitCreate = async (e) => {
         e.preventDefault();
         setLoadingCreate(true)
 
-        const passData = verifyData(createAccountData.last_four_digits)
+        const passData = verifyData(digitsToSend())
 
         //crear cuenta primero
         if (passData === true) {
@@ -133,7 +140,7 @@ const AccountCreate = ({
 
             const created = await create_f_account(
                 createAccountData.name,
-                createAccountData.last_four_digits,
+                digitsToSend(),
                 parseInt(createAccountData.accountType),
                 parseInt(newBankId),
                 parseFloat(formatedCurrToNumber(createAccountData.initia_balance_amount)),
@@ -152,7 +159,7 @@ const AccountCreate = ({
                 setIsFailed(true)
                 setLoadingCreate(false)
                 if (created === 409) {
-                    setAlert("Está cuenta ya existe!", false, "text-white", "bg-red-500", 4000)
+                    setAlert("Esos dígitos ya son de otra cuenta de este banco.", false, "text-white", "bg-red-500", 4000)
                 } else {
                     setAlert("Algo salió mal la cuenta no fue creada, intenta de nuevo!", false, "text-white", "bg-red-500", 4000)
                 }
@@ -217,7 +224,7 @@ const AccountCreate = ({
                 bankId={createAccountData.bankId}
                 initia_balance_amount={parseFloat(formatedCurrToNumber(createAccountData.initia_balance_amount))}
                 currency={createAccountData.currency}
-                lastFourDigits={createAccountData.last_four_digits}
+                lastFourDigits={digitsToSend()}
             />
         </div>
     );
@@ -261,6 +268,7 @@ const AccountCreate = ({
                             banks={banks}
                             accountTypesOptions={accountTypesOptions}
                             automatedEmails={automatedEmails}
+                            askDigits={askDigits}
                         />
                     </form>
                 </div>
@@ -272,8 +280,8 @@ const AccountCreate = ({
 const mapStateToProps = state => ({
     banks: state.CashFlow.banks.items,
     accountTypesOptions: state.CashFlow.account_types,
-    automatedEmails: state.Conexions.automated_emails.emails
-
+    automatedEmails: state.Conexions.automated_emails.emails,
+    hasAccounts: (state.CashFlow.user_accounts?.items || []).length > 0,
 })
 
 export default connect(mapStateToProps, {

@@ -317,7 +317,7 @@ const ConexionesSetts = ({
                                                 <span className=''>
                                                     {account.name} -
                                                 </span>
-                                                <span className=''>{(account.bank.name)} - </span>
+                                                <span className=''>{(account.bank.name)}{account.last_four_digits ? ' - ' : ''}</span>
                                                 <span className=''>{(account.last_four_digits)}</span>
                                             </li>
                                         ))}

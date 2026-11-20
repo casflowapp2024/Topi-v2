@@ -6,6 +6,7 @@ import { setAlert } from '../../redux/actions/alert';
 //components
 import AccCard from './AccCard';
 import EditAccounts from './EditAccounts';
+import AccountIdentifiers from './AccountIdentifiers';
 import Alert from '../alert';
 import Alert2 from '../alert2';
 import { formatMoney, formatedCurrToNumber } from '../helpers';
@@ -187,6 +188,10 @@ function AccountDetail({
                             : <XCircleIcon className="w-4 h-4" aria-hidden="true" />}
                         Lectura automática de transacciones {automated ? 'activada' : 'desactivada'}
                     </p>
+
+                    {view === 'detail' && (
+                        <AccountIdentifiers account={detailInfo} onChanged={() => get_user_accounts(0, 20)} />
+                    )}
 
                     {view === 'result' ? (
                         <Alert2 />

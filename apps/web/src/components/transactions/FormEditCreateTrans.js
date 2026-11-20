@@ -42,6 +42,7 @@ const FormEditCreateTrans = ({
     user_accounts,
     date,
     setDate,
+    sourceAccountHint, // plan/32: los dígitos que traía el correo
     //states
     bank_done,
     recent_transactions,
@@ -131,12 +132,13 @@ const FormEditCreateTrans = ({
             </Field>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Cuenta" id="account_id">
+                <Field label="Cuenta" id="account_id"
+                    help={sourceAccountHint ? `El correo decía ••${sourceAccountHint}. Si la cambias, Topi lo recordará para esta cuenta.` : undefined}>
                     <Select name="account_id" value={editCreateData.account_id} onChange={e => onChangeCreate(e)} required>
                         {/* las cerradas no reciben movimientos nuevos (salvo la que ya tiene la transacción) */}
                         {accounts.filter(a => isOpenAccount(a) || String(a.id) === String(editCreateData.account_id)).map(a => (
                             <option key={a.id} value={a.id}>
-                                {a.name} - ***{a.last_four_digits}{a.currency && a.currency !== getBaseCurrency() ? ` · ${a.currency}` : ''}
+                                {a.name}{a.last_four_digits ? ` - ***${a.last_four_digits}` : ''}{a.currency && a.currency !== getBaseCurrency() ? ` · ${a.currency}` : ''}
                             </option>
                         ))}
                     </Select>

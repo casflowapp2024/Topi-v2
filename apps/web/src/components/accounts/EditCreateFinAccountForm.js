@@ -1,5 +1,5 @@
 
-import { formatMoney, formatedCurrToNumber, getBaseCurrency, getCurrency } from "../helpers";
+import { classOfTypeId, formatMoney, formatedCurrToNumber, getBaseCurrency, getCurrency } from "../helpers";
 import { useEffect, useState } from 'react';
 import DropDownEmails from "./DropDownEmails";
 import DropDownBanks from "./DropDownBanks";
@@ -21,6 +21,7 @@ const EditCreateFinAccountForm = ({
     automatedEmails,
     contexWindow,
     currencyLocked = false, // la cuenta ya tiene movimientos
+    askDigits = true, // plan/32: la primera cuenta (onboarding) no los pide; Topi la reconoce por el banco
 }) => {
 
     const {
@@ -130,12 +131,14 @@ const EditCreateFinAccountForm = ({
                 </Field>
             )}
 
-            {/* digitos */}
-            <Field label="Últimos cuatro dígitos" id="lastFourDigits">
-                <Input type="text" inputMode="numeric" name="last_four_digits" value={last_four_digits}
-                    onChange={e => onChangeCreate(e)} placeholder={last_four_digits ? last_four_digits : "1234"}
-                    minLength={4} maxLength={4} required />
-            </Field>
+            {/* dígitos: opcionales (plan/32). Las inversiones no se reconocen por dígitos. */}
+            {askDigits && classOfTypeId(accountType, accountTypesOptions?.items) !== 'investment' && (
+                <Field label="Últimos 4 dígitos (opcional)" id="lastFourDigits"
+                    help="Si tu banco los pone en el correo, Topi reconoce la cuenta más rápido. Si no los sabes, los aprende cuando corrijas un movimiento.">
+                    <Input type="text" inputMode="numeric" name="last_four_digits" value={last_four_digits || ''}
+                        onChange={e => onChangeCreate(e)} placeholder="1234" maxLength={4} pattern="[0-9]{4}" />
+                </Field>
+            )}
 
             {/* moneda */}
             {contexWindow !== 'onboarding' && (

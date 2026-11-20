@@ -6,6 +6,7 @@ import { get_user_accounts, create_f_account } from '../../redux/actions/cashflo
 import { get_net_worth, fetch_fx_rate, create_transfer } from '../../redux/actions/fx';
 import { setAlert } from '../../redux/actions/alert';
 import { change_account_currency, undo_currency_change, close_account } from '../../redux/actions/currency';
+import { add_account_identifier, delete_account_identifier, fetch_account_identifiers } from '../../redux/actions/accountIdentifiers';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import Field, { Input, Select } from '../ui/Field';
@@ -135,17 +136,25 @@ const CurrencyChangeWizard = ({ open, onClose, account, net_worth, user_categori
         if (!newName.trim()) return;
         setBusy(true);
         const credit = isCreditAccount(account);
-        const created = await create_f_account(newName.trim(), account.last_four_digits, account.type.id, account.bank.id,
+        // la nueva se crea sin dígitos y luego se queda con los números de esta (plan/32: un número es de una sola
+        // cuenta por banco, y la cerrada ya no recibe movimientos)
+        const created = await create_f_account(newName.trim(), '', account.type.id, account.bank.id,
             0, null, currency);
         if (created !== 201) {
             setBusy(false);
-            setAlert(created === 409 ? 'Ya existe una cuenta con ese nombre y esos dígitos.' : 'No se pudo crear la cuenta nueva.',
-                false, 'text-white', 'bg-red-500', 5000);
+            setAlert('No se pudo crear la cuenta nueva.', false, 'text-white', 'bg-red-500', 5000);
             return;
         }
         const accounts = await get_user_accounts(0, 50);
-        const fresh = (Array.isArray(accounts) ? accounts : []).find(a => a.name === newName.trim()
-            && a.last_four_digits === account.last_four_digits && a.currency === currency && a.id !== account.id);
+        const fresh = (Array.isArray(accounts) ? accounts : []).filter(a => a.name === newName.trim()
+            && a.currency === currency && a.id !== account.id).sort((a, b) => b.id - a.id)[0];
+        if (fresh) {
+            const identifiers = (await fetch_account_identifiers(account.id)) || [];
+            for (const identifier of identifiers) {
+                const removed = await delete_account_identifier(account.id, identifier.id);
+                if (removed.ok) await add_account_identifier(fresh.id, identifier.digits);
+            }
+        }
         if (fresh && balance !== 0 && amountReceived > 0) {
             // saldo positivo: sale de esta y entra a la nueva; deuda (tarjeta): al revés
             const positive = balance > 0;
