@@ -133,7 +133,7 @@ const FormEditCreateTrans = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Cuenta" id="account_id"
-                    help={sourceAccountHint ? `El correo decía ••${sourceAccountHint}. Si la cambias, Topi lo recordará para esta cuenta.` : undefined}>
+                    help={sourceAccountHint ? `El correo decía ••${sourceAccountHint}. Si eliges otra cuenta, Topi recordará ese número para ella.` : undefined}>
                     <Select name="account_id" value={editCreateData.account_id} onChange={e => onChangeCreate(e)} required>
                         {/* las cerradas no reciben movimientos nuevos (salvo la que ya tiene la transacción) */}
                         {accounts.filter(a => isOpenAccount(a) || String(a.id) === String(editCreateData.account_id)).map(a => (

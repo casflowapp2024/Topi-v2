@@ -33,9 +33,10 @@ no se tocan sin evaluar).
   UNIQUE (user_id, bank_id, digits)
   ```
   - Copia cada `accounts.last_four_digits` válido como `source='user'`.
-  - `accounts.last_four_digits` queda **NULL-able** y se quita `UNIQUE_USER_ACCOUNT`. La columna se conserva por
-    compatibilidad: vistas (`net_worth*`), respuestas y front la leen. Muestra el identificador `user` más antiguo.
-    Un trigger la mantiene en sincronía; se borra en un plan posterior.
+  - `accounts.last_four_digits` admite `''` (sin número; no NULL, para no tocar las vistas ni los scans) con CHECK
+    de 4 números o vacío, y se quita `UNIQUE_USER_ACCOUNT`. La columna es el número que escribió el usuario; el
+    trigger `account_identifiers_sync` lo copia como identificador `user` (cambiarlo reemplaza el anterior `user`).
+    Se borra en un plan posterior.
   - Si `user_id`/`bank_id` cambian en la cuenta (cambio de banco), sus identificadores se actualizan en la misma
     transacción, y si chocan, la operación falla con un error de dominio.
 - **Dominio** (`core/domain/account.go`):
@@ -113,6 +114,15 @@ no se tocan sin evaluar).
 - Donde hoy se muestra `last_four_digits` (tarjetas, selectores, `AccountSwitcher`) no cambia nada, porque sigue
   viniendo de la columna. Sin dígitos se muestra solo el nombre, sin "••".
 - Ventanas con `Dialog`, versión PC y móvil, formatos de `helpers.js`.
+
+## Decisiones al implementar (20-nov)
+
+- Las cuentas **cerradas** tampoco entran al mapa de dígitos ni a las candidatas: no reciben movimientos nuevos.
+  "Cerrar y abrir" (cambio de moneda) crea la nueva sin dígitos y le pasa los números de la cerrada.
+- La lectura prioritaria de una cuenta lleva todas las cuentas de la misma conexión y banco (`SameReadAs`): la
+  regla 2 solo es correcta si el job las conoce todas.
+- `PUT /accounts/:id` con `last_four_digits: ""` quita el número escrito; sin el campo lo conserva.
+- El evento `account_identifier_learned` lleva solo `moved` (bool).
 
 ## Fuera de alcance
 
