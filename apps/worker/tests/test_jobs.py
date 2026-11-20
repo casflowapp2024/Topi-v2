@@ -76,7 +76,8 @@ def test_creates_transactions_with_source_message_id_and_should_verify():
     sent = api.create_calls[0]
     assert [t["source_message_id"] for t in sent] == ["m1", "m2"]
     assert sent[0] == {"account_id": 11, "description": "Compra m1", "expense": True, "amount": 50000.0,
-                       "date": "2026-10-17 09:30:00 +0000", "should_verify": False, "source_message_id": "m1"}
+                       "date": "2026-10-17 09:30:00 +0000", "should_verify": False, "source_message_id": "m1",
+                       "source_account_hint": "1111"}
     assert sent[1]["account_id"] == 11 and sent[1]["should_verify"] is True  # regla de map_account_ids
     assert db.processed[(7, "m1")]["status"] == "transaction"
     assert db.processed[(7, "m1")]["transaction_ids"] == [api.created[("u1", "m1")]]
@@ -388,3 +389,17 @@ def test_dry_run_publishes_no_progress():
     processor, db, _, _, _ = make(MESSAGES, dry_run=True)
     processor.handle(job(job_id=5))
     assert db.progress == {}
+
+
+def test_account_without_digits_takes_the_emails_of_its_bank():
+    # plan/32: la única cuenta del banco no tiene dígitos; el correo sin dígitos va ahí sin revisión, el que trae
+    # dígitos desconocidos va a revisión con los dígitos para aprenderlos
+    processor, _, api, _, _ = make([email("m1", "TX::50000"), email("m2", "TX:9999:20000")])
+
+    processor.handle(job(accounts={}, account_ids=["31"], classes={"31": "deposit"}, currencies={"31": "COP"}))
+
+    sent = {t["source_message_id"]: t for t in api.create_calls[0]}
+    assert sent["m1"]["account_id"] == 31 and sent["m1"]["should_verify"] is False
+    assert "source_account_hint" not in sent["m1"]
+    assert sent["m2"]["account_id"] == 31 and sent["m2"]["should_verify"] is True
+    assert sent["m2"]["source_account_hint"] == "9999"

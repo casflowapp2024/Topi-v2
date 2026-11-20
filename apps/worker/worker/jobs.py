@@ -23,7 +23,8 @@ from worker.errors import (
 )
 from worker.extractors.base import AccountRef, TransactionExtractor
 from worker.mapping import (
-    detect_card_payment, detect_currencies, flag_card_payments, flag_currency_mismatch, map_account_ids, to_api_date,
+    candidate_ids, detect_card_payment, detect_currencies, flag_card_payments, flag_currency_mismatch,
+    is_account_digits, map_account_ids, to_api_date,
 )
 from worker.providers.base import MailProvider
 from worker.providers.senders import split_senders
@@ -191,7 +192,10 @@ class JobProcessor:
         accounts: dict[str, str] = payload["accounts"] or {}
         currencies: dict[str, str] = payload.get("currencies") or {}  # account_id: moneda (opcional)
         classes: dict[str, str] = payload.get("classes") or {}  # account_id: clase de cuenta (opcional)
-        if not accounts:
+        # plan/32: puede no haber dígitos; las cuentas del grupo están en account_ids y classes
+        candidates = candidate_ids(payload)
+        all_ids = list(dict.fromkeys([*accounts.values(), *classes.keys(), *candidates]))
+        if not all_ids:
             raise PermanentJobError("el job no tiene cuentas")
 
         senders = split_senders(sender_email)
@@ -286,12 +290,13 @@ class JobProcessor:
 
             # 5. se crean por tandas mientras se lee, no al final (idempotente por source_message_id)
             if len(messages_with_tx) >= FLUSH_EVERY:
-                self._flush(user_id, email_id, transactions, messages_with_tx, accounts, currencies, classes,
-                            failures, result)
+                self._flush(user_id, email_id, transactions, messages_with_tx, accounts, candidates, all_ids,
+                            currencies, classes, failures, result)
                 transactions, messages_with_tx = [], {}
             self._progress(job_id, result)
 
-        self._flush(user_id, email_id, transactions, messages_with_tx, accounts, currencies, classes, failures, result)
+        self._flush(user_id, email_id, transactions, messages_with_tx, accounts, candidates, all_ids, currencies,
+                    classes, failures, result)
         self._progress(job_id, result)
 
         # 6. mover last_run solo si todo salió bien
@@ -306,15 +311,16 @@ class JobProcessor:
         return result
 
     def _flush(self, user_id: str, email_id: int, transactions: list[dict[str, Any]],
-               messages_with_tx: dict[str, list[dict]], accounts: dict[str, str], currencies: dict[str, str],
-               classes: dict[str, str], failures: list[str], result: JobResult) -> None:
+               messages_with_tx: dict[str, list[dict]], accounts: dict[str, str], candidates: list[str],
+               all_ids: list[str], currencies: dict[str, str], classes: dict[str, str], failures: list[str],
+               result: JobResult) -> None:
         """Cuentas, moneda, pagos de tarjeta y creación en la API de una tanda; marca sus mensajes."""
         if transactions:
-            map_account_ids(transactions, accounts)
+            map_account_ids(transactions, accounts, candidates, all_ids)
             flagged = flag_currency_mismatch(transactions, currencies)
             if flagged:
                 logger.info("moneda distinta a la de la cuenta: a revisión", extra={"email_id": email_id, "flagged": flagged})
-            payments = flag_card_payments(transactions, accounts, classes)
+            payments = flag_card_payments(transactions, classes)
             if payments:
                 logger.info("pago de tarjeta: entrada en la tarjeta", extra={"email_id": email_id, "payments": payments})
             to_send = []
@@ -333,6 +339,10 @@ class JobProcessor:
                 }
                 if t.get("card_payment"):
                     item["card_payment"] = True
+                hint = str(t.get("account_number") or "").strip()
+                if is_account_digits(hint):
+                    # los dígitos que vio el LLM: si el usuario cambia la cuenta, Topi los aprende (plan/32)
+                    item["source_account_hint"] = hint
                 to_send.append(item)
 
             if self.settings.dry_run:

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import pytest
 
 from worker.mapping import (
-    dedupe_key, map_account_ids, normalize_date_to_utc, parse_amount, parse_email_date, to_api_date,
+    candidate_ids, dedupe_key, map_account_ids, normalize_date_to_utc, parse_amount, parse_email_date, to_api_date,
     transform_automations_msgs,
 )
 
@@ -25,10 +25,10 @@ def test_transform_groups_by_user_email_and_sender():
 
     assert jobs == [
         {"user_id": "u1", "user_mail": "u1@gmail.com", "email_id": 7, "user_provider": "gmail",
-         "sender_email": "a@b.co,c@b.co", "accounts": {"1111": "1", "2222": "2"},
+         "sender_email": "a@b.co,c@b.co", "accounts": {"1111": "1", "2222": "2"}, "account_ids": ["1", "2"],
          "currencies": {"1": "COP", "2": "USD"}, "classes": {"1": "deposit", "2": "deposit"}},
         {"user_id": "u1", "user_mail": "u1@gmail.com", "email_id": 7, "user_provider": "gmail",
-         "sender_email": "nu@nu.com.co", "accounts": {"3333": "3"}, "currencies": {"3": "COP"},
+         "sender_email": "nu@nu.com.co", "accounts": {"3333": "3"}, "account_ids": ["3"], "currencies": {"3": "COP"},
          "classes": {"3": "deposit"}},
     ]
     assert dedupe_key(jobs[0]) == "7:a@b.co,c@b.co"
@@ -42,6 +42,53 @@ def test_map_account_ids_keeps_should_verify_rule():
     assert result[2]["account_id"] == 1 and result[2]["should_verify"] is True
     with pytest.raises(ValueError):
         map_account_ids([], {"1": "1"})
+
+
+def test_transform_uses_identifiers_and_leaves_out_investments_and_closed():
+    common = {"email_id": 7, "user_email": "u1@gmail.com", "user_provider": "gmail", "sender_email": "a@b.co"}
+    data = {"data": {"user_accounts": {"u1": [
+        {"id": 9, "last_four_digits": "", "identifiers": [], **common},                       # sin dígitos
+        {"id": 5, "last_four_digits": "1111", "identifiers": ["1111", "2222"], "account_class": "credit", **common},
+        {"id": 6, "last_four_digits": "3333", "identifiers": ["3333"], "account_class": "investment", **common},
+        {"id": 7, "last_four_digits": "", "identifiers": [], "closed": True, **common},
+    ]}}}
+
+    [payload] = transform_automations_msgs(data)
+
+    assert payload["accounts"] == {"1111": "5", "2222": "5"}  # sin "" ni inversiones
+    assert payload["account_ids"] == ["5", "9"]  # abiertas y no inversiones, la más antigua primero
+    assert payload["classes"] == {"9": "deposit", "5": "credit", "6": "investment", "7": "deposit"}
+
+
+def test_map_account_ids_rules():
+    accounts = {"1111": "5"}
+
+    # 1. los dígitos coinciden
+    [t] = map_account_ids([{"account_number": "1111"}], accounts, ["5", "9"])
+    assert t["account_id"] == 5 and "should_verify" not in t
+    # 2. una sola candidata: sin dígitos va sin revisión; con dígitos desconocidos, a revisión
+    [t] = map_account_ids([{"account_number": ""}], {}, ["9"])
+    assert t["account_id"] == 9 and "should_verify" not in t
+    [t] = map_account_ids([{"account_number": None}], {}, ["9"])
+    assert t["account_id"] == 9 and "should_verify" not in t
+    [t] = map_account_ids([{"account_number": "4321"}], {}, ["9"])
+    assert t["account_id"] == 9 and t["should_verify"] is True
+    # un "" nunca coincide con una cuenta sin dígitos de un job viejo
+    [t] = map_account_ids([{"account_number": ""}], {"": "5", "1111": "6"}, ["5", "6"])
+    assert t["account_id"] == 5 and t["should_verify"] is True
+    # 3. varias candidatas: la primera, a revisión
+    [t] = map_account_ids([{"account_number": ""}], accounts, ["5", "9"])
+    assert t["account_id"] == 5 and t["should_verify"] is True
+    # 4. solo inversiones: la primera del grupo, a revisión
+    [t] = map_account_ids([{"account_number": "1111"}], {}, [], ["6"])
+    assert t["account_id"] == 6 and t["should_verify"] is True
+
+
+def test_candidate_ids_for_old_jobs():
+    assert candidate_ids({"account_ids": [9, "5"]}) == ["9", "5"]
+    old = {"accounts": {"1111": "5"}, "classes": {"5": "credit", "6": "investment", "9": "deposit"}}
+    assert candidate_ids(old) == ["5", "9"]
+    assert candidate_ids({"accounts": {"1111": "5", "2222": "6"}}) == ["5", "6"]
 
 
 @pytest.mark.parametrize("raw, expected", [
@@ -124,21 +171,27 @@ def test_detect_card_payment(text, expected):
 
 
 def test_flag_card_payments_only_on_the_card_itself():
-    accounts = {"0556": "1", "7194": "2"}
     classes = {"1": "credit", "2": "deposit"}
     txs = [
-        {"account_number": "0556", "expense": True, "mentions_card_payment": True},   # el pago, en la tarjeta
-        {"account_number": "7194", "expense": True, "mentions_card_payment": True},   # la salida, en el depósito
-        {"account_number": "0556", "expense": True, "mentions_card_payment": False},  # compra con la tarjeta
-        {"account_number": "9999", "expense": True, "mentions_card_payment": True},   # dígitos desconocidos
+        {"account_id": 1, "expense": True, "mentions_card_payment": True},   # el pago, en la tarjeta
+        {"account_id": 2, "expense": True, "mentions_card_payment": True},   # la salida, en el depósito
+        {"account_id": 1, "expense": True, "mentions_card_payment": False},  # compra con la tarjeta
+        {"expense": True, "mentions_card_payment": True},                    # sin cuenta asignada
     ]
 
-    assert flag_card_payments(txs, accounts, classes) == 1
+    assert flag_card_payments(txs, classes) == 1
     assert [t["expense"] for t in txs] == [False, True, True, True]
     assert [t.get("card_payment", False) for t in txs] == [True, False, False, False]
 
 
+def test_flag_card_payments_on_a_card_matched_without_digits():
+    # plan/32: el correo no trae dígitos y la tarjeta es la única cuenta del banco
+    [t] = map_account_ids([{"account_number": "", "expense": True, "mentions_card_payment": True}], {}, ["1"])
+    assert flag_card_payments([t], {"1": "credit"}) == 1
+    assert t["expense"] is False and t["card_payment"] is True
+
+
 def test_flag_card_payments_without_classes_does_nothing():
-    txs = [{"account_number": "0556", "expense": True, "mentions_card_payment": True}]
-    assert flag_card_payments(txs, {"0556": "1"}, {}) == 0
+    txs = [{"account_id": 1, "expense": True, "mentions_card_payment": True}]
+    assert flag_card_payments(txs, {}) == 0
     assert txs[0]["expense"] is True

@@ -17,7 +17,10 @@ API_DATE_FORMAT = "%Y-%m-%d %H:%M:%S %z"  # el que acepta la API (enums.DateTime
 
 def transform_automations_msgs(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Agrupa las cuentas de `/accounts/admin/list` por (correo del usuario, remitente) y arma el
-    payload de cada job (el mismo contrato que usaba la cola de AWS). Lógica original de general_utils."""
+    payload de cada job (el mismo contrato que usaba la cola de AWS). Lógica original de general_utils.
+
+    plan/32: `accounts` va de cada identificador (dígitos) a su cuenta, sin "" ni inversiones; `account_ids` son las
+    cuentas abiertas que no son inversión, de la más antigua a la más nueva (las candidatas sin dígitos conocidos)."""
     result = []
     user_accounts = data.get("data", {}).get("user_accounts", {})
 
@@ -34,6 +37,7 @@ def transform_automations_msgs(data: Dict[str, Any]) -> List[Dict[str, Any]]:
                 email_id = account["email_id"]
                 sender_email = account["sender_email"]
                 user_provider = account["user_provider"]
+                account_id = str(account["id"])
 
                 group_key = (user_mail, sender_email)
 
@@ -45,20 +49,42 @@ def transform_automations_msgs(data: Dict[str, Any]) -> List[Dict[str, Any]]:
                         "user_provider": user_provider,
                         "sender_email": sender_email,
                         "accounts": {},
+                        "account_ids": [],
                         "currencies": {},
                         "classes": {},
                     }
 
-                grouped_accounts[group_key]["accounts"][account["last_four_digits"]] = str(account["id"])
-                grouped_accounts[group_key]["currencies"][str(account["id"])] = account.get("currency") or "COP"
-                grouped_accounts[group_key]["classes"][str(account["id"])] = account.get("account_class") or "deposit"
+                group = grouped_accounts[group_key]
+                account_class = account.get("account_class") or "deposit"
+                if account_class != "investment":
+                    for digits in account_identifiers(account):
+                        group["accounts"][digits] = account_id
+                    if not account.get("closed"):
+                        group["account_ids"].append(account_id)
+                group["currencies"][account_id] = account.get("currency") or "COP"
+                group["classes"][account_id] = account_class
             except KeyError as e:
                 logger.warning("missing required field in account data", extra={"field": str(e)})
                 continue
 
+        for group in grouped_accounts.values():
+            group["account_ids"].sort(key=int)
         result.extend(grouped_accounts.values())
 
     return result
+
+
+def account_identifiers(account: Dict[str, Any]) -> List[str]:
+    """Los dígitos que reconocen la cuenta: `identifiers` de la API (plan/32) o, en respuestas viejas, el número
+    escrito. Solo 4 números: una cuenta sin dígitos no debe coincidir con un correo sin dígitos."""
+    identifiers = account.get("identifiers")
+    if identifiers is None:
+        identifiers = [account.get("last_four_digits") or ""]
+    return [d for d in identifiers if is_account_digits(d)]
+
+
+def is_account_digits(value: Any) -> bool:
+    return isinstance(value, str) and len(value) == 4 and value.isdigit()
 
 
 def dedupe_key(payload: Dict[str, Any]) -> str:
@@ -66,20 +92,43 @@ def dedupe_key(payload: Dict[str, Any]) -> str:
     return f"{payload['email_id']}:{payload['sender_email']}"
 
 
-def map_account_ids(transactions: List[Dict[str, Any]], accounts: Dict[str, str]) -> List[Dict[str, Any]]:
-    """Asigna account_id por los últimos 4 dígitos. Si no coincide, usa la primera cuenta del grupo y
-    marca should_verify (regla original). Como ahora cada grupo es de un solo remitente (hallazgos 1
-    y 2), esa primera cuenta ya es del banco correcto."""
-    if not transactions or not accounts:
+def candidate_ids(payload: Dict[str, Any]) -> List[str]:
+    """Cuentas a las que puede ir un correo sin dígitos conocidos. Jobs viejos sin `account_ids`: las del mapa de
+    dígitos y las de `classes` que no son inversión, en ese orden."""
+    if payload.get("account_ids") is not None:
+        return [str(i) for i in payload["account_ids"]]
+    classes = payload.get("classes") or {}
+    ids = list(dict.fromkeys([*(payload.get("accounts") or {}).values(), *classes.keys()]))
+    return [i for i in ids if classes.get(i) != "investment"]
+
+
+def map_account_ids(transactions: List[Dict[str, Any]], accounts: Dict[str, str],
+                    candidates: List[str] | None = None, all_ids: List[str] | None = None) -> List[Dict[str, Any]]:
+    """Asigna account_id (plan/32):
+    1. los dígitos del correo son de una cuenta → esa, sin revisión;
+    2. no coinciden y hay una sola candidata (abierta y no inversión) → esa; a revisión solo si el correo traía
+       dígitos (puede ser una tarjeta nueva o una cuenta que el usuario no creó);
+    3. varias candidatas → la primera, a revisión (la regla original);
+    4. ninguna candidata → la primera cuenta del grupo, a revisión.
+    Cada grupo es de un solo remitente, así que todas son del banco correcto."""
+    if candidates is None:
+        candidates = list(dict.fromkeys(accounts.values()))
+    fallback = candidates or list(dict.fromkeys([*(all_ids or []), *accounts.values()]))
+    if not transactions or not fallback:
         raise ValueError("Empty transactions list or accounts dictionary")
 
     for transaction in transactions:
         try:
-            account_number = transaction.get("account_number")
-            if accounts.get(account_number):
-                transaction["account_id"] = int(accounts.get(account_number))
+            account_number = str(transaction.get("account_number") or "").strip()
+            matched = accounts.get(account_number) if is_account_digits(account_number) else None
+            if matched:
+                transaction["account_id"] = int(matched)
+            elif len(candidates) == 1:
+                transaction["account_id"] = int(candidates[0])
+                if account_number:
+                    transaction["should_verify"] = True
             else:
-                transaction["account_id"] = int(next(iter(accounts.values())))
+                transaction["account_id"] = int(fallback[0])
                 transaction["should_verify"] = True
         except (ValueError, TypeError) as e:
             logger.warning("error mapping account", extra={"error": str(e)})
@@ -220,17 +269,17 @@ def detect_card_payment(text: str) -> bool:
     return bool(text) and bool(_CARD_PAYMENT.search(text)) and not _PURCHASE.search(text)
 
 
-def flag_card_payments(
-    transactions: List[Dict[str, Any]], accounts: Dict[str, str], classes: Dict[str, str]
-) -> int:
-    """El prompt lee "Pago" como gasto y no sabe qué tipo de cuenta son los últimos 4 dígitos. Si el
-    correo avisa de un pago (transaction["mentions_card_payment"]) y sus dígitos son los de una tarjeta,
-    para esa cuenta es una entrada: expense=False y card_payment=True. Devuelve cuántas marcó. Sin
-    `classes` (jobs viejos) no hace nada."""
+def flag_card_payments(transactions: List[Dict[str, Any]], classes: Dict[str, str]) -> int:
+    """El prompt lee "Pago" como gasto y no sabe qué tipo de cuenta es. Si el correo avisa de un pago
+    (transaction["mentions_card_payment"]) y quedó en una tarjeta (account_id, ya asignado por map_account_ids,
+    también sin dígitos: plan/32), para esa cuenta es una entrada: expense=False y card_payment=True. Devuelve
+    cuántas marcó. Sin `classes` (jobs viejos) no hace nada."""
     flagged = 0
     for transaction in transactions:
-        account_id = accounts.get(transaction.get("account_number"))
-        if transaction.get("mentions_card_payment") and classes.get(account_id) == "credit":
+        account_id = transaction.get("account_id")
+        if account_id is None:
+            continue
+        if transaction.get("mentions_card_payment") and classes.get(str(account_id)) == "credit":
             transaction["expense"] = False
             transaction["card_payment"] = True
             flagged += 1
