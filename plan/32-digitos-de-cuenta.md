@@ -123,6 +123,9 @@ no se tocan sin evaluar).
   regla 2 solo es correcta si el job las conoce todas.
 - `PUT /accounts/:id` con `last_four_digits: ""` quita el número escrito; sin el campo lo conserva.
 - El evento `account_identifier_learned` lleva solo `moved` (bool).
+- 22-nov, probando en producción: las inversiones no guardan dígitos (migración 000054 quita los de relleno) y se
+  quitó la sección "Números reconocidos" del detalle de la cuenta: un usuario nuevo no la entiende y basta la ayuda
+  del formulario. Los endpoints `/accounts/:id/identifiers` se quedan (los usa "cerrar y abrir").
 
 ## Fuera de alcance
 

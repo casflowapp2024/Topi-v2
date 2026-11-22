@@ -5,7 +5,6 @@ import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { createStore, applyMiddleware } from 'redux';
 import { thunk } from 'redux-thunk';
-import axios from 'axios';
 import AccountCreate from './AccountCreate';
 import AccountDetail from './AccountDetail';
 import { accountDigitsSuffix, isValidAccountDigits } from '../helpers';
@@ -81,20 +80,10 @@ test('con otras cuentas los dígitos son opcionales y explican para qué sirven'
   await m.unmount();
 });
 
-test('el detalle muestra los números reconocidos y de dónde salieron', async () => {
-  axios.get.mockImplementation((url) => Promise.resolve({
-    status: 200,
-    data: { data: url.endsWith('/accounts/9/identifiers') ? [
-      { id: 1, digits: '1111', source: 'user' }, { id: 2, digits: '2222', source: 'learned' },
-    ] : [] },
-  }));
+test('el detalle no muestra la sección de números reconocidos ni "****" suelto', async () => {
   const m = await mount(<AccountDetail openAccDetail setOpenAccDetail={() => {}} detailInfo={card} setDetailInfo={() => {}} />, stateWith([card]));
   const d = dialog();
-  expect(d.textContent).toContain('Números reconocidos');
-  expect(d.textContent).toContain('••1111 · lo agregaste tú');
-  expect(d.textContent).toContain('••2222 · aprendido de tus correcciones');
-  expect(d.querySelector('[aria-label="Quitar ••2222"]')).not.toBeNull();
-  // la tarjeta sin número escrito no muestra "****" suelto
+  expect(d.textContent).not.toContain('Números reconocidos');
   expect(d.textContent).not.toContain('****');
   await m.unmount();
 });
