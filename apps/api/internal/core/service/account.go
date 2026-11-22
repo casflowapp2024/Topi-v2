@@ -52,6 +52,11 @@ func (as *AccountService) CreateAccount(ctx context.Context, account *domain.Acc
 		return domain.ErrInvalidCurrency
 	}
 
+	// investments are not recognised by digits (plan/32): they keep none
+	if domain.AccountClassOf(account.Type.ID) == domain.AccountClassInvestment {
+		account.LastFourDigits = ""
+	}
+
 	err := as.repo.CreateAccount(ctx, account)
 	if err != nil {
 		return err
@@ -96,6 +101,16 @@ func (as *AccountService) UpdateAccount(ctx context.Context, account *domain.Acc
 	// the currency is fixed once the account has movements (changing it needs the migration wizard)
 	if account.Currency != "" && account.Currency != actualAccount.Currency && actualAccount.HasTransactions {
 		return domain.ErrAccountCurrencyLocked
+	}
+
+	// investments keep no digits (plan/32): an update to an investment drops the typed number
+	typeID := account.Type.ID
+	if typeID == 0 {
+		typeID = actualAccount.Type.ID
+	}
+	if domain.AccountClassOf(typeID) == domain.AccountClassInvestment {
+		account.LastFourDigits = ""
+		account.ClearLastFourDigits = actualAccount.LastFourDigits != ""
 	}
 
 	if account.IsSame(actualAccount) || account.IsEmpty() {

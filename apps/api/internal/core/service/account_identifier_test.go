@@ -123,3 +123,34 @@ func TestTransactionService_UpdateTransaction_LearnsIdentifier(t *testing.T) {
 		assert.Nil(t, update.Learned)
 	})
 }
+
+func TestAccountService_InvestmentsKeepNoDigits(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("create", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		repo := mock.NewMockAccountRepository(ctrl)
+		svc := NewAccountService(repo, mock.NewMockTransactionRepository(ctrl))
+		account := &domain.Account{UserID: "u1", Name: "Trii", LastFourDigits: "2773", Type: domain.AccountType{ID: 3}}
+		repo.EXPECT().CreateAccount(ctx, account).DoAndReturn(func(_ context.Context, a *domain.Account) error {
+			assert.Equal(t, "", a.LastFourDigits)
+			return nil
+		})
+		require.NoError(t, svc.CreateAccount(ctx, account))
+	})
+
+	t.Run("update drops the old filler digits", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		repo := mock.NewMockAccountRepository(ctrl)
+		svc := NewAccountService(repo, mock.NewMockTransactionRepository(ctrl))
+		actual := &domain.Account{ID: 7, UserID: "u1", Name: "Trii", LastFourDigits: "2773", Type: domain.AccountType{ID: 3}}
+		update := &domain.Account{ID: 7, UserID: "u1", Name: "Trii", LastFourDigits: "2773", Type: domain.AccountType{ID: 3}}
+		repo.EXPECT().GetAccount(ctx, "u1", uint64(7)).Return(actual, nil)
+		repo.EXPECT().UpdateAccount(ctx, update).DoAndReturn(func(_ context.Context, a *domain.Account) error {
+			assert.Equal(t, "", a.LastFourDigits)
+			assert.True(t, a.ClearLastFourDigits)
+			return nil
+		})
+		require.NoError(t, svc.UpdateAccount(ctx, update))
+	})
+}
