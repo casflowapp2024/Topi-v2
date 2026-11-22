@@ -76,6 +76,9 @@ var errorStatusMap = map[error]int{
 	domain.ErrIdentifierTaken:           http.StatusConflict,
 	domain.ErrInvalidAccountDigits:      http.StatusBadRequest,
 	domain.ErrInvestmentIdentifier:      http.StatusBadRequest,
+	domain.ErrInvalidCatalogBank:        http.StatusBadRequest,
+	domain.ErrInvalidSenderEmail:        http.StatusBadRequest,
+	domain.ErrInvalidBankLogo:           http.StatusBadRequest,
 
 	// Token Errors
 	domain.ErrExpiredToken:               http.StatusUnauthorized,

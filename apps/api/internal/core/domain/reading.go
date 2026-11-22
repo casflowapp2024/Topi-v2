@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"cash-flow/internal/enums"
 	"sort"
 	"strings"
 	"time"
@@ -176,51 +175,6 @@ func (c *ConnectionStatus) allBanksSilent() bool {
 type ReadingStatus struct {
 	Connections    []ConnectionStatus `json:"connections"`
 	SupportedBanks []string           `json:"supported_banks"`
-}
-
-// SupportedBanks are the banks Topi reads today (names only)
-func SupportedBanks() []string {
-	return NewOfficialBanks(enums.OfficialBanks).Banks
-}
-
-// IsSupportedBank: the bank is one of the official ones (case and spaces ignored)
-func IsSupportedBank(name string) bool {
-	key := normalizeBankName(name)
-	for official := range enums.OfficialBanks {
-		if normalizeBankName(official) == key {
-			return true
-		}
-	}
-	return false
-}
-
-// IsOfficialSender: the bank is official and the sender is one of its official addresses. A sender the user
-// typed (custom bank, or an official bank with another sender) is not: its transactions go to Por revisar.
-func IsOfficialSender(bankName, sender string) bool {
-	key := normalizeBankName(bankName)
-	for official, senders := range enums.OfficialBanks {
-		if normalizeBankName(official) != key {
-			continue
-		}
-		allowed := map[string]bool{}
-		for _, s := range strings.Split(senders, ",") {
-			allowed[strings.ToLower(strings.TrimSpace(s))] = true
-		}
-		// sender may be one address or the comma separated list of the bank: all of them must be official
-		found := false
-		for _, s := range strings.Split(sender, ",") {
-			s = strings.ToLower(strings.TrimSpace(s))
-			if s == "" {
-				continue
-			}
-			if !allowed[s] {
-				return false
-			}
-			found = true
-		}
-		return found
-	}
-	return false
 }
 
 // Onboarding steps (closed list: they go in the props of onboarding_step_completed)

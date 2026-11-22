@@ -54,6 +54,8 @@ func main() {
 	// Set logger
 	logger.Set(settings.App)
 
+	// Bank catalog (plan/33): loaded before serving, refreshed every few minutes
+	injector.Resources.BankCatalog.Start(context.Background())
 	// Send the emails of the outbox in background
 	go injector.Resources.Mail.Run(context.Background(), injector.Resources.MailInterval)
 	// Queue the monthly summaries (first days of the month, opt-in)
@@ -88,6 +90,7 @@ func main() {
 		FeedbackHandler:       injector.Handlers.Feedback,
 		ReactivationHandler:   injector.Handlers.Reactivation,
 		LaunchHandler:         injector.Handlers.Launch,
+		BankCatalogHandler:    injector.Handlers.BankCatalog,
 		InitDevHandler:        injector.Handlers.Initialization,
 		InitializationHandler: injector.Handlers.CategoryInitialization,
 		Router:                router.Router,

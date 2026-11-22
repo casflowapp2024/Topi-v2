@@ -232,7 +232,7 @@ func TestAccount_GetConfiguredState(t *testing.T) {
 
 func TestAccounts_BuildReadEmailRequests_GroupsBySender(t *testing.T) {
 	gmailID, outlookID := uint64(7), uint64(9)
-	bancolombia := enums.OfficialBanks["Bancolombia"]
+	bancolombia := "alertasynotificaciones@notificacionesbancolombia.com,alertasynotificaciones@bancolombia.com.co,alertasynotificaciones@an.notificacionesbancolombia.com"
 	nubank := "nu@nu.com.co"
 
 	accounts := Accounts{

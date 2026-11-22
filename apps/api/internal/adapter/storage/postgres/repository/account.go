@@ -318,6 +318,10 @@ func (ar *AccountRepository) DeleteAccount(ctx context.Context, userID string, i
 	return nil
 }
 
+// effectiveSenders: the senders a bank reads with (plan/33): the active ones of its catalog bank plus what the
+// user typed that the catalog does not have; without catalog, banks.email
+const effectiveSenders = "bank_effective_senders(b.catalog_id, b.email)"
+
 func (ar *AccountRepository) AdminGetAccountsList(
 	ctx context.Context,
 	filters domain.AccountFilters,
@@ -329,14 +333,14 @@ func (ar *AccountRepository) AdminGetAccountsList(
 	).From(enums.AccountTableName + " sa").
 		LeftJoin(enums.BankTableName + " bs ON sa.bank_id = bs.id AND sa.user_id = bs.user_id").
 		LeftJoin(enums.EmailTableName + " se ON sa.email_id = se.id and sa.user_id = se.user_id").
-		Where(sq.NotEq{"bs.email": ""}).
-		Where(sq.Expr("bs.email is not null")).
+		Where(sq.Expr("bank_effective_senders(bs.catalog_id, bs.email) <> ''")).
 		Where(sq.Expr("sa.email_id is not null")).
 		Where(sq.Expr("se.access_token is not null")).
 		Where(sq.Expr("se.refresh_token is not null")).
-		Where(sq.NotEq{"se.active": false}).
-		Where(sq.Eq{"se.error": nil})
+		Where(sq.Expr("se.active <> false")).
+		Where(sq.Expr("se.error is null"))
 
+	// pasted as text into the main query: it must not have placeholders (its args would be lost)
 	totalSQL, _, err := total.ToSql()
 	if err != nil {
 		return accounts, err
@@ -345,7 +349,7 @@ func (ar *AccountRepository) AdminGetAccountsList(
 	query := ar.db.QueryBuilder.Select(
 		accountColumnsA,
 		"b.name",
-		"b.email",
+		effectiveSenders,
 		"t.name",
 		"e.email",
 		"e.access_token",
@@ -359,8 +363,7 @@ func (ar *AccountRepository) AdminGetAccountsList(
 		LeftJoin(enums.BankTableName + " b ON a.bank_id = b.id AND a.user_id = b.user_id").
 		LeftJoin(enums.AccountTypeTableName + " t ON a.type_id = t.id").
 		LeftJoin(enums.EmailTableName + " e ON a.email_id = e.id and a.user_id = e.user_id").
-		Where(sq.NotEq{"b.email": ""}).
-		Where(sq.Expr("b.email is not null")).
+		Where(sq.Expr(effectiveSenders + " <> ''")).
 		Where(sq.Expr("a.email_id is not null")).
 		Where(sq.Expr("e.access_token is not null")).
 		Where(sq.Expr("e.refresh_token is not null")).

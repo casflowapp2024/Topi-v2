@@ -89,7 +89,7 @@ GROUP BY r.email_id`, userID)
 	}
 
 	// per bank: its senders, what their first reads found and the automatic transactions of its accounts here
-	banks, err := r.db.Query(ctx, `SELECT l.email_id, b.id, b.name, coalesce(b.email, ''),
+	banks, err := r.db.Query(ctx, `SELECT l.email_id, b.id, b.name, bank_effective_senders(b.catalog_id, b.email),
   coalesce(s.read_senders, 0), coalesce(s.legacy, 0), coalesce(s.found, 0),
   (SELECT count(*) FROM transactions t JOIN accounts a ON a.id = t.account_id
      WHERE a.email_id = l.email_id AND a.bank_id = b.id AND a.user_id = l.user_id AND t.automated),
@@ -102,7 +102,7 @@ LEFT JOIN LATERAL (
          sum(coalesce(st.first_found, 0)) AS found
   FROM email_sync_state st
   WHERE st.email_id = l.email_id
-    AND lower(st.sender_email) = ANY (SELECT lower(trim(x)) FROM unnest(string_to_array(coalesce(b.email, ''), ',')) AS x)
+    AND lower(st.sender_email) = ANY (SELECT lower(trim(x)) FROM unnest(string_to_array(bank_effective_senders(b.catalog_id, b.email), ',')) AS x)
 ) s ON true
 ORDER BY b.name`, userID)
 	if err != nil {

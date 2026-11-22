@@ -3,7 +3,6 @@ package service
 import (
 	"cash-flow/internal/core/domain"
 	"cash-flow/internal/core/port"
-	"cash-flow/internal/enums"
 	"context"
 	"errors"
 )
@@ -19,7 +18,7 @@ func NewBankService(repo port.BankRepository) *BankService {
 }
 
 func (bs BankService) CreateBank(ctx context.Context, bank *domain.Bank) error {
-	bank.SetOfficialBank()
+	bank.SetOfficialBank(true)
 
 	err := bs.repo.CreateBank(ctx, bank)
 	if err != nil {
@@ -63,6 +62,11 @@ func (bs BankService) UpdateBank(ctx context.Context, bank *domain.Bank) error {
 	if domain.IsSameBank(actualBank, bank) {
 		return domain.ErrNoUpdatedData
 	}
+	// a renamed bank joins or leaves the catalog (plan/33); its senders stay as the user typed them
+	if bank.Name == "" {
+		bank.Name = actualBank.Name
+	}
+	bank.SetOfficialBank(false)
 
 	err = bs.repo.UpdateBank(ctx, bank)
 	if err != nil {
@@ -85,5 +89,5 @@ func (bs BankService) DeleteBank(ctx context.Context, userID string, id uint64) 
 }
 
 func (bs BankService) GetOfficialBanks(ctx context.Context) domain.OfficialBanks {
-	return domain.NewOfficialBanks(enums.OfficialBanks)
+	return domain.NewOfficialBanks(domain.BankCatalog())
 }

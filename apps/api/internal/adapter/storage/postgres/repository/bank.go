@@ -12,6 +12,18 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
+const bankReturning = "id, name, email, created_at, updated_at, user_id, catalog_id"
+
+var bankColumns = []string{"b.id", "b.name", "b.email", "b.created_at", "b.updated_at", "b.user_id", "b.catalog_id", "c.color", "l.etag"}
+
+// setBankLogo: the public logo of the catalog bank, when it has one
+func setBankLogo(bank *domain.Bank, etag *string) {
+	if bank.CatalogID == nil || etag == nil {
+		return
+	}
+	bank.LogoURL = domain.CatalogBank{ID: *bank.CatalogID, LogoETag: etag}.LogoPath()
+}
+
 type BankRepository struct {
 	db *postgres.DB
 }
@@ -24,13 +36,14 @@ func NewBankRepository(db *postgres.DB) *BankRepository {
 
 func (br BankRepository) CreateBank(ctx context.Context, bank *domain.Bank) error {
 	query := br.db.QueryBuilder.Insert(enums.BankTableName).
-		Columns("user_id", "name", "email").
+		Columns("user_id", "name", "email", "catalog_id").
 		Values(
 			bank.UserID,
 			bank.Name,
 			bank.Email,
+			bank.CatalogID,
 		).
-		Suffix("RETURNING id, name, email, created_at, updated_at, user_id")
+		Suffix("RETURNING " + bankReturning)
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -44,6 +57,7 @@ func (br BankRepository) CreateBank(ctx context.Context, bank *domain.Bank) erro
 		&bank.CreatedAt,
 		&bank.UpdatedAt,
 		&bank.UserID,
+		&bank.CatalogID,
 	)
 
 	if err != nil {
@@ -55,10 +69,13 @@ func (br BankRepository) CreateBank(ctx context.Context, bank *domain.Bank) erro
 
 func (br BankRepository) GetBank(ctx context.Context, userID string, id uint64) (*domain.Bank, error) {
 	var bank domain.Bank
+	var logoETag *string
 
-	query := br.db.QueryBuilder.Select("*").
-		From(enums.BankTableName).
-		Where(sq.Eq{"id": id, "user_id": userID}).
+	query := br.db.QueryBuilder.Select(bankColumns...).
+		From(enums.BankTableName + " b").
+		LeftJoin("bank_catalog c ON c.id = b.catalog_id").
+		LeftJoin("bank_logos l ON l.bank_id = b.catalog_id").
+		Where(sq.Eq{"b.id": id, "b.user_id": userID}).
 		Limit(1)
 
 	sql, args, err := query.ToSql()
@@ -73,10 +90,14 @@ func (br BankRepository) GetBank(ctx context.Context, userID string, id uint64) 
 		&bank.CreatedAt,
 		&bank.UpdatedAt,
 		&bank.UserID,
+		&bank.CatalogID,
+		&bank.Color,
+		&logoETag,
 	)
 	if err != nil {
 		return nil, mappers.MapPostgresErrorCode(err)
 	}
+	setBankLogo(&bank, logoETag)
 
 	return &bank, nil
 }
@@ -84,10 +105,12 @@ func (br BankRepository) GetBank(ctx context.Context, userID string, id uint64) 
 func (br BankRepository) GetBanksList(ctx context.Context, userID string, skip uint64, limit uint64) ([]domain.Bank, error) {
 	var banks []domain.Bank
 
-	query := br.db.QueryBuilder.Select("*").
-		From(enums.BankTableName).
-		Where(sq.Eq{"user_id": userID}).
-		OrderBy("id").
+	query := br.db.QueryBuilder.Select(bankColumns...).
+		From(enums.BankTableName + " b").
+		LeftJoin("bank_catalog c ON c.id = b.catalog_id").
+		LeftJoin("bank_logos l ON l.bank_id = b.catalog_id").
+		Where(sq.Eq{"b.user_id": userID}).
+		OrderBy("b.id").
 		Offset(skip).
 		Limit(limit)
 
@@ -104,6 +127,7 @@ func (br BankRepository) GetBanksList(ctx context.Context, userID string, skip u
 	for rows.Next() {
 		var bank domain.Bank
 
+		var logoETag *string
 		err = rows.Scan(
 			&bank.ID,
 			&bank.Name,
@@ -111,11 +135,15 @@ func (br BankRepository) GetBanksList(ctx context.Context, userID string, skip u
 			&bank.CreatedAt,
 			&bank.UpdatedAt,
 			&bank.UserID,
+			&bank.CatalogID,
+			&bank.Color,
+			&logoETag,
 		)
 		if err != nil {
 			return nil, err
 		}
 
+		setBankLogo(&bank, logoETag)
 		banks = append(banks, bank)
 	}
 
@@ -128,9 +156,10 @@ func (br BankRepository) UpdateBank(ctx context.Context, bank *domain.Bank) erro
 	query := br.db.QueryBuilder.Update(enums.BankTableName).
 		Set("name", sq.Expr("COALESCE(?, name)", name)).
 		Set("email", bank.Email).
+		Set("catalog_id", bank.CatalogID).
 		Where(sq.Eq{"id": bank.ID, "user_id": bank.UserID}).
 		Set("updated_at", time.Now()).
-		Suffix("RETURNING id, name, email, created_at, updated_at, user_id")
+		Suffix("RETURNING " + bankReturning)
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -144,6 +173,7 @@ func (br BankRepository) UpdateBank(ctx context.Context, bank *domain.Bank) erro
 		&bank.CreatedAt,
 		&bank.UpdatedAt,
 		&bank.UserID,
+		&bank.CatalogID,
 	)
 
 	if err != nil {

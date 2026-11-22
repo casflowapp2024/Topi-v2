@@ -112,6 +112,12 @@ var (
 	ErrInvalidAccountDigits = errors.New("the account digits must be four numbers")
 	// ErrInvestmentIdentifier is an error for when digits are added to an investment account
 	ErrInvestmentIdentifier = errors.New("investment accounts are not recognised by digits")
+	// ErrInvalidCatalogBank is an error for when a catalog bank has no name, a bad slug, country or color
+	ErrInvalidCatalogBank = errors.New("invalid bank: a name, a slug of letters and numbers, a two letter country and a #RRGGBB color")
+	// ErrInvalidSenderEmail is an error for when a sender is not one email address
+	ErrInvalidSenderEmail = errors.New("invalid sender: one email address")
+	// ErrInvalidBankLogo is an error for when a logo is not a PNG, WebP or SVG of up to 100 KB
+	ErrInvalidBankLogo = errors.New("invalid logo: a PNG, WebP or SVG of up to 100 KB")
 )
 
 // Account Type Errors

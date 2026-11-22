@@ -1090,13 +1090,20 @@ export const get_official_banks = () => async dispatch => {
     try {
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/banks/official`, config);
         if (res.status === 200) {
-            const official_banks = res.data.data.banks.map((bank, index) => ({
-                id: -(index + 1),
-                name: bank,
-                userBank: false,
-                isDefault: true,
-                is_automated: true
-            }))
+            // catalog (plan/33): logo y color por nombre; una API vieja solo manda los nombres
+            const catalog = res.data.data.catalog || []
+            const official_banks = res.data.data.banks.map((bank, index) => {
+                const entry = catalog.find(c => c.name === bank)
+                return {
+                    id: -(index + 1),
+                    name: bank,
+                    userBank: false,
+                    isDefault: true,
+                    is_automated: true,
+                    logo_url: entry?.logo_url || null,
+                    color: entry?.color || null,
+                }
+            })
 
             dispatch({
                 type: GET_OFFICIAL_BANKS_SUCCESS,

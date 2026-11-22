@@ -57,6 +57,7 @@ type Handlers struct {
 	Feedback               *http.FeedbackHandler
 	Reactivation           *http.ReactivationHandler
 	Launch                 *http.LaunchHandler
+	BankCatalog            *http.BankCatalogHandler
 	Initialization         *http.InitDevHandler
 	CategoryInitialization *http.InitializationHandler
 	// Activity records the daily activity in AuthMiddleware
@@ -71,6 +72,8 @@ type Resources struct {
 	Notifications *service.NotificationPrefsService
 	// Reading queues bank_unsupported for healthy connections without transactions (started by main)
 	Reading *service.ReadingAppService
+	// BankCatalog keeps the snapshot of the catalog fresh (started by main)
+	BankCatalog *service.BankCatalogService
 	// MailInterval is how often the outbox is processed
 	MailInterval time.Duration
 }
@@ -135,6 +138,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 	bankRepo := dbrepository.NewBankRepository(db)
 	bankService := service.NewBankService(bankRepo)
 	bankHandler := http.NewBankHandler(bankService)
+	bankCatalogService := service.NewBankCatalogService(dbrepository.NewBankCatalogRepository(db))
 
 	// AccountType
 	accountTypeRepo := dbrepository.NewAccountTypeRepository(db)
@@ -290,6 +294,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 			Feedback:               feedbackHandler,
 			Reactivation:           reactivationHandler,
 			Launch:                 launchHandler,
+			BankCatalog:            http.NewBankCatalogHandler(bankCatalogService),
 			Initialization:         initDevHandler,
 			CategoryInitialization: InitHandler,
 			Activity:               service.NewActivityService(dbrepository.NewActivityRepository(db)),
@@ -299,6 +304,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 			Mail:          mailService,
 			Notifications: notificationService,
 			Reading:       readingService,
+			BankCatalog:   bankCatalogService,
 			MailInterval:  settings.Mail.OutboxInterval,
 		},
 	}

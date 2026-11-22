@@ -33,6 +33,7 @@ type Routes struct {
 	FeedbackHandler       *FeedbackHandler
 	ReactivationHandler   *ReactivationHandler
 	LaunchHandler         *LaunchHandler
+	BankCatalogHandler    *BankCatalogHandler
 	// Activity records the daily activity of the authenticated users (optional)
 	Activity port.ActivityTracker
 	Router   *gin.Engine
@@ -251,6 +252,7 @@ func (r *Routes) Init(env string) {
 	r.BillingRoutes()
 	r.ReadingRoutes()
 	r.FeedbackRoutes()
+	r.BankCatalogRoutes()
 	r.InitializationRoutes(env)
 	r.DocRoutes(env)
 }

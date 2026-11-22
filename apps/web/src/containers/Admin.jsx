@@ -10,6 +10,7 @@ import AdminUsers from '../components/admin/AdminUsers';
 import AdminFounders from '../components/admin/AdminFounders';
 import AdminReading from '../components/admin/AdminReading';
 import AdminCatalog from '../components/admin/AdminCatalog';
+import AdminBanks from '../components/admin/AdminBanks';
 import AdminCosts from '../components/admin/AdminCosts';
 import AdminMoney from '../components/admin/AdminMoney';
 import AdminFeedback from '../components/admin/AdminFeedback';
@@ -25,6 +26,7 @@ export const ADMIN_TABS = [
   { id: 'fundadores', label: 'Fundadores', component: AdminFounders },
   { id: 'lectura', label: 'Lectura', component: AdminReading },
   { id: 'catalogo', label: 'Catálogo', component: AdminCatalog },
+  { id: 'bancos', label: 'Bancos', component: AdminBanks },
   { id: 'costos', label: 'Costos', component: AdminCosts },
   { id: 'dinero', label: 'Dinero', component: AdminMoney },
   { id: 'opiniones', label: 'Opiniones', component: AdminFeedback },

@@ -130,6 +130,9 @@ plan/         plan de migración
   (`email_sync_state.first_found`); `GET /email/status` trae `reading` por banco (`no_emails` → la app pide el
   remitente correcto y confirma el dominio; `unreadable` → "aún no sabemos leerlos"). No se piden correos de ejemplo ni
   se listan bancos. Remitentes que no son oficiales (`IsOfficialSender`) van a Por revisar (`verify` en el job).
+  Catálogo de bancos (`plan/33-catalogo-de-bancos.md`): `bank_catalog` + `bank_catalog_senders` (no se borran, se
+  desactivan) + `bank_logos`, editable en el panel → Bancos; `banks.catalog_id` liga el banco del usuario por nombre.
+  Los jobs leen con `bank_effective_senders(catalog_id, email)` (catálogo + lo que escribió el usuario), en minúscula.
   `bank_unsupported` (correo) una vez por conexión sana sin movimientos a las 48 h. Opiniones en `feedback` (máx. 500, 3 por día), solo en
   el panel auditado; al equipo solo "hay N opiniones" (`admin_feedback`, 1 por hora, sin el texto).
   Reactivación personal (`reactivation_personal`): uno a uno desde Usuarios → "Escribirle", con vista previa; el

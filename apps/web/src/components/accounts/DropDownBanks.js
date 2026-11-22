@@ -12,6 +12,7 @@ import EditCreateBankForm from './EditCreateBankForm';
 import { ThreeDots } from 'react-loader-spinner';
 import Alert2 from '../alert2';
 import Alert from '../alert';
+import BankLogo from '../ui/BankLogo';
 //ui
 import { ChevronDownIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { Emoji } from "emoji-picker-react";
@@ -254,8 +255,9 @@ const DropDownBanks = ({
         >   
             <div className='flex flex-row gap-2 justify-start items-center text-sm'>
                 {selectedBank?
-                    <span>
-                        {selectedBank.name}
+                    <span className="flex items-center gap-2 min-w-0">
+                        <BankLogo name={selectedBank.name} logoUrl={selectedBank.logo_url} color={selectedBank.color} size="sm" />
+                        <span className="truncate">{selectedBank.name}</span>
                     </span>
                     :
                     <span className="text-gray-400">
@@ -284,8 +286,9 @@ const DropDownBanks = ({
                         >
                             <span 
                             onClick={() => handleSelect(bank.id)}
-                            className='px-3 py-1.5 cursor-pointer w-full truncate'>
-                                {bank.name}
+                            className='px-3 py-1.5 cursor-pointer w-full flex items-center gap-2 min-w-0'>
+                                <BankLogo name={bank.name} logoUrl={bank.logo_url} color={bank.color} size="sm" />
+                                <span className='truncate'>{bank.name}</span>
                             </span>
                             <div className='flex flex-row gap-1 py-1'>
                                 <div 
@@ -337,6 +340,7 @@ const DropDownBanks = ({
                             onClick={() => handleSelect(bank_def.id)}
                             className="px-3 py-1 flex items-center gap-2 hover:bg-gray-100 cursor-pointer dark:hover:bg-gray-700"
                             >
+                                <BankLogo name={bank_def.name} logoUrl={bank_def.logo_url} color={bank_def.color} size="sm" />
                                 <span>
                                     {bank_def.name}
                                 </span>
