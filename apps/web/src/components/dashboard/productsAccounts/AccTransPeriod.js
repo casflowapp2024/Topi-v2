@@ -13,6 +13,7 @@ import { update_transaction_local, update_transaction } from '../../../redux/act
 import { get_user_transactions } from '../../../redux/actions/cashflow';
 import { set_init_date_account_activated, set_end_date_account_activated } from '../../../redux/actions/reports';
 import { set_dash_account_activated, get_accounts_status_by_period, get_history_accounts_by_month } from '../../../redux/actions/reports';
+import TransferDirectionIcon from '../../transactions/TransferDirectionIcon';
 
 //componentes
 import { formatMoney, formatDate, findElmentById, formatToDateFilters, deepEqual } from '../../helpers';
@@ -221,7 +222,8 @@ const AccTransPeriod = ({
                                                         : <span className="block text-xs text-ink-2 dark:text-gray-400 truncate">{transfer ? 'Transferencia' : (tx.category?.name || '')}</span>}
                                                 </span>
                                                 <span className="flex flex-col items-end shrink-0">
-                                                    <span className={`text-sm font-semibold tabular-nums whitespace-nowrap ${transfer ? 'text-gray-700 dark:text-gray-200' : tx.expense ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}`}>
+                                                    <span className={`flex items-center gap-1 text-sm font-semibold tabular-nums whitespace-nowrap ${transfer ? 'text-gray-700 dark:text-gray-200' : tx.expense ? 'text-money-out dark:text-money-out-dark' : 'text-money-in dark:text-money-in-dark'}`}>
+                                                        {transfer && <TransferDirectionIcon tx={tx} className="w-3.5 h-3.5" />}
                                                         {transfer ? '' : tx.expense ? '−' : '+'}{formatMoney(tx.amount, tx.currency)}
                                                     </span>
                                                     {installmentsNote(tx) && <span className="text-[11px] text-ink-2 dark:text-gray-400 whitespace-nowrap">{installmentsNote(tx)}</span>}

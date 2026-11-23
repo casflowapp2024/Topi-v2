@@ -324,11 +324,16 @@ func (ar *AnalysisRepository) GetBalanceSummary(
 
 	// Accounts can have different currencies: each account's native amounts are converted to the
 	// user's base currency with the rate of the last day of the period (today at most).
+	// One account (the account view) stays in its own currency.
 	toBase := "fx_rate_at(a.currency, user_base_currency(a.user_id), least(?::date - 1, current_date))"
+	rateArgs := []interface{}{end}
+	if len(accounts) == 1 {
+		toBase, rateArgs = "1", nil
+	}
 
 	// Query for initial balance
 	initialBalance := ar.db.QueryBuilder.Select().
-		Column(sq.Expr("coalesce(sum(a.initial_balance * "+toBase+"), 0) as initial_balance", end)).
+		Column(sq.Expr("coalesce(sum(a.initial_balance * "+toBase+"), 0) as initial_balance", rateArgs...)).
 		From(enums.AccountTableName + " as a").
 		Where(sq.Eq{"a.user_id": userID}).
 		Where(sq.Eq{"a.type_id": accountTypes})
@@ -342,7 +347,7 @@ func (ar *AnalysisRepository) GetBalanceSummary(
 
 	// Query for past month balance (everything before the period)
 	pastMonthBalance := ar.db.QueryBuilder.Select().
-		Column(sq.Expr("coalesce(sum(m.net * "+toBase+"), 0) as past_month_balance", end)).
+		Column(sq.Expr("coalesce(sum(m.net * "+toBase+"), 0) as past_month_balance", rateArgs...)).
 		FromSelect(movements, "m").
 		Join(enums.AccountTableName + " as a on a.id = m.account_id").
 		Where(sq.Eq{"a.type_id": accountTypes}).
@@ -350,7 +355,7 @@ func (ar *AnalysisRepository) GetBalanceSummary(
 
 	// Query for current period movements (days are already in the user's timezone)
 	currentPeriodBalance := ar.db.QueryBuilder.Select().
-		Column(sq.Expr("coalesce(sum(m.net * "+toBase+"), 0) as current_period_balance", end)).
+		Column(sq.Expr("coalesce(sum(m.net * "+toBase+"), 0) as current_period_balance", rateArgs...)).
 		FromSelect(movements, "m").
 		Join(enums.AccountTableName + " as a on a.id = m.account_id").
 		Where(sq.Eq{"a.type_id": accountTypes}).
@@ -1132,21 +1137,26 @@ func (ar *AnalysisRepository) GetFinancialAccountSummary(
 	// Date calculations in user's timezone
 	userDate := "(t.date at time zone coalesce(u.utc_offset, 'utc'))::date"
 
+	// One account: its own currency (what the account view shows); several: the user's base currency
+	amount := "t.amount_base"
+	if len(accounts) == 1 {
+		amount = "t.amount"
+	}
+
 	if accountTypes.IsSaving() {
-		// Income: from categories marked as income
-		income = fmt.Sprintf("sum(case when c.income is true then %s else 0 end)", flowAmountCalc)
-
-		// Expenses: from categories marked as NOT income
-		expense = fmt.Sprintf("sum(case when c.income is false then %s else 0 end)", flowAmountCalc)
-
+		// Cash accounts: the money that came in and went out of the account, as its movements say,
+		// transfers included, so income - expense is what the balance moved in the period. Not the
+		// income/expense flows of the reports (those go by category and leave transfers out).
+		income = "sum(case when t.expense is false then " + amount + " else 0 end)"
+		expense = "sum(case when t.expense is true then -" + amount + " else 0 end)"
 	} else {
 		// Amount calculation: positive for income, negative for expenses (transfers excluded)
-		income = "sum(case when t.expense is false and t.transfer_group_id is null then t.amount_base else 0 end)"
+		income = "sum(case when t.expense is false and t.transfer_group_id is null then " + amount + " else 0 end)"
 		if accountTypes.IsCredit() {
 			// Everything that comes in is a payment, and payments are transfers from another account
-			income = "sum(case when t.expense is false then t.amount_base else 0 end)"
+			income = "sum(case when t.expense is false then " + amount + " else 0 end)"
 		}
-		expense = "sum(case when t.expense is true and t.transfer_group_id is null then -t.amount_base else 0 end)"
+		expense = "sum(case when t.expense is true and t.transfer_group_id is null then -" + amount + " else 0 end)"
 	}
 
 	query := ar.db.QueryBuilder.Select(

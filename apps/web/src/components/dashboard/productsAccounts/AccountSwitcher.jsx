@@ -26,36 +26,42 @@ const periodLabel = (from, to) => {
   return `${format(from)} – ${format(to)}`;
 };
 
-// Cifras del periodo según el tipo de cuenta (data = /analysis/accounts-report de la cuenta)
-const periodKpis = (cls, data) => {
+// Cifras del periodo según el tipo de cuenta (data = /analysis/accounts-report de la cuenta, en su moneda).
+// En efectivo, Entró y Salió son todo lo que entró y salió de la cuenta, transferencias incluidas:
+// Entró − Salió es lo que se movió el saldo en el periodo.
+const periodKpis = (cls, data, currency) => {
+  const money = (v) => formatMoney(v, currency);
   const inc = Math.abs(Number(data?.income?.value ?? 0));
   const exp = Math.abs(Number(data?.expenses?.value ?? 0));
   const bal = Number(data?.balance?.value ?? 0);
   if (cls === 'credit') {
     return {
       rows: [
-        { label: 'Compras y cargos', value: formatMoney(exp), tone: 'out' },
-        { label: 'Pagos', value: formatMoney(inc), tone: 'in' },
+        { label: 'Compras y cargos', value: money(exp), tone: 'out' },
+        { label: 'Pagos', value: money(inc), tone: 'in' },
       ],
     };
   }
   if (cls === 'investment') {
     return {
       rows: [
-        { label: 'Aportes', value: formatMoney(inc), tone: 'in' },
-        { label: 'Retiros', value: formatMoney(exp), tone: 'out' },
-        { label: 'Valor al final', value: formatMoney(bal) },
+        { label: 'Aportes', value: money(inc), tone: 'in' },
+        { label: 'Retiros', value: money(exp), tone: 'out' },
+        { label: 'Valor al final', value: money(bal) },
       ],
     };
   }
   const net = inc - exp;
+  const note = Math.abs(net) < 0.005
+    ? 'Entró lo mismo que salió.'
+    : `${net > 0 ? 'Entró' : 'Salió'} ${money(Math.abs(net))} más de lo que ${net > 0 ? 'salió' : 'entró'}.`;
   return {
     rows: [
-      { label: 'Entró', value: formatMoney(inc), tone: 'in' },
-      { label: 'Salió', value: formatMoney(exp), tone: 'out' },
-      { label: 'Saldo al final', value: formatMoney(bal), tone: bal < 0 ? 'out' : undefined },
+      { label: 'Entró', value: money(inc), tone: 'in' },
+      { label: 'Salió', value: money(exp), tone: 'out' },
+      { label: 'Saldo al final', value: money(bal), tone: bal < 0 ? 'out' : undefined },
     ],
-    note: `${net >= 0 ? 'Entró' : 'Salió'} ${formatMoney(Math.abs(net))} más de lo que ${net >= 0 ? 'salió' : 'entró'}.`,
+    note,
   };
 };
 
@@ -93,7 +99,7 @@ const AccountSwitcher = ({ group, account_activated, account_activated_stats, in
 
   if (!account_activated) return null;
   const cls = accountClass(account_activated);
-  const kpis = periodKpis(cls, account_activated_stats);
+  const kpis = periodKpis(cls, account_activated_stats, account_activated.currency || 'COP');
   const period = periodLabel(iniDate_account_dash, endDate_account_dash);
   const rail = 'shrink-0 w-9 sm:w-10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-topi-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-25 disabled:pointer-events-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-topi-500';
 
