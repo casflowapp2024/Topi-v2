@@ -23,6 +23,7 @@ const DropDownCat = ({
     const [createBox, setOpenCreateBox] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const searchInputRef = useRef(null);
+    const listDropRef = useRef(null);
 
     //handle close dropdown
     const handleToggleDropdown = () => {
@@ -33,18 +34,22 @@ const DropDownCat = ({
         }
     };
 
-    // Auto-focus the search input when the dropdown opens
+    // Al abrir: en PC el buscador toma el foco. En el celular no (el teclado taparía la lista; se toca el
+    // buscador si se quiere escribir) y el campo sube al tope de la hoja para que la lista quepa debajo.
     useEffect(() => {
-        if (isOpen && !createBox) {
-            // Timeout ensures the input is rendered before we try to focus it
-            setTimeout(() => {
-                searchInputRef.current?.focus();
-            }, 0);
-        }
+        if (!isOpen || createBox) return undefined;
+        const touch = window.matchMedia?.('(pointer: coarse)').matches;
+        const timer = setTimeout(() => {
+            if (!touch) searchInputRef.current?.focus();
+            if (window.matchMedia?.('(max-width: 639px)').matches) {
+                const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                listDropRef.current?.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
+            }
+        }, 0);
+        return () => clearTimeout(timer);
     }, [isOpen, createBox]);
 
     //close category click outside
-    const listDropRef = useRef(null)
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -177,7 +182,7 @@ const DropDownCat = ({
     );
 
   return (
-      <div ref={listDropRef}  className="relative w-full">
+      <div ref={listDropRef} data-keyboard-anchor="" className="relative w-full scroll-mt-2">
         <div
             onClick={!isOpen ? handleToggleDropdown : undefined}
             className="w-full pl-2 pr-1 py-1 md:py-2 flex justify-between items-center cursor-pointer text-gray-900 bg-gray-50 border border-gray-300 rounded-lg shadow-sm hover:border-topi-500 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"

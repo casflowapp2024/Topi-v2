@@ -104,13 +104,14 @@ function CreateTransaction({
         // category must be created first
         if (createTransData.category_id < 0) {
             const newCategory = findElmentById(user_categories.items, createTransData.category_id)
-            const createCategoryResponse = await create_category(newCategory.name, parseFloat(0), newCategory.emoji)
-            if (createCategoryResponse === false) {
+            // create_category responde { res, id }
+            const createCategoryResponse = await create_category(newCategory.name, parseFloat(0), newCategory.emoji, Boolean(newCategory.income))
+            if (!createCategoryResponse || createCategoryResponse.res === false || createCategoryResponse.id == null) {
                 setAlert("Algo salio mal, la categoría no fue creada, intenta de nuevo!", true, "text-white", "bg-red-500", 3000)
                 setLoadingCreate(false)
                 return
             }
-            newCategoryId = createCategoryResponse
+            newCategoryId = createCategoryResponse.id
             await get_user_categories(0, 50)
             setCreatTransData({ ...createTransData, ["category_id"]: newCategoryId })
         }

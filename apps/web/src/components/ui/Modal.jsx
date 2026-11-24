@@ -1,7 +1,8 @@
-import { Fragment, useRef } from 'react';
+import { Fragment, useEffect, useRef } from 'react';
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/20/solid';
 import useKeepFocusInside from './useKeepFocusInside';
+import useKeyboardInset from './useKeyboardInset';
 
 const SIZES = {
   sm: 'sm:max-w-sm',
@@ -31,6 +32,16 @@ const Modal = ({
 }) => {
   const panelRef = useRef(null);
   useKeepFocusInside(Boolean(open), panelRef);
+  // En el celular, con el teclado abierto la hoja sube encima de él (ver useKeyboardInset)
+  const keyboard = useKeyboardInset(Boolean(open));
+  useEffect(() => {
+    if (!keyboard.bottom) return;
+    const active = document.activeElement;
+    if (!panelRef.current?.contains(active)) return;
+    // un desplegable (data-keyboard-anchor) sube al tope para que su lista quepa entre él y el teclado
+    const anchor = active.closest?.('[data-keyboard-anchor]');
+    (anchor || active).scrollIntoView?.({ block: anchor ? 'start' : 'nearest' });
+  }, [keyboard.bottom, keyboard.height]);
   return (
   <Transition show={Boolean(open)} as={Fragment}>
     <Dialog as="div" className="relative z-50 font-Inter" onClose={dismissible ? onClose : noop}>
@@ -44,7 +55,9 @@ const Modal = ({
         <TransitionChild as={Fragment}
           enter="ease-out duration-300 motion-reduce:duration-0" enterFrom="translate-y-full sm:translate-y-0 sm:opacity-0 sm:scale-95" enterTo="translate-y-0 sm:opacity-100 sm:scale-100"
           leave="ease-in duration-200 motion-reduce:duration-0" leaveFrom="translate-y-0 sm:opacity-100 sm:scale-100" leaveTo="translate-y-full sm:translate-y-0 sm:opacity-0 sm:scale-95">
-          <DialogPanel ref={panelRef} tabIndex={-1} className={`w-full ${SIZES[size] || SIZES.md} max-h-[92dvh] sm:max-h-[90vh] flex flex-col focus:outline-none bg-white dark:bg-surface-raised text-gray-900 dark:text-gray-100 rounded-t-3xl sm:rounded-3xl shadow-2xl ${className}`}>
+          <DialogPanel ref={panelRef} tabIndex={-1}
+            style={keyboard.bottom ? { marginBottom: keyboard.bottom, maxHeight: keyboard.height - 8 } : { marginBottom: 0, maxHeight: '' }}
+            className={`w-full ${SIZES[size] || SIZES.md} max-h-[92dvh] sm:max-h-[90vh] flex flex-col focus:outline-none bg-white dark:bg-surface-raised text-gray-900 dark:text-gray-100 rounded-t-3xl sm:rounded-3xl shadow-2xl ${className}`}>
             {/* agarradera en móvil */}
             <div className="sm:hidden flex justify-center pt-2" aria-hidden="true">
               <span className="w-10 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />

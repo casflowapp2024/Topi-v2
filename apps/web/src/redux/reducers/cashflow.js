@@ -368,7 +368,8 @@ export default function CashFlow(state = initialState, action) {
                 ...state,
                 user_transactions: {
                     ...state.user_transactions,
-                    items: state.user_transactions.items.map(transaction => {
+                    // la lista puede no haberse cargado aún (p. ej. se editó desde Presupuestos)
+                    items: (state.user_transactions?.items || null) && state.user_transactions.items.map(transaction => {
                         if (transaction.id === action.payload.id) {
                             return { ...transaction, ...action.payload };
                         }
@@ -381,7 +382,8 @@ export default function CashFlow(state = initialState, action) {
                 ...state,
                 user_transactions_dash: {
                     ...state.user_transactions_dash,
-                    items: state.user_transactions_dash.items.map(transaction => {
+                    // la lista puede no haberse cargado aún (p. ej. se editó desde Presupuestos)
+                    items: (state.user_transactions_dash?.items || null) && state.user_transactions_dash.items.map(transaction => {
                         if (transaction.id === action.payload.id) {
                             return { ...transaction, ...action.payload };
                         }

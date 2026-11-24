@@ -3,9 +3,28 @@ import { formatMoney, capitalizeWords, formatDate, parseDatetimetoDateStrFormat,
 import { Emoji } from "emoji-picker-react";
 import FormatMoneyShowDecs from "../FormatMoneyShowDecs";
 import InstallmentSchedule from "./InstallmentSchedule";
+import { ChevronRightIcon } from "@heroicons/react/20/solid";
+
+// Fila que se toca para cambiar un dato sin pasar por "Editar"
+const PickRow = ({ label, onClick, children }) => (
+    <button type="button" onClick={onClick} aria-label={`${label}: cambiar`}
+        className="w-full mb-3 flex items-center gap-2 px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-left hover:border-topi-500/50 hover:bg-gray-50 dark:hover:bg-gray-700/40 active:scale-[0.99] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500">
+        <span className="flex-1 min-w-0 flex flex-col">
+            <span className="text-xs text-ink-2 dark:text-gray-400">{label}</span>
+            <span className="flex items-center gap-2 min-w-0 text-sm font-medium text-gray-900 dark:text-white">{children}</span>
+        </span>
+        <span className="shrink-0 text-xs font-medium text-topi-600 dark:text-topi-200">Cambiar</span>
+        <ChevronRightIcon className="w-4 h-4 shrink-0 text-gray-400" aria-hidden="true" />
+    </button>
+);
+
+const accountLabel = (account) => `${account?.name || ''}${account?.last_four_digits ? ` - ${account.last_four_digits}` : ''}`;
+
 const TransSumm = ({
     detailInfo,
-    create = false
+    create = false,
+    onPickCategory, // si llegan, la categoría y la cuenta se cambian tocándolas
+    onPickAccount,
 }) => {
 
     return (
@@ -45,7 +64,23 @@ const TransSumm = ({
 
             </div>
             {/* detalle */}
+            {(onPickCategory || onPickAccount) && (
+                <div className="w-full mb-2">
+                    {onPickCategory && (
+                        <PickRow label="Categoría" onClick={onPickCategory}>
+                            {detailInfo.category?.emoji && <Emoji unified={detailInfo.category.emoji.toLowerCase()} emojiStyle="apple" size={18} />}
+                            <span className="truncate">{capitalizeWords(detailInfo.category?.name)}</span>
+                        </PickRow>
+                    )}
+                    {onPickAccount && (
+                        <PickRow label="Cuenta" onClick={onPickAccount}>
+                            <span className="truncate">{accountLabel(detailInfo.account)}</span>
+                        </PickRow>
+                    )}
+                </div>
+            )}
             <dl className="w-full">
+                {!onPickCategory && <>
                 <dt class="mb-2 font-semibold leading-none text-gray-900 dark:text-white">Categoria</dt>
                 <dd class="mb-4 font-light text-gray-500 sm:mb-5 dark:text-gray-400 flex flex-row gap-2">
                     {detailInfo.category && detailInfo.category.emoji &&
@@ -53,12 +88,13 @@ const TransSumm = ({
                     }
                     {capitalizeWords(detailInfo.category && detailInfo.category.name)}
                 </dd>
+                </>}
                 <dt class="mb-2 font-semibold leading-none text-gray-900 dark:text-white mt-4">Detalles</dt>
                 <dd class="mb-2 font-light text-gray-500 sm:mb-2 dark:text-gray-400 flex flex-col">
 
                     <span>Fecha: {parseDatetimetoDateStrFormat(parseDatetoDatetimeBrow(detailInfo.date && detailInfo.date, "YYYY-MM-DD HH:mm:ss Z"), "DD-MM-YYYY")}</span>
 
-                    <span>Producto: {detailInfo.account && detailInfo.account.name}{detailInfo.account?.last_four_digits ? ` - ${detailInfo.account.last_four_digits}` : ''}</span>
+                    {!onPickAccount && <span>Producto: {accountLabel(detailInfo.account)}</span>}
 
                     {detailInfo.installments > 1 && <span> Cuotas: {detailInfo.installments}</span>}
                     {!create && <InstallmentSchedule transactionId={detailInfo.id} installments={detailInfo.installments} />}

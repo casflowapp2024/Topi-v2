@@ -7,8 +7,8 @@ import { get_user_transactions } from "../../../redux/actions/cashflow";
 import { get_savings_account, get_history_dash, get_history_category_by_month } from "../../../redux/actions/reports";
 
 //components
-import { parseDatetimetoDateStrFormat } from '../../helpers';
 import BudgetOverview from './BudgetOverview';
+import { budgetTransactionParams } from './budgetTransactionParams';
 import BudDashCategorieList from './BudDashCategorieList';
 import BudDashTransCategorie from './BudDashTransCategorie';
 import BudDashDailySpent from "./BudDashDailySpent.js";
@@ -53,34 +53,10 @@ const AABudgetDashboard = ({
 
     const [loadingTransactions, setLoadingTransactions] = useState(true)
 
-    const buildTransactionParams = ({
-        selectedCategories,
-        iniDate,
-        endDate,
-        expense,
-    }) => {
-
-        const params = [];
-        if (selectedCategories && selectedCategories.length > 0) params.push(`categories=${selectedCategories}`);
-        if (expense === true || expense === false) params.push(`expense=${expense}`);
-        if (iniDate) params.push(`init_date=${iniDate}`);
-        if (endDate) params.push(`end_date=${endDate}`);
-
-        return params.join("&");
-    };
-
-
     const handleGetTransactions = async () => {
         setLoadingTransactions(true)
-        const filterParams = buildTransactionParams(
-            {
-                selectedCategories: category_activated ? [category_activated.category_id] : null,
-                // sin categoría elegida: los movimientos del mes del lado que se está viendo
-                expense: category_activated ? undefined : active_report_tab === 'Expenses',
-                iniDate: parseDatetimetoDateStrFormat(new Date(current_Year, current_Month - 1, 1), "YYYY-MM-DD HH:mm:ss Z"),
-                endDate: parseDatetimetoDateStrFormat(new Date(current_Year, current_Month, 0), "YYYY-MM-DD HH:mm:ss Z")
-            }
-        )
+        // sin categoría elegida: los movimientos del mes del lado que se está viendo
+        const filterParams = budgetTransactionParams({ category_activated, active_report_tab, current_Year, current_Month })
         const transResponse = await get_user_transactions(0, 100, filterParams, "budgetCategory")
 
         if (transResponse === true) {

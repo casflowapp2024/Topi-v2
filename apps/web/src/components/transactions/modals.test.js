@@ -164,3 +164,66 @@ test('Transferir y posibles transferencias: Modal con campos comunes y confianza
   expect(badge.querySelector('svg')).not.toBeNull();
   await c.unmount();
 });
+
+describe('Cambio rápido desde el detalle', () => {
+  const axios = require('axios').default;
+  const recommended = { id: -6, name: 'Supermercado', emoji: '1f6d2', isDefault: true, userCat: false, income: false };
+  const withRecommended = { ...state, CashFlow: { ...state.CashFlow, user_categories: { items: [...categories, recommended], default: [recommended] } } };
+  const mountWith = async (st, ui) => {
+    const store = createStore((s = st) => s, applyMiddleware(thunk));
+    const el = document.createElement('div'); document.body.appendChild(el);
+    const root = createRoot(el);
+    await act(async () => root.render(<Provider store={store}>{ui}</Provider>));
+    return { unmount: async () => { await act(async () => root.unmount()); el.remove(); } };
+  };
+  const putBody = () => JSON.parse(axios.put.mock.calls[axios.put.mock.calls.length - 1][1]);
+  beforeEach(() => {
+    axios.put.mockReset();
+    axios.put.mockResolvedValue({ status: 200, data: { data: {} } });
+    axios.get.mockClear();
+  });
+
+  test('tocar la categoría abre la lista y elegir otra guarda sin pasar por Editar', async () => {
+    const setDetail = jest.fn();
+    const m = await mountWith(state, <TransactionDetail openTransDetail setOpenTransDetail={() => {}} detailInfo={tx(1, 1)} setDetailInfo={setDetail} currentFrontendPage={1} />);
+    const d = dialog();
+    await click(d.querySelector('button[aria-label="Categoría: cambiar"]'));
+    expect(d.querySelector('h2').textContent).toBe('Cambiar categoría');
+    expect(d.querySelector('input[type=search]')).not.toBeNull();
+    // las de gasto primero (salario es de ingreso: va al final)
+    const names = [...d.querySelectorAll('ul[aria-label="Tus categorías"] button')].map(b => b.textContent.trim());
+    expect(names[names.length - 1]).toBe('Salario');
+    await click([...d.querySelectorAll('ul[aria-label="Tus categorías"] button')].find(b => b.textContent.includes('Salud')));
+    expect(axios.put).toHaveBeenCalledTimes(1);
+    expect(putBody()).toMatchObject({ category_id: 5, account_id: 1, amount: 1000, description: 'Mov 1' });
+    expect(putBody()).not.toHaveProperty('installments'); // cambiar la categoría no toca las cuotas
+    expect(setDetail).toHaveBeenCalledWith(expect.objectContaining({ category: expect.objectContaining({ id: 5, name: 'salud' }) }));
+    expect(d.querySelector('h2').textContent).toBe('Transacción');
+    await m.unmount();
+  });
+
+  test('cambiar la cuenta guarda y en Presupuestos sin categoría elegida recarga la lista del mes', async () => {
+    const st = { ...state, Reports: { ...state.Reports, category_activated: null }, UI: { active_report_tab: 'Expenses' } };
+    const m = await mountWith(st, <TransactionDetail openTransDetail setOpenTransDetail={() => {}} detailInfo={tx(1, 1)} setDetailInfo={() => {}} currentFrontendPage={1} contextWindow="dashCategories" />);
+    const d = dialog();
+    await click(d.querySelector('button[aria-label="Cuenta: cambiar"]'));
+    expect(d.querySelector('h2').textContent).toBe('Cambiar cuenta');
+    await click([...d.querySelectorAll('ul[aria-label="Cuentas"] button')].find(b => b.textContent.includes('Bolsillo')));
+    expect(putBody()).toMatchObject({ category_id: 1, account_id: 2, installments: 0 });
+    const urls = axios.get.mock.calls.map(([url]) => url);
+    expect(urls.some(u => u.includes('/transactions') && u.includes('expense=true') && !u.includes('categories='))).toBe(true);
+    await m.unmount();
+  });
+
+  test('una categoría Recomendada se crea primero y la transacción usa su id', async () => {
+    axios.post.mockReset();
+    axios.post.mockResolvedValue({ status: 201, data: { data: { id: 42 } } });
+    const m = await mountWith(withRecommended, <TransactionDetail openTransDetail setOpenTransDetail={() => {}} detailInfo={tx(1, 1)} setDetailInfo={() => {}} currentFrontendPage={1} />);
+    const d = dialog();
+    await click(d.querySelector('button[aria-label="Categoría: cambiar"]'));
+    await click([...d.querySelectorAll('section[aria-label="Recomendadas"] button')].find(b => b.textContent.includes('Supermercado')));
+    expect(axios.post.mock.calls[0][0]).toContain('/categories/create');
+    expect(putBody().category_id).toBe(42);
+    await m.unmount();
+  });
+});

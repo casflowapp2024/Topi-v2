@@ -13,13 +13,16 @@ import TransSumm from './TransSumm';
 import FxRateEditor from './FxRateEditor';
 import TransferLinkSection from './TransferLinkSection';
 import FormEditCreateTrans from './FormEditCreateTrans';
+import { CategoryPicker, AccountPicker } from './QuickPickers';
+import { budgetTransactionParams } from '../dashboard/budgetCategories/budgetTransactionParams';
 import Alert from '../alert';
 
 /* This example requires Tailwind CSS v2.0+ */
 import {
     CheckIcon,
     TrashIcon,
-    PencilSquareIcon
+    PencilSquareIcon,
+    ChevronLeftIcon
 } from '@heroicons/react/20/solid'
 import Button from '../ui/Button';
 import Sheet from '../ui/Sheet';
@@ -55,6 +58,7 @@ function TransactionDetail({
     current_Month,
     current_Year,
     category_activated,
+    active_report_tab,
 
     //Reports Actions
     get_accounts_status_by_period,
@@ -108,36 +112,14 @@ function TransactionDetail({
 
                 get_user_transactions(0, 100, filterParams, "accountsAnalysis")
             }
-        } else if (contextWindow === "dashCategories" && category_activated) {
-
-            const buildTransactionParams = ({
-                selectedCategories,
-                iniDate,
-                endDate,
-            }) => {
-
-                const params = [];
-                if (selectedCategories && selectedCategories.length > 0) params.push(`categories=${selectedCategories}`);
-                if (iniDate) params.push(`init_date=${iniDate}`);
-                if (endDate) params.push(`end_date=${endDate}`);
-
-                return params.join("&");
-            };
-
-            const filterParams = buildTransactionParams(
-                {
-                    selectedCategories: category_activated ? [category_activated.category_id] : null,
-                    iniDate: parseDatetimetoDateStrFormat(new Date(current_Year, current_Month - 1, 1), "YYYY-MM-DD HH:mm:ss Z"),
-                    endDate: parseDatetimetoDateStrFormat(new Date(current_Year, current_Month, 0), "YYYY-MM-DD HH:mm:ss Z")
-                }
-            )
+        } else if (contextWindow === "dashCategories") {
+            // Presupuestos: la lista, el total del mes y las categorías. Sin categoría elegida también
+            // (antes solo recargaba con una elegida y el cambio no se veía en la lista)
             const date_filter = `${current_Year}-${current_Month.toString().padStart(2, '0')}`
-
             get_history_dash(date_filter);
-            get_history_category_by_month(category_activated?.category_id, date_filter);
-            const transResponse = get_user_transactions(0, 100, filterParams, "budgetCategory")
-            let dateString = `${current_Year}-${current_Month.toString().padStart(2, '0')}-01`
-            const getReportResponse = get_expenses_report(dateString)
+            if (category_activated?.category_id != null) get_history_category_by_month(category_activated.category_id, date_filter);
+            get_user_transactions(0, 100, budgetTransactionParams({ category_activated, active_report_tab, current_Year, current_Month }), "budgetCategory")
+            get_expenses_report(`${date_filter}-01`)
 
         } else if (contextWindow === "dash") {
             get_user_transactions(0, default_limit, null, "dash")
@@ -205,29 +187,36 @@ function TransactionDetail({
 
     const findElmentEmojiById = (elements, id) => {
         const element = elements.find(element => element.id === id);
-        return element.emoji;
+        return element?.emoji;
+    }
+
+    // Las "Recomendadas" (id negativo) aún no existen: se crean al elegirlas. Devuelve el id real o null.
+    // create_category responde { res, id } (antes se usaba la respuesta entera como id y fallaba)
+    const resolveCategoryId = async (categoryId) => {
+        if (Number(categoryId) >= 0) return categoryId
+        const newCategory = findElmentById(user_categories.items, Number(categoryId))
+        const created = newCategory ? await create_category(newCategory.name, parseFloat(0), newCategory.emoji, Boolean(newCategory.income)) : null
+        if (!created || created.res === false || created.id == null) {
+            setAlert("Algo salio mal, la categoría no fue creada, intenta de nuevo!", true, "text-white", "bg-red-500", 3000)
+            return null
+        }
+        return created.id
     }
 
     const onSubmitUpdate = async (e) => {
         e.preventDefault();
         setLoadingUpdate(true)
 
-        let newCategoryId = editCreateData.category_id
-        if (editCreateData.category_id < 0) {
-            const newCategory = findElmentById(user_categories.items, editCreateData.category_id)
-            const createCategoryResponse = await create_category(newCategory.name, parseFloat(0), newCategory.emoji)
-            if (createCategoryResponse === false) {
-                setAlert("Algo salio mal, la categoría no fue creada, intenta de nuevo!", true, "text-white", "bg-red-500", 3000)
-                setLoadingUpdate(false)
-                return
-            }
-            newCategoryId = createCategoryResponse
+        const newCategoryId = await resolveCategoryId(editCreateData.category_id)
+        if (newCategoryId == null) {
+            setLoadingUpdate(false)
+            return
         }
 
         const cats_retrieved = await get_user_categories(0, 50)
         setEditCreateData({ ...editCreateData, ["category_id"]: newCategoryId })
-        const newEmoji = findElmentEmojiById(cats_retrieved, parseInt(newCategoryId))
-        const newCatName = findElmentNameById(cats_retrieved, parseInt(newCategoryId))
+        const newEmoji = findElmentEmojiById(cats_retrieved || [], parseInt(newCategoryId))
+        const newCatName = findElmentNameById(cats_retrieved || [], parseInt(newCategoryId))
 
         const updateResponse = await update_transaction(
             parseInt(detailInfo.id),
@@ -298,6 +287,60 @@ function TransactionDetail({
     }
 
 
+    // Cambio rápido de categoría o cuenta desde el detalle: guarda al tocar, sin pasar por "Editar"
+    const [picking, setPicking] = useState(null) // null | 'category' | 'account'
+    const [savingPick, setSavingPick] = useState(false)
+
+    const quickUpdate = async ({ category, account }) => {
+        if (savingPick) return
+        const sameCategory = category && String(category.id) === String(detailInfo.category?.id)
+        const sameAccount = account && String(account.id) === String(detailInfo.account?.id)
+        if (sameCategory || sameAccount) { setPicking(null); return }
+        setSavingPick(true)
+
+        let newCategory = detailInfo.category
+        if (category) {
+            const id = await resolveCategoryId(category.id)
+            if (id == null) { setSavingPick(false); return }
+            if (Number(category.id) < 0) get_user_categories(0, 50)
+            newCategory = { id, name: category.name, emoji: category.emoji }
+        }
+        const newAccount = account ? { id: account.id, name: account.name, last_four_digits: account.last_four_digits } : detailInfo.account
+        // cuotas solo en gastos con tarjeta: si la cuenta nueva no es tarjeta se quitan; con la categoría no cambian
+        const installments = account
+            ? (detailInfo.expense && isCreditAccount(account) ? (Number(detailInfo.installments) || 0) : 0)
+            : undefined
+
+        const ok = await update_transaction(
+            parseInt(detailInfo.id),
+            parseInt(newCategory.id),
+            parseInt(newAccount.id),
+            detailInfo.description,
+            detailInfo.expense,
+            detailInfo.amount,
+            detailInfo.date,
+            undefined,
+            undefined,
+            undefined,
+            installments
+        )
+        setSavingPick(false)
+        if (ok !== true) {
+            setAlert("No se pudo actualizar la transaccion, intenta de nuevo", false, "text-white", "bg-red-500", 5000)
+            return
+        }
+        const changes = {
+            category: newCategory,
+            account: newAccount,
+            ...(account ? { currency: account.currency || detailInfo.currency, installments: Number(installments) > 1 ? Number(installments) : null } : {}),
+        }
+        setDetailInfo({ ...detailInfo, ...changes })
+        update_transaction_local(detailInfo.id, changes, contextWindow)
+        refreshViews()
+        setPicking(null)
+        setAlert(updatedMessage(take_learned_identifier()), true, "text-white", "bg-green-500", 6000)
+    }
+
     //GENERALES
     useEffect(() => {
         //console.log("detailInfo",detailInfo)
@@ -321,6 +364,7 @@ function TransactionDetail({
             setDeleteSuccess(false)
             setOpenDeleteBox(false);
             setOpenEditTrans(false);
+            setPicking(null);
         }, 500)
     }
 
@@ -332,8 +376,14 @@ function TransactionDetail({
     }, [openEditTrans]); */
 
     // Detalle de una transacción: hoja lateral (acompaña la lista). Estados: detalle → editar | eliminar → eliminada.
-    const view = !detailInfo ? 'detail' : deleteSuccess ? 'deleted' : openDeleteBox ? 'delete' : openEditTrans ? 'edit' : 'detail';
-    const TITLES = { detail: 'Transacción', edit: 'Editar transacción', delete: '¿Eliminar esta transacción?', deleted: 'Transacción eliminada' };
+    const view = !detailInfo ? 'detail' : deleteSuccess ? 'deleted' : openDeleteBox ? 'delete' : openEditTrans ? 'edit'
+        : picking === 'category' ? 'pickCategory' : picking === 'account' ? 'pickAccount' : 'detail';
+    const TITLES = { detail: 'Transacción', edit: 'Editar transacción', delete: '¿Eliminar esta transacción?', deleted: 'Transacción eliminada', pickCategory: 'Cambiar categoría', pickAccount: 'Cambiar cuenta' };
+    const backFooter = (
+        <div className="flex">
+            <Button variant="ghost" icon={ChevronLeftIcon} onClick={() => setPicking(null)} disabled={savingPick}>Volver</Button>
+        </div>
+    );
     const footers = {
         detail: (
             <div className="flex items-center justify-between gap-2">
@@ -359,6 +409,8 @@ function TransactionDetail({
                 </Button>
             </div>
         ),
+        pickCategory: backFooter,
+        pickAccount: backFooter,
         deleted: (
             <div className="flex sm:justify-end">
                 <Button variant="secondary" className="w-full sm:w-auto" onClick={() => handleClosePopover()}>Cerrar</Button>
@@ -397,6 +449,12 @@ function TransactionDetail({
                                 Se borra para siempre y deja de contar en tus saldos y presupuestos.
                             </p>
                         </div>
+                    ) : view === 'pickCategory' ? (
+                        <CategoryPicker categories={user_categories?.items} selectedId={detailInfo.category?.id}
+                            expense={detailInfo.expense} busy={savingPick} onPick={(category) => quickUpdate({ category })} />
+                    ) : view === 'pickAccount' ? (
+                        <AccountPicker accounts={user_accounts?.items} selectedId={detailInfo.account?.id}
+                            busy={savingPick} onPick={(account) => quickUpdate({ account })} />
                     ) : view === 'edit' ? (
                         <form id="edit-transaction-form" onSubmit={(e) => onSubmitUpdate(e)} noValidate>
                             <FormEditCreateTrans
@@ -411,7 +469,9 @@ function TransactionDetail({
                         </form>
                     ) : (
                         <div>
-                            <TransSumm detailInfo={detailInfo} />
+                            <TransSumm detailInfo={detailInfo}
+                                onPickCategory={() => setPicking('category')}
+                                onPickAccount={() => setPicking('account')} />
                             <FxRateEditor detailInfo={detailInfo} setDetailInfo={setDetailInfo} contextWindow={contextWindow} />
                             <TransferLinkSection detailInfo={detailInfo} setDetailInfo={setDetailInfo} onChanged={refreshViews} />
                         </div>
@@ -441,6 +501,7 @@ const mapStateToProps = state => ({
     current_Month: state.Reports.current_Month,
     current_Year: state.Reports.current_Year,
     category_activated: state.Reports.category_activated,
+    active_report_tab: state.UI?.active_report_tab,
 
 })
 
