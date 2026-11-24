@@ -7,6 +7,8 @@ import { thunk } from 'redux-thunk';
 import HomePaceCard from './HomePaceCard';
 import HomeFlowCard, { flowBarSegments } from './HomeFlowCard';
 import HomeNetWorthCard, { netWorthChange, netWorthSegments } from './HomeNetWorthCard';
+import DashPlan from './DashPlan';
+import { SET_DASH_CATEGORY_ACTIVATED, SET_ACTIVE_REPORT_TAB } from '../../../redux/actions/types';
 import axios from 'axios';
 import { getDailyAllowance } from '../../ui/BudgetProgress';
 import { formatMoney } from '../../helpers';
@@ -204,5 +206,25 @@ test('Ritmo: con presupuesto parcial, cuenta solo las categorías con presupuest
   const { el, root } = render(<HomePaceCard />, reports({ history_dash: history(budget), expenses_report: report }));
   expect(el.textContent).toContain(`Quedan ${formatMoney(expected.left)}`);
   expect(el.textContent).toContain('en tus categorías con presupuesto');
+  act(() => root.unmount());
+});
+
+test('Presupuestos del Inicio: tocar uno abre Presupuestos (Gastos) con esa categoría elegida', async () => {
+  mockNavigate.mockClear();
+  const seen = [];
+  const state = { CashFlow: { user_categories: null }, ...reports({ expenses_report: [
+    { category_id: 7, name: 'mercado', emoji: '', value: -300000, budget: -500000, usage: 60 },
+    { category_id: 8, name: 'ocio', emoji: '', value: -50000, budget: 0, usage: 0 },
+  ] }) };
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  const store = createStore((s = state, a) => { seen.push(a); return s; }, applyMiddleware(thunk));
+  await act(async () => { root.render(<Provider store={store}><DashPlan /></Provider>); });
+  const rows = [...el.querySelectorAll('li button')];
+  expect(rows).toHaveLength(1); // solo las que tienen presupuesto
+  await act(async () => { rows[0].dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+  expect(seen.find(a => a.type === SET_ACTIVE_REPORT_TAB)?.payload).toBe('Expenses');
+  expect(seen.find(a => a.type === SET_DASH_CATEGORY_ACTIVATED)?.payload.category_id).toBe(7);
+  expect(mockNavigate).toHaveBeenCalledWith('/dashboard/budgets');
   act(() => root.unmount());
 });

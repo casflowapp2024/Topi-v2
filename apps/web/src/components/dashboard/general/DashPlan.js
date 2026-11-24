@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { connect } from 'react-redux';
-import { Link } from 'react-router-dom';
-import { get_expenses_report } from '../../../redux/actions/reports';
+import { Link, useNavigate } from 'react-router-dom';
+import { get_expenses_report, set_dash_category_activated } from '../../../redux/actions/reports';
+import { set_active_report_tab } from '../../../redux/actions/ui';
 import { formatMoney, capitalizeWords, getPerc0, formatDate } from '../../helpers';
 import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/20/solid';
 import { SkeletonRows } from '../../ui/Skeleton';
@@ -14,9 +15,19 @@ import BudgetProgress, { getMonthPace } from '../../ui/BudgetProgress';
 const DashPlan = ({
   current_Month,
   current_Year,
-  get_expenses_report, expenses_report, user_categories
+  get_expenses_report, expenses_report, user_categories,
+  set_dash_category_activated, set_active_report_tab,
 }) => {
   const monthPace = getMonthPace(current_Year, current_Month);
+  const navigate = useNavigate();
+
+  // Tocar un presupuesto abre Presupuestos con esa categoría elegida (como "Mis cuentas" con Cuentas).
+  // Son categorías de gasto: la pestaña de Presupuestos pasa a Gastos.
+  const openBudget = (category) => {
+    set_active_report_tab('Expenses');
+    set_dash_category_activated(category);
+    navigate('/dashboard/budgets');
+  };
 
 
   const [loadingReport, setLoadingReport] = useState(true)
@@ -64,12 +75,14 @@ const DashPlan = ({
                 <>
                 <ul role="list" className="">
                   {budgeted.map((category) => (
-                    <li key={category.category_id} className="py-[5px] lg:px-1">
+                    <li key={category.category_id}>
+                      <button type="button" onClick={() => openBudget(category)}
+                        className="w-full text-left py-[5px] px-1 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 active:scale-[0.99] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-topi-500">
                       <div className="flex flex-row justify-start">
                         {category.emoji && category.emoji !== "" && (
                           <Emoji unified={(category.emoji).toLowerCase()} emojiStyle="apple" size={16} />
                         )}
-                        <h3 className="pl-2 text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">{capitalizeWords(category.name)}</h3>
+                        <span className="pl-2 text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">{capitalizeWords(category.name)}</span>
                       </div>
                       <div className="flex flex-row items-center justify-between py-1 text-gray-900 dark:text-gray-100">
                         <div className='font-medium flex flex-col xl:flex-row items-center justify-start'>
@@ -87,6 +100,7 @@ const DashPlan = ({
                         </span>
                       </div>
                       <BudgetProgress usage={category.usage} pace={monthPace} />
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -119,4 +133,6 @@ const mapStateToProps = (state) => ({
 
 export default connect(mapStateToProps, {
   get_expenses_report,
+  set_dash_category_activated,
+  set_active_report_tab,
 })(DashPlan);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { connect } from 'react-redux';
 import { Emoji } from 'emoji-picker-react';
 import { PencilSquareIcon, ArrowsPointingOutIcon, PlusIcon, CheckIcon } from '@heroicons/react/20/solid';
@@ -16,7 +16,8 @@ import FullBudgetsModal from './FullBudgetsModal';
 /**
  * Lista de presupuestos por categoría (gastos o ingresos, según el interruptor de arriba).
  * Tocar una categoría la elige: la gráfica y los movimientos pasan a mostrarla. Tocarla otra vez
- * (o la ✕ de la gráfica) vuelve al total. No hay ninguna elegida al entrar.
+ * (o la ✕ de la gráfica) vuelve al total. Al entrar por las pestañas no hay ninguna elegida; desde un
+ * presupuesto del Inicio se entra con esa categoría elegida y la lista la trae a la vista.
  */
 const BudDashCategorieList = ({
   get_expenses_report, expenses_report, income_report, set_dash_category_activated,
@@ -49,6 +50,20 @@ const BudDashCategorieList = ({
   }, [isIncome, income_report, expenses_report, sortKey]);
 
   const selectedId = category_activated?.category_id;
+  // Si se entra con una categoría ya elegida (desde el Inicio), la lista se desplaza por dentro hasta ella.
+  // Solo la lista: la ventana sigue arriba.
+  const listRef = useRef(null);
+  const revealed = useRef(false);
+  useEffect(() => {
+    if (revealed.current || !selectedId || !categories.length) return;
+    const list = listRef.current;
+    const row = list?.querySelector(`[data-category-id="${selectedId}"]`);
+    if (!row) return;
+    revealed.current = true;
+    if (row.offsetTop < list.scrollTop || row.offsetTop + row.offsetHeight > list.scrollTop + list.clientHeight) {
+      list.scrollTop = row.offsetTop - (list.clientHeight - row.offsetHeight) / 2;
+    }
+  }, [selectedId, categories]);
   const toggle = (cat) => {
     const selecting = cat.category_id !== selectedId;
     set_dash_category_activated(selecting ? cat : null);
@@ -90,11 +105,11 @@ const BudDashCategorieList = ({
           <EmptyState compact icon={ChartPieIcon} title="Sin presupuestos este mes"
             description={`Crea un presupuesto de ${isIncome ? 'ingresos' : 'gastos'} para seguirlo aquí.`} />
         ) : (
-          <ul className="flex flex-col gap-1 max-h-[264px] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto overscroll-contain">
+          <ul ref={listRef} className="relative flex flex-col gap-1 max-h-[264px] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto overscroll-contain">
             {categories.map(cat => {
               const selected = cat.category_id === selectedId;
               return (
-                <li key={cat.category_id}>
+                <li key={cat.category_id} data-category-id={cat.category_id}>
                   <div
                     role="button" tabIndex={0} aria-pressed={selected}
                     onClick={() => toggle(cat)}

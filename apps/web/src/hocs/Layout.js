@@ -89,6 +89,11 @@ const Layout = ({
   useEffect(() => {
     if (session_expired) navigate('/login/', { replace: true });
   }, [session_expired, navigate]);
+  // Cada pestaña muestra algo distinto: al cambiar de pestaña se arranca desde arriba, no con el
+  // scroll de la anterior (el Layout no se desmonta entre pestañas y el scroll es el de la ventana).
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [location.pathname]);
 
   const [userDataRequested, setUserDataRequested] = useState(false);
   // Apoyar a Topi: el menú solo lo muestra si la API tiene un proveedor de pagos configurado
