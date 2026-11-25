@@ -51,7 +51,10 @@ que llegan al límite diario, costo por usuario activo).
 - **Confirmados**: elegibles con actividad real en los últimos 90 días al momento de lanzar Plus (ingresó a la
   app, o tiene una conexión de correo sana con transacciones leídas). Así se descartan las cuentas fantasma sin
   borrar a nadie: un elegible que vuelva antes del lanzamiento queda confirmado.
-- Fundador confirmado = Plus de por vida. El admin revisa y confirma la lista en el panel (§ en plan 25).
+- Fundador confirmado = Plus de por vida, **solo para los primeros 30** (decisión de JuanMa, 16-nov-2026); el resto
+  no. El admin revisa y confirma la lista en el panel (§ en plan 25). **Se anuncia en la landing** (decisión de
+  JuanMa, 24-nov-2026): "Los primeros 30 que conecten su correo serán fundadores: todo lo que lancemos, de por vida",
+  sin nombrar Plus ni precios.
 - No se borran usuarios ni datos por no ser fundadores; limpiar cuentas abandonadas es otra decisión (habeas
   data) que requiere OK explícito.
 

@@ -80,7 +80,8 @@ const TransactionsHeader = () => (
 // de la cuenta, sin el rojo/verde de gasto/ingreso, y una flecha ↙/↗ antes del título (el emoji de la categoría se
 // queda en su columna). `follows` es la pata de abajo de una pareja (la que sale): si repite la descripción de la de
 // arriba, solo dice de qué cuenta sale.
-const TransactionRow = ({ tx, onOpen, account, follows = null }) => {
+// Exportada para la vitrina de la landing (plan/28 §10), que la muestra con datos de ejemplo
+export const TransactionRow = ({ tx, onOpen, account, follows = null }) => {
     const neutral = isNeutral(tx);
     const repeated = follows && follows.description === tx.description;
     const category = capitalizeWords(tx.category?.name);

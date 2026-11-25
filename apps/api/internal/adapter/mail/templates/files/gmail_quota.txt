@@ -1,0 +1,15 @@
+{{define "subject"}}{{if .blocked}}Topi ya no ofrece conexiones de Gmail nuevas{{else}}Ya van {{.threshold}} cuentas de Google en Topi{{end}}{{end}}
+{{define "text"}}Hola equipo,
+{{if .blocked}}
+Se llegó a {{.block_at}} cuentas de Google: la app ya no ofrece conexiones de Gmail nuevas y muestra el aviso de que
+estamos trabajando para aumentar los límites. Reconectar una cuenta que ya estaba sigue funcionando.
+{{else}}
+Ya van {{.threshold}} cuentas de Google usadas del tope de {{.cap}} de la app sin verificar.
+{{end}}
+Hoy: {{.used}} usadas (estimado), {{.connected}} conectadas, quedan {{.left}}. Al llegar a {{.block_at}} dejamos de
+ofrecer Gmail.{{if .casa}} Es momento de tramitar la verificación de Google y la evaluación CASA.{{end}}
+
+Compara con Google Auth Platform → Público (la cifra de Google manda) y míralo en el panel:
+{{.app_url}}/admin/lanzamiento
+
+— Topi{{end}}

@@ -1,0 +1,15 @@
+{{define "content"}}
+<p style="margin:0 0 16px 0;font-size:18px;font-weight:700;color:#111827;">Cupos de Google y usuarios activos</p>
+<p style="margin:0 0 8px 0;color:#374151;">Resumen semanal (la app sigue sin verificar):</p>
+<ul style="margin:0 0 12px 0;padding-left:20px;color:#374151;">
+  <li>Cuentas de Google usadas: <strong>{{.used}}</strong> de {{.cap}} (estimado), quedan <strong>{{.left}}</strong>.</li>
+  <li>Conectadas hoy: {{.connected}}.</li>
+  <li>Usuarios al día semanales (UAS): <strong>{{.uas}}</strong>.</li>
+  <li>Usuarios activos en 7 días: {{.wau}}.</li>
+  <li>Registros en 7 días: {{.signups_7d}}.</li>
+</ul>
+<p style="margin:0 0 24px 0;color:#374151;">{{if .is_blocked}}Ya no se ofrecen conexiones de Gmail nuevas (tope de {{.block_at}}).{{else}}Al llegar a {{.block_at}} dejamos de ofrecer conexiones de Gmail nuevas.{{end}} Es momento de tramitar la verificación de Google y la evaluación CASA.</p>
+<p style="margin:0 0 24px 0;">
+  <a href="{{.app_url}}/admin/lanzamiento" style="display:inline-block;padding:12px 20px;background:#5266EB;color:#ffffff;border-radius:10px;font-weight:600;text-decoration:none;">Ver en el panel</a>
+</p>
+{{end}}

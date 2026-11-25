@@ -20,7 +20,7 @@ const ConnectEmail = ({
     const navigate = useNavigate();
     // 'form' | 'linking' | 'read' | 'no_accounts' | 'error'
     const [status, setStatus] = useState('form');
-    const [reconnect, setReconnect] = useState(null); // {email, provider} a precargar en el formulario
+    const [reconnect, setReconnect] = useState(null); // {id, email, provider} a precargar en el formulario
 
     const broken = brokenEmails(automated_emails);
 
@@ -40,7 +40,7 @@ const ConnectEmail = ({
 
     // Se vuelve a autorizar la misma dirección: la API reutiliza la conexión (y sus cuentas) y limpia el error.
     const handleReconnect = (email) => {
-        setReconnect({ email: email.email, provider: email.provider });
+        setReconnect({ id: email.id, email: email.email, provider: email.provider });
     };
 
     const errorText = (code) => {
@@ -99,6 +99,7 @@ const ConnectEmail = ({
                             onLinked={handleLinked}
                             initialEmail={reconnect ? reconnect.email : ""}
                             initialProvider={reconnect ? reconnect.provider : null}
+                            reconnectId={reconnect ? reconnect.id : null}
                         />
 
                         <div className="flex justify-end">

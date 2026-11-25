@@ -14,13 +14,14 @@ type LaunchAppService struct {
 	metrics  port.AdminMetricsRepository
 	admin    port.AdminService
 	feedback port.FeedbackRepository
+	quota    port.GmailQuotaService
 	now      func() time.Time
 }
 
 // NewLaunchService creates the launch service
 func NewLaunchService(repo port.LaunchRepository, metrics port.AdminMetricsRepository, admin port.AdminService,
-	feedback port.FeedbackRepository) *LaunchAppService {
-	return &LaunchAppService{repo: repo, metrics: metrics, admin: admin, feedback: feedback, now: time.Now}
+	feedback port.FeedbackRepository, quota port.GmailQuotaService) *LaunchAppService {
+	return &LaunchAppService{repo: repo, metrics: metrics, admin: admin, feedback: feedback, quota: quota, now: time.Now}
 }
 
 // Report: stages, activation since the current stage started, UAS and its weekly trend, S4 retention of the cohorts
@@ -67,12 +68,11 @@ func (s *LaunchAppService) Report(ctx context.Context) (*domain.LaunchReport, er
 		report.RetentionW4Pct = &pct
 	}
 
-	connected, err := s.repo.GmailConnections(ctx)
+	quota, err := s.quota.Quota(ctx)
 	if err != nil {
 		return nil, err
 	}
-	report.Gmail = domain.GmailQuota{Connected: connected, Cap: domain.GmailUserCap,
-		Note: "Google cuenta cada cuenta que dio permiso alguna vez (también las borradas): revisa Google Auth Platform → Público cada semana."}
+	report.Gmail = *quota
 
 	reading, err := s.metrics.Reading(ctx)
 	if err != nil {

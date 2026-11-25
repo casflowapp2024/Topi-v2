@@ -142,7 +142,9 @@ const PrivacyPolicy = () => {
         <H2 id="conservacion">8. Cuánto tiempo los guardamos</H2>
         <P>
           Guardamos los datos de tu cuenta mientras la tengas. Los eventos de uso se guardan hasta 13 meses. Si pides eliminar tu cuenta,
-          borramos tus datos, salvo lo que la ley nos obligue a conservar.
+          borramos tus datos, salvo lo que la ley nos obligue a conservar. Mientras Google revisa Topi, de cada cuenta de
+          Gmail que se conecta guardamos una huella (hash) de la dirección, no la dirección, también después de
+          desconectarla: la usamos solo para contar los cupos que Google nos asigna.
         </P>
 
         <H2 id="correos">9. Correos que te enviamos</H2>

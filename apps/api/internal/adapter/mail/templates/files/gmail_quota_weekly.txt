@@ -1,0 +1,18 @@
+{{define "subject"}}Cupos de Google y usuarios activos de la semana{{end}}
+{{define "text"}}Hola equipo,
+
+Resumen semanal de los cupos de Google (la app sigue sin verificar):
+- Cuentas de Google usadas: {{.used}} de {{.cap}} (estimado), quedan {{.left}}.
+- Conectadas hoy: {{.connected}}.
+- Usuarios al día semanales (UAS): {{.uas}}.
+- Usuarios activos en 7 días: {{.wau}}.
+- Registros en 7 días: {{.signups_7d}}.
+{{if .is_blocked}}
+Ya no se ofrecen conexiones de Gmail nuevas (tope de {{.block_at}}).
+{{else}}
+Al llegar a {{.block_at}} dejamos de ofrecer conexiones de Gmail nuevas.
+{{end}}
+Es momento de tramitar la verificación de Google y la evaluación CASA. Panel:
+{{.app_url}}/admin/lanzamiento
+
+— Topi{{end}}

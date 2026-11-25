@@ -23,7 +23,7 @@ module.exports = {
         ink: { DEFAULT: '#1E1E2A', 2: '#5B6078' },
       },
       fontFamily:{
-        Inter :  ["Inter","serif"],
+        Inter :  ["Inter", "system-ui", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],
       },
       animation: {
         marquee: 'marquee 20s linear infinite',

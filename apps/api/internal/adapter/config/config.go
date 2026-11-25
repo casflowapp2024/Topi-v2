@@ -1,6 +1,7 @@
 package config
 
 import (
+	"cash-flow/internal/core/domain"
 	"cash-flow/internal/enums"
 	"cash-flow/internal/utils"
 	"errors"
@@ -46,6 +47,10 @@ type (
 		// from this date (BANK_UNSUPPORTED_ALERT_SINCE, YYYY-MM-DD; empty = all). Set it to the deploy day so the old
 		// connections get a personal email from the panel instead.
 		BankAlertSince *time.Time
+		// Gmail is the cap of Google accounts while the app is not verified (plan/28 §7): GMAIL_OAUTH_BASELINE (the
+		// counter of Google Auth Platform → Audience) on GMAIL_OAUTH_BASELINE_AT, GMAIL_BLOCK_AT and GMAIL_VERIFIED
+		Gmail domain.GmailQuotaSettings
+		err   error
 	}
 	// Metrics contains the settings of the admin panel (plan/25-admin-metricas.md)
 	Metrics struct {
@@ -293,11 +298,25 @@ func newLaunch() *Launch {
 	if err != nil {
 		slog.Warn("BANK_UNSUPPORTED_ALERT_SINCE ignored", "error", err)
 	}
-	return &Launch{
+	l := &Launch{
 		ReactivationDailyLimit:  limit,
 		ReactivationAllowBroken: strings.EqualFold(strings.TrimSpace(os.Getenv("REACTIVATION_ALLOW_BROKEN")), "true"),
 		BankAlertSince:          since,
+		Gmail: domain.GmailQuotaSettings{
+			Baseline: int64(getEnvAsInt32("GMAIL_OAUTH_BASELINE", 0)),
+			BlockAt:  int64(getEnvAsInt32("GMAIL_BLOCK_AT", domain.GmailDefaultBlockAt)),
+			Verified: strings.EqualFold(strings.TrimSpace(os.Getenv("GMAIL_VERIFIED")), "true"),
+		},
 	}
+	at, err := parseCutoff(os.Getenv("GMAIL_OAUTH_BASELINE_AT"))
+	if err != nil {
+		l.err = fmt.Errorf("GMAIL_OAUTH_BASELINE_AT: %w", err)
+	}
+	l.Gmail.BaselineAt = at
+	if l.Gmail.Baseline < 0 || l.Gmail.BlockAt <= 0 || l.Gmail.BlockAt > domain.GmailUserCap {
+		l.err = fmt.Errorf("GMAIL_OAUTH_BASELINE must be >= 0 and GMAIL_BLOCK_AT between 1 and %d", domain.GmailUserCap)
+	}
+	return l
 }
 
 // Billing providers (BILLING_PROVIDER)
@@ -371,6 +390,10 @@ func (c *Configuration) Validate() error {
 
 	if c.Metrics.err != nil {
 		return c.Metrics.err
+	}
+
+	if c.Launch != nil && c.Launch.err != nil {
+		return c.Launch.err
 	}
 
 	if err := c.validateMail(); err != nil {

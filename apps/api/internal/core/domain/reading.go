@@ -253,3 +253,37 @@ type UnsupportedAlert struct {
 func normalizeBankName(name string) string {
 	return strings.ToLower(strings.Join(strings.Fields(name), " "))
 }
+
+// PublicStats is GET /public/stats: social proof for the landing (plan/28). Only totals of the whole app, rounded
+// down so they never reveal a single user's activity.
+type PublicStats struct {
+	AutomatedTransactions int64 `json:"automated_transactions"`
+	AutomatedPct          int   `json:"automated_pct"` // of all transactions, the ones read from email
+	BanksRead             int64 `json:"banks_read"`    // distinct bank names with at least one automatic transaction
+}
+
+// RawPublicStats are the exact counts from the database
+type RawPublicStats struct {
+	Automated, Total, Banks int64
+}
+
+// FloorCount rounds a count down: to 10 below 1.000, to 100 below 10.000 and to 1.000 above
+func FloorCount(n int64) int64 {
+	switch {
+	case n < 1000:
+		return n / 10 * 10
+	case n < 10000:
+		return n / 100 * 100
+	default:
+		return n / 1000 * 1000
+	}
+}
+
+// NewPublicStats rounds the raw counts (the percentage down to a whole number)
+func NewPublicStats(raw RawPublicStats) PublicStats {
+	stats := PublicStats{AutomatedTransactions: FloorCount(raw.Automated), BanksRead: raw.Banks}
+	if raw.Total > 0 {
+		stats.AutomatedPct = int(raw.Automated * 100 / raw.Total)
+	}
+	return stats
+}

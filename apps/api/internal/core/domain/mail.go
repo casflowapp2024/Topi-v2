@@ -41,6 +41,10 @@ const (
 	TemplateBankUnsupported = "bank_unsupported"
 	// TemplateAdminFeedback: "hay N opiniones nuevas" to the team (never the text, plan/27 §E)
 	TemplateAdminFeedback = "admin_feedback"
+	// TemplateGmailQuota: "ya van N cuentas de Google" to the team, every GmailAlertStep (plan/28 §7)
+	TemplateGmailQuota = "gmail_quota"
+	// TemplateGmailQuotaWeekly: weekly summary of the Google quota and the active users, from GmailWeeklyFrom
+	TemplateGmailQuotaWeekly = "gmail_quota_weekly"
 )
 
 // ErrMailRejected wraps provider errors that will not succeed on retry (invalid recipient, etc.)
@@ -53,7 +57,8 @@ var ErrMailNotAllowed = errors.New("recipient not allowed by MAIL_ONLY_TO")
 // (no unsubscribe link). The rest carry List-Unsubscribe.
 func IsTransactionalTemplate(template string) bool {
 	switch template {
-	case TemplatePasswordCode, TemplateVerifyEmail, TemplateBillingGeneric, TemplateAdminFeedback:
+	case TemplatePasswordCode, TemplateVerifyEmail, TemplateBillingGeneric, TemplateAdminFeedback,
+		TemplateGmailQuota, TemplateGmailQuotaWeekly:
 		return true
 	}
 	return false

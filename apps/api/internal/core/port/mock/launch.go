@@ -8,6 +8,7 @@ import (
 	domain "cash-flow/internal/core/domain"
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 )
@@ -50,6 +51,21 @@ func (mr *MockLaunchRepositoryMockRecorder) GmailConnections(ctx interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GmailConnections", reflect.TypeOf((*MockLaunchRepository)(nil).GmailConnections), ctx)
 }
 
+// GmailGrants mocks base method.
+func (m *MockLaunchRepository) GmailGrants(ctx context.Context, since *time.Time) (domain.GmailGrants, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GmailGrants", ctx, since)
+	ret0, _ := ret[0].(domain.GmailGrants)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GmailGrants indicates an expected call of GmailGrants.
+func (mr *MockLaunchRepositoryMockRecorder) GmailGrants(ctx, since interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GmailGrants", reflect.TypeOf((*MockLaunchRepository)(nil).GmailGrants), ctx, since)
+}
+
 // SetStage mocks base method.
 func (m *MockLaunchRepository) SetStage(ctx context.Context, stage domain.LaunchStage) error {
 	m.ctrl.T.Helper()
@@ -77,6 +93,59 @@ func (m *MockLaunchRepository) Stages(ctx context.Context) ([]domain.LaunchStage
 func (mr *MockLaunchRepositoryMockRecorder) Stages(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stages", reflect.TypeOf((*MockLaunchRepository)(nil).Stages), ctx)
+}
+
+// MockGmailQuotaService is a mock of GmailQuotaService interface.
+type MockGmailQuotaService struct {
+	ctrl     *gomock.Controller
+	recorder *MockGmailQuotaServiceMockRecorder
+}
+
+// MockGmailQuotaServiceMockRecorder is the mock recorder for MockGmailQuotaService.
+type MockGmailQuotaServiceMockRecorder struct {
+	mock *MockGmailQuotaService
+}
+
+// NewMockGmailQuotaService creates a new mock instance.
+func NewMockGmailQuotaService(ctrl *gomock.Controller) *MockGmailQuotaService {
+	mock := &MockGmailQuotaService{ctrl: ctrl}
+	mock.recorder = &MockGmailQuotaServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockGmailQuotaService) EXPECT() *MockGmailQuotaServiceMockRecorder {
+	return m.recorder
+}
+
+// CanConnectNew mocks base method.
+func (m *MockGmailQuotaService) CanConnectNew(ctx context.Context) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CanConnectNew", ctx)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CanConnectNew indicates an expected call of CanConnectNew.
+func (mr *MockGmailQuotaServiceMockRecorder) CanConnectNew(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanConnectNew", reflect.TypeOf((*MockGmailQuotaService)(nil).CanConnectNew), ctx)
+}
+
+// Quota mocks base method.
+func (m *MockGmailQuotaService) Quota(ctx context.Context) (*domain.GmailQuota, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Quota", ctx)
+	ret0, _ := ret[0].(*domain.GmailQuota)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Quota indicates an expected call of Quota.
+func (mr *MockGmailQuotaServiceMockRecorder) Quota(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Quota", reflect.TypeOf((*MockGmailQuotaService)(nil).Quota), ctx)
 }
 
 // MockLaunchService is a mock of LaunchService interface.

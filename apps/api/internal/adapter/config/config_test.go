@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNew(t *testing.T) {
@@ -120,6 +121,7 @@ func clearEnv(t *testing.T) {
 		"FOUNDER_CUTOFF", "LLM_PRICE_IN_USD_PER_MTOK", "LLM_PRICE_OUT_USD_PER_MTOK", "SERVER_MONTHLY_COST_USD",
 		"BILLING_PROVIDER", "MP_ACCESS_TOKEN", "MP_WEBHOOK_SECRET", "MP_API_BASE", "SUPPORT_ENABLED",
 		"REACTIVATION_DAILY_LIMIT", "REACTIVATION_ALLOW_BROKEN", "BANK_UNSUPPORTED_ALERT_SINCE",
+		"GMAIL_OAUTH_BASELINE", "GMAIL_OAUTH_BASELINE_AT", "GMAIL_BLOCK_AT", "GMAIL_VERIFIED",
 	}
 	for _, key := range keys {
 		t.Setenv(key, "")
@@ -289,6 +291,44 @@ func TestNew_Launch(t *testing.T) {
 	launch = New().Launch
 	assert.Equal(t, 2, launch.ReactivationDailyLimit)
 	assert.True(t, launch.ReactivationAllowBroken)
+}
+
+func TestNew_LaunchGmailQuota(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("ENV_FILE", filepath.Join(os.TempDir(), "does-not-exist.env"))
+	once = sync.Once{}
+	gmail := New().Launch.Gmail
+	assert.Equal(t, int64(0), gmail.Baseline)
+	assert.Nil(t, gmail.BaselineAt)
+	assert.Equal(t, int64(86), gmail.BlockAt)
+	assert.False(t, gmail.Verified)
+
+	clearEnv(t)
+	t.Setenv("ENV_FILE", filepath.Join(os.TempDir(), "does-not-exist.env"))
+	t.Setenv("GMAIL_OAUTH_BASELINE", "18")
+	t.Setenv("GMAIL_OAUTH_BASELINE_AT", "2026-11-14")
+	t.Setenv("GMAIL_BLOCK_AT", "80")
+	t.Setenv("GMAIL_VERIFIED", "TRUE")
+	once = sync.Once{}
+	launch := New().Launch
+	assert.NoError(t, launch.err)
+	assert.Equal(t, int64(18), launch.Gmail.Baseline)
+	require.NotNil(t, launch.Gmail.BaselineAt)
+	assert.Equal(t, "2026-11-14", launch.Gmail.BaselineAt.Format(time.DateOnly))
+	assert.Equal(t, int64(80), launch.Gmail.BlockAt)
+	assert.True(t, launch.Gmail.Verified)
+
+	clearEnv(t)
+	t.Setenv("ENV_FILE", filepath.Join(os.TempDir(), "does-not-exist.env"))
+	t.Setenv("GMAIL_OAUTH_BASELINE_AT", "14/11/2026")
+	once = sync.Once{}
+	assert.Error(t, New().Launch.err)
+
+	clearEnv(t)
+	t.Setenv("ENV_FILE", filepath.Join(os.TempDir(), "does-not-exist.env"))
+	t.Setenv("GMAIL_BLOCK_AT", "150")
+	once = sync.Once{}
+	assert.Error(t, New().Launch.err)
 }
 
 func TestNew_Metrics(t *testing.T) {

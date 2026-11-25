@@ -77,6 +77,9 @@ const EditCreateBankForm = ({
                         <label htmlFor="email" className={`${windowContext === "acc" ? 'text-sm' : 'text-sm'} mb-2 block font-medium text-gray-900 dark:text-white`}>
                             Email(s) de transacciones
                         </label>
+                        <p className="-mt-1 mb-2 text-xs text-gray-500 dark:text-gray-400">
+                            Ábrelo en una notificación de tu banco (por ejemplo, el aviso de una compra): es la dirección del campo «De».
+                        </p>
                         {emails.map((email, index) => (
                             <div key={index} className="flex items-center mb-2">
                                 <input

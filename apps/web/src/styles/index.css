@@ -233,3 +233,43 @@ input, select, textarea {
 .dark ::-webkit-scrollbar-thumb { background-color: rgba(127, 141, 242, 0.45); }
 .dark ::-webkit-scrollbar-thumb:hover { background-color: rgba(127, 141, 242, 0.85); }
 ::-webkit-scrollbar-corner { background: transparent; }
+
+/* Landing, vitrina "Topi te dice" (plan/28 §10, components/landing/QuestionsDemo.jsx): la barra de la pregunta activa
+   marca el tiempo (la duración la pone el componente) y cada escena entra con un fundido. Solo transform y opacity. */
+.qd-progress { transform-origin: left; animation: qd-progress linear both; }
+.qd-paused { animation-play-state: paused; }
+.qd-enter { animation: qd-enter .45s cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes qd-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes qd-enter { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: none; } }
+
+/* Título del hero (plan/28 §13): tres frases en el mismo lugar, una cada 3 s (ciclo de 9 s). Las tres ocupan la misma
+   celda de la grilla, así el título mide siempre lo de la más larga (sin saltos). */
+.lp-rot-item { animation: lp-rot 9s cubic-bezier(.2, .7, .2, 1) infinite both; }
+.lp-rot-item:nth-child(2) { animation-delay: 3s; }
+.lp-rot-item:nth-child(3) { animation-delay: 6s; }
+/* entra (0,3 s), se queda, sale (0,3 s) y espera: la siguiente entra cuando esta ya salió */
+@keyframes lp-rot {
+  0% { opacity: 0; transform: translateY(35%); }
+  3.3%, 30% { opacity: 1; transform: none; }
+  33.3%, 100% { opacity: 0; transform: translateY(-35%); }
+}
+
+/* Revelado al hacer scroll (estilo krea) solo donde el navegador lo soporta, sin JS. */
+@supports (animation-timeline: view()) { @media (prefers-reduced-motion: no-preference) {
+  .lp-reveal { animation: lp-up linear both; animation-timeline: view(); animation-range: entry 5% cover 25%; }
+  .lp-fill {
+    background: linear-gradient(90deg, currentColor 50%, #c3c6d4 50%) right / 200% 100% no-repeat;
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    animation: lp-fill linear both; animation-timeline: view(); animation-range: entry 30% cover 55%;
+  }
+  .dark .lp-fill { background-image: linear-gradient(90deg, currentColor 50%, #3b4058 50%); }
+  @keyframes lp-fill { to { background-position: left; } }
+  @keyframes lp-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+} }
+.lp-marquee { animation: lp-marquee 40s linear infinite; }
+@keyframes lp-marquee { to { transform: translateX(-50%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .qd-progress, .qd-enter, .lp-marquee, .lp-rot-item { animation: none; }
+  .lp-rot-item ~ .lp-rot-item { visibility: hidden; }
+}

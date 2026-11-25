@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-const DEFAULT_TITLE = 'Topi · Tus finanzas al día, sin digitar nada';
+const DEFAULT_TITLE = 'Topi · Tus gastos anotados solos, desde los correos de tu banco';
 
 const setMeta = (selector, attr, value) => {
   const el = document.head.querySelector(selector);

@@ -226,6 +226,7 @@ var (
 	LimitExceededException = "LimitExceededException"
 	// ErrLimitExceededException is an error for when the limit to confirm a forgotten request is exceeded
 	ErrLimitExceededException = errors.New("limit exceeded, too many requests")
+	// (ErrGmailFull lives in gmail_quota.go: no room for a new Gmail account until Google verifies the app)
 
 	// InvalidPasswordException is an error for when the password doesn't meet the requirements
 	InvalidPasswordException = "InvalidPasswordException"

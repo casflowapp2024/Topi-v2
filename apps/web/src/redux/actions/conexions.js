@@ -6,7 +6,8 @@ import {
 } from './types';
 
 
-export const link_emails_ask_url = (provider) => async dispatch => {
+// reconnectId: la conexión que se reconecta (no gasta un cupo de Google, plan/28 §7)
+export const link_emails_ask_url = (provider, reconnectId) => async dispatch => {
 
     const config = {
         headers: {
@@ -15,7 +16,7 @@ export const link_emails_ask_url = (provider) => async dispatch => {
         }
     };
 
-    const url = `${process.env.REACT_APP_API_URL}/email/auth-url?provider=${provider}`
+    const url = `${process.env.REACT_APP_API_URL}/email/auth-url?provider=${provider}${reconnectId ? `&reconnect=${reconnectId}` : ''}`
 
     try {
         const res = await axios.get(url, config);

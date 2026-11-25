@@ -13,6 +13,7 @@ import {
 import { ThreeDots } from 'react-loader-spinner';
 import Alert2 from "../alert2";
 import GoogleUnverifiedHint from "./GoogleUnverifiedHint";
+import { getGmailCapacity } from "../../apiCalls/reading";
 import { suggestedProvider } from "./reconnect";
 
 const LinkTransEmailForm = ({
@@ -23,6 +24,7 @@ const LinkTransEmailForm = ({
     onLinked = null, // se llama con el correo registrado (p. ej. para "leer ahora")
     initialEmail = "",
     initialProvider = null,
+    reconnectId = null, // reconectar una conexión propia no gasta cupo de Google (plan/28 §7)
     //actions
     link_emails_ask_url,
     register_email_conexion,
@@ -55,13 +57,24 @@ const LinkTransEmailForm = ({
     };
 
     const [linkUrl, setLinkUrl] = useState("");
+    // plan/28 §7: sin cupos de Google no se ofrecen cuentas de Gmail nuevas ("" = hay espacio)
+    const [gmailFull, setGmailFull] = useState("");
     useEffect(() => {
         setLinkUrl("");
+        let alive = true;
+        if (provider === 'gmail' && !reconnectId) {
+            getGmailCapacity()
+                .then((c) => { if (alive) setGmailFull(c && c.available === false ? c.message : ""); })
+                .catch(() => { if (alive) setGmailFull(""); });
+        } else {
+            setGmailFull("");
+        }
         askForUrl()
+        return () => { alive = false; };
     }, [provider])
 
     const askForUrl = async () => {
-        const urlResponse = await link_emails_ask_url(provider)
+        const urlResponse = await link_emails_ask_url(provider, reconnectId)
         console.log("urlResponse", urlResponse)
         setLinkUrl(urlResponse)
         return (urlResponse)
@@ -93,6 +106,7 @@ const LinkTransEmailForm = ({
         }; */
 
     const handleEmailLink = () => {
+        if (provider === 'gmail' && gmailFull) return;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(emailAutomated)) {
             setAlert("Ingresa un correo válido, por ejemplo nombre@gmail.com.", false, "text-white", "bg-red-500", 4000);
@@ -248,7 +262,8 @@ const LinkTransEmailForm = ({
                             <div className="flex justify-end items-end">
                                 <button
                                     onClick={() => handleEmailLink()}
-                                    className="w-max h-min items-center justify-center bg-[#5266EB] text-white px-4 py-2.5 rounded-lg hover:bg-blue-600"
+                                    disabled={provider === 'gmail' && Boolean(gmailFull)}
+                                    className="w-max h-min items-center justify-center bg-[#5266EB] text-white px-4 py-2.5 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <span>Conectar</span>
 
@@ -256,7 +271,12 @@ const LinkTransEmailForm = ({
                             </div>
                         </div>
                     }
-                    {!loadingLink && provider === 'gmail' && <GoogleUnverifiedHint className="mt-3" />}
+                    {!loadingLink && provider === 'gmail' && gmailFull && (
+                        <p role="status" className="mt-3 rounded-xl border border-amber-200 dark:border-amber-900 bg-status-warn-soft dark:bg-amber-950/30 p-3 text-sm text-gray-800 dark:text-gray-100">
+                            {gmailFull}
+                        </p>
+                    )}
+                    {!loadingLink && provider === 'gmail' && !gmailFull && <GoogleUnverifiedHint className="mt-3" />}
                 </>
             }
         </div>

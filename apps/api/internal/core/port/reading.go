@@ -24,10 +24,13 @@ type ReadingRepository interface {
 	StillUnsupported(ctx context.Context, userID string, emailID uint64) (bool, error)
 	// OwnsBank: the bank is one of the user's
 	OwnsBank(ctx context.Context, userID string, bankID uint64) (bool, error)
+	// PublicStats: totals of the whole app for the landing (no user data)
+	PublicStats(ctx context.Context) (domain.RawPublicStats, error)
 }
 
 // ReadingService is GET /email/status and GET /onboarding/status
 type ReadingService interface {
 	Status(ctx context.Context, userID string) (*domain.ReadingStatus, error)
 	Onboarding(ctx context.Context, userID string) (*domain.OnboardingStatus, error)
+	PublicStats(ctx context.Context) (*domain.PublicStats, error)
 }

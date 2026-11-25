@@ -4,6 +4,7 @@ import (
 	"cash-flow/internal/core/domain"
 	"cash-flow/internal/core/port"
 	"cash-flow/internal/enums"
+	"log/slog"
 	"strconv"
 	"strings"
 
@@ -12,7 +13,32 @@ import (
 
 // EmailHandler represents the HTTP handler for email-related requests
 type EmailHandler struct {
-	svc port.EmailService
+	svc   port.EmailService
+	quota port.GmailQuotaService
+}
+
+// SetGmailQuota turns on GET /email/gmail-capacity (plan/28 §7)
+func (eh *EmailHandler) SetGmailQuota(quota port.GmailQuotaService) {
+	eh.quota = quota
+}
+
+// GmailCapacity is GET /email/gmail-capacity: whether a new Gmail account can be connected and, if not, the
+// message for the user. Reconnecting an existing connection is always allowed (auth-url?reconnect=<id>).
+func (eh *EmailHandler) GmailCapacity(ctx *gin.Context) {
+	available := true
+	if eh.quota != nil {
+		ok, err := eh.quota.CanConnectNew(ctx)
+		if err != nil {
+			slog.Error("gmail quota: could not check", "error", err)
+		} else {
+			available = ok
+		}
+	}
+	rsp := gin.H{"available": available, "message": ""}
+	if !available {
+		rsp["message"] = domain.GmailFullMessage
+	}
+	handleSuccess(ctx, rsp)
 }
 
 // NewEmailHandler creates a new EmailHandler instance
@@ -25,6 +51,8 @@ func NewEmailHandler(svc port.EmailService) *EmailHandler {
 // GetAuthURLRequest represents the query parameters for getting authentication URL
 type GetAuthURLRequest struct {
 	Provider string `form:"provider" binding:"required,oneof=gmail outlook"`
+	// Reconnect is the id of the user's connection being reconnected (it does not spend a Gmail cupo)
+	Reconnect *uint64 `form:"reconnect" binding:"omitempty,min=1"`
 }
 
 // GetAuthURL godoc
@@ -47,7 +75,13 @@ func (eh *EmailHandler) GetAuthURL(ctx *gin.Context) {
 		return
 	}
 
-	url, err := eh.svc.GetUserAuthURL(ctx, req.Provider)
+	userID, err := domain.GetAuthUserID(ctx, enums.AuthorizationPayloadKey)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	url, err := eh.svc.GetUserAuthURL(ctx, *userID, req.Provider, req.Reconnect)
 	if err != nil {
 		handleError(ctx, err)
 		return

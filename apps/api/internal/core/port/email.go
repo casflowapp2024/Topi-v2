@@ -29,7 +29,7 @@ type EmailRepository interface {
 }
 
 type EmailService interface {
-	GetUserAuthURL(ctx context.Context, provider string) (*string, error)
+	GetUserAuthURL(ctx context.Context, userID, provider string, reconnectID *uint64) (*string, error)
 	RegisterUserEmail(ctx context.Context, email *domain.Email) error
 	GetUserEmailToken(ctx context.Context, userID string, id uint64) (*domain.Email, error)
 	ListUserEmails(ctx context.Context, userID string, skip uint64, limit uint64) ([]domain.Email, error)

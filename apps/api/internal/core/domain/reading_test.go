@@ -120,3 +120,13 @@ func TestNewReadingJob(t *testing.T) {
 	assert.NotNil(t, done.FinishedAt)
 	assert.Equal(t, int64(21), done.Created)
 }
+
+func TestFloorCountAndPublicStats(t *testing.T) {
+	assert.Equal(t, int64(0), FloorCount(7))
+	assert.Equal(t, int64(980), FloorCount(987))
+	assert.Equal(t, int64(7400), FloorCount(7485))
+	assert.Equal(t, int64(12000), FloorCount(12999))
+	assert.Equal(t, PublicStats{}, NewPublicStats(RawPublicStats{}))
+	assert.Equal(t, PublicStats{AutomatedTransactions: 7400, AutomatedPct: 85, BanksRead: 3},
+		NewPublicStats(RawPublicStats{Automated: 7485, Total: 8748, Banks: 3}))
+}

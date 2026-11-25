@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -23,6 +24,34 @@ type ReadingAppService struct {
 	// alertsSince: bank_unsupported only for connections created from then (nil = all). plan/27: the people with old
 	// connections get a personal email from the panel (Usuarios → Escribirle), not the automatic one.
 	alertsSince *time.Time
+
+	statsMu    sync.Mutex
+	stats      *domain.PublicStats
+	statsUntil time.Time
+}
+
+// publicStatsTTL: the landing numbers are recomputed at most once per hour
+const publicStatsTTL = time.Hour
+
+// PublicStats: rounded totals for the landing, cached for an hour (a public endpoint must not hit the database per
+// visit). On error it serves the last good value if there is one.
+func (s *ReadingAppService) PublicStats(ctx context.Context) (*domain.PublicStats, error) {
+	s.statsMu.Lock()
+	defer s.statsMu.Unlock()
+	now := s.now()
+	if s.stats != nil && now.Before(s.statsUntil) {
+		return s.stats, nil
+	}
+	raw, err := s.repo.PublicStats(ctx)
+	if err != nil {
+		if s.stats != nil {
+			return s.stats, nil
+		}
+		return nil, err
+	}
+	stats := domain.NewPublicStats(raw)
+	s.stats, s.statsUntil = &stats, now.Add(publicStatsTTL)
+	return s.stats, nil
 }
 
 // SetAlertsSince limits bank_unsupported to the connections created from that moment (BANK_UNSUPPORTED_ALERT_SINCE)

@@ -223,6 +223,7 @@ func (r *Routes) EmailRoutes() {
 	AuthEmail := r.Router.Group("/email").Use(r.auth())
 	{
 		AuthEmail.GET("/auth-url", r.EmailHandler.GetAuthURL)
+		AuthEmail.GET("/gmail-capacity", r.EmailHandler.GmailCapacity)
 		AuthEmail.POST("/register", r.EmailHandler.RegisterEmail)
 		AuthEmail.GET("/list", r.EmailHandler.GetListEmail)
 		AuthEmail.PUT("/:id", r.EmailHandler.UpdateEmail)
@@ -330,6 +331,7 @@ func (r *Routes) ReadingRoutes() {
 	if r.ReadingHandler == nil {
 		return
 	}
+	r.Router.GET("/public/stats", r.ReadingHandler.PublicStats)
 	auth := r.auth()
 	r.Router.GET("/email/status", auth, r.ReadingHandler.Status)
 	r.Router.GET("/onboarding/status", auth, r.ReadingHandler.Onboarding)

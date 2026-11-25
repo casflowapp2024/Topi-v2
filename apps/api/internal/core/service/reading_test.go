@@ -110,3 +110,32 @@ func TestReading_EnrichUnsupported(t *testing.T) {
 	assert.ErrorIs(t, svc.Enrich(ctx, outbox, map[string]any{"email_id": float64(7)}), domain.ErrMailCancelled,
 		"it started reading before the email went out")
 }
+
+func TestReading_PublicStatsCachedAndRounded(t *testing.T) {
+	svc, repo, _, _ := newReadingService(t)
+	start := svc.now()
+	repo.EXPECT().PublicStats(gomock.Any()).Return(domain.RawPublicStats{Automated: 7485, Total: 8748, Banks: 12}, nil).Times(1)
+
+	stats, err := svc.PublicStats(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, domain.PublicStats{AutomatedTransactions: 7400, AutomatedPct: 85, BanksRead: 12}, *stats)
+
+	// within the hour: no new query
+	svc.now = func() time.Time { return start.Add(30 * time.Minute) }
+	_, err = svc.PublicStats(context.Background())
+	require.NoError(t, err)
+
+	// after the hour the database fails: the last good value is served
+	svc.now = func() time.Time { return start.Add(2 * time.Hour) }
+	repo.EXPECT().PublicStats(gomock.Any()).Return(domain.RawPublicStats{}, errors.New("db down"))
+	stats, err = svc.PublicStats(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, int64(7400), stats.AutomatedTransactions)
+}
+
+func TestReading_PublicStatsErrorWithoutCache(t *testing.T) {
+	svc, repo, _, _ := newReadingService(t)
+	repo.EXPECT().PublicStats(gomock.Any()).Return(domain.RawPublicStats{}, errors.New("db down"))
+	_, err := svc.PublicStats(context.Background())
+	assert.Error(t, err)
+}

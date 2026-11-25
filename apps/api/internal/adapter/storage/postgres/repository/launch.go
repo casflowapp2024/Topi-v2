@@ -5,6 +5,7 @@ import (
 	"cash-flow/internal/core/domain"
 	"cash-flow/internal/mappers"
 	"context"
+	"time"
 )
 
 // LaunchRepository implements port.LaunchRepository (plan/27 §I)
@@ -41,6 +42,14 @@ func (r *LaunchRepository) SetStage(ctx context.Context, s domain.LaunchStage) e
 ON CONFLICT (stage) DO UPDATE SET started_at = EXCLUDED.started_at, note = EXCLUDED.note, set_by = EXCLUDED.set_by,
   updated_at = now()`, s.Stage, s.StartedAt, s.Note, s.SetBy)
 	return mappers.MapPostgresErrorCode(err)
+}
+
+// GmailGrants counts the Google accounts that ever connected (hashes in gmail_oauth_grants, plan/28 §7)
+func (r *LaunchRepository) GmailGrants(ctx context.Context, since *time.Time) (domain.GmailGrants, error) {
+	var g domain.GmailGrants
+	err := r.db.QueryRow(ctx, `SELECT count(*), count(*) FILTER (WHERE $1::timestamptz IS NOT NULL AND first_granted_at > $1)
+FROM gmail_oauth_grants`, since).Scan(&g.Total, &g.Since)
+	return g, mappers.MapPostgresErrorCode(err)
 }
 
 // GmailConnections counts distinct Gmail addresses connected today (only a count: no address leaves the database)

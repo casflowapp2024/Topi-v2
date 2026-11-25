@@ -123,6 +123,7 @@ var errorStatusMap = map[error]int{
 	// Auth Errors (strings are part of the contract with the front)
 	domain.ErrUsernameExistsException:        http.StatusConflict,
 	domain.ErrLimitExceededException:         http.StatusTooManyRequests,
+	domain.ErrGmailFull:                      http.StatusConflict,
 	domain.ErrInvalidFeedback:                http.StatusBadRequest,
 	domain.ErrInvalidReactivation:            http.StatusBadRequest,
 	domain.ErrReactivationNotAllowed:         http.StatusConflict,

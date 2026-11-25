@@ -8,6 +8,7 @@ import { setAlert } from '../redux/actions/alert';
 //components
 import Alert from '../components/alert'
 import PasswordResetForm from '../components/auth/PasswordResetForm';
+import AuthLayout, { authButton, authInput, authLabel, authLink } from '../components/auth/AuthLayout';
 //uxui
 import { ThreeDots } from 'react-loader-spinner';
 
@@ -50,7 +51,7 @@ const LogInViewInside = ({
             console.log("else", loginResponse)
             setLoadingLogin(false)
             if (loginResponse[0] === "user is not authorized, incorrect username or password") {
-                setAlert('El email o la constaseña son incorrectos!', false, 'text-red-600', 'bg-gray-200', 3500)
+                setAlert('El correo o la contraseña no son correctos.', false, 'text-red-600', 'bg-gray-200', 3500)
             } else if (loginResponse[0] === "user needs to reset the password") {
                 setNeedsPassword(true)
             } else if (loginResponse[0] === "limit exceeded, too many requests") {
@@ -76,94 +77,42 @@ const LogInViewInside = ({
 
 
     return (
-        <div className='relative bg-gray-100 h-screen w-screen overflow-hidden font-Inter'>
-            <div
-                className="w-screen h-screen bg-repeat-y md:bg-no-repeat bg-center md:bg-cover bg-gradient-to-r from-[#3a3e54] from-0% to-[#5266EB]  to-95%"
-
-            /* style={{ backgroundImage: `url(${landImage})` ,}} */
-            >
-            </div>
-
-            <div className='fixed top-20 w-screen flex flex-col justify-center items-center'>
-
-                <div className='w-full max-w-sm bg-white border border-gray-200 rounded-lg shadow  dark:bg-gray-800 dark:border-gray-700 overflow-hidden'>
-                    <div class="p-4 sm:p-6 md:p-8">
-                        {needsPassword ?
-                            <PasswordResetForm email={email} migration onCancel={() => setNeedsPassword(false)} />
-                            :
-                            <>
-                        <form class="space-y-6" action="#">
-                            <h5 class="text-xl font-medium text-gray-900 dark:text-white">Inicia Sesión</h5>
-                            <div>
-                                <label for="email" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
-                                <input type="email" name="email" id="email"
-                                    value={email}
-                                    onChange={e => onChange(e)}
-                                    placeholder="nombre@email.com" required
-                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" />
-                            </div>
-                            <div>
-                                <label for="password" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Contraseña</label>
-                                <input type="password" name="password" id="password" placeholder="••••••••"
-                                    value={password}
-                                    onChange={e => onChange(e)}
-                                    required
-                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" />
-                            </div>
-                            <div class="flex items-start">
-                                <div class="flex items-start">
-                                    {/* <div class="flex items-center h-5">
-                                        <input id="remember" type="checkbox" value="" className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-blue-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800" required />
-                                    </div>
-                                    <label for="remember" className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">Recuerdame</label> */}
-                                </div>
-                                <a href="/forgot_password/" className="ms-auto text-sm text-blue-700 hover:underline dark:text-blue-500">Olvidaste tu contraseña?</a>
-                            </div>
-                            {loadingLogin ?
-                                <div
-                                    class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                                    <div className='flex justify-center items-center'>
-                                        <ThreeDots
-                                            height="20"
-                                            width="20"
-                                            color="white"
-                                            ariaLabel="loading"
-                                        />
-                                    </div>
-                                </div>
-
-                                :
-                                <button
-                                    type="submit"
-                                    onClick={onSubmitLogIn}
-                                    class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                                    Iniciar Sesión</button>
-                            }
-
-                        </form>
-                        {loadingLogin ?
-                            <></> :
-                            <>
-                                <div className='mt-6 flex flex-col gap-4'>
-
-                                    <div class="text-sm font-medium text-gray-500 dark:text-gray-300">
-                                        Aún no estás registrado? <a href="/create_account/" class="text-blue-700 hover:underline dark:text-blue-500">Crear cuenta</a>
-                                    </div>
-                                </div>
-                            </>
-
-                        }
-                            </>
-                        }
+        <AuthLayout
+            title={needsPassword ? 'Crea tu contraseña' : 'Inicia sesión'}
+            subtitle={needsPassword ? null : 'Tus finanzas al día te esperan.'}
+            alt={{ href: '/create_account/', label: 'Crear cuenta' }}
+            footer={!loadingLogin && !needsPassword && (
+                <>¿Aún no tienes cuenta? <a href="/create_account/" className="font-semibold text-topi-200 hover:underline">Créala en un minuto</a></>
+            )}>
+            {needsPassword ?
+                <PasswordResetForm email={email} migration onCancel={() => setNeedsPassword(false)} />
+                :
+                <form className="flex flex-col gap-4" onSubmit={onSubmitLogIn}>
+                    <div>
+                        <label htmlFor="email" className={authLabel}>Correo</label>
+                        <input type="email" name="email" id="email" autoComplete="email"
+                            value={email} onChange={e => onChange(e)}
+                            placeholder="nombre@email.com" required className={authInput} />
                     </div>
                     <div>
-                        <Alert />
+                        <div className="flex items-baseline justify-between">
+                            <label htmlFor="password" className={authLabel}>Contraseña</label>
+                            <a href="/forgot_password/" className={`text-sm ${authLink}`}>¿La olvidaste?</a>
+                        </div>
+                        <input type="password" name="password" id="password" autoComplete="current-password" placeholder="••••••••"
+                            value={password} onChange={e => onChange(e)} required className={authInput} />
                     </div>
-                </div>
-
-            </div>
-        </div>
-
+                    {loadingLogin ?
+                        <div className={authButton} aria-busy="true">
+                            <ThreeDots height="20" width="20" color="white" ariaLabel="Iniciando sesión" />
+                        </div>
+                        :
+                        <button type="submit" className={`mt-2 ${authButton}`}>Iniciar sesión</button>
+                    }
+                </form>
+            }
+            <Alert />
+        </AuthLayout>
     )
 }
 

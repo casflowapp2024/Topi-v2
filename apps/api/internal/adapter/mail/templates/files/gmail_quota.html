@@ -1,0 +1,10 @@
+{{define "content"}}
+<p style="margin:0 0 16px 0;font-size:18px;font-weight:700;color:#111827;">{{if .blocked}}Topi ya no ofrece conexiones de Gmail nuevas{{else}}Ya van {{.threshold}} cuentas de Google{{end}}</p>
+{{if .blocked}}<p style="margin:0 0 12px 0;color:#374151;">Se llegó a <strong>{{.block_at}}</strong> cuentas de Google: la app ya no ofrece conexiones de Gmail nuevas y muestra el aviso de que estamos trabajando para aumentar los límites. Reconectar una cuenta que ya estaba sigue funcionando.</p>
+{{else}}<p style="margin:0 0 12px 0;color:#374151;">Ya van <strong>{{.threshold}}</strong> cuentas de Google usadas del tope de {{.cap}} de la app sin verificar.</p>{{end}}
+<p style="margin:0 0 12px 0;color:#374151;">Hoy: <strong>{{.used}}</strong> usadas (estimado), {{.connected}} conectadas, quedan <strong>{{.left}}</strong>. Al llegar a {{.block_at}} dejamos de ofrecer Gmail.{{if .casa}} Es momento de tramitar la verificación de Google y la evaluación CASA.{{end}}</p>
+<p style="margin:0 0 24px 0;color:#374151;">Compara con Google Auth Platform → Público: la cifra de Google manda.</p>
+<p style="margin:0 0 24px 0;">
+  <a href="{{.app_url}}/admin/lanzamiento" style="display:inline-block;padding:12px 20px;background:#5266EB;color:#ffffff;border-radius:10px;font-weight:600;text-decoration:none;">Ver en el panel</a>
+</p>
+{{end}}

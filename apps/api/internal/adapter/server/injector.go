@@ -74,6 +74,8 @@ type Resources struct {
 	Reading *service.ReadingAppService
 	// BankCatalog keeps the snapshot of the catalog fresh (started by main)
 	BankCatalog *service.BankCatalogService
+	// GmailQuota tells the team how many Google accounts are used (started by main)
+	GmailQuota *service.GmailQuotaAppService
 	// MailInterval is how often the outbox is processed
 	MailInterval time.Duration
 }
@@ -255,9 +257,17 @@ func NewInjector(settings *config.Configuration) *Injector {
 	mailService.SetEnricher(domain.TemplateReactivation, reactivationService)
 	reactivationHandler := http.NewReactivationHandler(reactivationService)
 
+	// Google accounts of the unverified app (plan/28 §7): alerts to the team and no new Gmail from GMAIL_BLOCK_AT
+	launchRepo := dbrepository.NewLaunchRepository(db)
+	gmailQuota := service.NewGmailQuotaService(launchRepo, mailService, adminService, settings.Launch.Gmail, settings.Mail.ReplyTo)
+	mailService.SetEnricher(domain.TemplateGmailQuota, gmailQuota)
+	mailService.SetEnricher(domain.TemplateGmailQuotaWeekly, gmailQuota)
+	emailService.SetGmailQuota(gmailQuota)
+	emailHandler.SetGmailQuota(gmailQuota)
+
 	// Staged rollout (plan/27 §I): criteria per stage on top of the panel metrics
-	launchHandler := http.NewLaunchHandler(service.NewLaunchService(dbrepository.NewLaunchRepository(db),
-		dbrepository.NewAdminMetricsRepository(db), adminService, dbrepository.NewFeedbackRepository(db)))
+	launchHandler := http.NewLaunchHandler(service.NewLaunchService(launchRepo,
+		dbrepository.NewAdminMetricsRepository(db), adminService, dbrepository.NewFeedbackRepository(db), gmailQuota))
 
 	// Initialization Dev
 	initDevHandler := http.NewDevHandler(
@@ -305,6 +315,7 @@ func NewInjector(settings *config.Configuration) *Injector {
 			Notifications: notificationService,
 			Reading:       readingService,
 			BankCatalog:   bankCatalogService,
+			GmailQuota:    gmailQuota,
 			MailInterval:  settings.Mail.OutboxInterval,
 		},
 	}

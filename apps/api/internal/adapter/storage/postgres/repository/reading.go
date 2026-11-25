@@ -144,6 +144,19 @@ func countSenders(raw string) int {
 	return n
 }
 
+// PublicStats: automatic and total transactions and distinct banks read, of the whole app
+func (r *ReadingRepository) PublicStats(ctx context.Context) (domain.RawPublicStats, error) {
+	var s domain.RawPublicStats
+	err := r.db.QueryRow(ctx, `SELECT
+  count(*) FILTER (WHERE t.automated),
+  count(*),
+  count(DISTINCT lower(trim(b.name))) FILTER (WHERE t.automated)
+FROM transactions t
+LEFT JOIN accounts a ON a.id = t.account_id
+LEFT JOIN banks b ON b.id = a.bank_id`).Scan(&s.Automated, &s.Total, &s.Banks)
+	return s, mappers.MapPostgresErrorCode(err)
+}
+
 // OnboardingFacts: the real state of the four steps of the checklist
 func (r *ReadingRepository) OnboardingFacts(ctx context.Context, userID string) (domain.OnboardingFacts, error) {
 	var f domain.OnboardingFacts

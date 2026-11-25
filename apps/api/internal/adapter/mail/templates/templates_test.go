@@ -17,6 +17,10 @@ var sampleData = map[string]map[string]any{
 	"connection_down": {"connection_email": "ana.banco@gmail.com", "provider": "Gmail",
 		"unsubscribe_url": "https://api.topi.test/mail/unsubscribe?t=abc"},
 	"admin_feedback": {"count": 3},
+	"gmail_quota": {"threshold": 30, "blocked": false, "used": 31, "cap": 100, "left": 69, "block_at": 86,
+		"connected": 24, "is_blocked": false, "casa": true},
+	"gmail_quota_weekly": {"week": "2026-W47", "used": 31, "cap": 100, "left": 69, "block_at": 86, "connected": 24,
+		"is_blocked": false, "casa": true, "uas": 7, "wau": 12, "signups_7d": 5},
 	// the default text of the panel, as it reaches the person (preview of what friends and founders get)
 	"reactivation_personal": {"subject": domain.DefaultReactivationSubject, "founder": true,
 		"paragraphs":      domain.ReactivationDraft{Body: domain.DefaultReactivationBody}.Paragraphs("Ana"),

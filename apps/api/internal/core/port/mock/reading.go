@@ -96,6 +96,21 @@ func (mr *MockReadingRepositoryMockRecorder) OwnsBank(ctx, userID, bankID interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OwnsBank", reflect.TypeOf((*MockReadingRepository)(nil).OwnsBank), ctx, userID, bankID)
 }
 
+// PublicStats mocks base method.
+func (m *MockReadingRepository) PublicStats(ctx context.Context) (domain.RawPublicStats, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PublicStats", ctx)
+	ret0, _ := ret[0].(domain.RawPublicStats)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PublicStats indicates an expected call of PublicStats.
+func (mr *MockReadingRepositoryMockRecorder) PublicStats(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublicStats", reflect.TypeOf((*MockReadingRepository)(nil).PublicStats), ctx)
+}
+
 // RecordOnboardingSteps mocks base method.
 func (m *MockReadingRepository) RecordOnboardingSteps(ctx context.Context, userID string, steps []string) ([]string, error) {
 	m.ctrl.T.Helper()
@@ -162,6 +177,21 @@ func (m *MockReadingService) Onboarding(ctx context.Context, userID string) (*do
 func (mr *MockReadingServiceMockRecorder) Onboarding(ctx, userID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Onboarding", reflect.TypeOf((*MockReadingService)(nil).Onboarding), ctx, userID)
+}
+
+// PublicStats mocks base method.
+func (m *MockReadingService) PublicStats(ctx context.Context) (*domain.PublicStats, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PublicStats", ctx)
+	ret0, _ := ret[0].(*domain.PublicStats)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PublicStats indicates an expected call of PublicStats.
+func (mr *MockReadingServiceMockRecorder) PublicStats(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublicStats", reflect.TypeOf((*MockReadingService)(nil).PublicStats), ctx)
 }
 
 // Status mocks base method.

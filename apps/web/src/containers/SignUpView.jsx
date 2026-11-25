@@ -9,6 +9,7 @@ import { passwordErrors } from "../lib/passwordPolicy";
 //components
 import { ThreeDots } from 'react-loader-spinner';
 import Alert from "../components/alert";
+import AuthLayout, { authButton, authInput, authLabel, authLink } from "../components/auth/AuthLayout";
 
 const SignUpView = ({
     signup,
@@ -119,116 +120,62 @@ const SignUpView = ({
     }, [isAuthenticated]);
 
     return (
-        <div className="w-screen min-h-screen h-full bg-center md:bg-cover bg-gradient-to-r from-[#3a3e54] from-0% to-[#5266EB]  to-95%"
-        /* style={{ backgroundImage: `url(${landImage})` ,}} */
-        >
-            <div className='py-6 flex min-h-screen h-full flex-col justify-center items-center'>
-                {/* <h2 className='py-4 mt-10 text-2xl' >
-                    CASHFLOW
-                </h2> */}
-
-                <div className="w-full max-w-sm">
-                                <div className="w-full max-w-sm  bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 overflow-hidden">
-                                    <div class="p-4 sm:p-6 md:p-6 dark:bg-gray-800">
-                                        <form class="space-y-3" action="#">
-                                            <h5 class="text-xl font-medium text-gray-900 dark:text-white">Crea tu Topi</h5>
-                                            <div>
-                                                <label for="name" class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Nombre</label>
-                                                <input type="text" name="name" id="name"
-                                                    value={name}
-                                                    onChange={e => onChange(e)}
-                                                    placeholder="nombre" required
-                                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-1.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label for="lastName" class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Apellido</label>
-                                                <input type="text" name="lastName" id="lastName"
-                                                    value={lastName}
-                                                    onChange={e => onChange(e)}
-                                                    placeholder="apellido" required
-                                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-1.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" />
-                                            </div>
-                                            <div>
-                                                <label for="email" class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Tu email</label>
-                                                <input type="email" name="email" id="email"
-                                                    value={email}
-                                                    onChange={e => onChange(e)}
-                                                    placeholder="name@email.com" required
-                                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-1.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" />
-                                            </div>
-                                            <div>
-                                                <label for="password" class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Tu contraseña</label>
-                                                <input type="password" name="password" id="password"
-                                                    value={password}
-                                                    onChange={e => onChange(e)}
-                                                    placeholder="••••••••"
-                                                    required
-                                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-1.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" />
-                                            </div>
-                                            <ul className="mt-2 text-sm text-red-500">
-                                                {errorMessages.map((msg, index) => (
-                                                    <li key={index}>{msg}</li>
-                                                ))}
-                                            </ul>
-                                            <div>
-                                                <label for="confirmPassword" class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Confirma tu constraseña</label>
-                                                <input type="password" name="confirmPassword" id="confirmPassword"
-                                                    value={confirmPassword}
-                                                    onChange={e => onChange(e)}
-                                                    placeholder="••••••••"
-                                                    required
-                                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-1.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" />
-                                            </div>
-                                            <ul className="mt-2 text-sm text-red-500">
-                                                {errorMessagesOnSubmit.map((msg, index) => (
-                                                    <li key={index}>{msg}</li>
-                                                ))}
-                                            </ul>
-                                            {loadingCreate ?
-
-                                                <div
-                                                    class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                                                    <div className='flex justify-center items-center'>
-                                                        <ThreeDots
-                                                            height="20"
-                                                            width="20"
-                                                            color="white"
-                                                            ariaLabel="loading"
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                :
-                                                <>
-                                                    <button
-                                                        type="submit"
-                                                        onClick={onSubmitCreate}
-                                                        class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                                                        Crea tu cuenta
-                                                    </button>
-
-                                                </>
-
-
-
-                                            }
-
-                                        </form>
-                                        <p className="text-sm text-center mt-6">
-                                            Al continuar aceptas <Link to="/terms-of-service/" className="text-blue-600 underline">terminos y condiciones</Link>
-                                        </p>
-
-                                    </div>
-                                    <Alert />
-                                </div>
+        <AuthLayout
+            title="Crea tu cuenta"
+            subtitle="Después conectas tu correo y Topi empieza a anotar solo."
+            alt={{ href: '/login/', label: 'Iniciar sesión' }}
+            footer={<>¿Ya tienes cuenta? <a href="/login/" className="font-semibold text-topi-200 hover:underline">Inicia sesión</a></>}>
+            <form className="flex flex-col gap-4" onSubmit={onSubmitCreate}>
+                <div className="grid grid-cols-2 gap-3">
+                    <div>
+                        <label htmlFor="name" className={authLabel}>Nombre</label>
+                        <input type="text" name="name" id="name" autoComplete="given-name"
+                            value={name} onChange={e => onChange(e)} placeholder="Nombre" required className={authInput} />
+                    </div>
+                    <div>
+                        <label htmlFor="lastName" className={authLabel}>Apellido</label>
+                        <input type="text" name="lastName" id="lastName" autoComplete="family-name"
+                            value={lastName} onChange={e => onChange(e)} placeholder="Apellido" required className={authInput} />
+                    </div>
                 </div>
-
-
-
-            </div>
-        </div>
-
+                <div>
+                    <label htmlFor="email" className={authLabel}>Correo</label>
+                    <input type="email" name="email" id="email" autoComplete="email"
+                        value={email} onChange={e => onChange(e)} placeholder="nombre@email.com" required className={authInput} />
+                </div>
+                <div>
+                    <label htmlFor="password" className={authLabel}>Contraseña</label>
+                    <input type="password" name="password" id="password" autoComplete="new-password"
+                        value={password} onChange={e => onChange(e)} placeholder="••••••••" required className={authInput} />
+                    {errorMessages.length > 0 && (
+                        <ul className="mt-2 flex flex-col gap-0.5 text-xs text-status-crit-text dark:text-red-400">
+                            {errorMessages.map((msg, index) => <li key={index}>{msg}</li>)}
+                        </ul>
+                    )}
+                </div>
+                <div>
+                    <label htmlFor="confirmPassword" className={authLabel}>Confirma tu contraseña</label>
+                    <input type="password" name="confirmPassword" id="confirmPassword" autoComplete="new-password"
+                        value={confirmPassword} onChange={e => onChange(e)} placeholder="••••••••" required className={authInput} />
+                    {errorMessagesOnSubmit.length > 0 && (
+                        <ul className="mt-2 flex flex-col gap-0.5 text-xs text-status-crit-text dark:text-red-400">
+                            {errorMessagesOnSubmit.map((msg, index) => <li key={index}>{msg}</li>)}
+                        </ul>
+                    )}
+                </div>
+                {loadingCreate ?
+                    <div className={`mt-2 ${authButton}`} aria-busy="true">
+                        <ThreeDots height="20" width="20" color="white" ariaLabel="Creando tu cuenta" />
+                    </div>
+                    :
+                    <button type="submit" className={`mt-2 ${authButton}`}>Crear mi cuenta</button>
+                }
+                <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                    Al continuar aceptas los <Link to="/terms-of-service/" className={authLink}>Términos</Link> y la <Link to="/privacy-policy/" className={authLink}>Política de privacidad</Link>.
+                </p>
+            </form>
+            <Alert />
+        </AuthLayout>
     )
 }
 

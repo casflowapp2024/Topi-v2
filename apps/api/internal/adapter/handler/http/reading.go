@@ -48,6 +48,17 @@ func (h *ReadingHandler) Onboarding(ctx *gin.Context) {
 	handleSuccess(ctx, status)
 }
 
+// PublicStats is GET /public/stats: rounded totals of the whole app for the landing (plan/28)
+func (h *ReadingHandler) PublicStats(ctx *gin.Context) {
+	stats, err := h.svc.PublicStats(ctx)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	ctx.Header("Cache-Control", "public, max-age=3600")
+	handleSuccess(ctx, stats)
+}
+
 // PublicBanks is GET /public/banks: names of the banks Topi reads (landing and the "no movements" notice)
 func PublicBanks(ctx *gin.Context) {
 	ctx.Header("Cache-Control", "public, max-age=3600")

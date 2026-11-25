@@ -6,13 +6,15 @@
   <link rel="icon" href="%PUBLIC_URL%/T1.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" />
+  <!-- Inter sin bloquear la primera pintura (plan/28: Lighthouse móvil con animaciones); mientras llega, la del sistema -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" media="print" onload="this.media='all'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" /></noscript>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#5266eb" />
 
-  <title>Topi · Tus finanzas al día, sin digitar nada</title>
+  <title>Topi · Tus gastos anotados solos, desde los correos de tu banco</title>
   <meta name="description"
-    content="Topi lee las notificaciones que te envían tus bancos y arma solo tus gastos, cuentas y presupuestos. Solo lectura, sin pedir las claves de tu banco." />
+    content="Topi lee las notificaciones que te envía tu banco y anota sola cada compra en su categoría y en tu presupuesto. Para cualquier banco que avise por correo. Solo lectura, sin pedir las claves de tu banco." />
   <link rel="canonical" href="https://topi.cash/" />
 
   <!-- Apple / PWA -->
@@ -21,19 +23,19 @@
 
   <!-- Open Graph -->
   <meta property="og:site_name" content="Topi" />
-  <meta property="og:locale" content="es_CO" />
-  <meta property="og:title" content="Topi · Tus finanzas al día, sin digitar nada" />
+  <meta property="og:locale" content="es_LA" />
+  <meta property="og:title" content="Topi · Tus gastos anotados solos, desde los correos de tu banco" />
   <meta property="og:description"
-    content="Topi lee las notificaciones de tus bancos y arma solo tus gastos, cuentas y presupuestos. Solo lectura." />
+    content="Topi lee las notificaciones de tu banco y anota sola cada compra en su categoría y en tu presupuesto. Solo lectura." />
   <meta property="og:image" content="https://topi.cash/logo512.png" />
   <meta property="og:url" content="https://topi.cash/" />
   <meta property="og:type" content="website" />
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Topi · Tus finanzas al día, sin digitar nada" />
+  <meta name="twitter:title" content="Topi · Tus gastos anotados solos, desde los correos de tu banco" />
   <meta name="twitter:description"
-    content="Topi lee las notificaciones de tus bancos y arma solo tus gastos, cuentas y presupuestos." />
+    content="Topi lee las notificaciones de tu banco y anota sola cada compra en su categoría y en tu presupuesto." />
   <meta name="twitter:image" content="https://topi.cash/logo512.png" />
 
   <!-- Datos estructurados (sin precios: no se ofrece nada pago) -->
@@ -45,8 +47,8 @@
     "url": "https://topi.cash/",
     "applicationCategory": "FinanceApplication",
     "operatingSystem": "Web",
-    "inLanguage": "es-CO",
-    "description": "Topi lee las notificaciones que te envían tus bancos y arma solo tus gastos, cuentas y presupuestos.",
+    "inLanguage": "es",
+    "description": "Topi lee las notificaciones que te envía tu banco y anota sola cada compra en su categoría y en tu presupuesto, para cualquier banco que avise por correo.",
     "image": "https://topi.cash/logo512.png"
   }
   </script>

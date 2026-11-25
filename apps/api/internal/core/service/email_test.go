@@ -87,7 +87,7 @@ func TestEmailService_GetUserAuthURL(t *testing.T) {
 			ctx := context.Background()
 
 			// Act
-			result, err := emailService.GetUserAuthURL(ctx, tt.provider)
+			result, err := emailService.GetUserAuthURL(ctx, "u1", tt.provider, nil)
 
 			// Assert
 			if tt.shouldReturnErr {

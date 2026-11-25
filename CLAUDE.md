@@ -143,6 +143,17 @@ plan/         plan de migración
   prerenderiza en `build/index.html` (`scripts/prerender.js`, sucrase) y deja `build/app.html` para las demás rutas
   (nginx: `/` → index.html, el resto → app.html). Las rutas de la app van con `React.lazy`; nada del bundle principal
   debe importar `redux/actions/*` ni `helpers.js` (traen moment-timezone). Sin precios, Plus ni Apoyar en la landing.
+  Landing con propuesta de valor (`plan/28-landing-propuesta-valor.md`, dirección B "Un mes"): mensaje global
+  ("cualquier banco que te avise por correo"), hero "Topi te dice" (`QuestionsDemo`: preguntas seleccionables, cada
+  una con el componente REAL de la app en `landing/demo/DemoScenes.jsx`, trozo `React.lazy` que se descarga al verse,
+  con store de ejemplo, thunks apagados y axios limitado a `/public/`), "Para qué sirve Topi" y revelados al bajar (`lp-reveal`, `lp-fill`, solo con `animation-timeline: view()`), todo en CSS de
+  `styles/index.css` con transform/opacity y quieto con `prefers-reduced-motion`. Cifras de `GET /public/stats`
+  (totales redondeados hacia abajo, caché de 1 h; sin testimonios) y "Beta · cupos limitados" sin hablar de cobros.
+  Inter se carga sin bloquear la primera pintura (`media="print"` + `onload`); el respaldo es la fuente del sistema.
+  Cupos de Google (plan/28 §7): `gmail_oauth_grants` guarda un hash de cada cuenta de Gmail que se conectó (no se
+  borra al desconectar). Usadas = `GMAIL_OAUTH_BASELINE` + nuevas desde `GMAIL_OAUTH_BASELINE_AT`; avisos al equipo
+  (`gmail_quota` cada 10, `gmail_quota_weekly` desde 30) y desde `GMAIL_BLOCK_AT` (86) `GET /email/auth-url` responde
+  409 a Gmail nuevo (reconectar va con `?reconnect=<id>` y no gasta cupo). `GMAIL_VERIFIED=true` lo apaga.
   La Política de privacidad declara el Uso limitado de los datos de Google: si cambia lo que se lee o a quién se envía,
   actualízala.
 - Pagos de tarjeta por correo: el worker (`flag_card_payments`, sin tocar el prompt) los vuelve entrada de la tarjeta y

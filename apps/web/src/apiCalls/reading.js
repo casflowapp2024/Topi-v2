@@ -26,5 +26,11 @@ export const updateBankSender = async (bank, sender, accountIds) => {
   if (accountIds?.length) await axios.post(`${base()}/email/read`, { account_ids: accountIds }, config());
 };
 
+// ¿Se puede conectar una cuenta de Gmail nueva? { available, message } (plan/28 §7: tope de la app sin verificar)
+export const getGmailCapacity = async () => unwrap(await axios.get(`${base()}/email/gmail-capacity`, config()));
+
 // Lista pública (sin sesión) de los bancos que Topi lee: landing
+// Cifras públicas (sin sesión), redondeadas hacia abajo: landing (plan/28)
+export const getPublicStats = async () => unwrap(await axios.get(`${base()}/public/stats`));
+
 export const getPublicBanks = async () => unwrap(await axios.get(`${base()}/public/banks`))?.banks || [];

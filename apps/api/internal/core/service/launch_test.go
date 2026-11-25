@@ -32,10 +32,11 @@ func TestLaunch_Report(t *testing.T) {
 		metrics.EXPECT().Cohorts(gomock.Any(), 26).Return([]domain.Cohort{
 			{Week: "2026-11-09", W4Eligible: 4, W4: 1}, {Week: "2026-11-16", W4Eligible: 0}, {Week: "2026-10-05", W4Eligible: 10, W4: 9},
 		}, nil)
+		repo.EXPECT().GmailGrants(gomock.Any(), gomock.Any()).Return(domain.GmailGrants{Total: 21}, nil)
 		repo.EXPECT().GmailConnections(gomock.Any()).Return(int64(19), nil)
 		metrics.EXPECT().Reading(gomock.Any()).Return(domain.ReadingHealth{Reconnect: domain.ReconnectStats{Open: 1}}, nil)
 		feedback.EXPECT().CountUnread(gomock.Any()).Return(int64(2), nil)
-		svc := NewLaunchService(repo, metrics, admin, feedback)
+		svc := NewLaunchService(repo, metrics, admin, feedback, NewGmailQuotaService(repo, nil, admin, domain.GmailQuotaSettings{}, ""))
 		svc.now = func() time.Time { return now }
 		return svc
 	}
@@ -51,6 +52,8 @@ func TestLaunch_Report(t *testing.T) {
 		require.NotNil(t, report.RetentionW4Pct)
 		assert.InDelta(t, 25.0, *report.RetentionW4Pct, 0.01, "only the cohorts since the stage started")
 		assert.Equal(t, int64(19), report.Gmail.Connected)
+		assert.Equal(t, int64(21), report.Gmail.Used, "the accounts that ever connected, not only today's")
+		assert.Equal(t, int64(20), report.Gmail.Threshold)
 		assert.Equal(t, int64(2), report.FeedbackUnread)
 		assert.NotEmpty(t, report.Criteria)
 	})
@@ -67,7 +70,7 @@ func TestLaunch_SetStageAudits(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	repo := mock.NewMockLaunchRepository(ctrl)
 	admin := mock.NewMockAdminService(ctrl)
-	svc := NewLaunchService(repo, nil, admin, nil)
+	svc := NewLaunchService(repo, nil, admin, nil, nil)
 	svc.now = func() time.Time { return time.Date(2026, 11, 20, 15, 0, 0, 0, time.UTC) }
 
 	repo.EXPECT().SetStage(gomock.Any(), domain.LaunchStage{Stage: "I.1", StartedAt: "2026-11-15", Note: "cercanos", SetBy: "a1"}).Return(nil)

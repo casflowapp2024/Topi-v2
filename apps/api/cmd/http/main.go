@@ -62,6 +62,8 @@ func main() {
 	go injector.Resources.Notifications.RunScheduler(context.Background(), time.Hour)
 	// "Todavía no vemos movimientos de tu banco" (plan/27 §C): once per connection, after 48 h without transactions
 	go injector.Resources.Reading.RunScheduler(context.Background(), time.Hour)
+	// Google accounts of the unverified app (plan/28 §7): every 10, weekly from 30
+	go injector.Resources.GmailQuota.RunScheduler(context.Background(), time.Hour)
 
 	// Start the HTTP server
 	router, listenAddr := http.NewRouter(settings.HTTP)

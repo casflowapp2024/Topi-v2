@@ -26,6 +26,19 @@ const Status = ({ ok }) => {
     : <span className="shrink-0 whitespace-nowrap inline-flex items-center gap-1 text-xs font-semibold text-status-crit-text dark:text-red-400"><XCircleIcon className="w-4 h-4" aria-hidden="true" />Aún no</span>;
 };
 
+// Aviso de cupos de Google (plan/28 §7): cada 10 cuentas, CASA desde 30 y tope en block_at (también llega por correo)
+export const GmailQuotaNotice = ({ gmail }) => {
+  if (!gmail || gmail.verified || !(gmail.threshold >= 10)) return null;
+  const text = gmail.blocked
+    ? `Se llegó a ${fmtInt(gmail.block_at)} cuentas de Google: la app ya no ofrece conexiones de Gmail nuevas (reconectar sí funciona).`
+    : `Ya van ${fmtInt(gmail.threshold)} cuentas de Google de ${fmtInt(gmail.cap)}.${gmail.weekly ? ' Es momento de tramitar la verificación de Google y la evaluación CASA; cada semana llega un resumen por correo.' : ' Cada 10 llega un aviso por correo.'}`;
+  return (
+    <p role="status" className={`mt-3 rounded-xl border p-3 text-sm ${gmail.blocked ? 'border-red-200 bg-status-crit-soft text-status-crit-text dark:border-red-900 dark:bg-red-950/30 dark:text-red-300' : 'border-amber-200 bg-status-warn-soft text-status-warn-text dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300'}`}>
+      {text}
+    </p>
+  );
+};
+
 /**
  * Lanzamiento por etapas (plan/27 §I): criterios de cada etapa contra los números reales, cuándo empezó cada una
  * (lo fija el admin, auditado) y los cupos de Gmail de la app sin verificar.
@@ -34,7 +47,8 @@ export const AdminLaunchView = ({ data, onSetStage, saving }) => {
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
   const [form, setForm] = useState({ stage: data.current === 'I.1' ? 'I.2' : data.current === 'I.2' ? 'I.3' : 'I.1', started_at: today, note: '' });
   const started = Object.fromEntries((data.stages || []).map((s) => [s.stage, s]));
-  const gmailLeft = (data.gmail?.cap || 100) - (data.gmail?.connected || 0);
+  const gmail = data.gmail || {};
+  const gmailLeft = (gmail.cap || 100) - (gmail.used || 0);
 
   return (
     <div className="flex flex-col gap-4">
@@ -43,10 +57,12 @@ export const AdminLaunchView = ({ data, onSetStage, saving }) => {
           <Stat label="Usuarios al día semanales" value={fmtInt(data.uas_now)} hint="North Star" />
           <Stat label="Correo conectado en 24 h" value={fmtPct(data.activation?.connection_24h_pct)} hint={`${fmtInt(data.activation?.signups)} registros`} />
           <Stat label="1.ª automática en 48 h" value={fmtPct(data.activation?.first_auto_tx_48h_pct)} />
-          <Stat label="Cupos de Gmail" value={`${fmtInt(data.gmail?.connected)} / ${fmtInt(data.gmail?.cap)}`}
-            hint={`quedan ~${fmtInt(gmailLeft)} según la base`} tone={gmailLeft <= 10 ? 'crit' : gmailLeft <= 30 ? 'warn' : undefined} />
+          <Stat label="Cuentas de Google usadas" value={`${fmtInt(gmail.used)} / ${fmtInt(gmail.cap)}`}
+            hint={gmail.verified ? 'app verificada: sin tope' : `${fmtInt(gmail.connected)} conectadas hoy · quedan ~${fmtInt(gmailLeft)} · tope ${fmtInt(gmail.block_at)}`}
+            tone={gmail.verified ? undefined : gmail.blocked || gmailLeft <= 20 ? 'crit' : (gmail.used || 0) >= 30 ? 'warn' : undefined} />
         </StatGrid>
-        <p className="mt-3 text-xs text-ink-2 dark:text-gray-400">{data.gmail?.note}</p>
+        <GmailQuotaNotice gmail={gmail} />
+        <p className="mt-3 text-xs text-ink-2 dark:text-gray-400">{gmail.note}</p>
       </Panel>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

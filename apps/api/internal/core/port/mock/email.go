@@ -244,18 +244,18 @@ func (mr *MockEmailServiceMockRecorder) DeleteEmail(ctx, userID, id interface{})
 }
 
 // GetUserAuthURL mocks base method.
-func (m *MockEmailService) GetUserAuthURL(ctx context.Context, provider string) (*string, error) {
+func (m *MockEmailService) GetUserAuthURL(ctx context.Context, userID, provider string, reconnectID *uint64) (*string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserAuthURL", ctx, provider)
+	ret := m.ctrl.Call(m, "GetUserAuthURL", ctx, userID, provider, reconnectID)
 	ret0, _ := ret[0].(*string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUserAuthURL indicates an expected call of GetUserAuthURL.
-func (mr *MockEmailServiceMockRecorder) GetUserAuthURL(ctx, provider interface{}) *gomock.Call {
+func (mr *MockEmailServiceMockRecorder) GetUserAuthURL(ctx, userID, provider, reconnectID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserAuthURL", reflect.TypeOf((*MockEmailService)(nil).GetUserAuthURL), ctx, provider)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserAuthURL", reflect.TypeOf((*MockEmailService)(nil).GetUserAuthURL), ctx, userID, provider, reconnectID)
 }
 
 // GetUserEmailToken mocks base method.

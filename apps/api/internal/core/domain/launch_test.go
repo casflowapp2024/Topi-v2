@@ -29,7 +29,7 @@ func TestEvaluateLaunch(t *testing.T) {
 	w4 := 35.0
 	good := LaunchReport{
 		Activation: ActivationRates{Signups: 20, Connection24hPct: 65, FirstAuto48hPct: 55},
-		UASNow:     60, UASWeeks: weeks(10, 52, 55, 58, 60), RetentionW4Pct: &w4, Gmail: GmailQuota{Connected: 40},
+		UASNow:     60, UASWeeks: weeks(10, 52, 55, 58, 60), RetentionW4Pct: &w4, Gmail: GmailQuota{Connected: 40, Used: 40, BlockAt: 86},
 	}
 	c := criteria(good)
 	assert.True(t, *c["I.1 Correo conectado en 24 h"])
@@ -43,7 +43,7 @@ func TestEvaluateLaunch(t *testing.T) {
 	assert.True(t, *c["I.1 Cupos de Gmail (app sin verificar)"])
 
 	bad := LaunchReport{
-		Activation: ActivationRates{Signups: 0}, UASNow: 9, UASWeeks: weeks(60, 49, 60), Gmail: GmailQuota{Connected: 95},
+		Activation: ActivationRates{Signups: 0}, UASNow: 9, UASWeeks: weeks(60, 49, 60), Gmail: GmailQuota{Connected: 95, Used: 95, BlockAt: 86},
 	}
 	c = criteria(bad)
 	assert.False(t, *c["I.1 Correo conectado en 24 h"], "no signups: not passed")

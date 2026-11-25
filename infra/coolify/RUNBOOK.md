@@ -525,6 +525,12 @@ Variables de `topi-api` (plantilla `api.env.template`):
 - `BANK_SAMPLES_ADDRESS` se retiró en el plan 30: ya no se piden correos de ejemplo. Si está en Coolify, bórrala.
 - `REACTIVATION_DAILY_LIMIT` (5): correos de reactivación personal por día desde el panel.
 - `REACTIVATION_ALLOW_BROKEN` (`false`): ponerlo en `true` solo después de desplegar el banner de conexión caída (§D).
+- Cupos de Google (plan/28 §7): `GMAIL_OAUTH_BASELINE` (el contador de Google Auth Platform → Público) y
+  `GMAIL_OAUTH_BASELINE_AT` (la fecha en que se leyó, `YYYY-MM-DD`); la API suma las cuentas de Gmail nuevas desde esa
+  fecha (tabla `gmail_oauth_grants`, solo un hash de la dirección). Cada semana: comparar con Google y, si difiere,
+  actualizar las dos variables. `GMAIL_BLOCK_AT` (86): desde ahí la app no ofrece cuentas de Gmail nuevas (reconectar
+  sí). Avisos a `MAIL_REPLY_TO` cada 10 cuentas y un resumen semanal desde 30. `GMAIL_VERIFIED=true` cuando Google
+  apruebe la verificación: sin tope ni avisos.
 - Reactivación: panel → Usuarios → **Escribirle** (una persona, vista previa, enviar). Es un mensaje personal con
   su propia baja (`email_personal`); las respuestas llegan a `MAIL_REPLY_TO`. Nunca más de una vez en 90 días.
 - Opiniones: panel → **Opiniones**. El aviso "hay N opiniones nuevas" llega a `MAIL_REPLY_TO` (máx. 1 por hora).

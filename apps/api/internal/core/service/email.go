@@ -21,6 +21,12 @@ type EmailService struct {
 	repoAccount    port.AccountRepository
 	accountService port.AccountService
 	txManager      port.TransactionManager
+	gmailQuota     port.GmailQuotaService
+}
+
+// SetGmailQuota turns on the cap of Google accounts for new Gmail connections (plan/28 §7)
+func (e *EmailService) SetGmailQuota(quota port.GmailQuotaService) {
+	e.gmailQuota = quota
 }
 
 func NewEmailService(
@@ -39,8 +45,28 @@ func NewEmailService(
 	}
 }
 
-func (e *EmailService) GetUserAuthURL(ctx context.Context, provider string) (*string, error) {
+// GetUserAuthURL is the consent URL of the provider. A new Gmail account spends one of the cupos of the unverified
+// app the moment it consents, so once they run out (GmailQuotaService) only reconnecting one of the user's own Gmail
+// connections gets a URL. If the quota cannot be read the URL is given: a database error must not block everyone.
+func (e *EmailService) GetUserAuthURL(ctx context.Context, userID, provider string, reconnectID *uint64) (*string, error) {
+	if provider == enums.Gmail && e.gmailQuota != nil && !e.isOwnGmail(ctx, userID, reconnectID) {
+		ok, err := e.gmailQuota.CanConnectNew(ctx)
+		if err != nil {
+			slog.Error("gmail quota: could not check, giving the URL", "user_id", userID, "error", err)
+		} else if !ok {
+			return nil, domain.ErrGmailFull
+		}
+	}
 	return e.email.GetAuthURL(provider)
+}
+
+// isOwnGmail: reconnecting is one of the user's Gmail connections (it does not spend a new cupo)
+func (e *EmailService) isOwnGmail(ctx context.Context, userID string, reconnectID *uint64) bool {
+	if reconnectID == nil {
+		return false
+	}
+	email, err := e.repo.GetEmail(ctx, userID, *reconnectID, nil)
+	return err == nil && email != nil && email.Provider == enums.Gmail
 }
 
 func (e *EmailService) RegisterUserEmail(ctx context.Context, email *domain.Email) error {

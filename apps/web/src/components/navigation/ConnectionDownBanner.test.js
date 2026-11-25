@@ -64,6 +64,7 @@ test('Reconectar abre el permiso en el mismo clic y registra la misma dirección
   jest.spyOn(window, 'open').mockReturnValue(popup);
   const props = await render();
 
+  expect(props.link_emails_ask_url).toHaveBeenCalledWith('gmail', 7); // reconectar no gasta cupo de Google
   await act(async () => { button('Reconectar').click(); });
   expect(window.open).toHaveBeenCalledWith('https://accounts.example/oauth', 'TopiReconnect', expect.any(String));
   expect(container.textContent).toContain('Esperando el permiso');

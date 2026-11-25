@@ -27,16 +27,18 @@ export const ConnectionDownBanner = ({ emails, get_automated_emails, link_emails
     const broken = (emails || []).filter(email => !!email.error && !isHidden(email.id));
     const current = broken[0];
     const provider = current?.provider;
+    const currentId = current?.id;
 
     // la URL se pide antes: la ventana tiene que abrirse en el mismo clic
     useEffect(() => {
         let alive = true;
         setUrl(null);
         if (provider) {
-            link_emails_ask_url(provider).then((u) => { if (alive && u) setUrl(u); });
+            // reconectar la misma conexión no gasta cupo de Google: la API la deja pasar aunque no haya cupos
+            link_emails_ask_url(provider, currentId).then((u) => { if (alive && u) setUrl(u); });
         }
         return () => { alive = false; };
-    }, [provider, link_emails_ask_url]);
+    }, [provider, currentId, link_emails_ask_url]);
 
     if (status === 'done') {
         return (

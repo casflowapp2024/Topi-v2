@@ -81,14 +81,6 @@ type LaunchCriterion struct {
 	OK     *bool  `json:"ok"`
 }
 
-// GmailQuota: distinct Gmail addresses connected today vs. the cap. Google's own counter (Google Auth Platform →
-// Audience) is the source of truth: it also counts connections that were removed.
-type GmailQuota struct {
-	Connected int64  `json:"connected"`
-	Cap       int    `json:"cap"`
-	Note      string `json:"note"`
-}
-
 // LaunchReport is GET /admin/launch
 type LaunchReport struct {
 	Stages         []LaunchStage     `json:"stages"`
@@ -144,6 +136,7 @@ func (r *LaunchReport) EvaluateLaunch() {
 		{Stage: StageI3, Label: "UAS ≥ 50 sostenido (encender Apoyar a Topi)", Target: "4 semanas", Value: fmt.Sprintf("%.0f hoy", uas), OK: boolPtr(lastWeeksAtLeast(r.UASWeeks, 4, 50))},
 		{Stage: StageI3, Label: "Verificación de Google aprobada", Target: "aprobada", Value: "revisar en Google Cloud", OK: nil},
 		{Stage: StageI1, Label: "Cupos de Gmail (app sin verificar)", Target: fmt.Sprintf("< %d de por vida", GmailUserCap),
-			Value: fmt.Sprintf("%d conectadas hoy", r.Gmail.Connected), OK: boolPtr(r.Gmail.Connected < GmailUserCap-10)},
+			Value: fmt.Sprintf("%d usadas (estimado), %d conectadas hoy", r.Gmail.Used, r.Gmail.Connected),
+			OK:    boolPtr(r.Gmail.Verified || r.Gmail.Used < r.Gmail.BlockAt)},
 	}
 }
